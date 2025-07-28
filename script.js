@@ -1,3 +1,23 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
+authDomain: "palanquees-jsas.firebaseapp.com",
+databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "palanquees-jsas",
+storageBucket: "palanquees-jsas.firebasestorage.app",
+messagingSenderId: "284449736616",
+appId: "1:284449736616:web:a0949a9b669def06323f9d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+
 let plongeurs = [];
 let palanquees = [];
 
