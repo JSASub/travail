@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestion de Palanquées JSAS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Palanquées JSAS</h1>
+    <div id="meta-info">
+      <label>Directeur de Plongée :
+        <input type="text" id="dp" placeholder="Nom du DP" />
+      </label>
+      <label>Date :
+        <input type="date" id="date" />
+      </label>
+      <label>Lieu :
+        <input type="text" id="lieu" placeholder="Lieu de plongée" />
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <section id="plongeurs">
+      <h2>Liste des plongeurs</h2>
+      <form id="addForm">
+        <input type="text" id="nom" placeholder="Nom" required />
+        <select id="niveau" required>
+          <option value="">Niveau</option>
+          <option>N1</option>
+          <option>N2</option>
+          <option>N3</option>
+          <option>N4</option>
+          <option>E1</option>
+          <option>E2</option>
+          <option>E3</option>
+          <option>E4</option>
+        </select>
+        <input type="text" id="prerogative" placeholder="Prérogatives (ex: PE20, PA40)" />
+        <button type="submit">Ajouter</button>
+      </form>
+      <ul id="listePlongeurs" class="dropzone"></ul>
+      <button id="exportJSON">Exporter JSON</button>
+      <input type="file" id="importJSON" accept=".json" />
+    </section>
+
+    <section id="palanquees">
+      <h2>Palanquées</h2>
+      <button id="addPalanquee">Nouvelle palanquée</button>
+      <button id="generatePDF">Exporter PDF</button>
+      <div id="palanqueesContainer"></div>
+    </section>
+  </main>
+
+  <div id="previewContainer" style="display:none;">
+    <h2>Aperçu PDF</h2>
+    <iframe id="pdfPreview" width="100%" height="500px"></iframe>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+	
