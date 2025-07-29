@@ -44,6 +44,7 @@ function renderPlongeurs() {
       e.dataTransfer.setData("text/plain", i);
     });
     liste.appendChild(li);
+	mlaksjdfmalkjfd
   });
 }
 
