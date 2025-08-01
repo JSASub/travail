@@ -101,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     palanqueesContainer.appendChild(palDiv);
     palanquees.push(palDiv);
+	syncToDatabase();
+      renderPalanquees();
   };
 
   plongeursDispo.ondragover = (e) => e.preventDefault();
