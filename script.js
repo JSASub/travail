@@ -22,6 +22,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// Local state
+let plongeurs = [];
+let palanquees = [];
+
+// DOM helpers
+function $(id) {
+  return document.getElementById(id);
+}
 
 
 document.addEventListener("DOMContentLoaded", () => {
