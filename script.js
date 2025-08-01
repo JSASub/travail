@@ -23,6 +23,9 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Local state
+let dpNom =[];
+let dpDate =[];
+let dpLieu = [];
 let plongeurs = [];
 let palanquees = [];
 
