@@ -40,7 +40,31 @@
   <main>
     <section id="plongeurs">
       <strong>Liste des plongeurs</strong>
-      <form id="addForm">
+	  
+    <label>Nom : <input type="text" id="pl-nom" placeholder="Nom" required /></label>
+    <label>Niveau :
+      <select id="pl-niveau">
+        <option value="">-- Sélectionner le niveau --</option>
+        <option>N1</option>
+		<option>N2</option>
+		<option>N3</option>
+        <option>N4</option>
+		<option>E1</option>
+		<option>E2</option>
+        <option>E3</option>
+		<option>E4</option>
+      </select>
+    </label>
+    <label>Prérogatives : <input type="text" id="pl-pre" placeholder="PE20, PA40 ..." /></label>
+    <button id="ajouter-plongeur">Ajouter</button>
+  </section>	  
+	  
+	  
+	  
+	  
+	  
+      <!--
+	  <form id="addForm">
         <input type="text" id="nom" placeholder="Nom" required />
         <select id="niveau" required>
           <option value="">Niveau</option>
@@ -56,7 +80,11 @@
         <input type="text" id="prerogative" placeholder="Prérogatives (ex: PE20, PA40)" />
         <button type="submit">Ajouter</button>
       </form>
+	  -->
+	  
       <ul id="listePlongeurs" class="dropzone"></ul>
+	  </br>
+	  
       <button id="exportJSON">Exporter JSON</button>
       </br>
 	  <input type="file" id="importJSON" accept=".json" />
