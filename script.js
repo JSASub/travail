@@ -117,7 +117,7 @@ onValue(ref(db, 'palanquees'), snapshot => {
 // UI Event Listeners
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
-  const nom = $("nom").value.trim();
+  const nom = $("pl-nom").value.trim();
   const niveau = $("niveau").value;
   const pre = $("prerogative").value.trim();
   if (!nom || !niveau) return;
