@@ -140,8 +140,9 @@ function checkAlert(palanquee) {
 
 // Sync both plongeurs & palanquées to the DB
 function syncToDatabase() {
-  set(ref(db, 'plongeurs'), plongeurs);
-  set(ref(db, 'palanquees'), palanquees);
+	set(ref(db, 'dp'), dp);
+	set(ref(db, 'plongeurs'), plongeurs);
+	set(ref(db, 'palanquees'), palanquees);
 }
 
 // Subscribe to DB updates on load
