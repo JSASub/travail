@@ -17,11 +17,23 @@ const firebaseConfig = {
   messagingSenderId: "284449736616",
   appId: "1:284449736616:web:a0949a9b669def06323f9d"
 };
-r
+
 // Initialize Firebase app & database
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+document.addEventListener("DOMContentLoaded", () => {
+  const dpNom = document.getElementById("dp-nom");
+  const dpDate = document.getElementById("dp-date");
+  const dpLieu = document.getElementById("dp-lieu");
+  const dpMessage = document.getElementById("dp-message");
+
+  const plongeursDispo = document.getElementById("plongeurs-disponibles");
+  const palanqueesContainer = document.getElementById("palanquees");
+  const ajouterBtn = document.getElementById("ajouter-plongeur");
+  const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
+  const importInput = document.getElementById("import-json");
+  
 // Local state
 let dp = [];
 let plongeurs = [];
@@ -34,27 +46,30 @@ function $(id) {
 <!--rajout-->
   document.get>ElementById("valider-dp").onclick = () => {
     if (dpNom.value && dpDate.value && dpLieu.value) {
-      dpNom.disabled = true;
+	const dpnom = dpNom.value;
+	const dpdate = dpDate.value;
+	const dplieu = dpLieu.value;
+    dp[0]={ nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
+
+	  <!--
+	  dpNom.disabled = true;
       dpDate.disabled = true;
       dpLieu.disabled = true;
+	  -->
       dpMessage.textContent = "Directeur de plongée validé ✔";
+	  syncToDatabase()
     }
   };
 <!--rajout-->  
 
 // Render functions
+
 function renderDP() {
-  const liste = $("dp-section");
-  liste.innerHTML = "";
-  DP.forEach((p, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${p.nom} (${p.date}) [${p.lieu}]`;
-    li.draggable = false;
-    li.dataset.index = i;
-    li.addEventListener("dragstart", e => {
-      e.dataTransfer.setData("text/plain", i);
-    });
-    liste.appendChild(li);
+  dp.forEach((p, i) => {
+		dpNom.value = p.nom;
+		dpDate.value = p.date;
+		dpLieu.value = p.lieu;
+		dpMessage.textContent = p.message;
   });
 }
 function renderPlongeurs() {
