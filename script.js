@@ -122,7 +122,7 @@ $("addForm").addEventListener("submit", e => {
   const pre = $("pl-pre").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
-  $("nom").value = "";
+  $("pl-nom").value = "";
   $("niveau").value = "";
   $("prerogative").value = "";
   syncToDatabase();
