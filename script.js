@@ -26,6 +26,19 @@ const db = getDatabase(app);
 let plongeurs = [];
 let palanquees = [];
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dpNom = document.getElementById("dp-nom");
+  const dpDate = document.getElementById("dp-date");
+  const dpLieu = document.getElementById("dp-lieu");
+  const dpMessage = document.getElementById("dp-message");
+
+  const plongeursDispo = document.getElementById("plongeurs-disponibles");
+  const palanqueesContainer = document.getElementById("palanquees");
+  const ajouterBtn = document.getElementById("ajouter-plongeur");
+  const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
+  const importInput = document.getElementById("import-json");
+  
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
