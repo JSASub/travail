@@ -32,8 +32,8 @@ let palanquees = [];
 function $(id) {
   return document.getElementById(id);
 }
-
-  document.getElementById("valider-dp").onclick = () => {
+<!--rajout-->
+  document.get>ElementById("valider-dp").onclick = () => {
     if (dpNom.value && dpDate.value && dpLieu.value) {
       dpNom.disabled = true;
       dpDate.disabled = true;
@@ -41,7 +41,7 @@ function $(id) {
       dpMessage.textContent = "Directeur de plongée validé ✔";
     }
   };
-  
+<!--rajout-->  
 // Render functions
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
@@ -128,9 +128,9 @@ onValue(ref(db, 'palanquees'), snapshot => {
 // UI Event Listeners
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
-  const nom = $("pl-nom").value.trim();
-  const niveau = $("pl-niveau").value;
-  const pre = $("pl-pre").value.trim();
+  const nom = $("nom").value.trim();
+  const niveau = $("niveau").value;
+  const pre = $("pre").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
   $("nom").value = "";
