@@ -23,10 +23,10 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 document.addEventListener("DOMContentLoaded", () => {
-  const dpNom = document.getElementById("dp-nom");
-  const dpDate = document.getElementById("dp-date");
-  const dpLieu = document.getElementById("dp-lieu");
-  const dpMessage = document.getElementById("dp-message");
+  const dpnom = document.getElementById("dp-nom");
+  const dpdate = document.getElementById("dp-date");
+  const dplieu = document.getElementById("dp-lieu");
+  const dpmessage = document.getElementById("dp-message");
 
   const plongeursDispo = document.getElementById("plongeurs-disponibles");
   const palanqueesContainer = document.getElementById("palanquees");
