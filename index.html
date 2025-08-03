@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestion de Palanquées JSAS</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="style.css" />
   <!-- Firebase App (core) SDK -->
   <script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
   <!-- Firebase Realtime Database SDK -->
@@ -14,17 +14,7 @@
 <body>
   <header>
     <h1>Palanquées JSAS</h1>
-	
-  <section id="dp-section">
-    <label><strong>Directeur de Plongée</strong>
-    <input type="text" id="dp-nom" placeholder="Nom du DP" /></label>
-    <label>Date : <input type="date" id="dp-date" /></label>
-    <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
-    <button type="submit" id="valider-dp">Valider DP</button>
-    <div id="dp-message" class="dp-valide"></div>
-  </section>
-  
-    <!--div id="meta-info">
+    <div id="meta-info">
       <label>Directeur de Plongée :
         <input type="text" id="dp" placeholder="Nom du DP" />
       </label>
@@ -34,38 +24,13 @@
       <label>Lieu :
         <input type="text" id="lieu" placeholder="Lieu de plongée" />
       </label>
-    </div-->
+    </div>
   </header>
 
   <main>
-    </br></br>
-	<section id="plongeurs">
-      <strong>Liste des plongeurs</strong>
-	  
-    <label>Nom : <input type="text" id="pl-nom" placeholder="Nom" required /></label>
-    <label>Niveau :
-      <select id="pl-niveau">
-        <option value="">-- Sélectionner le niveau --</option>
-        <option>N1</option>
-		<option>N2</option>
-		<option>N3</option>
-        <option>N4</option>
-		<option>E1</option>
-		<option>E2</option>
-        <option>E3</option>
-		<option>E4</option>
-      </select>
-    </label>
-    <label>Prérogatives : <input type="text" id="pl-pre" placeholder="PE20, PA40 ..." /></label>
-    <button id="ajouter-plongeur">Ajouter</button>
-  </section>	  
-	  
-	  
-	  
-	  
-	  
-      <!--
-	  <form id="addForm">
+    <section id="plongeurs">
+      <h2>Liste des plongeurs</h2>
+      <form id="addForm">
         <input type="text" id="nom" placeholder="Nom" required />
         <select id="niveau" required>
           <option value="">Niveau</option>
@@ -78,26 +43,19 @@
           <option>E3</option>
           <option>E4</option>
         </select>
-        <input type="text" id="prerogative" placeholder="Prérogatives (ex: PE20, PA40)" />
+        <input type="text" id="prerogative" placeholder="Prérogatives (ex: PE20, PA20, PE40, PA40)" />
         <button type="submit">Ajouter</button>
       </form>
-	  -->
-	  
       <ul id="listePlongeurs" class="dropzone"></ul>
-	  </br>
-	  
       <button id="exportJSON">Exporter JSON</button>
-      </br>
-	  <input type="file" id="importJSON" accept=".json" />
+      <input type="file" id="importJSON" accept=".json" />
     </section>
 
     <section id="palanquees">
-      <strong>Palanquées</strong>
+      <h2>Palanquées</h2>
       <button id="addPalanquee">Nouvelle palanquée</button>
-	  </br>
       <button id="generatePDF">Exporter PDF</button>
-      </br>
-	  <div id="palanqueesContainer"></div>
+      <div id="palanqueesContainer"></div>
     </section>
   </main>
 
@@ -106,7 +64,6 @@
     <iframe id="pdfPreview" width="100%" height="500px"></iframe>
   </div>
   
-  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script-->
   <script type="module" src="script.js"></script>
 </body>
 </html>

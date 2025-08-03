@@ -22,56 +22,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-document.addEventListener("DOMContentLoaded", () => {
-  const dpNom = document.getElementById("dp-nom");
-  const dpDate = document.getElementById("dp-date");
-  const dpLieu = document.getElementById("dp-lieu");
-  const dpMessage = document.getElementById("dp-message");
-
-  const plongeursDispo = document.getElementById("plongeurs-disponibles");
-  const palanqueesContainer = document.getElementById("palanquees");
-  const ajouterBtn = document.getElementById("ajouter-plongeur");
-  const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
-  const importInput = document.getElementById("import-json");
-  
 // Local state
-let dp = [];
 let plongeurs = [];
 let palanquees = [];
-  
+
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
 }
-<!--rajout-->
-  document.get>ElementById("valider-dp").onclick = () => {
-    if (dpNom.value && dpDate.value && dpLieu.value) {
-	const dpnom = dpNom.value;
-	const dpdate = dpDate.value;
-	const dplieu = dpLieu.value;
-    dp[0]={ nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
-
-	  <!--
-	  dpNom.disabled = true;
-      dpDate.disabled = true;
-      dpLieu.disabled = true;
-	  -->
-      dpMessage.textContent = "Directeur de plongée validé ✔";
-	  syncToDatabase()
-    }
-  };
-<!--rajout-->  
 
 // Render functions
-
-function renderDP() {
-  dp.forEach((p, i) => {
-		dpNom.value = p.nom;
-		dpDate.value = p.date;
-		dpLieu.value = p.lieu;
-		dpMessage.textContent = p.message;
-  });
-}
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
@@ -140,16 +100,11 @@ function checkAlert(palanquee) {
 
 // Sync both plongeurs & palanquées to the DB
 function syncToDatabase() {
-	set(ref(db, 'dp'), dp);
-	set(ref(db, 'plongeurs'), plongeurs);
-	set(ref(db, 'palanquees'), palanquees);
+  set(ref(db, 'plongeurs'), plongeurs);
+  set(ref(db, 'palanquees'), palanquees);
 }
 
 // Subscribe to DB updates on load
-onValue(ref(db, 'dp'), snapshot => {
-  dp = snapshot.val() || [];
-  renderDP();
-});
 onValue(ref(db, 'plongeurs'), snapshot => {
   plongeurs = snapshot.val() || [];
   renderPlongeurs();
@@ -164,7 +119,7 @@ $("addForm").addEventListener("submit", e => {
   e.preventDefault();
   const nom = $("nom").value.trim();
   const niveau = $("niveau").value;
-  const pre = $("pre").value.trim();
+  const pre = $("prerogative").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
   $("nom").value = "";
