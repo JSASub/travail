@@ -17,16 +17,15 @@ const firebaseConfig = {
   messagingSenderId: "284449736616",
   appId: "1:284449736616:web:a0949a9b669def06323f9d"
 };
-
+r
 // Initialize Firebase app & database
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Local state
+let dp = [];
 let plongeurs = [];
 let palanquees = [];
-
-
   
 // DOM helpers
 function $(id) {
@@ -42,7 +41,22 @@ function $(id) {
     }
   };
 <!--rajout-->  
+
 // Render functions
+function renderDP() {
+  const liste = $("dp-section");
+  liste.innerHTML = "";
+  DP.forEach((p, i) => {
+    const li = document.createElement("li");
+    li.textContent = `${p.nom} (${p.date}) [${p.lieu}]`;
+    li.draggable = false;
+    li.dataset.index = i;
+    li.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", i);
+    });
+    liste.appendChild(li);
+  });
+}
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
@@ -111,11 +125,16 @@ function checkAlert(palanquee) {
 
 // Sync both plongeurs & palanquées to the DB
 function syncToDatabase() {
+  set(ref(db, 'dp'), dp);
   set(ref(db, 'plongeurs'), plongeurs);
   set(ref(db, 'palanquees'), palanquees);
 }
 
 // Subscribe to DB updates on load
+onValue(ref(db, 'dp'), snapshot => {
+  dp = snapshot.val() || [];
+  renderDP();
+});
 onValue(ref(db, 'plongeurs'), snapshot => {
   plongeurs = snapshot.val() || [];
   renderPlongeurs();
