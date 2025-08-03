@@ -31,6 +31,15 @@ function $(id) {
   return document.getElementById(id);
 }
 
+  document.getElementById("valider-dp").onclick = () => {
+    if (dpNom.value && dpDate.value && dpLieu.value) {
+      dpNom.disabled = true;
+      dpDate.disabled = true;
+      dpLieu.disabled = true;
+      dpMessage.textContent = "Directeur de plongée validé ✔";
+    }
+  };
+  
 // Render functions
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
@@ -122,7 +131,7 @@ $("addForm").addEventListener("submit", e => {
   const pre = $("pl-pre").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
-  $("pl-nom").value = "";
+  $("nom").value = "";
   $("niveau").value = "";
   $("prerogative").value = "";
   syncToDatabase();
