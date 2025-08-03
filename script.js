@@ -118,8 +118,8 @@ onValue(ref(db, 'palanquees'), snapshot => {
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
   const nom = $("pl-nom").value.trim();
-  const niveau = $("niveau").value;
-  const pre = $("prerogative").value.trim();
+  const niveau = $("pl-niveau").value;
+  const pre = $("pl-pre").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
   $("nom").value = "";
