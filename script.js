@@ -29,6 +29,7 @@ document.getElementById("valider-dp").addEventListener("click", () => {
   const nomDP = document.getElementById("dp-nom").value.trim();
   const date = document.getElementById("dp-date").value;
   const lieu = document.getElementById("dp-lieu").value.trim();
+console.log("Clic détecté :", nomDP, date, lieu);
 
   if (!nomDP || !date || !lieu) {
     alert("Veuillez remplir tous les champs du DP.");
