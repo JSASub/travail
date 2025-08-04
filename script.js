@@ -32,7 +32,7 @@ function $(id) {
 }
 
 // Render functions
-function renderPlongeurs() {
+<!--function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
@@ -45,8 +45,27 @@ function renderPlongeurs() {
     });
     liste.appendChild(li);
   });
-}
+}-->
 
+  function renderPlongeurs() {
+    const el = document.createElement("div");
+    el.className = "plongeur";
+    el.draggable = true;
+    el.dataset.id = plongeur.id;
+    el.textContent = `${p.nom} (${p.niveau}) - ${p.pre}`;
+    const removeBtn = document.createElement("span");
+    removeBtn.textContent = "↩";
+    removeBtn.className = "remove-btn";
+    removeBtn.onclick = () => {
+      plongeursDispo.appendChild(el);
+    };
+    el.appendChild(removeBtn);
+    el.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", plongeur.id);
+    });
+    return el;
+  }
+  
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   container.innerHTML = "";
