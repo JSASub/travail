@@ -22,6 +22,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// Local state
+let dp = [];
+let plongeurs = [];
+let palanquees = [];
 document.addEventListener("DOMContentLoaded", () => {
   const dpNom = document.getElementById("dp-nom");
   const dpDate = document.getElementById("dp-date");
@@ -33,12 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ajouterBtn = document.getElementById("ajouter-plongeur");
   const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
   const importInput = document.getElementById("import-json");
-  
-// Local state
-let dp = [];
-let plongeurs = [];
-let palanquees = [];
-  
+   
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
@@ -49,15 +48,14 @@ function $(id) {
 	const dpnom = dpNom.value;
 	const dpdate = dpDate.value;
 	const dplieu = dpLieu.value;
-    dp[0]={ nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
-
+    dp[0] = { nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
+		dpMessage.textContent = "Directeur de plongée validé ✔";
+		syncToDatabase() 
 	  <!--
 	  dpNom.disabled = true;
       dpDate.disabled = true;
       dpLieu.disabled = true;
-	  -->
-      dpMessage.textContent = "Directeur de plongée validé ✔";
-	  syncToDatabase()
+	  --> 
     }
   };
 <!--rajout-->  
