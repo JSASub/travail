@@ -26,7 +26,7 @@ const db = getDatabase(app);
 let dp = [];
 let plongeurs = [];
 let palanquees = [];
-<!--
+
 document.addEventListener("DOMContentLoaded", () => {
   const dpNom = document.getElementById("dp-nom");
   const dpDate = document.getElementById("dp-date");
@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const ajouterBtn = document.getElementById("ajouter-plongeur");
   const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
   const importInput = document.getElementById("import-json");
-  -->
    
 // DOM helpers
 function $(id) {
@@ -66,10 +65,10 @@ function $(id) {
 
 function renderDP() {
   dp.forEach((p, i) => {
-		dpNom.value = p.nom;
-		dpDate.value = p.date;
-		dpLieu.value = p.lieu;
-		dpMessage.textContent = p.message;
+		dpNom.value = p.dp-nomnom;
+		dpDate.value = p.dp-datedate;
+		dpLieu.value = p.dp-lieulieu;
+		dpMessage.textContent = p.dp-message;
   });
 }
 function renderPlongeurs() {
