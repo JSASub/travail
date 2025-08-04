@@ -185,10 +185,21 @@ function renderPalanquees() {
     // Titre de la palanquée avec bouton de suppression
     div.innerHTML = `
       <div class="palanquee-title">
-        Palanquée ${idx + 1} 
+        Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})
         <span class="remove-palanquee" style="color: red; cursor: pointer; float: right;">❌</span>
       </div>
     `;
+    
+    // Message si palanquée vide
+    if (palanquee.length === 0) {
+      const emptyMsg = document.createElement("p");
+      emptyMsg.textContent = "Glissez des plongeurs ici ⬇️";
+      emptyMsg.style.color = "#666";
+      emptyMsg.style.fontStyle = "italic";
+      emptyMsg.style.textAlign = "center";
+      emptyMsg.style.padding = "20px";
+      div.appendChild(emptyMsg);
+    }
     
     // Ajouter les plongeurs
     palanquee.forEach((plg, i) => {
@@ -198,6 +209,8 @@ function renderPalanquees() {
       p.style.backgroundColor = "#e0f0ff";
       p.style.padding = "5px";
       p.style.margin = "2px 0";
+      p.style.borderRadius = "3px";
+      p.title = "Cliquez pour remettre dans la liste";
       p.addEventListener("click", () => {
         console.log("Retour plongeur à la liste:", plg.nom);
         palanquee.splice(i, 1);
@@ -209,20 +222,34 @@ function renderPalanquees() {
 
     // Événement de suppression de palanquée
     div.querySelector(".remove-palanquee").addEventListener("click", () => {
+      console.log("Suppression palanquée", idx + 1);
       // Remettre tous les plongeurs dans la liste
       palanquee.forEach(plg => plongeurs.push(plg));
       palanquees.splice(idx, 1);
       syncToDatabase();
     });
 
-    // Drag & drop
-    div.addEventListener("dragover", e => e.preventDefault());
+    // Drag & drop avec meilleur feedback visuel
+    div.addEventListener("dragover", e => {
+      e.preventDefault();
+      div.style.backgroundColor = "#e3f2fd";
+      div.style.borderColor = "#2196f3";
+    });
+    
+    div.addEventListener("dragleave", e => {
+      div.style.backgroundColor = "";
+      div.style.borderColor = "";
+    });
+    
     div.addEventListener("drop", e => {
       e.preventDefault();
+      div.style.backgroundColor = "";
+      div.style.borderColor = "";
+      
       const i = e.dataTransfer.getData("text/plain");
       if (i !== "") {
-        console.log("Drop plongeur index:", i);
-        const pl = plongeurs.splice(i, 1)[0];
+        console.log("Drop plongeur index:", i, "dans palanquée", idx + 1);
+        const pl = plongeurs.splice(parseInt(i), 1)[0];
         palanquee.push(pl);
         syncToDatabase();
       }
