@@ -13,7 +13,7 @@
 
 <body>
   <header>
-    <h1>Palanquées JSAS</h1>
+    <strong>Palanquées JSAS</strong>
     <div id="meta-info">
       <label>Directeur de Plongée :
         <input type="text" id="dp" placeholder="Nom du DP" />
@@ -29,7 +29,7 @@
 
   <main>
     <section id="plongeurs">
-      <h2>Liste des plongeurs</h2>
+      <strong>Liste des plongeurs</strong>
       <form id="addForm">
         <input type="text" id="nom" placeholder="Nom" required />
         <select id="niveau" required>
@@ -47,12 +47,14 @@
         <button type="submit">Ajouter</button>
       </form>
       <ul id="listePlongeurs" class="dropzone"></ul>
-      <button id="exportJSON">Exporter JSON</button>
-      <input type="file" id="importJSON" accept=".json" />
+      </br>
+	  <button id="exportJSON">Exporter JSON</button>
+      </br>
+	  <input type="file" id="importJSON" accept=".json" />
     </section>
 
     <section id="palanquees">
-      <h2>Palanquées</h2>
+      <strong>Palanquées</strong>
       <button id="addPalanquee">Nouvelle palanquée</button>
       <button id="generatePDF">Exporter PDF</button>
       <div id="palanqueesContainer"></div>
