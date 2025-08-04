@@ -142,7 +142,7 @@ function $(id) {
   return document.getElementById(id);
 }
 <!--rajout-->
-  document.get>ElementById("valider-dp").onclick = () => {
+  document.getElementById("valider-dp").onclick = () => {
     if (dpNom.value && dpDate.value && dpLieu.value) {
 	const dpnom = dpNom.value;
 	const dpdate = dpDate.value;
@@ -163,9 +163,9 @@ function $(id) {
 
 function renderDP() {
   dp.forEach((p, i) => {
-		dpNom.value = p.dp-nom;
-		dpDate.value = p.dp-date;
-		dpLieu.value = p.dp-lieu;
+		dpNom.value = p.nom;
+		dpDate.value = p.date;
+		dpLieu.value = p.lieu;
 		dpMessage.textContent = p.dp-message;
   });
 }
@@ -305,7 +305,7 @@ $("generatePDF").addEventListener("click", () => {
   palanquees.forEach((pal, i) => {
     html += `<h2>Palanquée ${i + 1}</h2><ul>`;
     pal.forEach(p => {
-      html += `<li>${p.nom} (${p.niveau}) [${p.prerogative}]</li>`;
+      html += `<li>${p.nom} (${p.niveau}) [${p.pre}]</li>`;
     });
     html += `</ul>`;
   });
