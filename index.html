@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestion de Palanquées JSAS</title>
   <link rel="stylesheet" href="styles.css" />
+
   <!-- Firebase App (core) SDK -->
   <script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
   <!-- Firebase Realtime Database SDK -->
@@ -14,15 +15,18 @@
 <body>
   <header>
     <h1>Palanquées JSAS</h1>
-	
+  </header>
+
   <div id="meta-info">
     <label><strong>Directeur de Plongée</strong>
-    <input type="text" id="dp-nom" placeholder="Nom du DP" /></label>
+      <input type="text" id="dp-nom" placeholder="Nom du DP" />
+    </label>
     <label>Date : <input type="date" id="dp-date" /></label>
     <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
     <button type="submit" id="valider-dp">Valider DP</button>
     <div id="dp-message" class="dp-valide"></div>
   </div>
+
   
     <!--div id="meta-info">
       <label>Directeur de Plongée :
@@ -111,6 +115,17 @@
     <h2>Aperçu PDF</h2>
     <iframe id="pdfPreview" width="100%" height="500px"></iframe>
   </div>
+  
+  <hr>
+  <section id="historique-dp">
+    <h2>Historique des DP</h2>
+    <label for="dp-dates">Sélectionner une date :</label>
+		<select id="dp-dates">
+			<option value="">-- Choisir une date --</option>
+		</select>
+    <div id="historique-info"></div>
+  </section>
+  
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
   Version 1.7.2 - RA - 2025
   </footer>

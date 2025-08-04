@@ -3,8 +3,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebas
 import {
   getDatabase,
   ref,
-  onValue,
-  set
+  set,
+  get,
+  child,
+  onValue
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
 // Your web app's Firebase configuration
@@ -17,6 +19,99 @@ const firebaseConfig = {
   messagingSenderId: "284449736616",
   appId: "1:284449736616:web:a0949a9b669def06323f9d"
 };
+
+// Sauvegarde des informations du DP avec la date comme identifiant
+document.getElementById("valider-dp").addEventListener("click", () => {
+  const nomDP = document.getElementById("dp-nom").value.trim();
+  const date = document.getElementById("dp-date").value;
+  const lieu = document.getElementById("dp-lieu").value.trim();
+
+  if (!nomDP || !date || !lieu) {
+    alert("Veuillez remplir tous les champs du DP.");
+    return;
+  }
+
+  const dpData = {
+    nom: nomDP,
+    date: date,
+    lieu: lieu
+  };
+
+  const dpKey = `dpInfo/${date}`;
+  set(ref(db, dpKey), dpData)
+    .then(() => {
+      document.getElementById("dp-message").textContent = "Informations du DP enregistrées avec succès.";
+      document.getElementById("dp-message").style.color = "green";
+    })
+    .catch((error) => {
+      document.getElementById("dp-message").textContent = "Erreur lors de l'enregistrement : " + error.message;
+      document.getElementById("dp-message").style.color = "red";
+    });
+});
+
+// Chargement des infos DP du jour au démarrage
+document.addEventListener("DOMContentLoaded", () => {
+  const dpNomInput = document.getElementById("dp-nom");
+  const dpDateInput = document.getElementById("dp-date");
+  const dpLieuInput = document.getElementById("dp-lieu");
+
+  const dbRef = ref(db);
+  const today = new Date().toISOString().split("T")[0];
+
+  dpDateInput.value = today;
+
+  get(child(dbRef, `dpInfo/${today}`)).then((snapshot) => {
+    if (snapshot.exists()) {
+      const dpData = snapshot.val();
+      dpNomInput.value = dpData.nom || "";
+      dpLieuInput.value = dpData.lieu || "";
+      document.getElementById("dp-message").textContent = "Informations du jour chargées.";
+      document.getElementById("dp-message").style.color = "blue";
+    }
+  }).catch((error) => {
+    console.error("Erreur de lecture des données DP :", error);
+  });
+});
+
+// Chargement de l'historique des DP
+function chargerHistoriqueDP() {
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+
+  const dbRef = ref(db);
+
+  get(child(dbRef, "dpInfo")).then((snapshot) => {
+    if (snapshot.exists()) {
+      const dpInfos = snapshot.val();
+
+      for (const date in dpInfos) {
+        const option = document.createElement("option");
+        option.value = date;
+        option.textContent = date;
+        dpDatesSelect.appendChild(option);
+      }
+
+      dpDatesSelect.addEventListener("change", () => {
+        const selectedDate = dpDatesSelect.value;
+        if (selectedDate && dpInfos[selectedDate]) {
+          const dp = dpInfos[selectedDate];
+          historiqueInfo.innerHTML = `
+            <p><strong>Nom :</strong> ${dp.nom}</p>
+            <p><strong>Lieu :</strong> ${dp.lieu}</p>
+          `;
+        } else {
+          historiqueInfo.innerHTML = "";
+        }
+      });
+    }
+  }).catch((error) => {
+    console.error("Erreur de lecture de l'historique DP :", error);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", chargerHistoriqueDP);
+
+
 
 // Initialize Firebase app & database
 const app = initializeApp(firebaseConfig);
