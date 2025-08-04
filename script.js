@@ -163,9 +163,9 @@ function $(id) {
 
 function renderDP() {
   dp.forEach((p, i) => {
-		dpNom.value = p.dp-nomnom;
-		dpDate.value = p.dp-datedate;
-		dpLieu.value = p.dp-lieulieu;
+		dpNom.value = p.dp-nom;
+		dpDate.value = p.dp-date;
+		dpLieu.value = p.dp-lieu;
 		dpMessage.textContent = p.dp-message;
   });
 }
