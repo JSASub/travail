@@ -26,6 +26,7 @@ const db = getDatabase(app);
 let dp = [];
 let plongeurs = [];
 let palanquees = [];
+<!--
 document.addEventListener("DOMContentLoaded", () => {
   const dpNom = document.getElementById("dp-nom");
   const dpDate = document.getElementById("dp-date");
@@ -37,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const ajouterBtn = document.getElementById("ajouter-plongeur");
   const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
   const importInput = document.getElementById("import-json");
+  -->
    
 // DOM helpers
 function $(id) {
@@ -136,7 +138,7 @@ function checkAlert(palanquee) {
   return false;
 }
 
-// Sync both plongeurs & palanquées to the DB
+// Sync dp & plongeurs & palanquées to the DB
 function syncToDatabase() {
 	set(ref(db, 'dp'), dp);
 	set(ref(db, 'plongeurs'), plongeurs);
@@ -162,7 +164,7 @@ $("addForm").addEventListener("submit", e => {
   e.preventDefault();
   const nom = $("nom").value.trim();
   const niveau = $("niveau").value;
-  const pre = $("pre").value.trim();
+  const pre = $("prerogative").value.trim();
   if (!nom || !niveau) return;
   plongeurs.push({ nom, niveau, prerogative: pre });
   $("nom").value = "";
