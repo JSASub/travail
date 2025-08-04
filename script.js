@@ -47,9 +47,6 @@ function renderPlongeurs() {
   });
 }
 
-  <!--
-
--->  
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   container.innerHTML = "";
