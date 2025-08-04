@@ -75,7 +75,7 @@ function renderPlongeurs() {
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
     const li = document.createElement("li");
-    li.textContent = `${p.nom} (${p.niveau}) [${p.prerogative}]`;
+    li.textContent = `${p.pl-nom} (${p.pl-niveau}) [${p.pl-pre}]`;
     li.draggable = true;
     li.dataset.index = i;
     li.addEventListener("dragstart", e => {
