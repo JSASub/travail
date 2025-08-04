@@ -28,29 +28,7 @@ form input, form select {
   margin-top: 0.5em;
 }
 button {
-  margin-top: 10px;
-  padding: 8px 12px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.remove-btn {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  cursor: pointer;
-  color: red;
-  font-weight: bold;
-}
-.alert {
-  color: red;
-  font-weight: bold;
-}
-.dp-valide {
-  color: green;
-  margin-top: 10px;
+  margin-top: 0.5em;
 }
 ul {
   list-style: none;
@@ -62,21 +40,12 @@ li {
   padding: 0.5em;
   cursor: grab;
 }
-.dropzone, .palanquee {
-  border: 2px dashed #ccc;
-  min-height: 100px;
-  padding: 10px;
-  margin-top: 10px;
-  background-color: #ffffff;
+.palanquee {
+  border: 2px solid #007bff;
+  margin-top: 1em;
+  padding: 1em;
+  background: #f1faff;
 }
-.plongeur {
-  margin: 5px 0;
-  padding: 6px;
-  background-color: #e0f0ff;
-  cursor: move;
-  position: relative;
-}
-
 .palanquee[data-alert="true"] {
   border-color: red;
   background-color: #ffe6e6;

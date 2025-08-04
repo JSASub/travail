@@ -23,21 +23,60 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // Local state
+let dp = [];
 let plongeurs = [];
 let palanquees = [];
 
+document.addEventListener("DOMContentLoaded", () => {
+  const dpNom = document.getElementById("dp-nom");
+  const dpDate = document.getElementById("dp-date");
+  const dpLieu = document.getElementById("dp-lieu");
+  const dpMessage = document.getElementById("dp-message");
+
+  const plongeursDispo = document.getElementById("plongeurs-disponibles");
+  const palanqueesContainer = document.getElementById("palanquees");
+  const ajouterBtn = document.getElementById("ajouter-plongeur");
+  const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
+  const importInput = document.getElementById("import-json");
+   
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
 }
+<!--rajout-->
+  document.get>ElementById("valider-dp").onclick = () => {
+    if (dpNom.value && dpDate.value && dpLieu.value) {
+	const dpnom = dpNom.value;
+	const dpdate = dpDate.value;
+	const dplieu = dpLieu.value;
+    dp[0] = { nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
+		dpMessage.textContent = "Directeur de plongée validé ✔";
+		syncToDatabase() 
+	  <!--
+	  dpNom.disabled = true;
+      dpDate.disabled = true;
+      dpLieu.disabled = true;
+	  --> 
+    }
+  };
+<!--rajout-->  
 
 // Render functions
+
+function renderDP() {
+  dp.forEach((p, i) => {
+		dpNom.value = p.dp-nomnom;
+		dpDate.value = p.dp-datedate;
+		dpLieu.value = p.dp-lieulieu;
+		dpMessage.textContent = p.dp-message;
+  });
+}
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
     const li = document.createElement("li");
-    li.textContent = `${p.nom} (${p.niveau}) [${p.prerogative}]`;
+    li.textContent = `${p.nom} (${p.niveau}) [${p.pre}]`;
     li.draggable = true;
     li.dataset.index = i;
     li.addEventListener("dragstart", e => {
@@ -98,13 +137,18 @@ function checkAlert(palanquee) {
   return false;
 }
 
-// Sync both plongeurs & palanquées to the DB
+// Sync dp & plongeurs & palanquées to the DB
 function syncToDatabase() {
-  set(ref(db, 'plongeurs'), plongeurs);
-  set(ref(db, 'palanquees'), palanquees);
+	set(ref(db, 'dp'), dp);
+	set(ref(db, 'plongeurs'), plongeurs);
+	set(ref(db, 'palanquees'), palanquees);
 }
 
 // Subscribe to DB updates on load
+onValue(ref(db, 'dp'), snapshot => {
+  dp = snapshot.val() || [];
+  renderDP();
+});
 onValue(ref(db, 'plongeurs'), snapshot => {
   plongeurs = snapshot.val() || [];
   renderPlongeurs();
