@@ -24,41 +24,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ===== GESTION DP - SYSTEM FIREBASE UNIQUEMENT =====
+
 // Sauvegarde des informations du DP avec la date comme identifiant
-document.getElementById("valider-dp").addEventListener("click", () => {
-  const nomDP = document.getElementById("dp-nom").value.trim();
-  const date = document.getElementById("dp-date").value;
-  const lieu = document.getElementById("dp-lieu").value.trim();
-console.log("Clic détecté :", nomDP, date, lieu);
-
-  if (!nomDP || !date || !lieu) {
-    alert("Veuillez remplir tous les champs du DP.");
-    return;
-  }
-
-  const dpData = {
-    nom: nomDP,
-    date: date,
-    lieu: lieu
-  };
-
-  const dpKey = `dpInfo/${date}`;
-  set(ref(db, dpKey), dpData)
-    .then(() => {
-      const dpMessage = document.getElementById("dp-message");
-      dpMessage.classList.add("success-icon");
-      dpMessage.textContent = " Informations du DP enregistrées avec succès.";
-    })
-    .catch((error) => {
-      const dpMessage = document.getElementById("dp-message");
-      dpMessage.classList.remove("success-icon");
-      dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
-      dpMessage.style.color = "red";
-    });
-});
-
-// Chargement des infos DP du jour au démarrage
 document.addEventListener("DOMContentLoaded", () => {
+  // Chargement des infos DP du jour au démarrage
   const dpNomInput = document.getElementById("dp-nom");
   const dpDateInput = document.getElementById("dp-date");
   const dpLieuInput = document.getElementById("dp-lieu");
@@ -71,15 +41,63 @@ document.addEventListener("DOMContentLoaded", () => {
   get(child(dbRef, `dpInfo/${today}`)).then((snapshot) => {
     if (snapshot.exists()) {
       const dpData = snapshot.val();
+      console.log("Données DP chargées:", dpData);
       dpNomInput.value = dpData.nom || "";
       dpLieuInput.value = dpData.lieu || "";
       const dpMessage = document.getElementById("dp-message");
       dpMessage.textContent = "Informations du jour chargées.";
       dpMessage.style.color = "blue";
+    } else {
+      console.log("Aucune donnée DP pour aujourd'hui");
     }
   }).catch((error) => {
     console.error("Erreur de lecture des données DP :", error);
   });
+
+  // Gestionnaire de validation DP
+  document.getElementById("valider-dp").addEventListener("click", () => {
+    const nomDP = document.getElementById("dp-nom").value.trim();
+    const date = document.getElementById("dp-date").value;
+    const lieu = document.getElementById("dp-lieu").value.trim();
+    
+    console.log("Clic détecté :", nomDP, date, lieu);
+
+    if (!nomDP || !date || !lieu) {
+      alert("Veuillez remplir tous les champs du DP.");
+      return;
+    }
+
+    const dpData = {
+      nom: nomDP,
+      date: date,
+      lieu: lieu,
+      timestamp: Date.now()
+    };
+
+    const dpKey = `dpInfo/${date}`;
+    
+    // Affichage en attente
+    const dpMessage = document.getElementById("dp-message");
+    dpMessage.textContent = "Enregistrement en cours...";
+    dpMessage.style.color = "orange";
+    
+    set(ref(db, dpKey), dpData)
+      .then(() => {
+        console.log("Données DP sauvegardées avec succès");
+        dpMessage.classList.add("success-icon");
+        dpMessage.textContent = " Informations du DP enregistrées avec succès.";
+        dpMessage.style.color = "green";
+      })
+      .catch((error) => {
+        console.error("Erreur Firebase:", error);
+        dpMessage.classList.remove("success-icon");
+        dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+        dpMessage.style.color = "red";
+      });
+  });
+
+  // Chargement de l'historique des DP
+  chargerHistoriqueDP();
 });
 
 // Chargement de l'historique des DP
@@ -92,6 +110,9 @@ function chargerHistoriqueDP() {
   get(child(dbRef, "dpInfo")).then((snapshot) => {
     if (snapshot.exists()) {
       const dpInfos = snapshot.val();
+
+      // Vider les options existantes (sauf la première)
+      dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
 
       for (const date in dpInfos) {
         const option = document.createElement("option");
@@ -118,63 +139,24 @@ function chargerHistoriqueDP() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", chargerHistoriqueDP);
+// ===== GESTION PLONGEURS ET PALANQUEES =====
 
-// Local state
-let dp = [];
+// Local state (UNIQUEMENT pour plongeurs et palanquees)
 let plongeurs = [];
 let palanquees = [];
 
-document.addEventListener("DOMContentLoaded", () => {
-  const dpNom = document.getElementById("dp-nom");
-  const dpDate = document.getElementById("dp-date");
-  const dpLieu = document.getElementById("dp-lieu");
-  const dpMessage = document.getElementById("dp-message");
-
-  const plongeursDispo = document.getElementById("plongeurs-disponibles");
-  const palanqueesContainer = document.getElementById("palanquees");
-  const ajouterBtn = document.getElementById("ajouter-plongeur");
-  const ajouterPalanqueeBtn = document.getElementById("ajouter-palanquee");
-  const importInput = document.getElementById("import-json");
-   
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
 }
-<!--
-  document.getElementById("valider-dp").onclick = () => {
-    if (dpNom.value && dpDate.value && dpLieu.value) {
-	const dpnom = dpNom.value;
-	const dpdate = dpDate.value;
-	const dplieu = dpLieu.value;
-    dp[0] = { nom: dpnom, date: dpdate, lieu: dplieu, message: "Directeur de plongée validé ✔" };     
-		dpMessage.textContent = "Directeur de plongée validé ✔";
-		syncToDatabase() 
-	  <!--
-	  dpNom.disabled = true;
-      dpDate.disabled = true;
-      dpLieu.disabled = true;
-	  --> 
-    }
-  };
--->  
 
 // Render functions
-
-function renderDP() {
-  dp.forEach((p, i) => {
-		dpNom.value = p.nom;
-		dpDate.value = p.date;
-		dpLieu.value = p.lieu;
-		dpMessage.textContent = p.dp-message;
-  });
-}
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
     const li = document.createElement("li");
-    li.textContent = `${p.nom} (${p.niveau}) [${p.pre}]`;
+    li.textContent = `${p.nom} (${p.niveau}) [${p.pre || ''}]`;
     li.draggable = true;
     li.dataset.index = i;
     li.addEventListener("dragstart", e => {
@@ -195,7 +177,7 @@ function renderPalanquees() {
     div.innerHTML = `<div class="palanquee-title">Palanquée ${idx + 1}</div>`;
     palanquee.forEach((plg, i) => {
       const p = document.createElement("p");
-      p.textContent = `${plg.nom} (${plg.niveau}) [${plg.prerogative}]`;
+      p.textContent = `${plg.nom} (${plg.niveau}) [${plg.pre || ''}]`;
       p.addEventListener("click", () => {
         palanquee.splice(i, 1);
         plongeurs.push(plg);
@@ -220,10 +202,10 @@ function renderPalanquees() {
   });
 }
 
-// Alert logic unchanged
+// Alert logic
 function checkAlert(palanquee) {
   const n1s = palanquee.filter(p => p.niveau === "N1");
-  const gps = palanquee.filter(p => ["N4", "E2", "E3", "E4"].includes(p.niveau));
+  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
   if (n1s.length && gps.length === 0) return true;
   if (palanquee.length === 1) return true;
   if (palanquee.length > 5) return true;
@@ -235,82 +217,82 @@ function checkAlert(palanquee) {
   return false;
 }
 
-// Sync dp & plongeurs & palanquées to the DB
+// Sync UNIQUEMENT plongeurs & palanquées to the DB
 function syncToDatabase() {
-	set(ref(db, 'dp'), dp);
-	set(ref(db, 'plongeurs'), plongeurs);
-	set(ref(db, 'palanquees'), palanquees);
+  set(ref(db, 'plongeurs'), plongeurs);
+  set(ref(db, 'palanquees'), palanquees);
 }
 
 // Subscribe to DB updates on load
-onValue(ref(db, 'dp'), snapshot => {
-  dp = snapshot.val() || [];
-  renderDP();
-});
 onValue(ref(db, 'plongeurs'), snapshot => {
   plongeurs = snapshot.val() || [];
   renderPlongeurs();
 });
+
 onValue(ref(db, 'palanquees'), snapshot => {
   palanquees = snapshot.val() || [];
   renderPalanquees();
 });
 
 // UI Event Listeners
-$("addForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const nom = $("nom").value.trim();
-  const niveau = $("niveau").value;
-  const pre = $("prerogative").value.trim();
-  if (!nom || !niveau) return;
-  plongeurs.push({ nom, niveau, prerogative: pre });
-  $("nom").value = "";
-  $("niveau").value = "";
-  $("prerogative").value = "";
-  syncToDatabase();
-});
-
-$("addPalanquee").addEventListener("click", () => {
-  palanquees.push([]);
-  syncToDatabase();
-});
-
-$("exportJSON").addEventListener("click", () => {
-  const data = JSON.stringify(plongeurs, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "plongeurs.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-$("importJSON").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e2 => {
-    plongeurs = JSON.parse(e2.target.result);
+document.addEventListener("DOMContentLoaded", () => {
+  $("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const nom = $("nom").value.trim();
+    const niveau = $("niveau").value;
+    const pre = $("pre").value.trim(); // Correction: utilise "pre" au lieu de "prerogative"
+    if (!nom || !niveau) return;
+    plongeurs.push({ nom, niveau, pre });
+    $("nom").value = "";
+    $("niveau").value = "";
+    $("pre").value = ""; // Correction: utilise "pre"
     syncToDatabase();
-  };
-  reader.readAsText(file);
-});
-
-$("generatePDF").addEventListener("click", () => {
-  const dp = $("dp").value;
-  const date = $("date").value;
-  const lieu = $("lieu").value;
-  let html = `<h1>Palanquées</h1><p>DP : ${dp} | Date : ${date} | Lieu : ${lieu}</p>`;
-  palanquees.forEach((pal, i) => {
-    html += `<h2>Palanquée ${i + 1}</h2><ul>`;
-    pal.forEach(p => {
-      html += `<li>${p.nom} (${p.niveau}) [${p.pre}]</li>`;
-    });
-    html += `</ul>`;
   });
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  $("previewContainer").style.display = "block";
-  $("pdfPreview").src = url;
+
+  $("addPalanquee").addEventListener("click", () => {
+    palanquees.push([]);
+    syncToDatabase();
+  });
+
+  $("exportJSON").addEventListener("click", () => {
+    const data = JSON.stringify(plongeurs, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "plongeurs.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $("importJSON").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e2 => {
+      plongeurs = JSON.parse(e2.target.result);
+      syncToDatabase();
+    };
+    reader.readAsText(file);
+  });
+
+  $("generatePDF").addEventListener("click", () => {
+    // Récupération des vraies valeurs du DP
+    const dpNom = $("dp-nom").value;
+    const dpDate = $("dp-date").value;
+    const dpLieu = $("dp-lieu").value;
+    
+    let html = `<h1>Palanquées JSAS</h1><p><strong>DP :</strong> ${dpNom} | <strong>Date :</strong> ${dpDate} | <strong>Lieu :</strong> ${dpLieu}</p>`;
+    palanquees.forEach((pal, i) => {
+      html += `<h2>Palanquée ${i + 1}</h2><ul>`;
+      pal.forEach(p => {
+        html += `<li>${p.nom} (${p.niveau}) [${p.pre || ''}]</li>`;
+      });
+      html += `</ul>`;
+    });
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    $("previewContainer").style.display = "block";
+    $("pdfPreview").src = url;
+  });
 });
