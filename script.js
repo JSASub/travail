@@ -44,12 +44,15 @@ document.getElementById("valider-dp").addEventListener("click", () => {
   const dpKey = `dpInfo/${date}`;
   set(ref(db, dpKey), dpData)
     .then(() => {
-      document.getElementById("dp-message").textContent = "Informations du DP enregistrées avec succès.";
-      document.getElementById("dp-message").style.color = "green";
+      const dpMessage = document.getElementById("dp-message");
+      dpMessage.classList.add("success-icon");
+      dpMessage.textContent = " Informations du DP enregistrées avec succès.";
     })
     .catch((error) => {
-      document.getElementById("dp-message").textContent = "Erreur lors de l'enregistrement : " + error.message;
-      document.getElementById("dp-message").style.color = "red";
+      const dpMessage = document.getElementById("dp-message");
+      dpMessage.classList.remove("success-icon");
+      dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+      dpMessage.style.color = "red";
     });
 });
 
@@ -69,8 +72,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const dpData = snapshot.val();
       dpNomInput.value = dpData.nom || "";
       dpLieuInput.value = dpData.lieu || "";
-      document.getElementById("dp-message").textContent = "Informations du jour chargées.";
-      document.getElementById("dp-message").style.color = "blue";
+      const dpMessage = document.getElementById("dp-message");
+      dpMessage.textContent = "Informations du jour chargées.";
+      dpMessage.style.color = "blue";
     }
   }).catch((error) => {
     console.error("Erreur de lecture des données DP :", error);

@@ -16,6 +16,11 @@ input, select {
   margin-top: 5px;
   padding: 6px;
 }
+.success-icon::before {
+  content: "✔ ";
+  color: green;
+  font-weight: bold;
+}
 button {
   margin-top: 10px;
   padding: 8px 12px;
