@@ -62,6 +62,20 @@ li {
   padding: 0.5em;
   cursor: grab;
 }
+.dropzone, .palanquee {
+  border: 2px dashed #ccc;
+  min-height: 100px;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #ffffff;
+}
+.plongeur {
+  margin: 5px 0;
+  padding: 6px;
+  background-color: #e0f0ff;
+  cursor: move;
+  position: relative;
+}
 .palanquee {
   border: 2px solid #007bff;
   margin-top: 1em;
