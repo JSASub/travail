@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function $(id) {
   return document.getElementById(id);
 }
-<!--rajout-->
+<!--
   document.getElementById("valider-dp").onclick = () => {
     if (dpNom.value && dpDate.value && dpLieu.value) {
 	const dpnom = dpNom.value;
@@ -157,7 +157,7 @@ function $(id) {
 	  --> 
     }
   };
-<!--rajout-->  
+-->  
 
 // Render functions
 
