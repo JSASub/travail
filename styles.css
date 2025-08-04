@@ -68,3 +68,24 @@ button {
   color: green;
   margin-top: 10px;
 }
+.palanquee {
+  border: 2px dashed #007bff;
+  min-height: 80px;
+  padding: 15px;
+  margin: 10px 0;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+.palanquee-title {
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 5px;
+}
+
+.palanquee[data-alert="true"] {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}

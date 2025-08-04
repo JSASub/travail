@@ -168,34 +168,64 @@ function renderPlongeurs() {
 
 function renderPalanquees() {
   const container = $("palanqueesContainer");
+  if (!container) {
+    console.error("Container palanqueesContainer non trouvé!");
+    return;
+  }
+  
+  console.log("Rendu de", palanquees.length, "palanquées");
   container.innerHTML = "";
+  
   palanquees.forEach((palanquee, idx) => {
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
     div.dataset.alert = checkAlert(palanquee) ? "true" : "false";
-    div.innerHTML = `<div class="palanquee-title">Palanquée ${idx + 1}</div>`;
+    
+    // Titre de la palanquée avec bouton de suppression
+    div.innerHTML = `
+      <div class="palanquee-title">
+        Palanquée ${idx + 1} 
+        <span class="remove-palanquee" style="color: red; cursor: pointer; float: right;">❌</span>
+      </div>
+    `;
+    
+    // Ajouter les plongeurs
     palanquee.forEach((plg, i) => {
       const p = document.createElement("p");
       p.textContent = `${plg.nom} (${plg.niveau}) [${plg.pre || ''}]`;
+      p.style.cursor = "pointer";
+      p.style.backgroundColor = "#e0f0ff";
+      p.style.padding = "5px";
+      p.style.margin = "2px 0";
       p.addEventListener("click", () => {
+        console.log("Retour plongeur à la liste:", plg.nom);
         palanquee.splice(i, 1);
         plongeurs.push(plg);
         syncToDatabase();
-        renderPalanquees();
-        renderPlongeurs();
       });
       div.appendChild(p);
     });
 
+    // Événement de suppression de palanquée
+    div.querySelector(".remove-palanquee").addEventListener("click", () => {
+      // Remettre tous les plongeurs dans la liste
+      palanquee.forEach(plg => plongeurs.push(plg));
+      palanquees.splice(idx, 1);
+      syncToDatabase();
+    });
+
+    // Drag & drop
     div.addEventListener("dragover", e => e.preventDefault());
     div.addEventListener("drop", e => {
+      e.preventDefault();
       const i = e.dataTransfer.getData("text/plain");
-      const pl = plongeurs.splice(i, 1)[0];
-      palanquee.push(pl);
-      syncToDatabase();
-      renderPalanquees();
-      renderPlongeurs();
+      if (i !== "") {
+        console.log("Drop plongeur index:", i);
+        const pl = plongeurs.splice(i, 1)[0];
+        palanquee.push(pl);
+        syncToDatabase();
+      }
     });
 
     container.appendChild(div);
@@ -223,19 +253,20 @@ function syncToDatabase() {
   set(ref(db, 'palanquees'), palanquees);
 }
 
-// Subscribe to DB updates on load
-onValue(ref(db, 'plongeurs'), snapshot => {
-  plongeurs = snapshot.val() || [];
-  renderPlongeurs();
-});
-
-onValue(ref(db, 'palanquees'), snapshot => {
-  palanquees = snapshot.val() || [];
-  renderPalanquees();
-});
-
 // UI Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
+  // Subscribe to DB updates APRÈS que le DOM soit prêt
+  onValue(ref(db, 'plongeurs'), snapshot => {
+    plongeurs = snapshot.val() || [];
+    console.log("Plongeurs chargés:", plongeurs);
+    renderPlongeurs();
+  });
+
+  onValue(ref(db, 'palanquees'), snapshot => {
+    palanquees = snapshot.val() || [];
+    console.log("Palanquées chargées:", palanquees);
+    renderPalanquees();
+  });
   $("addForm").addEventListener("submit", e => {
     e.preventDefault();
     const nom = $("nom").value.trim();
@@ -250,7 +281,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   $("addPalanquee").addEventListener("click", () => {
+    console.log("Ajout nouvelle palanquée");
     palanquees.push([]);
+    console.log("Nombre de palanquées:", palanquees.length);
     syncToDatabase();
   });
 
