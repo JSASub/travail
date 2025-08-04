@@ -20,6 +20,10 @@ const firebaseConfig = {
   appId: "1:284449736616:web:a0949a9b669def06323f9d"
 };
 
+// Initialize Firebase app & database
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // Sauvegarde des informations du DP avec la date comme identifiant
 document.getElementById("valider-dp").addEventListener("click", () => {
   const nomDP = document.getElementById("dp-nom").value.trim();
@@ -110,12 +114,6 @@ function chargerHistoriqueDP() {
 }
 
 document.addEventListener("DOMContentLoaded", chargerHistoriqueDP);
-
-
-
-// Initialize Firebase app & database
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
 
 // Local state
 let dp = [];
