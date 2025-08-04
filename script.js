@@ -32,7 +32,7 @@ function $(id) {
 }
 
 // Render functions
-<!--function renderPlongeurs() {
+function renderPlongeurs() {
   const liste = $("listePlongeurs");
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
@@ -45,9 +45,9 @@ function $(id) {
     });
     liste.appendChild(li);
   });
-}-->
+}
 
-  function renderPlongeurs() {
+  <!--function renderPlongeurs() {
     const el = document.createElement("div");
     el.className = "plongeur";
     el.draggable = true;
@@ -65,7 +65,7 @@ function $(id) {
     });
     return el;
   }
-  
+-->  
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   container.innerHTML = "";
