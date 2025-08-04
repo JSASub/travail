@@ -52,7 +52,7 @@ function $(id) {
     el.className = "plongeur";
     el.draggable = true;
     el.dataset.id = plongeur.id;
-    el.textContent = `${p.nom} (${p.niveau}) - ${p.pre}`;
+    el.textContent = `${pl.nom} (${p.niveau}) - ${p.pre}`;
     const removeBtn = document.createElement("span");
     removeBtn.textContent = "↩";
     removeBtn.className = "remove-btn";
