@@ -285,18 +285,24 @@ async function loadAvailableSessions() {
 // NOUVELLE FONCTION : Charger une session spécifique
 async function loadSession(sessionKey) {
   try {
+    console.log("🔄 Chargement de la session:", sessionKey);
+    
     const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
     if (!sessionSnapshot.exists()) {
       console.error("❌ Session non trouvée:", sessionKey);
+      alert("Session non trouvée dans Firebase");
       return false;
     }
     
     const sessionData = sessionSnapshot.val();
+    console.log("📊 Données session récupérées:", sessionData);
     
     // Charger les données
     plongeurs = sessionData.plongeurs || [];
     palanquees = sessionData.palanquees || [];
     plongeursOriginaux = [...plongeurs];
+    
+    console.log("✅ Données chargées:", plongeurs.length, "plongeurs,", palanquees.length, "palanquées");
     
     // Mettre à jour les champs DP
     $("dp-nom").value = sessionData.meta.dp || "";
@@ -304,13 +310,14 @@ async function loadSession(sessionKey) {
     $("dp-lieu").value = sessionData.meta.lieu || "";
     $("dp-plongee").value = sessionData.meta.plongee || "matin";
     
-    // Rendu
+    // FORCER le rendu
+    console.log("🎨 Forçage du rendu...");
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
     
     console.log("✅ Session chargée:", sessionKey);
-    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées affichés`);
     
     // Message utilisateur
     const dpMessage = $("dp-message");
@@ -321,32 +328,50 @@ async function loadSession(sessionKey) {
     
   } catch (error) {
     console.error("❌ Erreur chargement session:", error);
+    alert("Erreur lors du chargement de la session : " + error.message);
     return false;
   }
 }
 
-// NOUVELLE FONCTION : Populer le sélecteur de sessions
+// NOUVELLE FONCTION : Populer le sélecteur de sessions  
 async function populateSessionSelector() {
-  const sessions = await loadAvailableSessions();
-  const selector = $("session-selector");
-  
-  if (!selector) return;
-  
-  // Vider le sélecteur
-  selector.innerHTML = '<option value="">-- Charger une session --</option>';
-  
-  sessions.forEach(session => {
-    const option = document.createElement("option");
-    option.value = session.key;
+  try {
+    console.log("🔄 Chargement des sessions disponibles...");
+    const sessions = await loadAvailableSessions();
+    const selector = $("session-selector");
     
-    // Format d'affichage amélioré avec type de plongée
-    const plongeeType = session.plongee ? ` (${session.plongee})` : '';
-    option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+    if (!selector) {
+      console.error("❌ Sélecteur de sessions non trouvé");
+      return;
+    }
     
-    selector.appendChild(option);
-  });
-  
-  console.log("✅ Sélecteur de sessions mis à jour");
+    // Vider le sélecteur
+    selector.innerHTML = '<option value="">-- Charger une session --</option>';
+    
+    if (sessions.length === 0) {
+      const option = document.createElement("option");
+      option.textContent = "Aucune session disponible";
+      option.disabled = true;
+      selector.appendChild(option);
+      console.log("ℹ️ Aucune session disponible");
+      return;
+    }
+    
+    sessions.forEach(session => {
+      const option = document.createElement("option");
+      option.value = session.key;
+      
+      // Format d'affichage amélioré avec type de plongée
+      const plongeeType = session.plongee ? ` (${session.plongee})` : '';
+      option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+      
+      selector.appendChild(option);
+    });
+    
+    console.log("✅ Sélecteur de sessions mis à jour:", sessions.length, "sessions");
+  } catch (error) {
+    console.error("❌ Erreur lors du peuplement du sélecteur:", error);
+  }
 }
 
 // ===== EXPORT JSON AMÉLIORÉ =====
@@ -1144,12 +1169,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Tentative de chargement DP depuis Firebase
     console.log("📥 Chargement des données DP...");
     try {
-      const snapshot = await db.ref(`dpInfo/${today}`).once('value');
+      const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
       if (snapshot.exists()) {
         const dpData = snapshot.val();
         console.log("✅ Données DP chargées:", dpData);
         dpNomInput.value = dpData.nom || "";
         dpLieuInput.value = dpData.lieu || "";
+        $("dp-plongee").value = dpData.plongee || "matin";
         const dpMessage = $("dp-message");
         dpMessage.textContent = "Informations du jour chargées.";
         dpMessage.style.color = "blue";
