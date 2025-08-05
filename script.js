@@ -291,14 +291,14 @@ function $(id) {
 // Test de connexion Firebase
 async function testFirebaseConnection() {
   try {
-    const testRef = ref(db, '.info/connected');
-    onValue(testRef, (snapshot) => {
+    const testRef = db.ref('.info/connected');
+    testRef.on('value', (snapshot) => {
       firebaseConnected = snapshot.val() === true;
       console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
     });
     
     // Tentative d'écriture test
-    await set(ref(db, 'test'), { timestamp: Date.now() });
+    await db.ref('test').set({ timestamp: Date.now() });
     console.log("✅ Test d'écriture Firebase réussi");
     return true;
   } catch (error) {
@@ -312,17 +312,15 @@ async function loadFromFirebase() {
   try {
     console.log("📥 Chargement des données depuis Firebase...");
     
-    const dbRef = ref(db);
-    
     // Charger les plongeurs
-    const plongeursSnapshot = await get(child(dbRef, 'plongeurs'));
+    const plongeursSnapshot = await db.ref('plongeurs').once('value');
     if (plongeursSnapshot.exists()) {
       plongeurs = plongeursSnapshot.val() || [];
       console.log("✅ Plongeurs chargés:", plongeurs.length);
     }
     
     // Charger les palanquées
-    const palanqueesSnapshot = await get(child(dbRef, 'palanquees'));
+    const palanqueesSnapshot = await db.ref('palanquees').once('value');
     if (palanqueesSnapshot.exists()) {
       palanquees = palanqueesSnapshot.val() || [];
       console.log("✅ Palanquées chargées:", palanquees.length);
@@ -452,8 +450,8 @@ async function syncToDatabase() {
   if (firebaseConnected) {
     try {
       await Promise.all([
-        set(ref(db, 'plongeurs'), plongeurs),
-        set(ref(db, 'palanquees'), palanquees)
+        db.ref('plongeurs').set(plongeurs),
+        db.ref('palanquees').set(palanquees)
       ]);
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
@@ -977,7 +975,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Tentative de chargement DP depuis Firebase
     console.log("📥 Chargement des données DP...");
     try {
-      const snapshot = await get(child(dbRef, `dpInfo/${today}`));
+      const snapshot = await db.ref(`dpInfo/${today}`).once('value');
       if (snapshot.exists()) {
         const dpData = snapshot.val();
         console.log("✅ Données DP chargées:", dpData);
@@ -1020,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       dpMessage.textContent = "Enregistrement en cours...";
       dpMessage.style.color = "orange";
       
-      set(ref(db, dpKey), dpData)
+      db.ref(dpKey).set(dpData)
         .then(() => {
           console.log("✅ Données DP sauvegardées avec succès");
           dpMessage.classList.add("success-icon");
@@ -1061,9 +1059,7 @@ function chargerHistoriqueDP() {
     return;
   }
 
-  const dbRef = ref(db);
-
-  get(child(dbRef, "dpInfo")).then((snapshot) => {
+  db.ref("dpInfo").once('value').then((snapshot) => {
     if (snapshot.exists()) {
       const dpInfos = snapshot.val();
       console.log("✅ Historique DP chargé:", Object.keys(dpInfos).length, "entrées");
