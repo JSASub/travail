@@ -50,11 +50,26 @@ function checkAlert(palanquee) {
   return false;
 }
 
-// Sync UNIQUEMENT plongeurs & palanquées to the DB
+// Sync UNIQUEMENT plongeurs & palanquées to the DB + RENDU IMMÉDIAT
 function syncToDatabase() {
   console.log("💾 Synchronisation avec Firebase...");
-  set(ref(db, 'plongeurs'), plongeurs);
-  set(ref(db, 'palanquees'), palanquees);
+  
+  // NOUVEAU: Rendu immédiat avant la sync Firebase
+  renderPalanquees();
+  renderPlongeurs();
+  
+  // Puis synchronisation Firebase
+  set(ref(db, 'plongeurs'), plongeurs).then(() => {
+    console.log("✅ Plongeurs synchronisés avec Firebase");
+  }).catch((error) => {
+    console.error("❌ Erreur sync plongeurs:", error);
+  });
+  
+  set(ref(db, 'palanquees'), palanquees).then(() => {
+    console.log("✅ Palanquées synchronisées avec Firebase");
+  }).catch((error) => {
+    console.error("❌ Erreur sync palanquées:", error);
+  });
 }
 
 // Render functions
@@ -89,7 +104,14 @@ function renderPalanquees() {
   console.log("🎨 Rendu de", palanquees.length, "palanquées");
   container.innerHTML = "";
   
+  if (palanquees.length === 0) {
+    console.log("ℹ️ Aucune palanquée à afficher");
+    return;
+  }
+  
   palanquees.forEach((palanquee, idx) => {
+    console.log(`🏗️ Création palanquée ${idx + 1} avec ${palanquee.length} plongeurs`);
+    
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
@@ -169,6 +191,7 @@ function renderPalanquees() {
     });
 
     container.appendChild(div);
+    console.log(`✅ Palanquée ${idx + 1} ajoutée au DOM`);
   });
   
   console.log("✅ Palanquées rendues avec succès!");
@@ -199,6 +222,7 @@ function setupEventListeners() {
     console.log("➕ Ajout nouvelle palanquée");
     palanquees.push([]);
     console.log("📊 Nombre total de palanquées:", palanquees.length);
+    console.log("🔍 État actuel palanquées:", palanquees);
     syncToDatabase();
   });
 
@@ -385,13 +409,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Subscribe to DB updates APRÈS que le DOM soit prêt
   onValue(ref(db, 'plongeurs'), snapshot => {
     plongeurs = snapshot.val() || [];
-    console.log("📥 Plongeurs chargés:", plongeurs.length, "plongeurs");
+    console.log("📥 Plongeurs chargés depuis Firebase:", plongeurs.length, "plongeurs");
     renderPlongeurs();
   });
 
   onValue(ref(db, 'palanquees'), snapshot => {
     palanquees = snapshot.val() || [];
-    console.log("📥 Palanquées chargées:", palanquees.length, "palanquées");
+    console.log("📥 Palanquées chargées depuis Firebase:", palanquees.length, "palanquées");
     renderPalanquees();
   });
 
