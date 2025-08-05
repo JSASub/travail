@@ -147,3 +147,41 @@ button {
 .delete-plongeur:hover {
   opacity: 1;
 }
+
+/* STYLES POUR LES PLONGEURS DANS LES PALANQUÉES */
+.palanquee-plongeurs {
+  margin: 10px 0;
+}
+
+.palanquee-plongeur-item {
+  background-color: #f0f8ff;
+  border-left: 4px solid #28a745;
+  margin: 2px 0;
+}
+
+.palanquee-plongeur-item:hover {
+  background-color: #e8f5e8;
+}
+
+.return-plongeur {
+  cursor: pointer;
+  font-size: 1.1em;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 2px;
+}
+
+.return-plongeur:hover {
+  opacity: 1;
+}
+
+.palanquee-empty {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  margin: 10px 0;
+  background-color: #fafafa;
+}
