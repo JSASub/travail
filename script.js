@@ -1,5 +1,257 @@
 // Import Firebase modules
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { initializeApp }
+
+// ===== FONCTIONS PDF =====
+
+function generatePDFPreview() {
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Palanquées JSAS - ${dpDate}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
+        .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
+        .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
+        .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
+        .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        @media print { body { margin: 0; } }
+      </style>
+    </head>
+    <body>
+      <h1>Palanquées JSAS</h1>
+      <div class="meta-info">
+        <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
+        <p><strong>Date :</strong> ${dpDate}</p>
+        <p><strong>Lieu :</strong> ${dpLieu}</p>
+      </div>
+  `;
+  
+  // Résumé
+  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  const alertesTotal = checkAllAlerts();
+  
+  html += `
+    <div class="resume">
+      <h3>Résumé</h3>
+      <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
+      <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
+      <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
+      <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
+    </div>
+  `;
+  
+  // Alertes
+  if (alertesTotal.length > 0) {
+    html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
+    alertesTotal.forEach(alerte => {
+      html += `<li>${alerte}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  // Palanquées
+  palanquees.forEach((pal, i) => {
+    const isAlert = checkAlert(pal);
+    html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
+    html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
+    
+    if (pal.length === 0) {
+      html += '<p><em>Aucun plongeur assigné</em></p>';
+    } else {
+      pal.forEach(p => {
+        html += `<div class="plongeur">
+          <strong>${p.nom}</strong> 
+          <span class="niveau">${p.niveau}</span>
+          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+        </div>`;
+      });
+    }
+    html += '</div>';
+  });
+  
+  // Plongeurs non assignés
+  if (plongeurs.length > 0) {
+    html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
+    plongeurs.forEach(p => {
+      html += `<div class="plongeur">
+        <strong>${p.nom}</strong> 
+        <span class="niveau">${p.niveau}</span>
+        ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  html += `
+      <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
+        <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
+        <p>Application Palanquées JSAS v2.0.0</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  $("previewContainer").style.display = "block";
+  $("pdfPreview").src = url;
+  
+  // Scroll vers l'aperçu
+  $("previewContainer").scrollIntoView({ behavior: 'smooth' });
+}
+
+function exportToPDF() {
+  console.log("📄 Génération du PDF...");
+  
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  
+  // Créer le document PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  let yPosition = 20;
+  const pageHeight = doc.internal.pageSize.height;
+  const marginBottom = 20;
+  
+  // Fonction pour ajouter une nouvelle page si nécessaire
+  function checkPageBreak(height = 10) {
+    if (yPosition + height > pageHeight - marginBottom) {
+      doc.addPage();
+      yPosition = 20;
+      return true;
+    }
+    return false;
+  }
+  
+  // Titre principal
+  doc.setFontSize(20);
+  doc.setTextColor(0, 64, 128);
+  doc.text("Palanquées JSAS", 20, yPosition);
+  yPosition += 15;
+  
+  // Informations DP
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Directeur de Plongée : ${dpNom}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Date : ${dpDate}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
+  yPosition += 15;
+  
+  // Résumé
+  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  const alertesTotal = checkAllAlerts();
+  
+  checkPageBreak(30);
+  doc.setFontSize(14);
+  doc.setTextColor(0, 123, 255);
+  doc.text("Résumé", 20, yPosition);
+  yPosition += 10;
+  
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Nombre total de plongeurs : ${totalPlongeurs}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Nombre de palanquées : ${palanquees.length}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Alertes : ${alertesTotal.length}`, 25, yPosition);
+  yPosition += 15;
+  
+  // Alertes
+  if (alertesTotal.length > 0) {
+    checkPageBreak(20 + alertesTotal.length * 5);
+    doc.setFontSize(14);
+    doc.setTextColor(220, 53, 69);
+    doc.text("⚠️ Alertes", 20, yPosition);
+    yPosition += 10;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    alertesTotal.forEach(alerte => {
+      doc.text(`• ${alerte}`, 25, yPosition);
+      yPosition += 5;
+    });
+    yPosition += 10;
+  }
+  
+  // Palanquées
+  palanquees.forEach((pal, i) => {
+    const palanqueeHeight = 15 + (pal.length * 5) + (pal.length === 0 ? 5 : 0);
+    checkPageBreak(palanqueeHeight);
+    
+    doc.setFontSize(12);
+    const isAlert = checkAlert(pal);
+    doc.setTextColor(isAlert ? 220 : 0, isAlert ? 53 : 123, isAlert ? 69 : 255);
+    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 20, yPosition);
+    yPosition += 8;
+    
+    if (pal.length === 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(128, 128, 128);
+      doc.text("Aucun plongeur assigné", 25, yPosition);
+      yPosition += 5;
+    } else {
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      pal.forEach(p => {
+        const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
+        doc.text(ligne, 25, yPosition);
+        yPosition += 5;
+      });
+    }
+    yPosition += 5;
+  });
+  
+  // Plongeurs non assignés
+  if (plongeurs.length > 0) {
+    const nonAssignesHeight = 15 + (plongeurs.length * 5);
+    checkPageBreak(nonAssignesHeight);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 123, 255);
+    doc.text("Plongeurs non assignés", 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    plongeurs.forEach(p => {
+      const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
+      doc.text(ligne, 25, yPosition);
+      yPosition += 5;
+    });
+  }
+  
+  // Footer
+  const finalPage = doc.internal.getCurrentPageInfo().pageNumber;
+  for (let i = 1; i <= finalPage; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, 20, pageHeight - 10);
+    doc.text(`Application Palanquées JSAS v2.0.0 - Page ${i}/${finalPage}`, 120, pageHeight - 10);
+  }
+  
+  // Télécharger le PDF
+  const fileName = `palanquees-${dpDate || 'export'}.pdf`;
+  doc.save(fileName);
+  
+  console.log("✅ PDF téléchargé:", fileName);
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
   getDatabase,
   ref,
@@ -613,110 +865,12 @@ function setupEventListeners() {
 
   // Génération PDF améliorée
   $("generatePDF").addEventListener("click", () => {
-    const dpNom = $("dp-nom").value || "Non défini";
-    const dpDate = $("dp-date").value || "Non définie";
-    const dpLieu = $("dp-lieu").value || "Non défini";
-    
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Palanquées JSAS - ${dpDate}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-          .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
-          .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
-          .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
-          .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
-          .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
-          .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head>
-      <body>
-        <h1>Palanquées JSAS</h1>
-        <div class="meta-info">
-          <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
-          <p><strong>Date :</strong> ${dpDate}</p>
-          <p><strong>Lieu :</strong> ${dpLieu}</p>
-        </div>
-    `;
-    
-    // Résumé
-    const totalPlongeurs = plongeurs.length + palanquees.flat().length;
-    const alertesTotal = checkAllAlerts();
-    
-    html += `
-      <div class="resume">
-        <h3>Résumé</h3>
-        <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
-        <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
-        <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
-        <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
-      </div>
-    `;
-    
-    // Alertes
-    if (alertesTotal.length > 0) {
-      html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
-      alertesTotal.forEach(alerte => {
-        html += `<li>${alerte}</li>`;
-      });
-      html += '</ul></div>';
-    }
-    
-    // Palanquées
-    palanquees.forEach((pal, i) => {
-      const isAlert = checkAlert(pal);
-      html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
-      html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
-      
-      if (pal.length === 0) {
-        html += '<p><em>Aucun plongeur assigné</em></p>';
-      } else {
-        pal.forEach(p => {
-          html += `<div class="plongeur">
-            <strong>${p.nom}</strong> 
-            <span class="niveau">${p.niveau}</span>
-            ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-          </div>`;
-        });
-      }
-      html += '</div>';
-    });
-    
-    // Plongeurs non assignés
-    if (plongeurs.length > 0) {
-      html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
-      plongeurs.forEach(p => {
-        html += `<div class="plongeur">
-          <strong>${p.nom}</strong> 
-          <span class="niveau">${p.niveau}</span>
-          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-        </div>`;
-      });
-      html += '</div>';
-    }
-    
-    html += `
-        <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
-          <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
-          <p>Application Palanquées JSAS v2.0.0</p>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    $("previewContainer").style.display = "block";
-    $("pdfPreview").src = url;
-    
-    // Scroll vers l'aperçu
-    $("previewContainer").scrollIntoView({ behavior: 'smooth' });
+    generatePDFPreview();
+  });
+
+  // Export PDF - NOUVEAU
+  $("exportPDF").addEventListener("click", () => {
+    exportToPDF();
   });
 
   // Contrôles de tri

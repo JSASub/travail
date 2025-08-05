@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestion de Palanquées JSAS</title>
   <link rel="stylesheet" href="styles.css" />
+  
+  <!-- jsPDF pour l'export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
@@ -79,6 +82,7 @@
     
     </br></br>
     <button id="generatePDF" class="btn-secondary">Aperçu PDF</button>
+    <button id="exportPDF" class="btn-success">Télécharger PDF</button>
    </section>
   </main>
 
@@ -98,7 +102,7 @@
   </section>
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 2.0.0 - RA - 2025 - Améliorée
+  Version 2.0.1 - RA - 2025 - Améliorée
   </footer>
 
   <script type="module" src="script.js"></script>

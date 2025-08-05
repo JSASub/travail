@@ -90,6 +90,10 @@ button:hover {
   background-color: #1e7e34;
 }
 
+#exportPDF {
+  margin-left: 10px;
+}
+
 .dropzone, .palanquee {
   border: 2px dashed #ccc;
   min-height: 100px;
