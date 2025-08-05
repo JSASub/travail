@@ -24,6 +24,16 @@
     </label>
     <label>Date : <input type="date" id="dp-date" /></label>
     <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
+    <label>Plongée : 
+      <select id="dp-plongee">
+        <option value="matin">Matin</option>
+        <option value="apres-midi">Après-midi</option>
+        <option value="soir">Soir</option>
+        <option value="nuit">Nuit</option>
+        <option value="formation">Formation</option>
+        <option value="autre">Autre</option>
+      </select>
+    </label>
     <button type="submit" id="valider-dp">Valider DP</button>
     <div id="dp-message" class="dp-valide"></div>
   </div>
@@ -96,6 +106,22 @@
   </div>
   
   <hr>
+  <section id="sessions-manager">
+    <strong>Gestion des Sessions</strong>
+    <div style="margin: 10px 0;">
+      <label>Charger une session précédente :</label>
+      <select id="session-selector" style="margin: 5px 10px;">
+        <option value="">-- Charger une session --</option>
+      </select>
+      <button id="load-session" class="btn-secondary">Charger</button>
+      <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
+    </div>
+    <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
+      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+    </div>
+  </section>
+  
+  <hr>
   <section id="historique-dp">
     <strong>Historique des DP</strong>
     <label for="dp-dates">Sélectionner une date :</label>
@@ -106,7 +132,7 @@
   </section>
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 2.0.0 - RA - 2025 - Améliorée
+  Version 2.1.0 - RA - 2025 - Améliorée
   </footer>
 
   <script src="app.js"></script>

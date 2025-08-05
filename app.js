@@ -171,7 +171,7 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase uniquement - VERSION AMÉLIORÉE
+// Sauvegarde Firebase avec historique par date/DP
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
   
@@ -186,10 +186,15 @@ async function syncToDatabase() {
   // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
     try {
+      // Sauvegarde globale (pour compatibilité)
       await Promise.all([
         db.ref('plongeurs').set(plongeurs),
         db.ref('palanquees').set(palanquees)
       ]);
+      
+      // Sauvegarde par date/DP (NOUVEAU)
+      await saveSessionData();
+      
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
@@ -199,17 +204,164 @@ async function syncToDatabase() {
   }
 }
 
+// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
+async function saveSessionData() {
+  const dpNom = $("dp-nom").value.trim();
+  const dpDate = $("dp-date").value;
+  const dpPlongee = $("dp-plongee").value;
+  
+  if (!dpNom || !dpDate || !dpPlongee) {
+    console.log("ℹ️ Pas de sauvegarde session : DP, date ou plongée manquant");
+    return;
+  }
+  
+  // Créer une clé unique : date + première partie du nom DP + type de plongée
+  const dpKey = dpNom.split(' ')[0].substring(0, 8); // Premier mot, max 8 char
+  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  const sessionData = {
+    meta: {
+      dp: dpNom,
+      date: dpDate,
+      lieu: $("dp-lieu").value.trim() || "Non défini",
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      sessionKey: sessionKey
+    },
+    plongeurs: plongeurs,
+    palanquees: palanquees,
+    stats: {
+      totalPlongeurs: plongeurs.length + palanquees.flat().length,
+      nombrePalanquees: palanquees.length,
+      plongeursNonAssignes: plongeurs.length,
+      alertes: checkAllAlerts()
+    }
+  };
+  
+  try {
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée:", sessionKey);
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde session:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Charger les sessions disponibles
+async function loadAvailableSessions() {
+  try {
+    const sessionsSnapshot = await db.ref('sessions').once('value');
+    if (!sessionsSnapshot.exists()) {
+      console.log("ℹ️ Aucune session trouvée");
+      return [];
+    }
+    
+    const sessions = sessionsSnapshot.val();
+    const sessionsList = [];
+    
+    for (const [key, data] of Object.entries(sessions)) {
+      sessionsList.push({
+        key: key,
+        dp: data.meta.dp,
+        date: data.meta.date,
+        lieu: data.meta.lieu,
+        plongee: data.meta.plongee || "Non défini",
+        timestamp: data.meta.timestamp,
+        stats: data.stats
+      });
+    }
+    
+    // Trier par date décroissante
+    sessionsList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    console.log("✅ Sessions chargées:", sessionsList.length);
+    return sessionsList;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement sessions:", error);
+    return [];
+  }
+}
+
+// NOUVELLE FONCTION : Charger une session spécifique
+async function loadSession(sessionKey) {
+  try {
+    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!sessionSnapshot.exists()) {
+      console.error("❌ Session non trouvée:", sessionKey);
+      return false;
+    }
+    
+    const sessionData = sessionSnapshot.val();
+    
+    // Charger les données
+    plongeurs = sessionData.plongeurs || [];
+    palanquees = sessionData.palanquees || [];
+    plongeursOriginaux = [...plongeurs];
+    
+    // Mettre à jour les champs DP
+    $("dp-nom").value = sessionData.meta.dp || "";
+    $("dp-date").value = sessionData.meta.date || "";
+    $("dp-lieu").value = sessionData.meta.lieu || "";
+    $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    
+    // Rendu
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    
+    console.log("✅ Session chargée:", sessionKey);
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    
+    // Message utilisateur
+    const dpMessage = $("dp-message");
+    dpMessage.innerHTML = `✓ Session "${sessionData.meta.dp}" du ${sessionData.meta.date} (${sessionData.meta.plongee || 'matin'}) chargée`;
+    dpMessage.style.color = "green";
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement session:", error);
+    return false;
+  }
+}
+
+// NOUVELLE FONCTION : Populer le sélecteur de sessions
+async function populateSessionSelector() {
+  const sessions = await loadAvailableSessions();
+  const selector = $("session-selector");
+  
+  if (!selector) return;
+  
+  // Vider le sélecteur
+  selector.innerHTML = '<option value="">-- Charger une session --</option>';
+  
+  sessions.forEach(session => {
+    const option = document.createElement("option");
+    option.value = session.key;
+    
+    // Format d'affichage amélioré avec type de plongée
+    const plongeeType = session.plongee ? ` (${session.plongee})` : '';
+    option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+    
+    selector.appendChild(option);
+  });
+  
+  console.log("✅ Sélecteur de sessions mis à jour");
+}
+
 // ===== EXPORT JSON AMÉLIORÉ =====
 function exportToJSON() {
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
   
   const exportData = {
     meta: {
       dp: dpNom,
       date: dpDate,
       lieu: dpLieu,
+      plongee: dpPlongee,
       version: "2.0.0",
       exportDate: new Date().toISOString()
     },
@@ -240,7 +392,7 @@ function exportToJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `palanquees-${dpDate || 'export'}.json`;
+  a.download = `palanquees-${dpDate || 'export'}-${dpPlongee}.json`;
   a.click();
   URL.revokeObjectURL(url);
   
@@ -514,13 +666,14 @@ function generatePDFPreview() {
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
   
   let html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Palanquées JSAS - ${dpDate}</title>
+      <title>Palanquées JSAS - ${dpDate} (${dpPlongee})</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
@@ -540,6 +693,7 @@ function generatePDFPreview() {
         <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
         <p><strong>Date :</strong> ${dpDate}</p>
         <p><strong>Lieu :</strong> ${dpLieu}</p>
+        <p><strong>Plongée :</strong> ${dpPlongee}</p>
       </div>
   `;
   
@@ -623,6 +777,7 @@ function exportToPDF() {
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
   
   // Créer le document PDF
   const { jsPDF } = window.jspdf;
@@ -656,6 +811,8 @@ function exportToPDF() {
   doc.text(`Date : ${dpDate}`, 20, yPosition);
   yPosition += 7;
   doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
   yPosition += 15;
   
   // Résumé
@@ -754,7 +911,7 @@ function exportToPDF() {
   }
   
   // Télécharger le PDF
-  const fileName = `palanquees-${dpDate || 'export'}.pdf`;
+  const fileName = `palanquees-${dpDate || 'export'}-${dpPlongee}.pdf`;
   doc.save(fileName);
   
   console.log("✅ PDF téléchargé:", fileName);
@@ -844,6 +1001,25 @@ function setupEventListeners() {
   // Export PDF - NOUVEAU
   $("exportPDF").addEventListener("click", () => {
     exportToPDF();
+  });
+
+  // Gestionnaire de sessions - NOUVEAU
+  $("load-session").addEventListener("click", async () => {
+    const sessionKey = $("session-selector").value;
+    if (!sessionKey) {
+      alert("Veuillez sélectionner une session à charger.");
+      return;
+    }
+    
+    const success = await loadSession(sessionKey);
+    if (!success) {
+      alert("Erreur lors du chargement de la session.");
+    }
+  });
+  
+  $("refresh-sessions").addEventListener("click", async () => {
+    console.log("🔄 Actualisation des sessions...");
+    await populateSessionSelector();
   });
 
   // Contrôles de tri
@@ -989,10 +1165,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const nomDP = $("dp-nom").value.trim();
       const date = $("dp-date").value;
       const lieu = $("dp-lieu").value.trim();
+      const plongee = $("dp-plongee").value;
       
-      console.log("📝 Validation DP:", nomDP, date, lieu);
+      console.log("📝 Validation DP:", nomDP, date, lieu, plongee);
 
-      if (!nomDP || !date || !lieu) {
+      if (!nomDP || !date || !lieu || !plongee) {
         alert("Veuillez remplir tous les champs du DP.");
         return;
       }
@@ -1001,10 +1178,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         nom: nomDP,
         date: date,
         lieu: lieu,
+        plongee: plongee,
         timestamp: Date.now()
       };
 
-      const dpKey = `dpInfo/${date}`;
+      const dpKey = `dpInfo/${date}_${plongee}`;
       
       // Affichage en attente
       const dpMessage = $("dp-message");
@@ -1015,7 +1193,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         .then(() => {
           console.log("✅ Données DP sauvegardées avec succès");
           dpMessage.classList.add("success-icon");
-          dpMessage.textContent = " Informations du DP enregistrées avec succès.";
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
           dpMessage.style.color = "green";
         })
         .catch((error) => {
@@ -1033,6 +1211,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Chargement des données depuis Firebase
     console.log("📊 Chargement des données principales...");
     await loadFromFirebase();
+    
+    // Charger les sessions disponibles
+    console.log("📜 Chargement des sessions...");
+    await populateSessionSelector();
     
     // Setup des event listeners
     console.log("🎛️ Configuration des event listeners...");
