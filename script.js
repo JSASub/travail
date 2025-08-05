@@ -1,267 +1,4 @@
-// Import Firebase modules
-import { initializeApp }
-
-// ===== FONCTIONS PDF =====
-
-function generatePDFPreview() {
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
-  const dpLieu = $("dp-lieu").value || "Non défini";
-  
-  let html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Palanquées JSAS - ${dpDate}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
-        .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
-        .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
-        .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
-        .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
-        .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        @media print { body { margin: 0; } }
-      </style>
-    </head>
-    <body>
-      <h1>Palanquées JSAS</h1>
-      <div class="meta-info">
-        <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
-        <p><strong>Date :</strong> ${dpDate}</p>
-        <p><strong>Lieu :</strong> ${dpLieu}</p>
-      </div>
-  `;
-  
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
-  const alertesTotal = checkAllAlerts();
-  
-  html += `
-    <div class="resume">
-      <h3>Résumé</h3>
-      <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
-      <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
-      <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
-      <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
-    </div>
-  `;
-  
-  // Alertes
-  if (alertesTotal.length > 0) {
-    html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
-    alertesTotal.forEach(alerte => {
-      html += `<li>${alerte}</li>`;
-    });
-    html += '</ul></div>';
-  }
-  
-  // Palanquées
-  palanquees.forEach((pal, i) => {
-    const isAlert = checkAlert(pal);
-    html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
-    html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
-    
-    if (pal.length === 0) {
-      html += '<p><em>Aucun plongeur assigné</em></p>';
-    } else {
-      pal.forEach(p => {
-        html += `<div class="plongeur">
-          <strong>${p.nom}</strong> 
-          <span class="niveau">${p.niveau}</span>
-          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-        </div>`;
-      });
-    }
-    html += '</div>';
-  });
-  
-  // Plongeurs non assignés
-  if (plongeurs.length > 0) {
-    html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
-    plongeurs.forEach(p => {
-      html += `<div class="plongeur">
-        <strong>${p.nom}</strong> 
-        <span class="niveau">${p.niveau}</span>
-        ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-      </div>`;
-    });
-    html += '</div>';
-  }
-  
-  html += `
-      <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
-        <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
-        <p>Application Palanquées JSAS v2.0.0</p>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  $("previewContainer").style.display = "block";
-  $("pdfPreview").src = url;
-  
-  // Scroll vers l'aperçu
-  $("previewContainer").scrollIntoView({ behavior: 'smooth' });
-}
-
-function exportToPDF() {
-  console.log("📄 Génération du PDF...");
-  
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
-  const dpLieu = $("dp-lieu").value || "Non défini";
-  
-  // Créer le document PDF
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  
-  let yPosition = 20;
-  const pageHeight = doc.internal.pageSize.height;
-  const marginBottom = 20;
-  
-  // Fonction pour ajouter une nouvelle page si nécessaire
-  function checkPageBreak(height = 10) {
-    if (yPosition + height > pageHeight - marginBottom) {
-      doc.addPage();
-      yPosition = 20;
-      return true;
-    }
-    return false;
-  }
-  
-  // Titre principal
-  doc.setFontSize(20);
-  doc.setTextColor(0, 64, 128);
-  doc.text("Palanquées JSAS", 20, yPosition);
-  yPosition += 15;
-  
-  // Informations DP
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Directeur de Plongée : ${dpNom}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Date : ${dpDate}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
-  yPosition += 15;
-  
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
-  const alertesTotal = checkAllAlerts();
-  
-  checkPageBreak(30);
-  doc.setFontSize(14);
-  doc.setTextColor(0, 123, 255);
-  doc.text("Résumé", 20, yPosition);
-  yPosition += 10;
-  
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Nombre total de plongeurs : ${totalPlongeurs}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Nombre de palanquées : ${palanquees.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Alertes : ${alertesTotal.length}`, 25, yPosition);
-  yPosition += 15;
-  
-  // Alertes
-  if (alertesTotal.length > 0) {
-    checkPageBreak(20 + alertesTotal.length * 5);
-    doc.setFontSize(14);
-    doc.setTextColor(220, 53, 69);
-    doc.text("⚠️ Alertes", 20, yPosition);
-    yPosition += 10;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    alertesTotal.forEach(alerte => {
-      doc.text(`• ${alerte}`, 25, yPosition);
-      yPosition += 5;
-    });
-    yPosition += 10;
-  }
-  
-  // Palanquées
-  palanquees.forEach((pal, i) => {
-    const palanqueeHeight = 15 + (pal.length * 5) + (pal.length === 0 ? 5 : 0);
-    checkPageBreak(palanqueeHeight);
-    
-    doc.setFontSize(12);
-    const isAlert = checkAlert(pal);
-    doc.setTextColor(isAlert ? 220 : 0, isAlert ? 53 : 123, isAlert ? 69 : 255);
-    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 20, yPosition);
-    yPosition += 8;
-    
-    if (pal.length === 0) {
-      doc.setFontSize(9);
-      doc.setTextColor(128, 128, 128);
-      doc.text("Aucun plongeur assigné", 25, yPosition);
-      yPosition += 5;
-    } else {
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      pal.forEach(p => {
-        const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-        doc.text(ligne, 25, yPosition);
-        yPosition += 5;
-      });
-    }
-    yPosition += 5;
-  });
-  
-  // Plongeurs non assignés
-  if (plongeurs.length > 0) {
-    const nonAssignesHeight = 15 + (plongeurs.length * 5);
-    checkPageBreak(nonAssignesHeight);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0, 123, 255);
-    doc.text("Plongeurs non assignés", 20, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    plongeurs.forEach(p => {
-      const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-      doc.text(ligne, 25, yPosition);
-      yPosition += 5;
-    });
-  }
-  
-  // Footer
-  const finalPage = doc.internal.getCurrentPageInfo().pageNumber;
-  for (let i = 1; i <= finalPage; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, 20, pageHeight - 10);
-    doc.text(`Application Palanquées JSAS v2.0.0 - Page ${i}/${finalPage}`, 120, pageHeight - 10);
-  }
-  
-  // Télécharger le PDF
-  const fileName = `palanquees-${dpDate || 'export'}.pdf`;
-  doc.save(fileName);
-  
-  console.log("✅ PDF téléchargé:", fileName);
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  child,
-  onValue
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-
-// Firebase configuration
+// Firebase configuration (méthode classique)
 const firebaseConfig = {
   apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
   authDomain: "palanquees-jsas.firebaseapp.com",
@@ -273,8 +10,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // ===== DÉCLARATIONS GLOBALES =====
 let plongeurs = [];
@@ -434,7 +171,7 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase uniquement - VERSION AMÉLIORÉE
+// Sauvegarde Firebase avec historique par date/DP
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
   
@@ -449,10 +186,15 @@ async function syncToDatabase() {
   // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
     try {
+      // Sauvegarde globale (pour compatibilité)
       await Promise.all([
         db.ref('plongeurs').set(plongeurs),
         db.ref('palanquees').set(palanquees)
       ]);
+      
+      // Sauvegarde par date/DP (NOUVEAU)
+      await saveSessionData();
+      
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
@@ -462,17 +204,164 @@ async function syncToDatabase() {
   }
 }
 
+// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
+async function saveSessionData() {
+  const dpNom = $("dp-nom").value.trim();
+  const dpDate = $("dp-date").value;
+  const dpPlongee = $("dp-plongee").value;
+  
+  if (!dpNom || !dpDate || !dpPlongee) {
+    console.log("ℹ️ Pas de sauvegarde session : DP, date ou plongée manquant");
+    return;
+  }
+  
+  // Créer une clé unique : date + première partie du nom DP + type de plongée
+  const dpKey = dpNom.split(' ')[0].substring(0, 8); // Premier mot, max 8 char
+  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  const sessionData = {
+    meta: {
+      dp: dpNom,
+      date: dpDate,
+      lieu: $("dp-lieu").value.trim() || "Non défini",
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      sessionKey: sessionKey
+    },
+    plongeurs: plongeurs,
+    palanquees: palanquees,
+    stats: {
+      totalPlongeurs: plongeurs.length + palanquees.flat().length,
+      nombrePalanquees: palanquees.length,
+      plongeursNonAssignes: plongeurs.length,
+      alertes: checkAllAlerts()
+    }
+  };
+  
+  try {
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée:", sessionKey);
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde session:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Charger les sessions disponibles
+async function loadAvailableSessions() {
+  try {
+    const sessionsSnapshot = await db.ref('sessions').once('value');
+    if (!sessionsSnapshot.exists()) {
+      console.log("ℹ️ Aucune session trouvée");
+      return [];
+    }
+    
+    const sessions = sessionsSnapshot.val();
+    const sessionsList = [];
+    
+    for (const [key, data] of Object.entries(sessions)) {
+      sessionsList.push({
+        key: key,
+        dp: data.meta.dp,
+        date: data.meta.date,
+        lieu: data.meta.lieu,
+        plongee: data.meta.plongee || "Non défini",
+        timestamp: data.meta.timestamp,
+        stats: data.stats
+      });
+    }
+    
+    // Trier par date décroissante
+    sessionsList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    console.log("✅ Sessions chargées:", sessionsList.length);
+    return sessionsList;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement sessions:", error);
+    return [];
+  }
+}
+
+// NOUVELLE FONCTION : Charger une session spécifique
+async function loadSession(sessionKey) {
+  try {
+    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!sessionSnapshot.exists()) {
+      console.error("❌ Session non trouvée:", sessionKey);
+      return false;
+    }
+    
+    const sessionData = sessionSnapshot.val();
+    
+    // Charger les données
+    plongeurs = sessionData.plongeurs || [];
+    palanquees = sessionData.palanquees || [];
+    plongeursOriginaux = [...plongeurs];
+    
+    // Mettre à jour les champs DP
+    $("dp-nom").value = sessionData.meta.dp || "";
+    $("dp-date").value = sessionData.meta.date || "";
+    $("dp-lieu").value = sessionData.meta.lieu || "";
+    $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    
+    // Rendu
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    
+    console.log("✅ Session chargée:", sessionKey);
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    
+    // Message utilisateur
+    const dpMessage = $("dp-message");
+    dpMessage.innerHTML = `✓ Session "${sessionData.meta.dp}" du ${sessionData.meta.date} (${sessionData.meta.plongee || 'matin'}) chargée`;
+    dpMessage.style.color = "green";
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement session:", error);
+    return false;
+  }
+}
+
+// NOUVELLE FONCTION : Populer le sélecteur de sessions
+async function populateSessionSelector() {
+  const sessions = await loadAvailableSessions();
+  const selector = $("session-selector");
+  
+  if (!selector) return;
+  
+  // Vider le sélecteur
+  selector.innerHTML = '<option value="">-- Charger une session --</option>';
+  
+  sessions.forEach(session => {
+    const option = document.createElement("option");
+    option.value = session.key;
+    
+    // Format d'affichage amélioré avec type de plongée
+    const plongeeType = session.plongee ? ` (${session.plongee})` : '';
+    option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+    
+    selector.appendChild(option);
+  });
+  
+  console.log("✅ Sélecteur de sessions mis à jour");
+}
+
 // ===== EXPORT JSON AMÉLIORÉ =====
 function exportToJSON() {
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
   
   const exportData = {
     meta: {
       dp: dpNom,
       date: dpDate,
       lieu: dpLieu,
+      plongee: dpPlongee,
       version: "2.0.0",
       exportDate: new Date().toISOString()
     },
@@ -503,7 +392,7 @@ function exportToJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `palanquees-${dpDate || 'export'}.json`;
+  a.download = `palanquees-${dpDate || 'export'}-${dpPlongee}.json`;
   a.click();
   URL.revokeObjectURL(url);
   
@@ -571,25 +460,6 @@ function renderPlongeurs() {
     liste.appendChild(li);
   });
 }
-
-  } catch (error) {
-    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
-    console.error("Stack trace:", error.stack);
-    
-    // Mode dégradé sans Firebase
-    console.log("🔄 Tentative de fonctionnement en mode dégradé...");
-    plongeurs = [];
-    palanquees = [];
-    plongeursOriginaux = [];
-    
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
-    setupEventListeners();
-    
-    alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");
-  }
-});
 
 function renderPalanquees() {
   const container = $("palanqueesContainer");
@@ -679,21 +549,6 @@ function renderPalanquees() {
       }
     });
 
-    // Drag & drop amélioré
-    div.addEventListener("dragover", e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      div.classList.add('drag-over');
-      console.log("🎯 Survol palanquée", idx + 1);
-    });
-    
-    div.addEventListener("dragleave", e => {
-      if (!div.contains(e.relatedTarget)) {
-        div.classList.remove('drag-over');
-        console.log("🎯 Sortie palanquée", idx + 1);
-      }
-    });
-    
     div.addEventListener("drop", e => {
       e.preventDefault();
       div.classList.remove('drag-over');
@@ -744,19 +599,21 @@ function renderPalanquees() {
         
       } catch (error) {
         console.error("❌ Erreur parsing données drag:", error);
-        console.log("📝 Tentative avec ancien format (index simple)");
-        
-        // Fallback pour ancien format
-        const i = parseInt(data);
-        if (!isNaN(i) && i >= 0 && i < plongeurs.length) {
-          console.log("✅ Drop plongeur index:", i, "dans palanquée", idx + 1);
-          const pl = plongeurs.splice(i, 1)[0];
-          palanquee.push(pl);
-          console.log("✅ Plongeur ajouté:", pl.nom);
-          syncToDatabase();
-        } else {
-          console.error("❌ Index de plongeur invalide:", data, "longueur plongeurs:", plongeurs.length);
-        }
+      }
+    });
+
+    // Drag & drop amélioré
+    div.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      div.classList.add('drag-over');
+      console.log("🎯 Survol palanquée", idx + 1);
+    });
+    
+    div.addEventListener("dragleave", e => {
+      if (!div.contains(e.relatedTarget)) {
+        div.classList.remove('drag-over');
+        console.log("🎯 Sortie palanquée", idx + 1);
       }
     });
 
@@ -802,6 +659,262 @@ function setupPalanqueesEventListeners() {
       e.stopPropagation();
     }
   });
+}
+
+// ===== FONCTIONS PDF =====
+function generatePDFPreview() {
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
+  
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Palanquées JSAS - ${dpDate} (${dpPlongee})</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
+        .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
+        .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
+        .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
+        .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        @media print { body { margin: 0; } }
+      </style>
+    </head>
+    <body>
+      <h1>Palanquées JSAS</h1>
+      <div class="meta-info">
+        <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
+        <p><strong>Date :</strong> ${dpDate}</p>
+        <p><strong>Lieu :</strong> ${dpLieu}</p>
+        <p><strong>Plongée :</strong> ${dpPlongee}</p>
+      </div>
+  `;
+  
+  // Résumé
+  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  const alertesTotal = checkAllAlerts();
+  
+  html += `
+    <div class="resume">
+      <h3>Résumé</h3>
+      <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
+      <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
+      <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
+      <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
+    </div>
+  `;
+  
+  // Alertes
+  if (alertesTotal.length > 0) {
+    html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
+    alertesTotal.forEach(alerte => {
+      html += `<li>${alerte}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  // Palanquées
+  palanquees.forEach((pal, i) => {
+    const isAlert = checkAlert(pal);
+    html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
+    html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
+    
+    if (pal.length === 0) {
+      html += '<p><em>Aucun plongeur assigné</em></p>';
+    } else {
+      pal.forEach(p => {
+        html += `<div class="plongeur">
+          <strong>${p.nom}</strong> 
+          <span class="niveau">${p.niveau}</span>
+          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+        </div>`;
+      });
+    }
+    html += '</div>';
+  });
+  
+  // Plongeurs non assignés
+  if (plongeurs.length > 0) {
+    html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
+    plongeurs.forEach(p => {
+      html += `<div class="plongeur">
+        <strong>${p.nom}</strong> 
+        <span class="niveau">${p.niveau}</span>
+        ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  html += `
+      <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
+        <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
+        <p>Application Palanquées JSAS v2.0.0</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  $("previewContainer").style.display = "block";
+  $("pdfPreview").src = url;
+  
+  // Scroll vers l'aperçu
+  $("previewContainer").scrollIntoView({ behavior: 'smooth' });
+}
+
+function exportToPDF() {
+  console.log("📄 Génération du PDF...");
+  
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
+  
+  // Créer le document PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  let yPosition = 20;
+  const pageHeight = doc.internal.pageSize.height;
+  const marginBottom = 20;
+  
+  // Fonction pour ajouter une nouvelle page si nécessaire
+  function checkPageBreak(height = 10) {
+    if (yPosition + height > pageHeight - marginBottom) {
+      doc.addPage();
+      yPosition = 20;
+      return true;
+    }
+    return false;
+  }
+  
+  // Titre principal
+  doc.setFontSize(20);
+  doc.setTextColor(0, 64, 128);
+  doc.text("Palanquées JSAS", 20, yPosition);
+  yPosition += 15;
+  
+  // Informations DP
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Directeur de Plongée : ${dpNom}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Date : ${dpDate}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
+  yPosition += 7;
+  doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
+  yPosition += 15;
+  
+  // Résumé
+  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  const alertesTotal = checkAllAlerts();
+  
+  checkPageBreak(30);
+  doc.setFontSize(14);
+  doc.setTextColor(0, 123, 255);
+  doc.text("Résumé", 20, yPosition);
+  yPosition += 10;
+  
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Nombre total de plongeurs : ${totalPlongeurs}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Nombre de palanquées : ${palanquees.length}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
+  yPosition += 5;
+  doc.text(`Alertes : ${alertesTotal.length}`, 25, yPosition);
+  yPosition += 15;
+  
+  // Alertes
+  if (alertesTotal.length > 0) {
+    checkPageBreak(20 + alertesTotal.length * 5);
+    doc.setFontSize(14);
+    doc.setTextColor(220, 53, 69);
+    doc.text("⚠️ Alertes", 20, yPosition);
+    yPosition += 10;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    alertesTotal.forEach(alerte => {
+      doc.text(`• ${alerte}`, 25, yPosition);
+      yPosition += 5;
+    });
+    yPosition += 10;
+  }
+  
+  // Palanquées
+  palanquees.forEach((pal, i) => {
+    const palanqueeHeight = 15 + (pal.length * 5) + (pal.length === 0 ? 5 : 0);
+    checkPageBreak(palanqueeHeight);
+    
+    doc.setFontSize(12);
+    const isAlert = checkAlert(pal);
+    doc.setTextColor(isAlert ? 220 : 0, isAlert ? 53 : 123, isAlert ? 69 : 255);
+    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 20, yPosition);
+    yPosition += 8;
+    
+    if (pal.length === 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(128, 128, 128);
+      doc.text("Aucun plongeur assigné", 25, yPosition);
+      yPosition += 5;
+    } else {
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      pal.forEach(p => {
+        const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
+        doc.text(ligne, 25, yPosition);
+        yPosition += 5;
+      });
+    }
+    yPosition += 5;
+  });
+  
+  // Plongeurs non assignés
+  if (plongeurs.length > 0) {
+    const nonAssignesHeight = 15 + (plongeurs.length * 5);
+    checkPageBreak(nonAssignesHeight);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 123, 255);
+    doc.text("Plongeurs non assignés", 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    plongeurs.forEach(p => {
+      const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
+      doc.text(ligne, 25, yPosition);
+      yPosition += 5;
+    });
+  }
+  
+  // Footer
+  const finalPage = doc.internal.getCurrentPageInfo().pageNumber;
+  for (let i = 1; i <= finalPage; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, 20, pageHeight - 10);
+    doc.text(`Application Palanquées JSAS v2.0.0 - Page ${i}/${finalPage}`, 120, pageHeight - 10);
+  }
+  
+  // Télécharger le PDF
+  const fileName = `palanquees-${dpDate || 'export'}-${dpPlongee}.pdf`;
+  doc.save(fileName);
+  
+  console.log("✅ PDF téléchargé:", fileName);
 }
 
 // Setup Event Listeners
@@ -890,11 +1003,23 @@ function setupEventListeners() {
     exportToPDF();
   });
 
-  // Contrôles de tri
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      sortPlongeurs(btn.dataset.sort);
-    });
+  // Gestionnaire de sessions - NOUVEAU
+  $("load-session").addEventListener("click", async () => {
+    const sessionKey = $("session-selector").value;
+    if (!sessionKey) {
+      alert("Veuillez sélectionner une session à charger.");
+      return;
+    }
+    
+    const success = await loadSession(sessionKey);
+    if (!success) {
+      alert("Erreur lors du chargement de la session.");
+    }
+  });
+  
+  $("refresh-sessions").addEventListener("click", async () => {
+    console.log("🔄 Actualisation des sessions...");
+    await populateSessionSelector();
   });
 
   // Contrôles de tri
@@ -954,101 +1079,6 @@ function setupEventListeners() {
   });
 }
 
-// ===== INITIALISATION =====
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 Application Palanquées JSAS v2.0.0 - Chargement...");
-  
-  try {
-    // Test de connexion Firebase
-    console.log("🔥 Tentative de connexion Firebase...");
-    await testFirebaseConnection();
-    
-    // Définir la date du jour
-    const today = new Date().toISOString().split("T")[0];
-    $("dp-date").value = today;
-    
-    // Chargement des infos DP du jour au démarrage
-    const dpNomInput = $("dp-nom");
-    const dpLieuInput = $("dp-lieu");
-    const dbRef = ref(db);
-
-    // Tentative de chargement DP depuis Firebase
-    console.log("📥 Chargement des données DP...");
-    try {
-      const snapshot = await db.ref(`dpInfo/${today}`).once('value');
-      if (snapshot.exists()) {
-        const dpData = snapshot.val();
-        console.log("✅ Données DP chargées:", dpData);
-        dpNomInput.value = dpData.nom || "";
-        dpLieuInput.value = dpData.lieu || "";
-        const dpMessage = $("dp-message");
-        dpMessage.textContent = "Informations du jour chargées.";
-        dpMessage.style.color = "blue";
-      } else {
-        console.log("ℹ️ Aucune donnée DP pour aujourd'hui");
-      }
-    } catch (error) {
-      console.error("❌ Erreur de lecture des données DP :", error);
-    }
-
-    // Gestionnaire de validation DP
-    $("valider-dp").addEventListener("click", () => {
-      const nomDP = $("dp-nom").value.trim();
-      const date = $("dp-date").value;
-      const lieu = $("dp-lieu").value.trim();
-      
-      console.log("📝 Validation DP:", nomDP, date, lieu);
-
-      if (!nomDP || !date || !lieu) {
-        alert("Veuillez remplir tous les champs du DP.");
-        return;
-      }
-
-      const dpData = {
-        nom: nomDP,
-        date: date,
-        lieu: lieu,
-        timestamp: Date.now()
-      };
-
-      const dpKey = `dpInfo/${date}`;
-      
-      // Affichage en attente
-      const dpMessage = $("dp-message");
-      dpMessage.textContent = "Enregistrement en cours...";
-      dpMessage.style.color = "orange";
-      
-      db.ref(dpKey).set(dpData)
-        .then(() => {
-          console.log("✅ Données DP sauvegardées avec succès");
-          dpMessage.classList.add("success-icon");
-          dpMessage.textContent = " Informations du DP enregistrées avec succès.";
-          dpMessage.style.color = "green";
-        })
-        .catch((error) => {
-          console.error("❌ Erreur Firebase DP:", error);
-          dpMessage.classList.remove("success-icon");
-          dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
-          dpMessage.style.color = "red";
-        });
-    });
-
-    // Chargement de l'historique des DP
-    console.log("📜 Chargement historique DP...");
-    chargerHistoriqueDP();
-    
-    // Chargement des données depuis Firebase
-    console.log("📊 Chargement des données principales...");
-    await loadFromFirebase();
-    
-    // Setup des event listeners
-    console.log("🎛️ Configuration des event listeners...");
-    setupEventListeners();
-    
-    console.log("✅ Application initialisée avec succès!");
-    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
-    console.log(`🔥 Firebase connecté: ${firebaseConnected}`);
-    
 // Chargement de l'historique des DP (Firebase)
 function chargerHistoriqueDP() {
   const dpDatesSelect = $("dp-dates");
@@ -1093,3 +1123,122 @@ function chargerHistoriqueDP() {
     console.error("❌ Erreur de lecture de l'historique DP :", error);
   });
 }
+
+// ===== INITIALISATION =====
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Application Palanquées JSAS v2.0.0 - Chargement...");
+  
+  try {
+    // Test de connexion Firebase
+    console.log("🔥 Tentative de connexion Firebase...");
+    await testFirebaseConnection();
+    
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    $("dp-date").value = today;
+    
+    // Chargement des infos DP du jour au démarrage
+    const dpNomInput = $("dp-nom");
+    const dpLieuInput = $("dp-lieu");
+
+    // Tentative de chargement DP depuis Firebase
+    console.log("📥 Chargement des données DP...");
+    try {
+      const snapshot = await db.ref(`dpInfo/${today}`).once('value');
+      if (snapshot.exists()) {
+        const dpData = snapshot.val();
+        console.log("✅ Données DP chargées:", dpData);
+        dpNomInput.value = dpData.nom || "";
+        dpLieuInput.value = dpData.lieu || "";
+        const dpMessage = $("dp-message");
+        dpMessage.textContent = "Informations du jour chargées.";
+        dpMessage.style.color = "blue";
+      } else {
+        console.log("ℹ️ Aucune donnée DP pour aujourd'hui");
+      }
+    } catch (error) {
+      console.error("❌ Erreur de lecture des données DP :", error);
+    }
+
+    // Gestionnaire de validation DP
+    $("valider-dp").addEventListener("click", () => {
+      const nomDP = $("dp-nom").value.trim();
+      const date = $("dp-date").value;
+      const lieu = $("dp-lieu").value.trim();
+      const plongee = $("dp-plongee").value;
+      
+      console.log("📝 Validation DP:", nomDP, date, lieu, plongee);
+
+      if (!nomDP || !date || !lieu || !plongee) {
+        alert("Veuillez remplir tous les champs du DP.");
+        return;
+      }
+
+      const dpData = {
+        nom: nomDP,
+        date: date,
+        lieu: lieu,
+        plongee: plongee,
+        timestamp: Date.now()
+      };
+
+      const dpKey = `dpInfo/${date}_${plongee}`;
+      
+      // Affichage en attente
+      const dpMessage = $("dp-message");
+      dpMessage.textContent = "Enregistrement en cours...";
+      dpMessage.style.color = "orange";
+      
+      db.ref(dpKey).set(dpData)
+        .then(() => {
+          console.log("✅ Données DP sauvegardées avec succès");
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
+          dpMessage.style.color = "green";
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Firebase DP:", error);
+          dpMessage.classList.remove("success-icon");
+          dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          dpMessage.style.color = "red";
+        });
+    });
+
+    // Chargement de l'historique des DP
+    console.log("📜 Chargement historique DP...");
+    chargerHistoriqueDP();
+    
+    // Chargement des données depuis Firebase
+    console.log("📊 Chargement des données principales...");
+    await loadFromFirebase();
+    
+    // Charger les sessions disponibles
+    console.log("📜 Chargement des sessions...");
+    await populateSessionSelector();
+    
+    // Setup des event listeners
+    console.log("🎛️ Configuration des event listeners...");
+    setupEventListeners();
+    
+    console.log("✅ Application initialisée avec succès!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
+    console.log(`🔥 Firebase connecté: ${firebaseConnected}`);
+    
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
+    console.error("Stack trace:", error.stack);
+    
+    // Mode dégradé sans Firebase
+    console.log("🔄 Tentative de fonctionnement en mode dégradé...");
+    plongeurs = [];
+    palanquees = [];
+    plongeursOriginaux = [];
+    
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    setupEventListeners();
+    
+    alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");
+  }
+});
