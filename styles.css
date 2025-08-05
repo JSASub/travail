@@ -1,4 +1,3 @@
-/* Styles existants conservés... */
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
@@ -52,15 +51,18 @@ button {
   color: red;
   font-weight: bold;
 }
+
 .alert-container {
     margin-top: 5px;
     display: flex;
     gap: 5px;
 }
+
 .alert-icon {
     font-size: 1.2em;
     cursor: help;
 }
+
 .dp-valide {
   color: green;
   margin-top: 10px;
@@ -73,6 +75,7 @@ button {
   background-color: #f8f9fa;
   border-radius: 5px;
 }
+
 .palanquee-title {
   font-weight: bold;
   color: #007bff;
@@ -80,176 +83,67 @@ button {
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 5px;
 }
+
 .palanquee[data-alert="true"] {
   border-color: #dc3545;
   background-color: #fff5f5;
 }
 
-/* NOUVEAUX STYLES POUR L'AFFICHAGE TABLEAU DES PLONGEURS */
-
-/* En-tête de tableau pour les plongeurs */
-#listePlongeurs::before {
-  content: "";
-  display: block;
-  background: #007bff;
-  color: white;
-  font-weight: bold;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 4px;
-  background-image: linear-gradient(90deg, 
-    transparent 0%, 
-    transparent 35%, 
-    rgba(255,255,255,0.1) 35%, 
-    rgba(255,255,255,0.1) 36%, 
-    transparent 36%, 
-    transparent 55%, 
-    rgba(255,255,255,0.1) 55%, 
-    rgba(255,255,255,0.1) 56%, 
-    transparent 56%, 
-    transparent 85%, 
-    rgba(255,255,255,0.1) 85%, 
-    rgba(255,255,255,0.1) 86%, 
-    transparent 86%);
-}
-
-/* Style pour chaque plongeur en format tableau */
+/* AMÉLIORATION SIMPLE POUR LES PLONGEURS */
 .plongeur-item {
   list-style: none;
-  margin: 2px 0;
-  padding: 0;
+  margin: 3px 0;
+  padding: 8px;
   background-color: #e0f0ff;
   border-radius: 4px;
   cursor: move;
-  transition: all 0.2s ease;
   border-left: 4px solid #007bff;
+  transition: background-color 0.2s ease;
 }
 
 .plongeur-item:hover {
   background-color: #d0e8ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.plongeur-item:active {
-  transform: translateY(0);
-}
-
-/* Contenu en colonnes */
 .plongeur-content {
-  display: grid;
-  grid-template-columns: 1fr 120px 120px 40px;
-  gap: 10px;
+  display: flex;
   align-items: center;
-  padding: 8px 12px;
-  min-height: 40px;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .plongeur-nom {
   font-weight: bold;
   color: #003366;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
 }
 
 .plongeur-niveau {
   background: #28a745;
   color: white;
-  padding: 3px 8px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.9em;
   font-weight: bold;
-  min-width: 50px;
+  min-width: 60px;
+  text-align: center;
 }
-
-/* Couleurs spécifiques par niveau */
-.plongeur-item:has(.plongeur-niveau:contains("N1")) .plongeur-niveau { background: #17a2b8; }
-.plongeur-item:has(.plongeur-niveau:contains("N2")) .plongeur-niveau { background: #28a745; }
-.plongeur-item:has(.plongeur-niveau:contains("N3")) .plongeur-niveau { background: #ffc107; color: #000; }
-.plongeur-item:has(.plongeur-niveau:contains("N4")) .plongeur-niveau { background: #fd7e14; }
-.plongeur-item:has(.plongeur-niveau:contains("E1")) .plongeur-niveau { background: #6f42c1; }
-.plongeur-item:has(.plongeur-niveau:contains("E2")) .plongeur-niveau { background: #e83e8c; }
-.plongeur-item:has(.plongeur-niveau:contains("E3")) .plongeur-niveau { background: #dc3545; }
-.plongeur-item:has(.plongeur-niveau:contains("E4")) .plongeur-niveau { background: #343a40; }
 
 .plongeur-prerogatives {
-  font-size: 0.9em;
   color: #666;
   font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plongeur-actions {
+  flex: 1;
   text-align: center;
 }
 
 .delete-plongeur {
   cursor: pointer;
-  font-size: 1.2em;
-  opacity: 0.6;
-  transition: all 0.2s ease;
-  padding: 4px;
-  border-radius: 3px;
+  font-size: 1.1em;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 2px;
 }
 
 .delete-plongeur:hover {
   opacity: 1;
-  background-color: rgba(220, 53, 69, 0.1);
-  transform: scale(1.1);
-}
-
-/* En-tête fictif avec CSS pur */
-#listePlongeurs {
-  position: relative;
-  padding-top: 45px;
-}
-
-#listePlongeurs::after {
-  content: "NOM & PRÉNOM                    NIVEAU        PRÉROGATIVES        ";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: #007bff;
-  color: white;
-  font-weight: bold;
-  font-family: monospace;
-  padding: 12px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  letter-spacing: 0.5px;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .plongeur-content {
-    grid-template-columns: 1fr 80px 80px 35px;
-    gap: 5px;
-    font-size: 0.9em;
-  }
-  
-  #listePlongeurs::after {
-    content: "NOM            NIV    PRÉROG    ";
-    font-size: 0.8em;
-  }
-}
-
-/* Animation de suppression */
-.plongeur-item.removing {
-  animation: slideOutRight 0.3s ease-in-out forwards;
-}
-
-@keyframes slideOutRight {
-  0% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
 }

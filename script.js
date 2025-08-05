@@ -111,16 +111,46 @@ function renderPlongeurs() {
   }
   
   liste.innerHTML = "";
+  
+  if (plongeurs.length === 0) {
+    liste.innerHTML = '<li style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur ajouté</li>';
+    return;
+  }
+  
   plongeurs.forEach((p, i) => {
     const li = document.createElement("li");
-    li.textContent = `${p.nom} (${p.niveau}) [${p.pre || ''}]`;
+    li.className = "plongeur-item";
     li.draggable = true;
     li.dataset.index = i;
+    
+    // Structure en tableau simple
+    li.innerHTML = `
+      <div class="plongeur-content">
+        <span class="plongeur-nom">${p.nom}</span>
+        <span class="plongeur-niveau">(${p.niveau})</span>
+        <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
+        <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
+      </div>
+    `;
+    
+    // Event listener pour le drag & drop
     li.addEventListener("dragstart", e => {
       e.dataTransfer.setData("text/plain", i);
     });
+    
+    // Event listener pour la suppression
+    li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
+      e.stopPropagation(); // Empêcher le drag & drop
+      if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
+        console.log("🗑️ Suppression plongeur:", p.nom);
+        plongeurs.splice(i, 1);
+        syncToDatabase();
+      }
+    });
+    
     liste.appendChild(li);
   });
+  
   console.log("✅ Plongeurs rendus:", plongeurs.length);
 }
 
