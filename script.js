@@ -56,13 +56,15 @@ function checkAlert(palanquee) {
 // Sauvegarde locale + Firebase (avec fallback)
 function syncToDatabase() {
   console.log("💾 Synchronisation...");
+  console.log("🔍 État avant sync - palanquées:", palanquees.length);
   
   // 1. TOUJOURS sauvegarder en local d'abord
   localStorage.setItem('jsas-plongeurs', JSON.stringify(plongeurs));
   localStorage.setItem('jsas-palanquees', JSON.stringify(palanquees));
   console.log("✅ Sauvegarde locale OK");
   
-  // 2. Rendu immédiat de l'interface
+  // 2. RENDU IMMÉDIAT DE L'INTERFACE - CRITIQUE !
+  console.log("🎨 Forçage du rendu immédiat...");
   renderPalanquees();
   renderPlongeurs();
   
@@ -251,7 +253,22 @@ function setupEventListeners() {
     palanquees.push([]);
     console.log("📊 Nombre total de palanquées:", palanquees.length);
     console.log("🔍 État actuel palanquées:", palanquees);
+    console.log("🚨 DÉCLENCHEMENT syncToDatabase()...");
     syncToDatabase();
+    console.log("🚨 APRÈS syncToDatabase() - vérification DOM...");
+    
+    // Double vérification - forcer le rendu si nécessaire
+    setTimeout(() => {
+      const container = $("palanqueesContainer");
+      console.log("🔍 Container après timeout:", container ? "existe" : "n'existe pas");
+      if (container) {
+        console.log("🔍 Contenu HTML du container:", container.innerHTML.length, "caractères");
+        if (container.innerHTML.trim() === "") {
+          console.log("🚨 CONTAINER VIDE - FORÇAGE DU RENDU!");
+          renderPalanquees();
+        }
+      }
+    }, 100);
   });
 
   $("exportJSON").addEventListener("click", () => {
