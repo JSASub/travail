@@ -1073,7 +1073,52 @@ function setupEventListeners() {
     await populateSessionSelector();
   });
 
-  // Sauvegarde manuelle de session - NOUVEAU
+  // Test Firebase - NOUVEAU
+  $("test-firebase").addEventListener("click", async () => {
+    console.log("🧪 === TEST FIREBASE COMPLET ===");
+    
+    try {
+      // Test 1: Lecture de sessions
+      console.log("📖 Test 1: Lecture /sessions");
+      const sessionsRead = await db.ref('sessions').once('value');
+      console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
+      
+      // Test 2: Écriture dans sessions
+      console.log("✏️ Test 2: Écriture /sessions/test");
+      await db.ref('sessions/test').set({
+        timestamp: Date.now(),
+        test: true
+      });
+      console.log("✅ Écriture sessions/test OK");
+      
+      // Test 3: Lecture de ce qu'on vient d'écrire
+      console.log("📖 Test 3: Relecture sessions/test");
+      const testRead = await db.ref('sessions/test').once('value');
+      console.log("✅ Relecture OK:", testRead.val());
+      
+      // Test 4: Sauvegarde session réelle
+      console.log("💾 Test 4: Sauvegarde session réelle");
+      await saveSessionData();
+      
+      // Test 5: Lecture des sessions après sauvegarde
+      console.log("📖 Test 5: Lecture sessions après sauvegarde");
+      const finalRead = await db.ref('sessions').once('value');
+      if (finalRead.exists()) {
+        const sessions = finalRead.val();
+        console.log("✅ Sessions trouvées:", Object.keys(sessions));
+      } else {
+        console.log("❌ Aucune session après sauvegarde");
+      }
+      
+      alert("Test Firebase terminé - regarde la console !");
+      
+    } catch (error) {
+      console.error("❌ ERREUR TEST FIREBASE:", error);
+      alert("Erreur Firebase: " + error.message);
+    }
+  });
+
+  // Sauvegarde manuelle de session - NOUVEAU  
   $("save-session").addEventListener("click", async () => {
     console.log("💾 Sauvegarde manuelle de session...");
     await saveSessionData();
