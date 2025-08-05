@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getDatabase, ref, set } from "firebase/database";
 import {
   getDatabase,
   ref,
@@ -23,6 +24,7 @@ const firebaseConfig = {
 // Initialize Firebase app & database
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const database = getDatabase(app);
 
 // ===== GESTION DP - SYSTEM FIREBASE UNIQUEMENT =====
 
