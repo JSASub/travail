@@ -24,151 +24,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ===== GESTION DP - SYSTEM FIREBASE UNIQUEMENT =====
-
-// Sauvegarde des informations du DP avec la date comme identifiant
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 DOM chargé, initialisation de l'application...");
-  
-  // Chargement des infos DP du jour au démarrage
-  const dpNomInput = document.getElementById("dp-nom");
-  const dpDateInput = document.getElementById("dp-date");
-  const dpLieuInput = document.getElementById("dp-lieu");
-
-  const dbRef = ref(db);
-  const today = new Date().toISOString().split("T")[0];
-
-  dpDateInput.value = today;
-
-  get(child(dbRef, `dpInfo/${today}`)).then((snapshot) => {
-    if (snapshot.exists()) {
-      const dpData = snapshot.val();
-      console.log("Données DP chargées:", dpData);
-      dpNomInput.value = dpData.nom || "";
-      dpLieuInput.value = dpData.lieu || "";
-      const dpMessage = document.getElementById("dp-message");
-      dpMessage.textContent = "Informations du jour chargées.";
-      dpMessage.style.color = "blue";
-    } else {
-      console.log("Aucune donnée DP pour aujourd'hui");
-    }
-  }).catch((error) => {
-    console.error("Erreur de lecture des données DP :", error);
-  });
-
-  // Gestionnaire de validation DP
-  document.getElementById("valider-dp").addEventListener("click", () => {
-    const nomDP = document.getElementById("dp-nom").value.trim();
-    const date = document.getElementById("dp-date").value;
-    const lieu = document.getElementById("dp-lieu").value.trim();
-    
-    console.log("Clic détecté :", nomDP, date, lieu);
-
-    if (!nomDP || !date || !lieu) {
-      alert("Veuillez remplir tous les champs du DP.");
-      return;
-    }
-
-    const dpData = {
-      nom: nomDP,
-      date: date,
-      lieu: lieu,
-      timestamp: Date.now()
-    };
-
-    const dpKey = `dpInfo/${date}`;
-    
-    // Affichage en attente
-    const dpMessage = document.getElementById("dp-message");
-    dpMessage.textContent = "Enregistrement en cours...";
-    dpMessage.style.color = "orange";
-    
-    set(ref(db, dpKey), dpData)
-      .then(() => {
-        console.log("Données DP sauvegardées avec succès");
-        dpMessage.classList.add("success-icon");
-        dpMessage.textContent = " Informations du DP enregistrées avec succès.";
-        dpMessage.style.color = "green";
-      })
-      .catch((error) => {
-        console.error("Erreur Firebase:", error);
-        dpMessage.classList.remove("success-icon");
-        dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
-        dpMessage.style.color = "red";
-      });
-  });
-
-  // Chargement de l'historique des DP
-  chargerHistoriqueDP();
-
-  // ===== INITIALISATION DES LISTENERS FIREBASE APRÈS DOM READY =====
-  console.log("📡 Initialisation des listeners Firebase...");
-  
-  // CORRECTION IMPORTANTE: S'assurer que le container existe
-  const palanqueesContainer = document.getElementById("palanqueesContainer");
-  if (!palanqueesContainer) {
-    console.error("❌ ERREUR: palanqueesContainer non trouvé dans le DOM!");
-    return;
-  }
-  console.log("✅ palanqueesContainer trouvé");
-
-  // Subscribe to DB updates APRÈS que le DOM soit prêt
-  onValue(ref(db, 'plongeurs'), snapshot => {
-    plongeurs = snapshot.val() || [];
-    console.log("📥 Plongeurs chargés:", plongeurs.length, "plongeurs");
-    renderPlongeurs();
-  });
-
-  onValue(ref(db, 'palanquees'), snapshot => {
-    palanquees = snapshot.val() || [];
-    console.log("📥 Palanquées chargées:", palanquees.length, "palanquées");
-    renderPalanquees();
-  });
-
-  // Ajout des event listeners pour les formulaires
-  setupEventListeners();
-});
-
-// Chargement de l'historique des DP
-function chargerHistoriqueDP() {
-  const dpDatesSelect = document.getElementById("dp-dates");
-  const historiqueInfo = document.getElementById("historique-info");
-
-  const dbRef = ref(db);
-
-  get(child(dbRef, "dpInfo")).then((snapshot) => {
-    if (snapshot.exists()) {
-      const dpInfos = snapshot.val();
-
-      // Vider les options existantes (sauf la première)
-      dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
-
-      for (const date in dpInfos) {
-        const option = document.createElement("option");
-        option.value = date;
-        option.textContent = date;
-        dpDatesSelect.appendChild(option);
-      }
-
-      dpDatesSelect.addEventListener("change", () => {
-        const selectedDate = dpDatesSelect.value;
-        if (selectedDate && dpInfos[selectedDate]) {
-          const dp = dpInfos[selectedDate];
-          historiqueInfo.innerHTML = `
-            <p><strong>Nom :</strong> ${dp.nom}</p>
-            <p><strong>Lieu :</strong> ${dp.lieu}</p>
-          `;
-        } else {
-          historiqueInfo.innerHTML = "";
-        }
-      });
-    }
-  }).catch((error) => {
-    console.error("Erreur de lecture de l'historique DP :", error);
-  });
-}
-
-// ===== GESTION PLONGEURS ET PALANQUEES =====
+// ===== DÉCLARATIONS GLOBALES (AVANT TOUT) =====
 
 // Local state (UNIQUEMENT pour plongeurs et palanquees)
 let plongeurs = [];
@@ -177,6 +33,28 @@ let palanquees = [];
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
+}
+
+// Alert logic
+function checkAlert(palanquee) {
+  const n1s = palanquee.filter(p => p.niveau === "N1");
+  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+  if (n1s.length && gps.length === 0) return true;
+  if (palanquee.length === 1) return true;
+  if (palanquee.length > 5) return true;
+  if (palanquee.some(p => !p.niveau)) return true;
+  if (n1s.length > 1 && gps.length === 0) return true;
+  if (palanquee.some(p => p.niveau === "E1") &&
+      palanquee.some(p => p.niveau === "N1") &&
+      palanquee.length === 2) return true;
+  return false;
+}
+
+// Sync UNIQUEMENT plongeurs & palanquées to the DB
+function syncToDatabase() {
+  console.log("💾 Synchronisation avec Firebase...");
+  set(ref(db, 'plongeurs'), plongeurs);
+  set(ref(db, 'palanquees'), palanquees);
 }
 
 // Render functions
@@ -296,28 +174,6 @@ function renderPalanquees() {
   console.log("✅ Palanquées rendues avec succès!");
 }
 
-// Alert logic
-function checkAlert(palanquee) {
-  const n1s = palanquee.filter(p => p.niveau === "N1");
-  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-  if (n1s.length && gps.length === 0) return true;
-  if (palanquee.length === 1) return true;
-  if (palanquee.length > 5) return true;
-  if (palanquee.some(p => !p.niveau)) return true;
-  if (n1s.length > 1 && gps.length === 0) return true;
-  if (palanquee.some(p => p.niveau === "E1") &&
-      palanquee.some(p => p.niveau === "N1") &&
-      palanquee.length === 2) return true;
-  return false;
-}
-
-// Sync UNIQUEMENT plongeurs & palanquées to the DB
-function syncToDatabase() {
-  console.log("💾 Synchronisation avec Firebase...");
-  set(ref(db, 'plongeurs'), plongeurs);
-  set(ref(db, 'palanquees'), palanquees);
-}
-
 // Setup Event Listeners (déplacé dans une fonction séparée)
 function setupEventListeners() {
   console.log("🎛️ Configuration des event listeners...");
@@ -398,3 +254,147 @@ function setupEventListeners() {
   
   console.log("✅ Event listeners configurés");
 }
+
+// Chargement de l'historique des DP
+function chargerHistoriqueDP() {
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+
+  const dbRef = ref(db);
+
+  get(child(dbRef, "dpInfo")).then((snapshot) => {
+    if (snapshot.exists()) {
+      const dpInfos = snapshot.val();
+
+      // Vider les options existantes (sauf la première)
+      dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
+
+      for (const date in dpInfos) {
+        const option = document.createElement("option");
+        option.value = date;
+        option.textContent = date;
+        dpDatesSelect.appendChild(option);
+      }
+
+      dpDatesSelect.addEventListener("change", () => {
+        const selectedDate = dpDatesSelect.value;
+        if (selectedDate && dpInfos[selectedDate]) {
+          const dp = dpInfos[selectedDate];
+          historiqueInfo.innerHTML = `
+            <p><strong>Nom :</strong> ${dp.nom}</p>
+            <p><strong>Lieu :</strong> ${dp.lieu}</p>
+          `;
+        } else {
+          historiqueInfo.innerHTML = "";
+        }
+      });
+    }
+  }).catch((error) => {
+    console.error("Erreur de lecture de l'historique DP :", error);
+  });
+}
+
+// ===== GESTION DP - SYSTEM FIREBASE UNIQUEMENT =====
+
+// Sauvegarde des informations du DP avec la date comme identifiant
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 DOM chargé, initialisation de l'application...");
+  
+  // Chargement des infos DP du jour au démarrage
+  const dpNomInput = document.getElementById("dp-nom");
+  const dpDateInput = document.getElementById("dp-date");
+  const dpLieuInput = document.getElementById("dp-lieu");
+
+  const dbRef = ref(db);
+  const today = new Date().toISOString().split("T")[0];
+
+  dpDateInput.value = today;
+
+  get(child(dbRef, `dpInfo/${today}`)).then((snapshot) => {
+    if (snapshot.exists()) {
+      const dpData = snapshot.val();
+      console.log("Données DP chargées:", dpData);
+      dpNomInput.value = dpData.nom || "";
+      dpLieuInput.value = dpData.lieu || "";
+      const dpMessage = document.getElementById("dp-message");
+      dpMessage.textContent = "Informations du jour chargées.";
+      dpMessage.style.color = "blue";
+    } else {
+      console.log("Aucune donnée DP pour aujourd'hui");
+    }
+  }).catch((error) => {
+    console.error("Erreur de lecture des données DP :", error);
+  });
+
+  // Gestionnaire de validation DP
+  document.getElementById("valider-dp").addEventListener("click", () => {
+    const nomDP = document.getElementById("dp-nom").value.trim();
+    const date = document.getElementById("dp-date").value;
+    const lieu = document.getElementById("dp-lieu").value.trim();
+    
+    console.log("Clic détecté :", nomDP, date, lieu);
+
+    if (!nomDP || !date || !lieu) {
+      alert("Veuillez remplir tous les champs du DP.");
+      return;
+    }
+
+    const dpData = {
+      nom: nomDP,
+      date: date,
+      lieu: lieu,
+      timestamp: Date.now()
+    };
+
+    const dpKey = `dpInfo/${date}`;
+    
+    // Affichage en attente
+    const dpMessage = document.getElementById("dp-message");
+    dpMessage.textContent = "Enregistrement en cours...";
+    dpMessage.style.color = "orange";
+    
+    set(ref(db, dpKey), dpData)
+      .then(() => {
+        console.log("Données DP sauvegardées avec succès");
+        dpMessage.classList.add("success-icon");
+        dpMessage.textContent = " Informations du DP enregistrées avec succès.";
+        dpMessage.style.color = "green";
+      })
+      .catch((error) => {
+        console.error("Erreur Firebase:", error);
+        dpMessage.classList.remove("success-icon");
+        dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+        dpMessage.style.color = "red";
+      });
+  });
+
+  // Chargement de l'historique des DP
+  chargerHistoriqueDP();
+
+  // ===== INITIALISATION DES LISTENERS FIREBASE APRÈS DOM READY =====
+  console.log("📡 Initialisation des listeners Firebase...");
+  
+  // CORRECTION IMPORTANTE: S'assurer que le container existe
+  const palanqueesContainer = document.getElementById("palanqueesContainer");
+  if (!palanqueesContainer) {
+    console.error("❌ ERREUR: palanqueesContainer non trouvé dans le DOM!");
+    return;
+  }
+  console.log("✅ palanqueesContainer trouvé");
+
+  // Subscribe to DB updates APRÈS que le DOM soit prêt
+  onValue(ref(db, 'plongeurs'), snapshot => {
+    plongeurs = snapshot.val() || [];
+    console.log("📥 Plongeurs chargés:", plongeurs.length, "plongeurs");
+    renderPlongeurs();
+  });
+
+  onValue(ref(db, 'palanquees'), snapshot => {
+    palanquees = snapshot.val() || [];
+    console.log("📥 Palanquées chargées:", palanquees.length, "palanquées");
+    renderPalanquees();
+  });
+
+  // Ajout des event listeners pour les formulaires
+  setupEventListeners();
+});
