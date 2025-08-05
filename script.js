@@ -184,27 +184,29 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase uniquement
-function syncToDatabase() {
+// Sauvegarde Firebase uniquement - VERSION AMÉLIORÉE
+async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
   
   // Mettre à jour la liste originale pour le tri
   plongeursOriginaux = [...plongeurs];
   
-  // Rendu immédiat
+  // Rendu immédiat AVANT la sauvegarde Firebase
   renderPalanquees();
   renderPlongeurs();
   updateAlertes();
   
-  // Sauvegarde Firebase
+  // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
-    set(ref(db, 'plongeurs'), plongeurs).catch(error => {
-      console.error("❌ Erreur sync Firebase plongeurs:", error.message);
-    });
-    
-    set(ref(db, 'palanquees'), palanquees).catch(error => {
-      console.error("❌ Erreur sync Firebase palanquées:", error.message);
-    });
+    try {
+      await Promise.all([
+        set(ref(db, 'plongeurs'), plongeurs),
+        set(ref(db, 'palanquees'), palanquees)
+      ]);
+      console.log("✅ Sauvegarde Firebase réussie");
+    } catch (error) {
+      console.error("❌ Erreur sync Firebase:", error.message);
+    }
   } else {
     console.warn("⚠️ Firebase non connecté, données non sauvegardées");
   }
@@ -285,11 +287,19 @@ function renderPlongeurs() {
       </div>
     `;
     
-    // Event listeners pour drag & drop - VERSION CORRIGÉE
+    // Event listeners pour drag & drop - VERSION CORRIGÉE FIREBASE
     li.addEventListener("dragstart", e => {
       console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
       li.classList.add('dragging');
-      e.dataTransfer.setData("text/plain", i.toString());
+      
+      // IMPORTANT: Stocker les données du plongeur directement, pas l'index
+      const plongeurData = {
+        type: "fromMainList",
+        plongeur: { ...p }, // Clone de l'objet
+        originalIndex: i
+      };
+      
+      e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
       e.dataTransfer.effectAllowed = "move";
     });
     
@@ -423,8 +433,9 @@ function renderPalanquees() {
       console.log("🎯 Drop dans palanquée", idx + 1, "data reçue:", data);
       
       try {
-        // Tentative de parser comme JSON (plongeur venant d'une autre palanquée)
         const dragData = JSON.parse(data);
+        console.log("📝 Données parsées:", dragData);
+        
         if (dragData.type === "fromPalanquee") {
           console.log("🔄 Déplacement entre palanquées détecté");
           if (dragData.palanqueeIndex !== undefined && 
@@ -440,9 +451,33 @@ function renderPalanquees() {
           }
           return;
         }
+        
+        if (dragData.type === "fromMainList") {
+          console.log("📝 Déplacement depuis liste principale détecté");
+          // Utiliser les données du plongeur directement
+          const plongeurToMove = dragData.plongeur;
+          
+          // Trouver et supprimer le plongeur de la liste principale
+          const indexToRemove = plongeurs.findIndex(p => 
+            p.nom === plongeurToMove.nom && p.niveau === plongeurToMove.niveau
+          );
+          
+          if (indexToRemove !== -1) {
+            plongeurs.splice(indexToRemove, 1);
+            palanquee.push(plongeurToMove);
+            console.log("✅ Plongeur ajouté depuis liste principale:", plongeurToMove.nom);
+            syncToDatabase();
+          } else {
+            console.error("❌ Plongeur non trouvé dans la liste principale");
+          }
+          return;
+        }
+        
       } catch (error) {
-        // C'est un index simple (plongeur venant de la liste principale)
-        console.log("📝 Parsing comme index simple:", data);
+        console.error("❌ Erreur parsing données drag:", error);
+        console.log("📝 Tentative avec ancien format (index simple)");
+        
+        // Fallback pour ancien format
         const i = parseInt(data);
         if (!isNaN(i) && i >= 0 && i < plongeurs.length) {
           console.log("✅ Drop plongeur index:", i, "dans palanquée", idx + 1);
@@ -717,6 +752,8 @@ function setupEventListeners() {
     
     try {
       const dragData = JSON.parse(data);
+      console.log("📝 Données drag parsées:", dragData);
+      
       if (dragData.type === "fromPalanquee") {
         console.log("🔄 Retour d'un plongeur depuis palanquée");
         if (palanquees[dragData.palanqueeIndex] && 
@@ -727,10 +764,14 @@ function setupEventListeners() {
           plongeursOriginaux.push(plongeur);
           console.log("✅ Plongeur remis dans la liste:", plongeur.nom);
           syncToDatabase();
+        } else {
+          console.error("❌ Plongeur non trouvé dans la palanquée source");
         }
+      } else {
+        console.log("📝 Type de drag non reconnu pour retour en liste");
       }
     } catch (error) {
-      console.log("📝 Pas un drag depuis palanquée, ignoré");
+      console.log("📝 Erreur parsing ou pas un drag depuis palanquée:", error);
     }
   });
 }
