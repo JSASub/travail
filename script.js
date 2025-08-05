@@ -880,6 +880,13 @@ function setupEventListeners() {
     });
   });
 
+  // Contrôles de tri
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sortPlongeurs(btn.dataset.sort);
+    });
+  });
+
   // Drag & drop amélioré pour la zone principale - VERSION CORRIGÉE
   const listePlongeurs = $("listePlongeurs");
   
