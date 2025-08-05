@@ -176,7 +176,7 @@ function renderPalanquees() {
   console.log("Rendu de", palanquees.length, "palanquées");
   container.innerHTML = "";
   
-  palanquees.forEach((palanquee, idx) => {
+  palanquees.forEach((palanquees, idx) => {
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
