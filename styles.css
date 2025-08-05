@@ -4,22 +4,62 @@ body {
   background: #f7fcff;
   color: #003366;
 }
+
 h1, h2 {
   color: #004080;
 }
+
+/* STYLES AMÉLIORÉS POUR LES ALERTES */
+.alert-section {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  max-width: 350px;
+  z-index: 1000;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 15px;
+  border-left: 4px solid #dc3545;
+}
+
+.alert-hidden {
+  display: none;
+}
+
+.alert-title {
+  font-weight: bold;
+  color: #dc3545;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+.alert-item {
+  background: #fff5f5;
+  border: 1px solid #f8d7da;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 5px 0;
+  color: #721c24;
+  font-size: 0.9em;
+}
+
 label {
   display: block;
   margin-top: 10px;
 }
+
 input, select {
   margin-top: 5px;
   padding: 6px;
 }
+
 .success-icon::before {
   content: "✔ ";
   color: green;
   font-weight: bold;
 }
+
 button {
   margin-top: 10px;
   padding: 8px 12px;
@@ -29,6 +69,27 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
+
+.btn-success {
+  background-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #1e7e34;
+}
+
 .dropzone, .palanquee {
   border: 2px dashed #ccc;
   min-height: 100px;
@@ -36,6 +97,7 @@ button {
   margin-top: 10px;
   background-color: #ffffff;
 }
+
 .plongeur {
   margin: 5px 0;
   padding: 6px;
@@ -43,6 +105,7 @@ button {
   cursor: move;
   position: relative;
 }
+
 .remove-btn {
   position: absolute;
   right: 5px;
@@ -52,21 +115,11 @@ button {
   font-weight: bold;
 }
 
-.alert-container {
-    margin-top: 5px;
-    display: flex;
-    gap: 5px;
-}
-
-.alert-icon {
-    font-size: 1.2em;
-    cursor: help;
-}
-
 .dp-valide {
   color: green;
   margin-top: 10px;
 }
+
 .palanquee {
   border: 2px dashed #007bff;
   min-height: 80px;
@@ -74,6 +127,7 @@ button {
   margin: 10px 0;
   background-color: #f8f9fa;
   border-radius: 5px;
+  transition: all 0.3s ease;
 }
 
 .palanquee-title {
@@ -82,14 +136,24 @@ button {
   margin-bottom: 10px;
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .palanquee[data-alert="true"] {
   border-color: #dc3545;
   background-color: #fff5f5;
+  animation: pulse-red 2s infinite;
 }
 
-/* AMÉLIORATION SIMPLE POUR LES PLONGEURS */
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* STYLES POUR LES PLONGEURS */
 .plongeur-item {
   list-style: none;
   margin: 3px 0;
@@ -98,11 +162,19 @@ button {
   border-radius: 4px;
   cursor: move;
   border-left: 4px solid #007bff;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
 .plongeur-item:hover {
   background-color: #d0e8ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.plongeur-item.dragging {
+  opacity: 0.5;
+  transform: rotate(3deg);
 }
 
 .plongeur-content {
@@ -140,19 +212,19 @@ button {
   cursor: pointer;
   font-size: 1.1em;
   opacity: 0.7;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
   padding: 2px;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 3px;
 }
 
 .delete-plongeur:hover {
   opacity: 1;
+  background: rgba(220, 53, 69, 0.2);
+  transform: scale(1.1);
 }
 
 /* STYLES POUR LES PLONGEURS DANS LES PALANQUÉES */
-.palanquee-plongeurs {
-  margin: 10px 0;
-}
-
 .palanquee-plongeurs-list {
   list-style: none;
   padding: 0;
@@ -177,11 +249,12 @@ button {
   padding: 4px;
   border-radius: 3px;
   color: #007bff;
+  background: rgba(0, 123, 255, 0.1);
 }
 
 .return-plongeur:hover {
   opacity: 1;
-  background-color: rgba(0, 123, 255, 0.1);
+  background: rgba(0, 123, 255, 0.2);
   transform: translateX(-2px);
 }
 
@@ -226,4 +299,35 @@ button {
 .plongeur-prerogatives-editable::placeholder {
   color: #aaa;
   font-style: italic;
+}
+
+/* STYLES POUR LE TRI */
+.sort-controls {
+  margin: 10px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sort-btn {
+  padding: 5px 10px;
+  font-size: 0.9em;
+  background: #6c757d;
+  border-radius: 3px;
+}
+
+.sort-btn.active {
+  background: #007bff;
+}
+
+/* DRAG & DROP AMÉLIORÉ */
+.palanquee.drag-over {
+  background-color: #e3f2fd !important;
+  border-color: #2196f3 !important;
+  transform: scale(1.02);
+}
+
+.dropzone.drag-over {
+  background-color: #e8f5e0;
+  border-color: #4caf50;
 }

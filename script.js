@@ -1,4 +1,4 @@
-// Import the functions you need from the SDKs you need
+// Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
   getDatabase,
@@ -9,7 +9,7 @@ import {
   onValue
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
-// Your web app's Firebase configuration
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
   authDomain: "palanquees-jsas.firebaseapp.com",
@@ -20,66 +20,20 @@ const firebaseConfig = {
   appId: "1:284449736616:web:a0949a9b669def06323f9d"
 };
 
-// Initialize Firebase app & database
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // ===== DÉCLARATIONS GLOBALES =====
-
-// Local state avec sauvegarde localStorage comme fallback
-let plongeurs = JSON.parse(localStorage.getItem('jsas-plongeurs') || '[]');
-let palanquees = JSON.parse(localStorage.getItem('jsas-palanquees') || '[]');
-
-// Flag pour savoir si Firebase fonctionne
+let plongeurs = [];
+let palanquees = [];
+let plongeursOriginaux = []; // Pour le tri
+let currentSort = 'none';
 let firebaseConnected = false;
 
 // DOM helpers
 function $(id) {
   return document.getElementById(id);
-}
-
-// Alert logic
-function checkAlert(palanquee) {
-  const n1s = palanquee.filter(p => p.niveau === "N1");
-  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-  if (n1s.length && gps.length === 0) return true;
-  if (palanquee.length === 1) return true;
-  if (palanquee.length > 5) return true;
-  if (palanquee.some(p => !p.niveau)) return true;
-  if (n1s.length > 1 && gps.length === 0) return true;
-  if (palanquee.some(p => p.niveau === "E1") &&
-      palanquee.some(p => p.niveau === "N1") &&
-      palanquee.length === 2) return true;
-  return false;
-}
-
-// Sauvegarde locale + Firebase (avec fallback)
-function syncToDatabase() {
-  console.log("💾 Synchronisation...");
-  console.log("🔍 État avant sync - palanquées:", palanquees.length);
-  
-  // 1. TOUJOURS sauvegarder en local d'abord
-  localStorage.setItem('jsas-plongeurs', JSON.stringify(plongeurs));
-  localStorage.setItem('jsas-palanquees', JSON.stringify(palanquees));
-  console.log("✅ Sauvegarde locale OK");
-  
-  // 2. RENDU IMMÉDIAT DE L'INTERFACE - CRITIQUE !
-  console.log("🎨 Forçage du rendu immédiat...");
-  renderPalanquees();
-  renderPlongeurs();
-  
-  // 3. Tentative de sync Firebase (sans bloquer si ça échoue)
-  if (firebaseConnected) {
-    set(ref(db, 'plongeurs'), plongeurs).catch(error => {
-      console.warn("⚠️ Erreur sync Firebase plongeurs:", error.message);
-    });
-    
-    set(ref(db, 'palanquees'), palanquees).catch(error => {
-      console.warn("⚠️ Erreur sync Firebase palanquées:", error.message);
-    });
-  } else {
-    console.log("ℹ️ Firebase non connecté, utilisation localStorage uniquement");
-  }
 }
 
 // Test de connexion Firebase
@@ -97,18 +51,217 @@ async function testFirebaseConnection() {
     return true;
   } catch (error) {
     console.error("❌ Test Firebase échoué:", error.message);
-    console.log("🔄 Mode localStorage uniquement activé");
     return false;
   }
+}
+
+// Chargement des données depuis Firebase
+async function loadFromFirebase() {
+  try {
+    console.log("📥 Chargement des données depuis Firebase...");
+    
+    const dbRef = ref(db);
+    
+    // Charger les plongeurs
+    const plongeursSnapshot = await get(child(dbRef, 'plongeurs'));
+    if (plongeursSnapshot.exists()) {
+      plongeurs = plongeursSnapshot.val() || [];
+      console.log("✅ Plongeurs chargés:", plongeurs.length);
+    }
+    
+    // Charger les palanquées
+    const palanqueesSnapshot = await get(child(dbRef, 'palanquees'));
+    if (palanqueesSnapshot.exists()) {
+      palanquees = palanqueesSnapshot.val() || [];
+      console.log("✅ Palanquées chargées:", palanquees.length);
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
+    // Rendu initial
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement Firebase:", error);
+  }
+}
+
+// ===== SYSTÈME D'ALERTES AMÉLIORÉ =====
+function checkAllAlerts() {
+  const alertes = [];
+  
+  palanquees.forEach((palanquee, idx) => {
+    const n1s = palanquee.filter(p => p.niveau === "N1");
+    const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+    const autonomes = palanquee.filter(p => ["N2", "N3"].includes(p.niveau));
+    
+    // Palanquée > 5 plongeurs
+    if (palanquee.length > 5) {
+      alertes.push(`Palanquée ${idx + 1}: Plus de 5 plongeurs (${palanquee.length})`);
+    }
+    
+    // Palanquée ≤ 1 plongeur
+    if (palanquee.length <= 1) {
+      alertes.push(`Palanquée ${idx + 1}: Palanquée de ${palanquee.length} plongeur(s)`);
+    }
+    
+    // N1 sans GP
+    if (n1s.length > 0 && gps.length === 0) {
+      alertes.push(`Palanquée ${idx + 1}: N1 sans Guide de Palanquée`);
+    }
+    
+    // Autonomes > 3
+    if (autonomes.length > 3) {
+      alertes.push(`Palanquée ${idx + 1}: Plus de 3 plongeurs autonomes (${autonomes.length})`);
+    }
+    
+    // 4 ou 5 plongeurs sans GP
+    if ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0) {
+      alertes.push(`Palanquée ${idx + 1}: ${palanquee.length} plongeurs sans Guide de Palanquée`);
+    }
+  });
+  
+  return alertes;
+}
+
+function updateAlertes() {
+  const alertes = checkAllAlerts();
+  const alerteSection = $("alertes-section");
+  const alerteContent = $("alertes-content");
+  
+  if (alertes.length === 0) {
+    alerteSection.classList.add("alert-hidden");
+  } else {
+    alerteSection.classList.remove("alert-hidden");
+    alerteContent.innerHTML = alertes.map(alerte => 
+      `<div class="alert-item">${alerte}</div>`
+    ).join('');
+  }
+}
+
+function checkAlert(palanquee) {
+  const n1s = palanquee.filter(p => p.niveau === "N1");
+  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+  const autonomes = palanquee.filter(p => ["N2", "N3"].includes(p.niveau));
+  
+  return (
+    palanquee.length > 5 ||
+    palanquee.length <= 1 ||
+    (n1s.length > 0 && gps.length === 0) ||
+    autonomes.length > 3 ||
+    ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0)
+  );
+}
+
+// ===== TRI DES PLONGEURS =====
+function sortPlongeurs(type) {
+  currentSort = type;
+  
+  // Mettre à jour les boutons
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.sort === type) {
+      btn.classList.add('active');
+    }
+  });
+  
+  switch(type) {
+    case 'nom':
+      plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
+      break;
+    case 'niveau':
+      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
+      plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 9) - (niveauOrder[b.niveau] || 9));
+      break;
+    case 'none':
+    default:
+      plongeurs = [...plongeursOriginaux];
+      break;
+  }
+  
+  renderPlongeurs();
+}
+
+// Sauvegarde Firebase uniquement
+function syncToDatabase() {
+  console.log("💾 Synchronisation Firebase...");
+  
+  // Mettre à jour la liste originale pour le tri
+  plongeursOriginaux = [...plongeurs];
+  
+  // Rendu immédiat
+  renderPalanquees();
+  renderPlongeurs();
+  updateAlertes();
+  
+  // Sauvegarde Firebase
+  if (firebaseConnected) {
+    set(ref(db, 'plongeurs'), plongeurs).catch(error => {
+      console.error("❌ Erreur sync Firebase plongeurs:", error.message);
+    });
+    
+    set(ref(db, 'palanquees'), palanquees).catch(error => {
+      console.error("❌ Erreur sync Firebase palanquées:", error.message);
+    });
+  } else {
+    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+  }
+}
+
+// ===== EXPORT JSON AMÉLIORÉ =====
+function exportToJSON() {
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  
+  const exportData = {
+    meta: {
+      dp: dpNom,
+      date: dpDate,
+      lieu: dpLieu,
+      version: "2.0.0",
+      exportDate: new Date().toISOString()
+    },
+    plongeurs: plongeurs.map(p => ({
+      nom: p.nom,
+      niveau: p.niveau,
+      prerogatives: p.pre || ""
+    })),
+    palanquees: palanquees.map((pal, idx) => ({
+      numero: idx + 1,
+      plongeurs: pal.map(p => ({
+        nom: p.nom,
+        niveau: p.niveau,
+        prerogatives: p.pre || ""
+      })),
+      alertes: checkAlert(pal) ? checkAllAlerts().filter(a => a.includes(`Palanquée ${idx + 1}`)) : []
+    })),
+    resume: {
+      totalPlongeurs: plongeurs.length + palanquees.flat().length,
+      nombrePalanquees: palanquees.length,
+      plongeursNonAssignes: plongeurs.length,
+      alertesTotal: checkAllAlerts().length
+    }
+  };
+  
+  const dataStr = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `palanquees-${dpDate || 'export'}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log("📤 Export JSON amélioré effectué");
 }
 
 // Render functions
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
-  if (!liste) {
-    console.error("❌ Élément listePlongeurs non trouvé!");
-    return;
-  }
+  if (!liste) return;
   
   liste.innerHTML = "";
   
@@ -123,80 +276,72 @@ function renderPlongeurs() {
     li.draggable = true;
     li.dataset.index = i;
     
-    // Structure en tableau simple
     li.innerHTML = `
       <div class="plongeur-content">
         <span class="plongeur-nom">${p.nom}</span>
-        <span class="plongeur-niveau">(${p.niveau})</span>
+        <span class="plongeur-niveau">${p.niveau}</span>
         <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
         <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
       </div>
     `;
     
-    // Event listener pour le drag & drop
+    // Event listeners pour drag & drop - VERSION CORRIGÉE
     li.addEventListener("dragstart", e => {
-      e.dataTransfer.setData("text/plain", i);
+      console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
+      li.classList.add('dragging');
+      e.dataTransfer.setData("text/plain", i.toString());
+      e.dataTransfer.effectAllowed = "move";
     });
     
-    // Event listener pour la suppression
+    li.addEventListener("dragend", e => {
+      li.classList.remove('dragging');
+      console.log("🖱️ Fin drag plongeur");
+    });
+    
     li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
-      e.stopPropagation(); // Empêcher le drag & drop
+      e.stopPropagation();
       if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
-        console.log("🗑️ Suppression plongeur:", p.nom);
         plongeurs.splice(i, 1);
+        // Mettre à jour la liste originale
+        plongeursOriginaux = plongeursOriginaux.filter(po => po.nom !== p.nom);
         syncToDatabase();
       }
     });
     
     liste.appendChild(li);
   });
-  
-  console.log("✅ Plongeurs rendus:", plongeurs.length);
 }
 
 function renderPalanquees() {
   const container = $("palanqueesContainer");
-  if (!container) {
-    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé dans renderPalanquees!");
-    return;
-  }
+  if (!container) return;
   
-  console.log("🎨 Rendu de", palanquees.length, "palanquées");
   container.innerHTML = "";
   
-  if (palanquees.length === 0) {
-    console.log("ℹ️ Aucune palanquée à afficher");
-    return;
-  }
+  if (palanquees.length === 0) return;
   
   palanquees.forEach((palanquee, idx) => {
-    console.log(`🏗️ Création palanquée ${idx + 1} avec ${palanquee.length} plongeurs`);
-    
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
     div.dataset.alert = checkAlert(palanquee) ? "true" : "false";
     
-    // Titre de la palanquée avec bouton de suppression
     div.innerHTML = `
       <div class="palanquee-title">
-        Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})
-        <span class="remove-palanquee" style="color: red; cursor: pointer; float: right;">❌</span>
+        <span>Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
+        <span class="remove-palanquee" style="color: red; cursor: pointer;">❌</span>
       </div>
     `;
     
-    // Message si palanquée vide
     if (palanquee.length === 0) {
       const emptyMsg = document.createElement("div");
       emptyMsg.className = "palanquee-empty";
       emptyMsg.textContent = "Glissez des plongeurs ici ⬇️";
       div.appendChild(emptyMsg);
     } else {
-      // Créer une liste UL comme pour les plongeurs principaux
       const plongeursList = document.createElement("ul");
       plongeursList.className = "palanquee-plongeurs-list";
       
-      // Ajouter les plongeurs avec exactement le même format que la liste principale
       palanquee.forEach((plg, plongeurIndex) => {
         const li = document.createElement("li");
         li.className = "plongeur-item palanquee-plongeur-item";
@@ -205,7 +350,7 @@ function renderPalanquees() {
         li.innerHTML = `
           <div class="plongeur-content">
             <span class="plongeur-nom">${plg.nom}</span>
-            <span class="plongeur-niveau">(${plg.niveau})</span>
+            <span class="plongeur-niveau">${plg.niveau}</span>
             <input type="text" class="plongeur-prerogatives-editable" 
                    value="${plg.pre || ''}" 
                    placeholder="PE20, PA40..."
@@ -219,15 +364,22 @@ function renderPalanquees() {
           </div>
         `;
         
-        // Event listener pour drag & drop (IMPORTANT: utiliser les vraies références)
+        // Event listener pour drag & drop - VERSION CORRIGÉE
         li.addEventListener("dragstart", e => {
-          console.log("🖱️ Début drag depuis palanquée", idx + 1, "plongeur", plongeurIndex);
+          console.log("🖱️ Début drag depuis palanquée", idx + 1, "plongeur", plongeurIndex, ":", plg.nom);
+          li.classList.add('dragging');
           e.dataTransfer.setData("text/plain", JSON.stringify({
             type: "fromPalanquee",
             palanqueeIndex: idx,
             plongeurIndex: plongeurIndex,
             plongeur: plg
           }));
+          e.dataTransfer.effectAllowed = "move";
+        });
+        
+        li.addEventListener("dragend", e => {
+          li.classList.remove('dragging');
+          console.log("🖱️ Fin drag depuis palanquée");
         });
         
         plongeursList.appendChild(li);
@@ -236,46 +388,45 @@ function renderPalanquees() {
       div.appendChild(plongeursList);
     }
 
-    // Événement de suppression de palanquée
+    // Event listeners
     div.querySelector(".remove-palanquee").addEventListener("click", () => {
       if (confirm(`Supprimer la palanquée ${idx + 1} ?`)) {
-        console.log("Suppression palanquée", idx + 1);
-        // Remettre tous les plongeurs dans la liste
-        palanquee.forEach(plg => plongeurs.push(plg));
+        palanquee.forEach(plg => {
+          plongeurs.push(plg);
+          plongeursOriginaux.push(plg);
+        });
         palanquees.splice(idx, 1);
         syncToDatabase();
       }
     });
 
-    // Drag & drop pour recevoir des plongeurs
+    // Drag & drop amélioré
     div.addEventListener("dragover", e => {
       e.preventDefault();
-      div.style.backgroundColor = "#e3f2fd";
-      div.style.borderColor = "#2196f3";
+      e.dataTransfer.dropEffect = "move";
+      div.classList.add('drag-over');
+      console.log("🎯 Survol palanquée", idx + 1);
     });
     
     div.addEventListener("dragleave", e => {
-      // Vérifier si on quitte vraiment la zone (pas un enfant)
       if (!div.contains(e.relatedTarget)) {
-        div.style.backgroundColor = "";
-        div.style.borderColor = "";
+        div.classList.remove('drag-over');
+        console.log("🎯 Sortie palanquée", idx + 1);
       }
     });
     
     div.addEventListener("drop", e => {
       e.preventDefault();
-      div.style.backgroundColor = "";
-      div.style.borderColor = "";
+      div.classList.remove('drag-over');
       
       const data = e.dataTransfer.getData("text/plain");
-      console.log("🎯 Drop dans palanquée", idx + 1, "data:", data);
+      console.log("🎯 Drop dans palanquée", idx + 1, "data reçue:", data);
       
       try {
         // Tentative de parser comme JSON (plongeur venant d'une autre palanquée)
         const dragData = JSON.parse(data);
         if (dragData.type === "fromPalanquee") {
           console.log("🔄 Déplacement entre palanquées détecté");
-          // Vérifier que les données sont valides
           if (dragData.palanqueeIndex !== undefined && 
               dragData.plongeurIndex !== undefined && 
               palanquees[dragData.palanqueeIndex] &&
@@ -286,51 +437,42 @@ function renderPalanquees() {
             palanquee.push(plongeur);
             console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
             syncToDatabase();
-          } else {
-            console.error("❌ Données de drag invalides:", dragData);
           }
           return;
         }
       } catch (error) {
         // C'est un index simple (plongeur venant de la liste principale)
+        console.log("📝 Parsing comme index simple:", data);
         const i = parseInt(data);
         if (!isNaN(i) && i >= 0 && i < plongeurs.length) {
           console.log("✅ Drop plongeur index:", i, "dans palanquée", idx + 1);
           const pl = plongeurs.splice(i, 1)[0];
           palanquee.push(pl);
+          console.log("✅ Plongeur ajouté:", pl.nom);
           syncToDatabase();
         } else {
-          console.error("❌ Index de plongeur invalide:", data);
+          console.error("❌ Index de plongeur invalide:", data, "longueur plongeurs:", plongeurs.length);
         }
       }
     });
 
     container.appendChild(div);
-    console.log(`✅ Palanquée ${idx + 1} ajoutée au DOM`);
   });
   
-  // AJOUT IMPORTANT: Event listeners globaux après création du DOM
   setupPalanqueesEventListeners();
-  
-  console.log("✅ Palanquées rendues avec succès!");
 }
 
-// Nouvelle fonction pour gérer les événements des palanquées
 function setupPalanqueesEventListeners() {
-  console.log("🎛️ Configuration des event listeners des palanquées...");
-  
   // Event delegation pour les boutons de retour
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("return-plongeur")) {
       const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       
-      console.log("⬅️ Retour plongeur - Palanquée:", palanqueeIdx, "Plongeur:", plongeurIdx);
-      
       if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
         const plongeur = palanquees[palanqueeIdx].splice(plongeurIdx, 1)[0];
         plongeurs.push(plongeur);
-        console.log("✅ Plongeur remis dans la liste:", plongeur.nom);
+        plongeursOriginaux.push(plongeur);
         syncToDatabase();
       }
     }
@@ -343,11 +485,8 @@ function setupPalanqueesEventListeners() {
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       const newPrerogatives = e.target.value.trim();
       
-      console.log("✏️ Modification prérogatives - Palanquée:", palanqueeIdx, "Plongeur:", plongeurIdx, "→", newPrerogatives);
-      
       if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
         palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
-        console.log("✅ Prérogatives mises à jour");
         syncToDatabase();
       }
     }
@@ -363,8 +502,7 @@ function setupPalanqueesEventListeners() {
 
 // Setup Event Listeners
 function setupEventListeners() {
-  console.log("🎛️ Configuration des event listeners...");
-  
+  // Ajout de plongeur
   $("addForm").addEventListener("submit", e => {
     e.preventDefault();
     const nom = $("nom").value.trim();
@@ -374,94 +512,233 @@ function setupEventListeners() {
       alert("Veuillez remplir le nom et le niveau du plongeur.");
       return;
     }
-    plongeurs.push({ nom, niveau, pre });
+    
+    const nouveauPlongeur = { nom, niveau, pre };
+    plongeurs.push(nouveauPlongeur);
+    plongeursOriginaux.push(nouveauPlongeur);
+    
     $("nom").value = "";
     $("niveau").value = "";
     $("pre").value = "";
-    console.log("➕ Plongeur ajouté:", nom);
-    syncToDatabase();
-  });
-
-  $("addPalanquee").addEventListener("click", () => {
-    console.log("➕ Ajout nouvelle palanquée");
-    palanquees.push([]);
-    console.log("📊 Nombre total de palanquées:", palanquees.length);
-    console.log("🔍 État actuel palanquées:", palanquees);
-    console.log("🚨 DÉCLENCHEMENT syncToDatabase()...");
-    syncToDatabase();
-    console.log("🚨 APRÈS syncToDatabase() - vérification DOM...");
     
-    // Double vérification - forcer le rendu si nécessaire
-    setTimeout(() => {
-      const container = $("palanqueesContainer");
-      console.log("🔍 Container après timeout:", container ? "existe" : "n'existe pas");
-      if (container) {
-        console.log("🔍 Contenu HTML du container:", container.innerHTML.length, "caractères");
-        if (container.innerHTML.trim() === "") {
-          console.log("🚨 CONTAINER VIDE - FORÇAGE DU RENDU!");
-          renderPalanquees();
-        }
-      }
-    }, 100);
+    syncToDatabase();
   });
 
-  $("exportJSON").addEventListener("click", () => {
-    const data = JSON.stringify(plongeurs, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "plongeurs.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    console.log("📤 Export JSON effectué");
+  // Ajout de palanquée
+  $("addPalanquee").addEventListener("click", () => {
+    palanquees.push([]);
+    syncToDatabase();
   });
 
+  // Export JSON amélioré
+  $("exportJSON").addEventListener("click", exportToJSON);
+
+  // Import JSON
   $("importJSON").addEventListener("change", e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e2 => {
       try {
-        plongeurs = JSON.parse(e2.target.result);
-        console.log("📥 Import JSON réussi:", plongeurs.length, "plongeurs");
+        const data = JSON.parse(e2.target.result);
+        
+        // Support de l'ancien format ET du nouveau format
+        if (data.plongeurs && Array.isArray(data.plongeurs)) {
+          // Nouveau format
+          plongeurs = data.plongeurs.map(p => ({
+            nom: p.nom,
+            niveau: p.niveau,
+            pre: p.prerogatives || p.pre || ""
+          }));
+          
+          if (data.palanquees && Array.isArray(data.palanquees)) {
+            palanquees = data.palanquees.map(pal => 
+              pal.plongeurs ? pal.plongeurs.map(p => ({
+                nom: p.nom,
+                niveau: p.niveau,
+                pre: p.prerogatives || p.pre || ""
+              })) : pal
+            );
+          }
+        } else if (Array.isArray(data)) {
+          // Ancien format (simple array)
+          plongeurs = data;
+        }
+        
+        plongeursOriginaux = [...plongeurs];
         syncToDatabase();
+        alert("Import réussi !");
       } catch (error) {
-        console.error("❌ Erreur import JSON:", error);
+        console.error("Erreur import:", error);
         alert("Erreur lors de l'import du fichier JSON");
       }
     };
     reader.readAsText(file);
   });
 
+  // Génération PDF améliorée
   $("generatePDF").addEventListener("click", () => {
-    // Récupération des vraies valeurs du DP
-    const dpNom = $("dp-nom").value;
-    const dpDate = $("dp-date").value;
-    const dpLieu = $("dp-lieu").value;
+    const dpNom = $("dp-nom").value || "Non défini";
+    const dpDate = $("dp-date").value || "Non définie";
+    const dpLieu = $("dp-lieu").value || "Non défini";
     
-    let html = `<h1>Palanquées JSAS</h1><p><strong>DP :</strong> ${dpNom} | <strong>Date :</strong> ${dpDate} | <strong>Lieu :</strong> ${dpLieu}</p>`;
-    palanquees.forEach((pal, i) => {
-      html += `<h2>Palanquée ${i + 1}</h2><ul>`;
-      pal.forEach(p => {
-        html += `<li>${p.nom} (${p.niveau}) [${p.pre || ''}]</li>`;
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Palanquées JSAS - ${dpDate}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+          .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
+          .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
+          .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
+          .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
+          .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
+          .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Palanquées JSAS</h1>
+        <div class="meta-info">
+          <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
+          <p><strong>Date :</strong> ${dpDate}</p>
+          <p><strong>Lieu :</strong> ${dpLieu}</p>
+        </div>
+    `;
+    
+    // Résumé
+    const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+    const alertesTotal = checkAllAlerts();
+    
+    html += `
+      <div class="resume">
+        <h3>Résumé</h3>
+        <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
+        <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
+        <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
+        <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
+      </div>
+    `;
+    
+    // Alertes
+    if (alertesTotal.length > 0) {
+      html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
+      alertesTotal.forEach(alerte => {
+        html += `<li>${alerte}</li>`;
       });
-      html += `</ul>`;
+      html += '</ul></div>';
+    }
+    
+    // Palanquées
+    palanquees.forEach((pal, i) => {
+      const isAlert = checkAlert(pal);
+      html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
+      html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
+      
+      if (pal.length === 0) {
+        html += '<p><em>Aucun plongeur assigné</em></p>';
+      } else {
+        pal.forEach(p => {
+          html += `<div class="plongeur">
+            <strong>${p.nom}</strong> 
+            <span class="niveau">${p.niveau}</span>
+            ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+          </div>`;
+        });
+      }
+      html += '</div>';
     });
+    
+    // Plongeurs non assignés
+    if (plongeurs.length > 0) {
+      html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
+      plongeurs.forEach(p => {
+        html += `<div class="plongeur">
+          <strong>${p.nom}</strong> 
+          <span class="niveau">${p.niveau}</span>
+          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
+        </div>`;
+      });
+      html += '</div>';
+    }
+    
+    html += `
+        <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
+          <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
+          <p>Application Palanquées JSAS v2.0.0</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     $("previewContainer").style.display = "block";
     $("pdfPreview").src = url;
-    console.log("📄 PDF généré");
+    
+    // Scroll vers l'aperçu
+    $("previewContainer").scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Contrôles de tri
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sortPlongeurs(btn.dataset.sort);
+    });
+  });
+
+  // Drag & drop amélioré pour la zone principale - VERSION CORRIGÉE
+  const listePlongeurs = $("listePlongeurs");
+  
+  listePlongeurs.addEventListener("dragover", e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    listePlongeurs.classList.add('drag-over');
+    console.log("🎯 Survol liste principale");
   });
   
-  console.log("✅ Event listeners configurés");
+  listePlongeurs.addEventListener("dragleave", e => {
+    if (!listePlongeurs.contains(e.relatedTarget)) {
+      listePlongeurs.classList.remove('drag-over');
+      console.log("🎯 Sortie liste principale");
+    }
+  });
+  
+  listePlongeurs.addEventListener("drop", e => {
+    e.preventDefault();
+    listePlongeurs.classList.remove('drag-over');
+    
+    const data = e.dataTransfer.getData("text/plain");
+    console.log("🎯 Drop dans liste principale, data:", data);
+    
+    try {
+      const dragData = JSON.parse(data);
+      if (dragData.type === "fromPalanquee") {
+        console.log("🔄 Retour d'un plongeur depuis palanquée");
+        if (palanquees[dragData.palanqueeIndex] && 
+            palanquees[dragData.palanqueeIndex][dragData.plongeurIndex]) {
+          
+          const plongeur = palanquees[dragData.palanqueeIndex].splice(dragData.plongeurIndex, 1)[0];
+          plongeurs.push(plongeur);
+          plongeursOriginaux.push(plongeur);
+          console.log("✅ Plongeur remis dans la liste:", plongeur.nom);
+          syncToDatabase();
+        }
+      }
+    } catch (error) {
+      console.log("📝 Pas un drag depuis palanquée, ignoré");
+    }
+  });
 }
 
-// Chargement de l'historique des DP (Firebase uniquement pour DP)
+// Chargement de l'historique des DP (Firebase)
 function chargerHistoriqueDP() {
-  const dpDatesSelect = document.getElementById("dp-dates");
-  const historiqueInfo = document.getElementById("historique-info");
+  const dpDatesSelect = $("dp-dates");
+  const historiqueInfo = $("historique-info");
 
   const dbRef = ref(db);
 
@@ -498,22 +775,20 @@ function chargerHistoriqueDP() {
 }
 
 // ===== INITIALISATION =====
-
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 DOM chargé, initialisation de l'application...");
+  console.log("🚀 Application Palanquées JSAS v2.0.0 - Chargement...");
   
   // Test de connexion Firebase
   await testFirebaseConnection();
   
-  // Chargement des infos DP du jour au démarrage
-  const dpNomInput = document.getElementById("dp-nom");
-  const dpDateInput = document.getElementById("dp-date");
-  const dpLieuInput = document.getElementById("dp-lieu");
-
-  const dbRef = ref(db);
+  // Définir la date du jour
   const today = new Date().toISOString().split("T")[0];
-
-  dpDateInput.value = today;
+  $("dp-date").value = today;
+  
+  // Chargement des infos DP du jour au démarrage
+  const dpNomInput = $("dp-nom");
+  const dpLieuInput = $("dp-lieu");
+  const dbRef = ref(db);
 
   // Tentative de chargement DP depuis Firebase
   try {
@@ -523,7 +798,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("Données DP chargées:", dpData);
       dpNomInput.value = dpData.nom || "";
       dpLieuInput.value = dpData.lieu || "";
-      const dpMessage = document.getElementById("dp-message");
+      const dpMessage = $("dp-message");
       dpMessage.textContent = "Informations du jour chargées.";
       dpMessage.style.color = "blue";
     } else {
@@ -534,10 +809,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Gestionnaire de validation DP
-  document.getElementById("valider-dp").addEventListener("click", () => {
-    const nomDP = document.getElementById("dp-nom").value.trim();
-    const date = document.getElementById("dp-date").value;
-    const lieu = document.getElementById("dp-lieu").value.trim();
+  $("valider-dp").addEventListener("click", () => {
+    const nomDP = $("dp-nom").value.trim();
+    const date = $("dp-date").value;
+    const lieu = $("dp-lieu").value.trim();
     
     console.log("Clic détecté :", nomDP, date, lieu);
 
@@ -556,7 +831,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dpKey = `dpInfo/${date}`;
     
     // Affichage en attente
-    const dpMessage = document.getElementById("dp-message");
+    const dpMessage = $("dp-message");
     dpMessage.textContent = "Enregistrement en cours...";
     dpMessage.style.color = "orange";
     
@@ -577,22 +852,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Chargement de l'historique des DP
   chargerHistoriqueDP();
-
-  // Vérification du container
-  const palanqueesContainer = document.getElementById("palanqueesContainer");
-  if (!palanqueesContainer) {
-    console.error("❌ ERREUR: palanqueesContainer non trouvé dans le DOM!");
-    return;
-  }
-  console.log("✅ palanqueesContainer trouvé");
-
-  // Rendu initial avec les données locales
-  console.log("🎨 Rendu initial avec données locales...");
-  renderPalanquees();
-  renderPlongeurs();
-
+  
+  // Chargement des données depuis Firebase
+  await loadFromFirebase();
+  
   // Setup des event listeners
   setupEventListeners();
   
   console.log("✅ Application initialisée avec succès!");
+  console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
 });

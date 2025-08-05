@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gestion de Palanquées JSAS</title>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Firebase App (core) SDK -->
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
-  <!-- Firebase Realtime Database SDK -->
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js"></script>
 </head>
 
 <body>
@@ -28,9 +23,24 @@
 	
   </header>
 
+  <!-- SECTION ALERTES -->
+  <div id="alertes-section" class="alert-section alert-hidden">
+    <div class="alert-title">⚠️ Alertes Palanquées</div>
+    <div id="alertes-content"></div>
+  </div>
+
   <main>
     </br></br>
     <strong>Liste des plongeurs</strong>
+    
+    <!-- CONTRÔLES DE TRI -->
+    <div class="sort-controls">
+      <span>Trier par :</span>
+      <button class="sort-btn active" data-sort="none">Ordre d'ajout</button>
+      <button class="sort-btn" data-sort="nom">Nom A-Z</button>
+      <button class="sort-btn" data-sort="niveau">Niveau</button>
+    </div>
+    
 	<form id="addForm">  
     <input type="text" id="nom" placeholder="NOM & Prénom" required />
       <select id="niveau" required>
@@ -54,7 +64,7 @@
   <ul id="listePlongeurs" class="dropzone"></ul>
   </br>
   
-  <button id="exportJSON">Exporter JSON</button>
+  <button id="exportJSON" class="btn-success">Exporter JSON</button>
   </br>
   <input type="file" id="importJSON" accept=".json" />
 
@@ -65,12 +75,10 @@
     <button id="addPalanquee">Nouvelle palanquée</button>
     </br></br>
     
-    <!-- PALANQUÉES AFFICHÉES ICI - AVANT LE BOUTON PDF -->
     <div id="palanqueesContainer"></div>
     
     </br></br>
-    <!-- BOUTON PDF DÉPLACÉ APRÈS LES PALANQUÉES -->
-    <button id="generatePDF">Aperçu PDF</button>
+    <button id="generatePDF" class="btn-secondary">Aperçu PDF</button>
    </section>
   </main>
 
@@ -90,7 +98,7 @@
   </section>
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 1.8.0 - RA - 2025
+  Version 2.0.0 - RA - 2025 - Améliorée
   </footer>
 
   <script type="module" src="script.js"></script>
