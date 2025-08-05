@@ -28,6 +28,8 @@ const db = getDatabase(app);
 
 // Sauvegarde des informations du DP avec la date comme identifiant
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 DOM chargé, initialisation de l'application...");
+  
   // Chargement des infos DP du jour au démarrage
   const dpNomInput = document.getElementById("dp-nom");
   const dpDateInput = document.getElementById("dp-date");
@@ -98,6 +100,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Chargement de l'historique des DP
   chargerHistoriqueDP();
+
+  // ===== INITIALISATION DES LISTENERS FIREBASE APRÈS DOM READY =====
+  console.log("📡 Initialisation des listeners Firebase...");
+  
+  // CORRECTION IMPORTANTE: S'assurer que le container existe
+  const palanqueesContainer = document.getElementById("palanqueesContainer");
+  if (!palanqueesContainer) {
+    console.error("❌ ERREUR: palanqueesContainer non trouvé dans le DOM!");
+    return;
+  }
+  console.log("✅ palanqueesContainer trouvé");
+
+  // Subscribe to DB updates APRÈS que le DOM soit prêt
+  onValue(ref(db, 'plongeurs'), snapshot => {
+    plongeurs = snapshot.val() || [];
+    console.log("📥 Plongeurs chargés:", plongeurs.length, "plongeurs");
+    renderPlongeurs();
+  });
+
+  onValue(ref(db, 'palanquees'), snapshot => {
+    palanquees = snapshot.val() || [];
+    console.log("📥 Palanquées chargées:", palanquees.length, "palanquées");
+    renderPalanquees();
+  });
+
+  // Ajout des event listeners pour les formulaires
+  setupEventListeners();
 });
 
 // Chargement de l'historique des DP
@@ -153,6 +182,11 @@ function $(id) {
 // Render functions
 function renderPlongeurs() {
   const liste = $("listePlongeurs");
+  if (!liste) {
+    console.error("❌ Élément listePlongeurs non trouvé!");
+    return;
+  }
+  
   liste.innerHTML = "";
   plongeurs.forEach((p, i) => {
     const li = document.createElement("li");
@@ -164,16 +198,17 @@ function renderPlongeurs() {
     });
     liste.appendChild(li);
   });
+  console.log("✅ Plongeurs rendus:", plongeurs.length);
 }
 
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   if (!container) {
-    console.error("Container palanqueesContainer non trouvé!");
+    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé dans renderPalanquees!");
     return;
   }
   
-  console.log("Rendu de", palanquees.length, "palanquées");
+  console.log("🎨 Rendu de", palanquees.length, "palanquées");
   container.innerHTML = "";
   
   palanquees.forEach((palanquee, idx) => {
@@ -257,6 +292,8 @@ function renderPalanquees() {
 
     container.appendChild(div);
   });
+  
+  console.log("✅ Palanquées rendues avec succès!");
 }
 
 // Alert logic
@@ -276,41 +313,36 @@ function checkAlert(palanquee) {
 
 // Sync UNIQUEMENT plongeurs & palanquées to the DB
 function syncToDatabase() {
+  console.log("💾 Synchronisation avec Firebase...");
   set(ref(db, 'plongeurs'), plongeurs);
   set(ref(db, 'palanquees'), palanquees);
 }
 
-// UI Event Listeners
-document.addEventListener("DOMContentLoaded", () => {
-  // Subscribe to DB updates APRÈS que le DOM soit prêt
-  onValue(ref(db, 'plongeurs'), snapshot => {
-    plongeurs = snapshot.val() || [];
-    console.log("Plongeurs chargés:", plongeurs);
-    renderPlongeurs();
-  });
-
-  onValue(ref(db, 'palanquees'), snapshot => {
-    palanquees = snapshot.val() || [];
-    console.log("Palanquées chargées:", palanquees);
-    renderPalanquees();
-  });
+// Setup Event Listeners (déplacé dans une fonction séparée)
+function setupEventListeners() {
+  console.log("🎛️ Configuration des event listeners...");
+  
   $("addForm").addEventListener("submit", e => {
     e.preventDefault();
     const nom = $("nom").value.trim();
     const niveau = $("niveau").value;
-    const pre = $("pre").value.trim(); // Correction: utilise "pre" au lieu de "prerogative"
-    if (!nom || !niveau) return;
+    const pre = $("pre").value.trim();
+    if (!nom || !niveau) {
+      alert("Veuillez remplir le nom et le niveau du plongeur.");
+      return;
+    }
     plongeurs.push({ nom, niveau, pre });
     $("nom").value = "";
     $("niveau").value = "";
-    $("pre").value = ""; // Correction: utilise "pre"
+    $("pre").value = "";
+    console.log("➕ Plongeur ajouté:", nom);
     syncToDatabase();
   });
 
   $("addPalanquee").addEventListener("click", () => {
-    console.log("Ajout nouvelle palanquée");
+    console.log("➕ Ajout nouvelle palanquée");
     palanquees.push([]);
-    console.log("Nombre de palanquées:", palanquees.length);
+    console.log("📊 Nombre total de palanquées:", palanquees.length);
     syncToDatabase();
   });
 
@@ -323,6 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
     a.download = "plongeurs.json";
     a.click();
     URL.revokeObjectURL(url);
+    console.log("📤 Export JSON effectué");
   });
 
   $("importJSON").addEventListener("change", e => {
@@ -330,8 +363,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e2 => {
-      plongeurs = JSON.parse(e2.target.result);
-      syncToDatabase();
+      try {
+        plongeurs = JSON.parse(e2.target.result);
+        console.log("📥 Import JSON réussi:", plongeurs.length, "plongeurs");
+        syncToDatabase();
+      } catch (error) {
+        console.error("❌ Erreur import JSON:", error);
+        alert("Erreur lors de l'import du fichier JSON");
+      }
     };
     reader.readAsText(file);
   });
@@ -354,5 +393,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = URL.createObjectURL(blob);
     $("previewContainer").style.display = "block";
     $("pdfPreview").src = url;
+    console.log("📄 PDF généré");
   });
-});
+  
+  console.log("✅ Event listeners configurés");
+}
