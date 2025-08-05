@@ -24,11 +24,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ===== DÉCLARATIONS GLOBALES (AVANT TOUT) =====
+// ===== DÉCLARATIONS GLOBALES =====
 
-// Local state (UNIQUEMENT pour plongeurs et palanquees)
-let plongeurs = [];
-let palanquees = [];
+// Local state avec sauvegarde localStorage comme fallback
+let plongeurs = JSON.parse(localStorage.getItem('jsas-plongeurs') || '[]');
+let palanquees = JSON.parse(localStorage.getItem('jsas-palanquees') || '[]');
+
+// Flag pour savoir si Firebase fonctionne
+let firebaseConnected = false;
 
 // DOM helpers
 function $(id) {
@@ -50,26 +53,51 @@ function checkAlert(palanquee) {
   return false;
 }
 
-// Sync UNIQUEMENT plongeurs & palanquées to the DB + RENDU IMMÉDIAT
+// Sauvegarde locale + Firebase (avec fallback)
 function syncToDatabase() {
-  console.log("💾 Synchronisation avec Firebase...");
+  console.log("💾 Synchronisation...");
   
-  // NOUVEAU: Rendu immédiat avant la sync Firebase
+  // 1. TOUJOURS sauvegarder en local d'abord
+  localStorage.setItem('jsas-plongeurs', JSON.stringify(plongeurs));
+  localStorage.setItem('jsas-palanquees', JSON.stringify(palanquees));
+  console.log("✅ Sauvegarde locale OK");
+  
+  // 2. Rendu immédiat de l'interface
   renderPalanquees();
   renderPlongeurs();
   
-  // Puis synchronisation Firebase
-  set(ref(db, 'plongeurs'), plongeurs).then(() => {
-    console.log("✅ Plongeurs synchronisés avec Firebase");
-  }).catch((error) => {
-    console.error("❌ Erreur sync plongeurs:", error);
-  });
-  
-  set(ref(db, 'palanquees'), palanquees).then(() => {
-    console.log("✅ Palanquées synchronisées avec Firebase");
-  }).catch((error) => {
-    console.error("❌ Erreur sync palanquées:", error);
-  });
+  // 3. Tentative de sync Firebase (sans bloquer si ça échoue)
+  if (firebaseConnected) {
+    set(ref(db, 'plongeurs'), plongeurs).catch(error => {
+      console.warn("⚠️ Erreur sync Firebase plongeurs:", error.message);
+    });
+    
+    set(ref(db, 'palanquees'), palanquees).catch(error => {
+      console.warn("⚠️ Erreur sync Firebase palanquées:", error.message);
+    });
+  } else {
+    console.log("ℹ️ Firebase non connecté, utilisation localStorage uniquement");
+  }
+}
+
+// Test de connexion Firebase
+async function testFirebaseConnection() {
+  try {
+    const testRef = ref(db, '.info/connected');
+    onValue(testRef, (snapshot) => {
+      firebaseConnected = snapshot.val() === true;
+      console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
+    });
+    
+    // Tentative d'écriture test
+    await set(ref(db, 'test'), { timestamp: Date.now() });
+    console.log("✅ Test d'écriture Firebase réussi");
+    return true;
+  } catch (error) {
+    console.error("❌ Test Firebase échoué:", error.message);
+    console.log("🔄 Mode localStorage uniquement activé");
+    return false;
+  }
 }
 
 // Render functions
@@ -97,7 +125,7 @@ function renderPlongeurs() {
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   if (!container) {
-    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé dans renderPalanquees!");
+    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé!");
     return;
   }
   
@@ -197,7 +225,7 @@ function renderPalanquees() {
   console.log("✅ Palanquées rendues avec succès!");
 }
 
-// Setup Event Listeners (déplacé dans une fonction séparée)
+// Setup Event Listeners
 function setupEventListeners() {
   console.log("🎛️ Configuration des event listeners...");
   
@@ -279,7 +307,7 @@ function setupEventListeners() {
   console.log("✅ Event listeners configurés");
 }
 
-// Chargement de l'historique des DP
+// Chargement de l'historique des DP (Firebase uniquement pour DP)
 function chargerHistoriqueDP() {
   const dpDatesSelect = document.getElementById("dp-dates");
   const historiqueInfo = document.getElementById("historique-info");
@@ -318,11 +346,13 @@ function chargerHistoriqueDP() {
   });
 }
 
-// ===== GESTION DP - SYSTEM FIREBASE UNIQUEMENT =====
+// ===== INITIALISATION =====
 
-// Sauvegarde des informations du DP avec la date comme identifiant
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 DOM chargé, initialisation de l'application...");
+  
+  // Test de connexion Firebase
+  await testFirebaseConnection();
   
   // Chargement des infos DP du jour au démarrage
   const dpNomInput = document.getElementById("dp-nom");
@@ -334,7 +364,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dpDateInput.value = today;
 
-  get(child(dbRef, `dpInfo/${today}`)).then((snapshot) => {
+  // Tentative de chargement DP depuis Firebase
+  try {
+    const snapshot = await get(child(dbRef, `dpInfo/${today}`));
     if (snapshot.exists()) {
       const dpData = snapshot.val();
       console.log("Données DP chargées:", dpData);
@@ -346,9 +378,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       console.log("Aucune donnée DP pour aujourd'hui");
     }
-  }).catch((error) => {
+  } catch (error) {
     console.error("Erreur de lecture des données DP :", error);
-  });
+  }
 
   // Gestionnaire de validation DP
   document.getElementById("valider-dp").addEventListener("click", () => {
@@ -395,10 +427,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Chargement de l'historique des DP
   chargerHistoriqueDP();
 
-  // ===== INITIALISATION DES LISTENERS FIREBASE APRÈS DOM READY =====
-  console.log("📡 Initialisation des listeners Firebase...");
-  
-  // CORRECTION IMPORTANTE: S'assurer que le container existe
+  // Vérification du container
   const palanqueesContainer = document.getElementById("palanqueesContainer");
   if (!palanqueesContainer) {
     console.error("❌ ERREUR: palanqueesContainer non trouvé dans le DOM!");
@@ -406,19 +435,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   console.log("✅ palanqueesContainer trouvé");
 
-  // Subscribe to DB updates APRÈS que le DOM soit prêt
-  onValue(ref(db, 'plongeurs'), snapshot => {
-    plongeurs = snapshot.val() || [];
-    console.log("📥 Plongeurs chargés depuis Firebase:", plongeurs.length, "plongeurs");
-    renderPlongeurs();
-  });
+  // Rendu initial avec les données locales
+  console.log("🎨 Rendu initial avec données locales...");
+  renderPalanquees();
+  renderPlongeurs();
 
-  onValue(ref(db, 'palanquees'), snapshot => {
-    palanquees = snapshot.val() || [];
-    console.log("📥 Palanquées chargées depuis Firebase:", palanquees.length, "palanquées");
-    renderPalanquees();
-  });
-
-  // Ajout des event listeners pour les formulaires
+  // Setup des event listeners
   setupEventListeners();
+  
+  console.log("✅ Application initialisée avec succès!");
 });
