@@ -157,7 +157,7 @@ function renderPlongeurs() {
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   if (!container) {
-    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé!");
+    console.error("❌ ERREUR CRITIQUE: palanqueesContainer non trouvé dans renderPalanquees!");
     return;
   }
   
@@ -187,44 +187,67 @@ function renderPalanquees() {
     
     // Message si palanquée vide
     if (palanquee.length === 0) {
-      const emptyMsg = document.createElement("p");
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "palanquee-empty";
       emptyMsg.textContent = "Glissez des plongeurs ici ⬇️";
-      emptyMsg.style.color = "#666";
-      emptyMsg.style.fontStyle = "italic";
-      emptyMsg.style.textAlign = "center";
-      emptyMsg.style.padding = "20px";
       div.appendChild(emptyMsg);
-    }
-    
-    // Ajouter les plongeurs
-    palanquee.forEach((plg, i) => {
-      const p = document.createElement("p");
-      p.textContent = `${plg.nom} (${plg.niveau}) [${plg.pre || ''}]`;
-      p.style.cursor = "pointer";
-      p.style.backgroundColor = "#e0f0ff";
-      p.style.padding = "5px";
-      p.style.margin = "2px 0";
-      p.style.borderRadius = "3px";
-      p.title = "Cliquez pour remettre dans la liste";
-      p.addEventListener("click", () => {
-        console.log("Retour plongeur à la liste:", plg.nom);
-        palanquee.splice(i, 1);
-        plongeurs.push(plg);
-        syncToDatabase();
+    } else {
+      // Créer une sous-liste pour les plongeurs de cette palanquée
+      const plongeursList = document.createElement("div");
+      plongeursList.className = "palanquee-plongeurs";
+      
+      // Ajouter les plongeurs avec le même style que la liste principale
+      palanquee.forEach((plg, i) => {
+        const plongeurDiv = document.createElement("div");
+        plongeurDiv.className = "plongeur-item palanquee-plongeur-item";
+        plongeurDiv.draggable = true;
+        
+        plongeurDiv.innerHTML = `
+          <div class="plongeur-content">
+            <span class="plongeur-nom">${plg.nom}</span>
+            <span class="plongeur-niveau">(${plg.niveau})</span>
+            <span class="plongeur-prerogatives">[${plg.pre || 'Aucune'}]</span>
+            <span class="return-plongeur" title="Remettre dans la liste">↩️</span>
+          </div>
+        `;
+        
+        // Event listener pour remettre le plongeur dans la liste (clic)
+        plongeurDiv.querySelector(".return-plongeur").addEventListener("click", (e) => {
+          e.stopPropagation();
+          console.log("↩️ Retour plongeur à la liste:", plg.nom);
+          palanquee.splice(i, 1);
+          plongeurs.push(plg);
+          syncToDatabase();
+        });
+        
+        // Event listener pour drag & drop (pour déplacer vers une autre palanquée)
+        plongeurDiv.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("text/plain", JSON.stringify({
+            type: "fromPalanquee",
+            palanqueeIndex: idx,
+            plongeurIndex: i,
+            plongeur: plg
+          }));
+        });
+        
+        plongeursList.appendChild(plongeurDiv);
       });
-      div.appendChild(p);
-    });
+      
+      div.appendChild(plongeursList);
+    }
 
     // Événement de suppression de palanquée
     div.querySelector(".remove-palanquee").addEventListener("click", () => {
-      console.log("Suppression palanquée", idx + 1);
-      // Remettre tous les plongeurs dans la liste
-      palanquee.forEach(plg => plongeurs.push(plg));
-      palanquees.splice(idx, 1);
-      syncToDatabase();
+      if (confirm(`Supprimer la palanquée ${idx + 1} ?`)) {
+        console.log("Suppression palanquée", idx + 1);
+        // Remettre tous les plongeurs dans la liste
+        palanquee.forEach(plg => plongeurs.push(plg));
+        palanquees.splice(idx, 1);
+        syncToDatabase();
+      }
     });
 
-    // Drag & drop avec meilleur feedback visuel
+    // Drag & drop pour recevoir des plongeurs
     div.addEventListener("dragover", e => {
       e.preventDefault();
       div.style.backgroundColor = "#e3f2fd";
@@ -232,8 +255,11 @@ function renderPalanquees() {
     });
     
     div.addEventListener("dragleave", e => {
-      div.style.backgroundColor = "";
-      div.style.borderColor = "";
+      // Vérifier si on quitte vraiment la zone (pas un enfant)
+      if (!div.contains(e.relatedTarget)) {
+        div.style.backgroundColor = "";
+        div.style.borderColor = "";
+      }
     });
     
     div.addEventListener("drop", e => {
@@ -241,12 +267,29 @@ function renderPalanquees() {
       div.style.backgroundColor = "";
       div.style.borderColor = "";
       
-      const i = e.dataTransfer.getData("text/plain");
-      if (i !== "") {
-        console.log("Drop plongeur index:", i, "dans palanquée", idx + 1);
-        const pl = plongeurs.splice(parseInt(i), 1)[0];
-        palanquee.push(pl);
-        syncToDatabase();
+      const data = e.dataTransfer.getData("text/plain");
+      
+      try {
+        // Tentative de parser comme JSON (plongeur venant d'une autre palanquée)
+        const dragData = JSON.parse(data);
+        if (dragData.type === "fromPalanquee") {
+          // Déplacer d'une palanquée vers une autre
+          const sourcePalanquee = palanquees[dragData.palanqueeIndex];
+          const plongeur = sourcePalanquee.splice(dragData.plongeurIndex, 1)[0];
+          palanquee.push(plongeur);
+          console.log("🔄 Plongeur déplacé entre palanquées:", plongeur.nom);
+          syncToDatabase();
+          return;
+        }
+      } catch (e) {
+        // C'est un index simple (plongeur venant de la liste principale)
+        const i = parseInt(data);
+        if (!isNaN(i) && i >= 0 && i < plongeurs.length) {
+          console.log("Drop plongeur index:", i, "dans palanquée", idx + 1);
+          const pl = plongeurs.splice(i, 1)[0];
+          palanquee.push(pl);
+          syncToDatabase();
+        }
       }
     });
 
