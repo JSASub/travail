@@ -25,30 +25,14 @@
     <button type="submit" id="valider-dp">Valider DP</button>
     <div id="dp-message" class="dp-valide"></div>
   </div>
-
-  
-    <!--<div id="meta-info">
-      <label>Directeur de Plongée :
-        <input type="text" id="dp" placeholder="Nom du DP" />
-      </label>
-      <label>Date :
-        <input type="date" id="date" />
-      </label>
-      <label>Lieu :
-        <input type="text" id="lieu" placeholder="Lieu de plongée" />
-      </label>
-    </div>-->
 	
   </header>
 
   <main>
     </br></br>
-	<!--section id="plongeurs"-->
-      <strong>Liste des plongeurs</strong>
+    <strong>Liste des plongeurs</strong>
 	<form id="addForm">  
-    <!--<label>Nom : <input type="text" id="nom" placeholder="NOM & Prénom" required /></label>-->
     <input type="text" id="nom" placeholder="NOM & Prénom" required />
-	<!--label>Niveau :-->
       <select id="niveau" required>
         <option value="">-- Sélectionner le niveau --</option>
         <option>N1</option>
@@ -66,49 +50,29 @@
     </br>
 	<button type="submit" id="ajouter-plongeur">Ajouter</button>
   </form>
-  <!--</section>	  
-	  
-	  
-	  
-	  
-	  
-      <!--
-	  <form id="addForm">
-        <input type="text" id="nom" placeholder="Nom" required />
-        <select id="niveau" required>
-          <option value="">Niveau</option>
-          <option>N1</option>
-          <option>N2</option>
-          <option>N3</option>
-          <option>N4</option>
-          <option>E1</option>
-          <option>E2</option>
-          <option>E3</option>
-          <option>E4</option>
-        </select>
-        <input type="text" id="prerogative" placeholder="Prérogatives (ex: PE20, PA40)" />
-        <button type="submit">Ajouter</button>
-      </form>
-	  -->
-	  
-      <ul id="listePlongeurs" class="dropzone"></ul>
-	  </br>
-	  
-      <button id="exportJSON">Exporter JSON</button>
-      </br>
-	  <input type="file" id="importJSON" accept=".json" />
-    </section>
 
+  <ul id="listePlongeurs" class="dropzone"></ul>
+  </br>
+  
+  <button id="exportJSON">Exporter JSON</button>
+  </br>
+  <input type="file" id="importJSON" accept=".json" />
+
+  </br></br>
+  <section id="palanquees">
+    <strong>Palanquées</strong>
     </br></br>
-	<section id="palanquees">
-      <strong>Palanquées</strong>
-	  <br>
-	  <button id="addPalanquee">Nouvelle palanquée</button>
-	  </br></br>
-      <button id="generatePDF">Exporter PDF</button>
-      </br></br>
-	  <div id="palanqueesContainer"></div>
-    </section>
+    <button id="addPalanquee">Nouvelle palanquée</button>
+    </br></br>
+    
+    <!-- PALANQUÉES AFFICHÉES ICI - AVANT LE BOUTON PDF -->
+    <div id="palanqueesContainer"></div>
+    
+    </br></br>
+    <!-- BOUTON PDF DÉPLACÉ APRÈS LES PALANQUÉES -->
+    <button id="generatePDF">Exporter PDF</button>
+    </br></br>
+  </section>
   </main>
 
   <div id="previewContainer" style="display:none;">
@@ -130,7 +94,6 @@
   Version 1.7.2 - RA - 2025
   </footer>
 
-  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script-->
   <script type="module" src="script.js"></script>
 </body>
 </html>
