@@ -206,18 +206,29 @@ async function syncToDatabase() {
 
 // NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
 async function saveSessionData() {
+  console.log("💾 DÉBUT saveSessionData()");
+  
   const dpNom = $("dp-nom").value.trim();
   const dpDate = $("dp-date").value;
   const dpPlongee = $("dp-plongee").value;
   
+  console.log("📝 Données récupérées:", { dpNom, dpDate, dpPlongee });
+  
   if (!dpNom || !dpDate || !dpPlongee) {
-    console.log("ℹ️ Pas de sauvegarde session : DP, date ou plongée manquant");
+    console.log("❌ Pas de sauvegarde session : DP, date ou plongée manquant");
+    console.log("🔍 Détail:", { 
+      dpNom: dpNom || "MANQUANT", 
+      dpDate: dpDate || "MANQUANT", 
+      dpPlongee: dpPlongee || "MANQUANT" 
+    });
     return;
   }
   
   // Créer une clé unique : date + première partie du nom DP + type de plongée
   const dpKey = dpNom.split(' ')[0].substring(0, 8); // Premier mot, max 8 char
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  console.log("🔑 Clé de session générée:", sessionKey);
   
   const sessionData = {
     meta: {
@@ -238,11 +249,26 @@ async function saveSessionData() {
     }
   };
   
+  console.log("📊 Données de session à sauvegarder:", sessionData);
+  console.log("🎯 Chemin Firebase:", `sessions/${sessionKey}`);
+  
   try {
+    console.log("🔥 Tentative de sauvegarde Firebase...");
     await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée:", sessionKey);
+    console.log("✅ Session sauvegardée avec succès:", sessionKey);
+    
+    // Vérification immédiate
+    console.log("🔍 Vérification de la sauvegarde...");
+    const verification = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (verification.exists()) {
+      console.log("✅ Vérification OK - Session bien sauvegardée");
+    } else {
+      console.error("❌ Vérification échouée - Session non trouvée après sauvegarde");
+    }
+    
   } catch (error) {
     console.error("❌ Erreur sauvegarde session:", error);
+    console.error("🔍 Détails erreur:", error.message);
   }
 }
 
@@ -1045,6 +1071,14 @@ function setupEventListeners() {
   $("refresh-sessions").addEventListener("click", async () => {
     console.log("🔄 Actualisation des sessions...");
     await populateSessionSelector();
+  });
+
+  // Sauvegarde manuelle de session - NOUVEAU
+  $("save-session").addEventListener("click", async () => {
+    console.log("💾 Sauvegarde manuelle de session...");
+    await saveSessionData();
+    alert("Session sauvegardée !");
+    await populateSessionSelector(); // Actualiser la liste
   });
 
   // Contrôles de tri
