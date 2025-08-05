@@ -69,10 +69,40 @@ async function loadFromFirebase() {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    updateCompteurs(); // NOUVEAU
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
   }
+}
+
+// ===== COMPTEURS D'AFFICHAGE =====
+function updateCompteurs() {
+  // Compteur plongeurs non assignés
+  const compteurPlongeurs = $("compteur-plongeurs");
+  if (compteurPlongeurs) {
+    compteurPlongeurs.textContent = `(${plongeurs.length})`;
+    compteurPlongeurs.style.color = plongeurs.length === 0 ? "#28a745" : "#007bff";
+  }
+  
+  // Compteur plongeurs dans palanquées
+  const totalPlongeursEnPalanquees = palanquees.flat().length;
+  const nombrePalanquees = palanquees.length;
+  const compteurPalanquees = $("compteur-palanquees");
+  
+  if (compteurPalanquees) {
+    if (nombrePalanquees === 0) {
+      compteurPalanquees.textContent = "(Aucune palanquée)";
+      compteurPalanquees.style.color = "#666";
+    } else {
+      const plurielPlongeurs = totalPlongeursEnPalanquees > 1 ? "plongeurs" : "plongeur";
+      const plurielPalanquees = nombrePalanquees > 1 ? "palanquées" : "palanquée";
+      compteurPalanquees.textContent = `(${totalPlongeursEnPalanquees} ${plurielPlongeurs} dans ${nombrePalanquees} ${plurielPalanquees})`;
+      compteurPalanquees.style.color = "#28a745";
+    }
+  }
+  
+  console.log(`📊 Compteurs mis à jour: ${plongeurs.length} non assignés, ${totalPlongeursEnPalanquees} en palanquées`);
 }
 
 // ===== SYSTÈME D'ALERTES AMÉLIORÉ =====
@@ -182,6 +212,7 @@ async function syncToDatabase() {
   renderPalanquees();
   renderPlongeurs();
   updateAlertes();
+  updateCompteurs(); // NOUVEAU
   
   // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
@@ -341,6 +372,7 @@ async function loadSession(sessionKey) {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    updateCompteurs(); // NOUVEAU
     
     console.log("✅ Session chargée:", sessionKey);
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées affichés`);
@@ -1342,6 +1374,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    updateCompteurs(); // NOUVEAU
     setupEventListeners();
     
     alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");
