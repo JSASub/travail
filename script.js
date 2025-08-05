@@ -574,6 +574,25 @@ function renderPlongeurs() {
   });
 }
 
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
+    console.error("Stack trace:", error.stack);
+    
+    // Mode dégradé sans Firebase
+    console.log("🔄 Tentative de fonctionnement en mode dégradé...");
+    plongeurs = [];
+    palanquees = [];
+    plongeursOriginaux = [];
+    
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    setupEventListeners();
+    
+    alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");
+  }
+});
+
 function renderPalanquees() {
   const container = $("palanqueesContainer");
   if (!container) return;
@@ -937,16 +956,117 @@ function setupEventListeners() {
   });
 }
 
+// ===== INITIALISATION =====
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Application Palanquées JSAS v2.0.0 - Chargement...");
+  
+  try {
+    // Test de connexion Firebase
+    console.log("🔥 Tentative de connexion Firebase...");
+    await testFirebaseConnection();
+    
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    $("dp-date").value = today;
+    
+    // Chargement des infos DP du jour au démarrage
+    const dpNomInput = $("dp-nom");
+    const dpLieuInput = $("dp-lieu");
+    const dbRef = ref(db);
+
+    // Tentative de chargement DP depuis Firebase
+    console.log("📥 Chargement des données DP...");
+    try {
+      const snapshot = await get(child(dbRef, `dpInfo/${today}`));
+      if (snapshot.exists()) {
+        const dpData = snapshot.val();
+        console.log("✅ Données DP chargées:", dpData);
+        dpNomInput.value = dpData.nom || "";
+        dpLieuInput.value = dpData.lieu || "";
+        const dpMessage = $("dp-message");
+        dpMessage.textContent = "Informations du jour chargées.";
+        dpMessage.style.color = "blue";
+      } else {
+        console.log("ℹ️ Aucune donnée DP pour aujourd'hui");
+      }
+    } catch (error) {
+      console.error("❌ Erreur de lecture des données DP :", error);
+    }
+
+    // Gestionnaire de validation DP
+    $("valider-dp").addEventListener("click", () => {
+      const nomDP = $("dp-nom").value.trim();
+      const date = $("dp-date").value;
+      const lieu = $("dp-lieu").value.trim();
+      
+      console.log("📝 Validation DP:", nomDP, date, lieu);
+
+      if (!nomDP || !date || !lieu) {
+        alert("Veuillez remplir tous les champs du DP.");
+        return;
+      }
+
+      const dpData = {
+        nom: nomDP,
+        date: date,
+        lieu: lieu,
+        timestamp: Date.now()
+      };
+
+      const dpKey = `dpInfo/${date}`;
+      
+      // Affichage en attente
+      const dpMessage = $("dp-message");
+      dpMessage.textContent = "Enregistrement en cours...";
+      dpMessage.style.color = "orange";
+      
+      set(ref(db, dpKey), dpData)
+        .then(() => {
+          console.log("✅ Données DP sauvegardées avec succès");
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = " Informations du DP enregistrées avec succès.";
+          dpMessage.style.color = "green";
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Firebase DP:", error);
+          dpMessage.classList.remove("success-icon");
+          dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          dpMessage.style.color = "red";
+        });
+    });
+
+    // Chargement de l'historique des DP
+    console.log("📜 Chargement historique DP...");
+    chargerHistoriqueDP();
+    
+    // Chargement des données depuis Firebase
+    console.log("📊 Chargement des données principales...");
+    await loadFromFirebase();
+    
+    // Setup des event listeners
+    console.log("🎛️ Configuration des event listeners...");
+    setupEventListeners();
+    
+    console.log("✅ Application initialisée avec succès!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
+    console.log(`🔥 Firebase connecté: ${firebaseConnected}`);
+    
 // Chargement de l'historique des DP (Firebase)
 function chargerHistoriqueDP() {
   const dpDatesSelect = $("dp-dates");
   const historiqueInfo = $("historique-info");
+
+  if (!dpDatesSelect || !historiqueInfo) {
+    console.error("❌ Éléments DOM pour historique DP non trouvés");
+    return;
+  }
 
   const dbRef = ref(db);
 
   get(child(dbRef, "dpInfo")).then((snapshot) => {
     if (snapshot.exists()) {
       const dpInfos = snapshot.val();
+      console.log("✅ Historique DP chargé:", Object.keys(dpInfos).length, "entrées");
 
       // Vider les options existantes (sauf la première)
       dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
@@ -970,97 +1090,10 @@ function chargerHistoriqueDP() {
           historiqueInfo.innerHTML = "";
         }
       });
+    } else {
+      console.log("ℹ️ Aucun historique DP trouvé");
     }
   }).catch((error) => {
-    console.error("Erreur de lecture de l'historique DP :", error);
+    console.error("❌ Erreur de lecture de l'historique DP :", error);
   });
 }
-
-// ===== INITIALISATION =====
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 Application Palanquées JSAS v2.0.0 - Chargement...");
-  
-  // Test de connexion Firebase
-  await testFirebaseConnection();
-  
-  // Définir la date du jour
-  const today = new Date().toISOString().split("T")[0];
-  $("dp-date").value = today;
-  
-  // Chargement des infos DP du jour au démarrage
-  const dpNomInput = $("dp-nom");
-  const dpLieuInput = $("dp-lieu");
-  const dbRef = ref(db);
-
-  // Tentative de chargement DP depuis Firebase
-  try {
-    const snapshot = await get(child(dbRef, `dpInfo/${today}`));
-    if (snapshot.exists()) {
-      const dpData = snapshot.val();
-      console.log("Données DP chargées:", dpData);
-      dpNomInput.value = dpData.nom || "";
-      dpLieuInput.value = dpData.lieu || "";
-      const dpMessage = $("dp-message");
-      dpMessage.textContent = "Informations du jour chargées.";
-      dpMessage.style.color = "blue";
-    } else {
-      console.log("Aucune donnée DP pour aujourd'hui");
-    }
-  } catch (error) {
-    console.error("Erreur de lecture des données DP :", error);
-  }
-
-  // Gestionnaire de validation DP
-  $("valider-dp").addEventListener("click", () => {
-    const nomDP = $("dp-nom").value.trim();
-    const date = $("dp-date").value;
-    const lieu = $("dp-lieu").value.trim();
-    
-    console.log("Clic détecté :", nomDP, date, lieu);
-
-    if (!nomDP || !date || !lieu) {
-      alert("Veuillez remplir tous les champs du DP.");
-      return;
-    }
-
-    const dpData = {
-      nom: nomDP,
-      date: date,
-      lieu: lieu,
-      timestamp: Date.now()
-    };
-
-    const dpKey = `dpInfo/${date}`;
-    
-    // Affichage en attente
-    const dpMessage = $("dp-message");
-    dpMessage.textContent = "Enregistrement en cours...";
-    dpMessage.style.color = "orange";
-    
-    set(ref(db, dpKey), dpData)
-      .then(() => {
-        console.log("Données DP sauvegardées avec succès");
-        dpMessage.classList.add("success-icon");
-        dpMessage.textContent = " Informations du DP enregistrées avec succès.";
-        dpMessage.style.color = "green";
-      })
-      .catch((error) => {
-        console.error("Erreur Firebase:", error);
-        dpMessage.classList.remove("success-icon");
-        dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
-        dpMessage.style.color = "red";
-      });
-  });
-
-  // Chargement de l'historique des DP
-  chargerHistoriqueDP();
-  
-  // Chargement des données depuis Firebase
-  await loadFromFirebase();
-  
-  // Setup des event listeners
-  setupEventListeners();
-  
-  console.log("✅ Application initialisée avec succès!");
-  console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
-});
