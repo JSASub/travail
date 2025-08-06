@@ -1648,7 +1648,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("📜 Chargement des sessions...");
     await populateSessionSelector();
     
-	 // Setup des event listeners
+    // Setup des event listeners
     console.log("🎛️ Configuration des event listeners...");
     setupEventListeners();
     
