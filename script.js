@@ -538,7 +538,7 @@ async function saveSessionData() {
   }
 }
 
-// NOUVELLE FONCTION : Charger les sessions disponibles
+// NOUVELLE FONCTION : Charger les sessions disponibles - VERSION CORRIGÉE
 async function loadAvailableSessions() {
   try {
     const sessionsSnapshot = await db.ref('sessions').once('value');
@@ -551,19 +551,70 @@ async function loadAvailableSessions() {
     const sessionsList = [];
     
     for (const [key, data] of Object.entries(sessions)) {
-      sessionsList.push({
-        key: key,
-        dp: data.meta.dp,
-        date: data.meta.date,
-        lieu: data.meta.lieu,
-        plongee: data.meta.plongee || "Non défini",
-        timestamp: data.meta.timestamp,
-        stats: data.stats
-      });
+      // CORRECTION: Vérifier si data.meta existe avant de l'utiliser
+      if (!data || typeof data !== 'object') {
+        console.warn(`⚠️ Session ${key} invalide (données corrompues), ignorée`);
+        continue;
+      }
+      
+      // Gestion des anciens formats de sessions
+      let sessionInfo;
+      
+      if (data.meta) {
+        // Nouveau format avec meta
+        sessionInfo = {
+          key: key,
+          dp: data.meta.dp || "DP non défini",
+          date: data.meta.date || "Date inconnue",
+          lieu: data.meta.lieu || "Lieu non défini",
+          plongee: data.meta.plongee || "Non défini",
+          timestamp: data.meta.timestamp || Date.now(),
+          stats: data.stats || {
+            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
+            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
+            plongeursNonAssignes: (data.plongeurs || []).length
+          }
+        };
+      } else {
+        // Ancien format ou format non standard
+        console.warn(`⚠️ Session ${key} utilise un ancien format, adaptation...`);
+        
+        // Essayer d'extraire les infos du nom de la clé
+        const keyParts = key.split('_');
+        const dateFromKey = keyParts[0] || "Date inconnue";
+        const plongeeFromKey = keyParts[keyParts.length - 1] || "Non défini";
+        
+        sessionInfo = {
+          key: key,
+          dp: data.dp || data.directeurPlongee || "DP non défini (ancien format)",
+          date: data.date || dateFromKey,
+          lieu: data.lieu || "Lieu non défini",
+          plongee: data.plongee || plongeeFromKey,
+          timestamp: data.timestamp || Date.now(),
+          stats: {
+            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
+            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
+            plongeursNonAssignes: (data.plongeurs || []).length
+          }
+        };
+      }
+      
+      sessionsList.push(sessionInfo);
     }
     
     // Trier par date décroissante
-    sessionsList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    sessionsList.sort((a, b) => {
+      // Essayer de comparer par date, sinon par timestamp
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+        return dateB - dateA;
+      } else {
+        // Fallback sur timestamp
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      }
+    });
     
     console.log("✅ Sessions chargées:", sessionsList.length);
     return sessionsList;
