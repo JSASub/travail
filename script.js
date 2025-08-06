@@ -76,6 +76,39 @@ async function loadFromFirebase() {
   }
 }
 
+// ===== DIAGNOSTIC SYSTÈME =====
+function diagnosticSystem() {
+  console.log("🔍 === DIAGNOSTIC SYSTÈME ===");
+  
+  // Test 1: Vérifier les éléments HTML
+  const compteurPlongeurs = $("compteur-plongeurs");
+  const compteurPalanquees = $("compteur-palanquees");
+  
+  console.log("🔍 Élément compteur-plongeurs:", compteurPlongeurs ? "✅ TROUVÉ" : "❌ MANQUANT");
+  console.log("🔍 Élément compteur-palanquees:", compteurPalanquees ? "✅ TROUVÉ" : "❌ MANQUANT");
+  
+  // Test 2: Vérifier les données
+  console.log("🔍 Nombre de plongeurs:", plongeurs.length);
+  console.log("🔍 Nombre de palanquées:", palanquees.length);
+  console.log("🔍 Détail palanquées:", palanquees.map(p => p.length));
+  
+  // Test 3: Vérifier le DOM
+  const titreListePlongeurs = document.querySelector("main strong");
+  const titrePalanquees = document.querySelector("#palanquees strong");
+  
+  console.log("🔍 Titre liste plongeurs:", titreListePlongeurs ? titreListePlongeurs.innerHTML : "NON TROUVÉ");
+  console.log("🔍 Titre palanquées:", titrePalanquees ? titrePalanquees.innerHTML : "NON TROUVÉ");
+  
+  // Conclusion
+  if (!compteurPlongeurs || !compteurPalanquees) {
+    console.error("❌ PROBLÈME: Les éléments HTML pour les compteurs n'existent pas !");
+    console.error("🔧 SOLUTION: Tu dois mettre à jour ton fichier index.html sur le serveur");
+    alert("❌ PROBLÈME DÉTECTÉ: Les éléments HTML pour les compteurs sont manquants !\n\n🔧 SOLUTION: Mets à jour ton fichier index.html sur le serveur avec la version qui contient les spans pour les compteurs.");
+  } else {
+    console.log("✅ Éléments HTML OK, problème ailleurs");
+  }
+}
+
 // ===== COMPTEURS D'AFFICHAGE =====
 function updateCompteurs() {
   // Compteur plongeurs non assignés
