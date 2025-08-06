@@ -69,7 +69,7 @@ async function loadFromFirebase() {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
-    updateCompteurs(); // NOUVEAU
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
@@ -212,7 +212,7 @@ async function syncToDatabase() {
   renderPalanquees();
   renderPlongeurs();
   updateAlertes();
-  updateCompteurs(); // NOUVEAU
+  // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
   
   // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
@@ -372,7 +372,7 @@ async function loadSession(sessionKey) {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
-    updateCompteurs(); // NOUVEAU
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     
     console.log("✅ Session chargée:", sessionKey);
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées affichés`);
@@ -491,57 +491,59 @@ function renderPlongeurs() {
   
   if (plongeurs.length === 0) {
     liste.innerHTML = '<li style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur ajouté</li>';
-    return;
+  } else {
+    plongeurs.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.className = "plongeur-item";
+      li.draggable = true;
+      li.dataset.index = i;
+      
+      li.innerHTML = `
+        <div class="plongeur-content">
+          <span class="plongeur-nom">${p.nom}</span>
+          <span class="plongeur-niveau">${p.niveau}</span>
+          <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
+          <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
+        </div>
+      `;
+      
+      // Event listeners pour drag & drop - VERSION CORRIGÉE FIREBASE
+      li.addEventListener("dragstart", e => {
+        console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
+        li.classList.add('dragging');
+        
+        // IMPORTANT: Stocker les données du plongeur directement, pas l'index
+        const plongeurData = {
+          type: "fromMainList",
+          plongeur: { ...p }, // Clone de l'objet
+          originalIndex: i
+        };
+        
+        e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
+        e.dataTransfer.effectAllowed = "move";
+      });
+      
+      li.addEventListener("dragend", e => {
+        li.classList.remove('dragging');
+        console.log("🖱️ Fin drag plongeur");
+      });
+      
+      li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
+          plongeurs.splice(i, 1);
+          // Mettre à jour la liste originale
+          plongeursOriginaux = plongeursOriginaux.filter(po => po.nom !== p.nom);
+          syncToDatabase();
+        }
+      });
+      
+      liste.appendChild(li);
+    });
   }
   
-  plongeurs.forEach((p, i) => {
-    const li = document.createElement("li");
-    li.className = "plongeur-item";
-    li.draggable = true;
-    li.dataset.index = i;
-    
-    li.innerHTML = `
-      <div class="plongeur-content">
-        <span class="plongeur-nom">${p.nom}</span>
-        <span class="plongeur-niveau">${p.niveau}</span>
-        <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
-        <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
-      </div>
-    `;
-    
-    // Event listeners pour drag & drop - VERSION CORRIGÉE FIREBASE
-    li.addEventListener("dragstart", e => {
-      console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
-      li.classList.add('dragging');
-      
-      // IMPORTANT: Stocker les données du plongeur directement, pas l'index
-      const plongeurData = {
-        type: "fromMainList",
-        plongeur: { ...p }, // Clone de l'objet
-        originalIndex: i
-      };
-      
-      e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
-      e.dataTransfer.effectAllowed = "move";
-    });
-    
-    li.addEventListener("dragend", e => {
-      li.classList.remove('dragging');
-      console.log("🖱️ Fin drag plongeur");
-    });
-    
-    li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
-        plongeurs.splice(i, 1);
-        // Mettre à jour la liste originale
-        plongeursOriginaux = plongeursOriginaux.filter(po => po.nom !== p.nom);
-        syncToDatabase();
-      }
-    });
-    
-    liste.appendChild(li);
-  });
+  // Mise à jour des compteurs après rendu
+  updateCompteurs();
 }
 
 function renderPalanquees() {
@@ -704,6 +706,9 @@ function renderPalanquees() {
   });
   
   setupPalanqueesEventListeners();
+  
+  // Mise à jour des compteurs après rendu des palanquées
+  updateCompteurs();
 }
 
 function setupPalanqueesEventListeners() {
@@ -780,17 +785,18 @@ function generatePDFPreview() {
       </div>
   `;
   
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  // Résumé avec compteurs détaillés
+  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
   const alertesTotal = checkAllAlerts();
   
   html += `
     <div class="resume">
-      <h3>Résumé</h3>
-      <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
-      <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
-      <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
-      <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
+      <h3>Résumé détaillé</h3>
+      <p><strong>📊 Total des plongeurs :</strong> ${totalPlongeurs}</p>
+      <p><strong>🤿 Plongeurs non assignés :</strong> ${plongeurs.length}</p>
+      <p><strong>🏊 Plongeurs en palanquées :</strong> ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)</p>
+      <p><strong>⚠️ Nombre d'alertes :</strong> ${alertesTotal.length}</p>
     </div>
   `;
   
@@ -898,25 +904,26 @@ function exportToPDF() {
   doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
   yPosition += 15;
   
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  // Résumé avec compteurs détaillés
+  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
   const alertesTotal = checkAllAlerts();
   
-  checkPageBreak(30);
+  checkPageBreak(40);
   doc.setFontSize(14);
   doc.setTextColor(0, 123, 255);
-  doc.text("Résumé", 20, yPosition);
-  yPosition += 10;
+  doc.text("Résumé détaillé", 20, yPosition);
+  yPosition += 12;
   
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Nombre total de plongeurs : ${totalPlongeurs}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Nombre de palanquées : ${palanquees.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Alertes : ${alertesTotal.length}`, 25, yPosition);
+  doc.text(`📊 Total des plongeurs : ${totalPlongeurs}`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`🤿 Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`🏊 Plongeurs en palanquées : ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`⚠️ Nombre d'alertes : ${alertesTotal.length}`, 25, yPosition);
   yPosition += 15;
   
   // Alertes
@@ -1374,7 +1381,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
-    updateCompteurs(); // NOUVEAU
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     setupEventListeners();
     
     alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");
