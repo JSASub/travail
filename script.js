@@ -750,7 +750,7 @@ function sortPlongeurs(type) {
       plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
       break;
     case 'niveau':
-      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
+      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
       plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 9) - (niveauOrder[b.niveau] || 9));
       break;
     case 'none':
