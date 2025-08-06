@@ -30,10 +30,10 @@
         <option value="apres-midi">Après-midi</option>
         <option value="soir">Soir</option>
         <option value="nuit">Nuit</option>
-        <option value="nuit">Plg1</option>
-        <option value="nuit">Plg2</option>
-        <option value="nuit">Plg3</option>
-        <option value="nuit">Plg4</option>
+        <option value="plg1">Plg1</option>
+        <option value="plg2">Plg2</option>
+        <option value="plg3">Plg3</option>
+        <option value="plg4">Plg4</option>
         <option value="formation">Formation</option>
         <option value="autre">Autre</option>
       </select>
@@ -126,6 +126,21 @@
       Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
     </div>
   </section>
+
+  <hr>
+  <section id="sessions-manager-extended">
+    <strong>Nettoyage des Sessions</strong>
+    <div style="margin: 10px 0;">
+      <label>Sélectionner les sessions à supprimer :</label>
+      <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
+        <em>Chargement automatique...</em>
+      </div>
+      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
+      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
+      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
+      <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
+    </div>
+  </section>
   
   <hr>
   <section id="historique-dp">
@@ -139,21 +154,20 @@
     <div id="historique-info"></div>
     
     <!-- NOUVEAU: Section de nettoyage des DPs -->
-    <!-- Ajoutez cette section APRÈS la section "historique-dp" et AVANT le footer -->
-<hr>
-<section id="sessions-manager-extended">
-  <strong>Nettoyage des Sessions</strong>
-  <div style="margin: 10px 0;">
-    <label>Sélectionner les sessions à supprimer :</label>
-    <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
-      <em>Chargement automatique...</em>
+    <div style="margin: 15px 0; border-top: 1px solid #dee2e6; padding-top: 15px;">
+      <strong style="color: #dc3545;">🧹 Nettoyage des DP</strong>
+      <div style="margin: 10px 0;">
+        <label>Sélectionner les DP à supprimer :</label>
+        <div id="dp-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
+          <em>Chargement automatique...</em>
+        </div>
+        <button id="select-all-dp" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
+        <button id="select-none-dp" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
+        <button id="delete-selected-dp" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnés</button>
+        <button id="refresh-dp-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
+      </div>
     </div>
-    <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
-    <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
-    <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
-    <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
-  </div>
-</section>>
+  </section>
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
   Version 2.1.0 - RA - 2025 -
