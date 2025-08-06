@@ -1,4 +1,186 @@
-// Firebase configuration (méthode classique)
+// ===== INITIALISATION AVEC AUTHENTIFICATION =====
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Application Palanquées JSAS v2.1.0 - Chargement...");
+  
+  try {
+    // ===== ÉTAPE 1: INITIALISATION DE L'AUTHENTIFICATION =====
+    console.log("🔐 Initialisation de l'authentification...");
+    await initializeAuth();
+    
+    // ===== ÉTAPE 2: TEST DE CONNEXION FIREBASE =====
+    console.log("🔥 Tentative de connexion Firebase...");
+    await testFirebaseConnection();
+    
+    // ===== ÉTAPE 3: CONFIGURATION DE L'INTERFACE =====
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    const dpDateInput = $("dp-date");
+    if (dpDateInput) {
+      dpDateInput.value = today;
+    }
+    
+    // ===== ÉTAPE 4: CHARGEMENT DES INFOS DP =====
+    const dpNomInput = $("dp-nom");
+    const dpLieuInput = $("dp-lieu");
+
+    // Tentative de chargement DP depuis Firebase (seulement si authentifié)
+    if (userAuthenticated) {
+      console.log("📥 Chargement des données DP...");
+      try {
+        const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
+        if (snapshot.exists()) {
+          const dpData = snapshot.val();
+          console.log("✅ Données DP chargées:", dpData);
+          if (dpNomInput) dpNomInput.value = dpData.nom || "";
+          if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+          const dpPlongeeInput = $("dp-plongee");
+          if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+          const dpMessage = $("dp-message");
+          if (dpMessage) {
+            dpMessage.textContent = "Informations du jour chargées.";
+            dpMessage.style.color = "blue";
+          }
+        } else {
+          console.log("ℹ️ Aucune donnée DP pour aujourd'hui");
+        }
+      } catch (error) {
+        console.error("❌ Erreur de lecture des données DP :", error);
+        if (error.code === 'PERMISSION_DENIED') {
+          console.error("🚫 Permission refusée pour charger les données DP");
+        }
+      }
+    }
+
+    // ===== ÉTAPE 5: GESTIONNAIRE DE VALIDATION DP =====
+    addSafeEventListener("valider-dp", "click", async () => {
+      if (!ensureAuthenticated()) {
+        alert("Erreur: Vous devez être authentifié pour sauvegarder les données.");
+        return;
+      }
+      
+      const nomDP = $("dp-nom")?.value?.trim() || "";
+      const date = $("dp-date")?.value || "";
+      const lieu = $("dp-lieu")?.value?.trim() || "";
+      const plongee = $("dp-plongee")?.value || "";
+      
+      console.log("📝 Validation DP:", nomDP, date, lieu, plongee);
+
+      if (!nomDP || !date || !lieu || !plongee) {
+        alert("Veuillez remplir tous les champs du DP.");
+        return;
+      }
+
+      const dpData = {
+        nom: nomDP,
+        date: date,
+        lieu: lieu,
+        plongee: plongee,
+        timestamp: Date.now()
+      };
+
+      const dpKey = `dpInfo/${date}_${plongee}`;
+      
+      // Affichage en attente
+      const dpMessage = $("dp-message");
+      if (dpMessage) {
+        dpMessage.textContent = "Enregistrement en cours...";
+        dpMessage.style.color = "orange";
+      }
+      
+      try {
+        await db.ref(dpKey).set(dpData);
+        console.log("✅ Données DP sauvegardées avec succès");
+        if (dpMessage) {
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
+          dpMessage.style.color = "green";
+        }
+      } catch (error) {
+        console.error("❌ Erreur Firebase DP:", error);
+        if (dpMessage) {
+          dpMessage.classList.remove("success-icon");
+          if (error.code === 'PERMISSION_DENIED') {
+            dpMessage.textContent = "Erreur de permission: impossible de sauvegarder.";
+          } else {
+            dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          }
+          dpMessage.style.color = "red";
+        }
+      }
+    });
+
+    // ===== ÉTAPE 6: CHARGEMENT DES DONNÉES HISTORIQUES =====
+    if (userAuthenticated) {
+      console.log("📜 Chargement historique DP...");
+      chargerHistoriqueDP();
+      
+      console.log("📊 Chargement des données principales...");
+      // loadFromFirebase() sera appelé automatiquement par testFirebaseConnection()
+      
+      console.log("📜 Chargement des sessions...");
+      await populateSessionSelector();
+      await populateSessionsCleanupList();
+      await populateDPCleanupList();
+    } else {
+      console.warn("⚠️ Chargement des données historiques ignoré - pas authentifié");
+    }
+    
+    // ===== ÉTAPE 7: SETUP DES EVENT LISTENERS =====
+    console.log("🎛️ Configuration des event listeners...");
+    setupEventListeners();
+    
+    // ===== ÉTAPE 8: AFFICHAGE DU STATUS =====
+    console.log("✅ Application initialisée avec succès!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
+    console.log(`🔥 Firebase connecté: ${firebaseConnected}`);
+    console.log(`🔐 Utilisateur authentifié: ${userAuthenticated}`);
+    
+    // Afficher un message de statut dans l'interface
+    const statusMessage = document.createElement("div");
+    statusMessage.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: ${userAuthenticated ? '#28a745' : '#ffc107'};
+      color: ${userAuthenticated ? 'white' : 'black'};
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8em;
+      z-index: 1000;
+    `;
+    statusMessage.textContent = userAuthenticated ? 
+      "🔐 Authentifié - Sauvegarde active" : 
+      "⚠️ Mode local - Pas de sauvegarde";
+    document.body.appendChild(statusMessage);
+    
+    // Masquer le message après 5 secondes
+    setTimeout(() => {
+      statusMessage.style.transition = "opacity 1s";
+      statusMessage.style.opacity = "0";
+      setTimeout(() => statusMessage.remove(), 1000);
+    }, 5000);
+    
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
+    console.error("Stack trace:", error.stack);
+    
+    // Mode dégradé sans Firebase
+    console.log("🔄 Tentative de fonctionnement en mode dégradé...");
+    plongeurs = [];
+    palanquees = [];
+    plongeursOriginaux = [];
+    userAuthenticated = false;
+    
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    setupEventListeners();
+    
+    alert("Erreur critique d'initialisation. L'application fonctionne en mode local uniquement.");
+    showDegradedModeWarning();
+  }
+});
+    // Firebase configuration (méthode classique)
 const firebaseConfig = {
   apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
   authDomain: "palanquees-jsas.firebaseapp.com",
@@ -12,6 +194,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
 
 // ===== DÉCLARATIONS GLOBALES =====
 let plongeurs = [];
@@ -19,6 +202,7 @@ let palanquees = [];
 let plongeursOriginaux = []; // Pour le tri
 let currentSort = 'none';
 let firebaseConnected = false;
+let userAuthenticated = false;
 
 // DOM helpers
 function $(id) {
@@ -37,18 +221,118 @@ function addSafeEventListener(elementId, event, callback) {
   }
 }
 
-// Test de connexion Firebase
+// === AUTHENTIFICATION FIREBASE ===
+async function initializeAuth() {
+  console.log("🔐 Initialisation de l'authentification...");
+  
+  try {
+    // Écouter les changements d'état d'authentification
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        console.log("✅ Utilisateur authentifié:", user.isAnonymous ? "Anonyme" : user.email);
+        userAuthenticated = true;
+        
+        // Charger les données une fois authentifié
+        if (firebaseConnected) {
+          loadFromFirebase();
+        }
+      } else {
+        console.log("❌ Utilisateur non authentifié");
+        userAuthenticated = false;
+      }
+    });
+    
+    // Vérifier s'il y a déjà un utilisateur connecté
+    if (auth.currentUser) {
+      console.log("✅ Utilisateur déjà connecté");
+      userAuthenticated = true;
+      return;
+    }
+    
+    // Sinon, se connecter de manière anonyme
+    console.log("🔄 Connexion anonyme en cours...");
+    const userCredential = await auth.signInAnonymously();
+    console.log("✅ Authentification anonyme réussie:", userCredential.user.uid);
+    userAuthenticated = true;
+    
+  } catch (error) {
+    console.error("❌ Erreur d'authentification:", error);
+    
+    // Gestion des erreurs spécifiques
+    switch (error.code) {
+      case 'auth/operation-not-allowed':
+        console.error("🚫 L'authentification anonyme n'est pas activée dans Firebase");
+        alert("Erreur: L'authentification anonyme doit être activée dans Firebase Auth");
+        break;
+      case 'auth/network-request-failed':
+        console.error("🌐 Problème de réseau");
+        alert("Erreur de réseau. Vérifiez votre connexion internet.");
+        break;
+      default:
+        console.error("🔥 Erreur Firebase Auth:", error.message);
+        alert("Erreur d'authentification: " + error.message);
+    }
+    
+    // Mode dégradé
+    userAuthenticated = false;
+    showDegradedModeWarning();
+  }
+}
+
+// Afficher un avertissement en mode dégradé
+function showDegradedModeWarning() {
+  const warningDiv = document.createElement("div");
+  warningDiv.id = "auth-warning";
+  warningDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #dc3545;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    z-index: 10000;
+    font-weight: bold;
+  `;
+  warningDiv.innerHTML = `
+    ⚠️ MODE DÉGRADÉ - Authentification échouée - Les données ne seront pas sauvegardées
+    <button onclick="location.reload()" style="margin-left: 10px; padding: 5px;">Recharger</button>
+  `;
+  document.body.prepend(warningDiv);
+}
+
+// Vérifier que l'utilisateur est authentifié avant les opérations Firebase
+function ensureAuthenticated() {
+  if (!userAuthenticated) {
+    console.warn("⚠️ Opération Firebase tentée sans authentification");
+    return false;
+  }
+  return true;
+}
+
+// Test de connexion Firebase avec authentification
 async function testFirebaseConnection() {
   try {
     const testRef = db.ref('.info/connected');
     testRef.on('value', (snapshot) => {
       firebaseConnected = snapshot.val() === true;
       console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
+      
+      // Charger les données si connecté ET authentifié
+      if (firebaseConnected && userAuthenticated) {
+        loadFromFirebase();
+      }
     });
     
-    // Tentative d'écriture test
-    await db.ref('test').set({ timestamp: Date.now() });
-    console.log("✅ Test d'écriture Firebase réussi");
+    // Tentative d'écriture test uniquement si authentifié
+    if (userAuthenticated) {
+      await db.ref('test').set({ timestamp: Date.now() });
+      console.log("✅ Test d'écriture Firebase réussi");
+    } else {
+      console.log("⚠️ Test d'écriture ignoré - pas authentifié");
+    }
+    
     return true;
   } catch (error) {
     console.error("❌ Test Firebase échoué:", error.message);
@@ -56,8 +340,13 @@ async function testFirebaseConnection() {
   }
 }
 
-// Chargement des données depuis Firebase
+// Chargement des données depuis Firebase avec vérification d'authentification
 async function loadFromFirebase() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Chargement Firebase annulé - pas authentifié");
+    return;
+  }
+  
   try {
     console.log("📥 Chargement des données depuis Firebase...");
     
@@ -84,6 +373,12 @@ async function loadFromFirebase() {
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
+    
+    // Gestion des erreurs d'authentification
+    if (error.code === 'PERMISSION_DENIED') {
+      console.error("🚫 Permission refusée - Vérifiez l'authentification et les règles Firebase");
+      alert("Erreur d'autorisation Firebase. Vérifiez la console pour plus de détails.");
+    }
   }
 }
 
@@ -377,7 +672,7 @@ function checkAllAlerts() {
   
   palanquees.forEach((palanquee, idx) => {
     const n1s = palanquee.filter(p => p.niveau === "N1");
-    const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+    const gps = palanquee.filter(p => ["N4GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
     const autonomes = palanquee.filter(p => ["N2", "N3"].includes(p.niveau));
     
     // Palanquée > 5 plongeurs
@@ -455,7 +750,7 @@ function sortPlongeurs(type) {
       plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
       break;
     case 'niveau':
-      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
+      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
       plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 9) - (niveauOrder[b.niveau] || 9));
       break;
     case 'none':
@@ -467,8 +762,13 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase avec historique par date/DP
+// Sauvegarde Firebase avec historique par date/DP et vérification d'authentification
 async function syncToDatabase() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Synchronisation Firebase annulée - pas authentifié");
+    return;
+  }
+  
   console.log("💾 Synchronisation Firebase...");
   
   // Mettre à jour la liste originale pour le tri
@@ -480,7 +780,7 @@ async function syncToDatabase() {
   updateAlertes();
   
   // Sauvegarde Firebase en arrière-plan
-  if (firebaseConnected) {
+  if (firebaseConnected && userAuthenticated) {
     try {
       // Sauvegarde globale (pour compatibilité)
       await Promise.all([
@@ -494,14 +794,25 @@ async function syncToDatabase() {
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
+      
+      // Gestion des erreurs d'authentification
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error("🚫 Permission refusée lors de la sauvegarde");
+        alert("Erreur de permission Firebase. Les données ne peuvent pas être sauvegardées.");
+      }
     }
   } else {
-    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+    console.warn("⚠️ Firebase non connecté ou pas authentifié, données non sauvegardées");
   }
 }
 
-// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
+// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée) avec authentification
 async function saveSessionData() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Sauvegarde session annulée - pas authentifié");
+    return;
+  }
+  
   console.log("💾 DÉBUT saveSessionData()");
   
   const dpNom = $("dp-nom").value.trim();
@@ -565,11 +876,22 @@ async function saveSessionData() {
   } catch (error) {
     console.error("❌ Erreur sauvegarde session:", error);
     console.error("🔍 Détails erreur:", error.message);
+    
+    // Gestion spécifique des erreurs d'authentification
+    if (error.code === 'PERMISSION_DENIED') {
+      console.error("🚫 Permission refusée pour la sauvegarde de session");
+      alert("Erreur de permission: impossible de sauvegarder la session");
+    }
   }
 }
 
-// NOUVELLE FONCTION : Charger les sessions disponibles - VERSION CORRIGÉE
+// NOUVELLE FONCTION : Charger les sessions disponibles avec authentification
 async function loadAvailableSessions() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Chargement sessions annulé - pas authentifié");
+    return [];
+  }
+  
   try {
     const sessionsSnapshot = await db.ref('sessions').once('value');
     if (!sessionsSnapshot.exists()) {
@@ -651,6 +973,11 @@ async function loadAvailableSessions() {
     
   } catch (error) {
     console.error("❌ Erreur chargement sessions:", error);
+    
+    if (error.code === 'PERMISSION_DENIED') {
+      console.error("🚫 Permission refusée pour charger les sessions");
+    }
+    
     return [];
   }
 }
