@@ -12,7 +12,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const auth = firebase.auth();
 
 // ===== DÉCLARATIONS GLOBALES =====
 let plongeurs = [];
@@ -20,7 +19,6 @@ let palanquees = [];
 let plongeursOriginaux = []; // Pour le tri
 let currentSort = 'none';
 let firebaseConnected = false;
-let userAuthenticated = false;
 
 // DOM helpers
 function $(id) {
@@ -39,118 +37,18 @@ function addSafeEventListener(elementId, event, callback) {
   }
 }
 
-// === AUTHENTIFICATION FIREBASE ===
-async function initializeAuth() {
-  console.log("🔐 Initialisation de l'authentification...");
-  
-  try {
-    // Écouter les changements d'état d'authentification
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        console.log("✅ Utilisateur authentifié:", user.isAnonymous ? "Anonyme" : user.email);
-        userAuthenticated = true;
-        
-        // Charger les données une fois authentifié
-        if (firebaseConnected) {
-          loadFromFirebase();
-        }
-      } else {
-        console.log("❌ Utilisateur non authentifié");
-        userAuthenticated = false;
-      }
-    });
-    
-    // Vérifier s'il y a déjà un utilisateur connecté
-    if (auth.currentUser) {
-      console.log("✅ Utilisateur déjà connecté");
-      userAuthenticated = true;
-      return;
-    }
-    
-    // Sinon, se connecter de manière anonyme
-    console.log("🔄 Connexion anonyme en cours...");
-    const userCredential = await auth.signInAnonymously();
-    console.log("✅ Authentification anonyme réussie:", userCredential.user.uid);
-    userAuthenticated = true;
-    
-  } catch (error) {
-    console.error("❌ Erreur d'authentification:", error);
-    
-    // Gestion des erreurs spécifiques
-    switch (error.code) {
-      case 'auth/operation-not-allowed':
-        console.error("🚫 L'authentification anonyme n'est pas activée dans Firebase");
-        alert("Erreur: L'authentification anonyme doit être activée dans Firebase Auth");
-        break;
-      case 'auth/network-request-failed':
-        console.error("🌐 Problème de réseau");
-        alert("Erreur de réseau. Vérifiez votre connexion internet.");
-        break;
-      default:
-        console.error("🔥 Erreur Firebase Auth:", error.message);
-        alert("Erreur d'authentification: " + error.message);
-    }
-    
-    // Mode dégradé
-    userAuthenticated = false;
-    showDegradedModeWarning();
-  }
-}
-
-// Afficher un avertissement en mode dégradé
-function showDegradedModeWarning() {
-  const warningDiv = document.createElement("div");
-  warningDiv.id = "auth-warning";
-  warningDiv.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #dc3545;
-    color: white;
-    padding: 10px;
-    text-align: center;
-    z-index: 10000;
-    font-weight: bold;
-  `;
-  warningDiv.innerHTML = `
-    ⚠️ MODE DÉGRADÉ - Authentification échouée - Les données ne seront pas sauvegardées
-    <button onclick="location.reload()" style="margin-left: 10px; padding: 5px;">Recharger</button>
-  `;
-  document.body.prepend(warningDiv);
-}
-
-// Vérifier que l'utilisateur est authentifié avant les opérations Firebase
-function ensureAuthenticated() {
-  if (!userAuthenticated) {
-    console.warn("⚠️ Opération Firebase tentée sans authentification");
-    return false;
-  }
-  return true;
-}
-
-// Test de connexion Firebase avec authentification
+// Test de connexion Firebase
 async function testFirebaseConnection() {
   try {
     const testRef = db.ref('.info/connected');
     testRef.on('value', (snapshot) => {
       firebaseConnected = snapshot.val() === true;
       console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
-      
-      // Charger les données si connecté ET authentifié
-      if (firebaseConnected && userAuthenticated) {
-        loadFromFirebase();
-      }
     });
     
-    // Tentative d'écriture test uniquement si authentifié
-    if (userAuthenticated) {
-      await db.ref('test').set({ timestamp: Date.now() });
-      console.log("✅ Test d'écriture Firebase réussi");
-    } else {
-      console.log("⚠️ Test d'écriture ignoré - pas authentifié");
-    }
-    
+    // Tentative d'écriture test
+    await db.ref('test').set({ timestamp: Date.now() });
+    console.log("✅ Test d'écriture Firebase réussi");
     return true;
   } catch (error) {
     console.error("❌ Test Firebase échoué:", error.message);
@@ -158,13 +56,8 @@ async function testFirebaseConnection() {
   }
 }
 
-// Chargement des données depuis Firebase avec vérification d'authentification
+// Chargement des données depuis Firebase
 async function loadFromFirebase() {
-  if (!ensureAuthenticated()) {
-    console.warn("⚠️ Chargement Firebase annulé - pas authentifié");
-    return;
-  }
-  
   try {
     console.log("📥 Chargement des données depuis Firebase...");
     
@@ -191,12 +84,6 @@ async function loadFromFirebase() {
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
-    
-    // Gestion des erreurs d'authentification
-    if (error.code === 'PERMISSION_DENIED') {
-      console.error("🚫 Permission refusée - Vérifiez l'authentification et les règles Firebase");
-      alert("Erreur d'autorisation Firebase. Vérifiez la console pour plus de détails.");
-    }
   }
 }
 
@@ -580,13 +467,8 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase avec historique par date/DP et vérification d'authentification
+// Sauvegarde Firebase avec historique par date/DP
 async function syncToDatabase() {
-  if (!ensureAuthenticated()) {
-    console.warn("⚠️ Synchronisation Firebase annulée - pas authentifié");
-    return;
-  }
-  
   console.log("💾 Synchronisation Firebase...");
   
   // Mettre à jour la liste originale pour le tri
@@ -598,7 +480,7 @@ async function syncToDatabase() {
   updateAlertes();
   
   // Sauvegarde Firebase en arrière-plan
-  if (firebaseConnected && userAuthenticated) {
+  if (firebaseConnected) {
     try {
       // Sauvegarde globale (pour compatibilité)
       await Promise.all([
@@ -612,25 +494,14 @@ async function syncToDatabase() {
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
-      
-      // Gestion des erreurs d'authentification
-      if (error.code === 'PERMISSION_DENIED') {
-        console.error("🚫 Permission refusée lors de la sauvegarde");
-        alert("Erreur de permission Firebase. Les données ne peuvent pas être sauvegardées.");
-      }
     }
   } else {
-    console.warn("⚠️ Firebase non connecté ou pas authentifié, données non sauvegardées");
+    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
   }
 }
 
-// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée) avec authentification
+// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
 async function saveSessionData() {
-  if (!ensureAuthenticated()) {
-    console.warn("⚠️ Sauvegarde session annulée - pas authentifié");
-    return;
-  }
-  
   console.log("💾 DÉBUT saveSessionData()");
   
   const dpNom = $("dp-nom").value.trim();
@@ -694,22 +565,11 @@ async function saveSessionData() {
   } catch (error) {
     console.error("❌ Erreur sauvegarde session:", error);
     console.error("🔍 Détails erreur:", error.message);
-    
-    // Gestion spécifique des erreurs d'authentification
-    if (error.code === 'PERMISSION_DENIED') {
-      console.error("🚫 Permission refusée pour la sauvegarde de session");
-      alert("Erreur de permission: impossible de sauvegarder la session");
-    }
   }
 }
 
-// NOUVELLE FONCTION : Charger les sessions disponibles avec authentification
+// NOUVELLE FONCTION : Charger les sessions disponibles - VERSION CORRIGÉE
 async function loadAvailableSessions() {
-  if (!ensureAuthenticated()) {
-    console.warn("⚠️ Chargement sessions annulé - pas authentifié");
-    return [];
-  }
-  
   try {
     const sessionsSnapshot = await db.ref('sessions').once('value');
     if (!sessionsSnapshot.exists()) {
@@ -791,11 +651,6 @@ async function loadAvailableSessions() {
     
   } catch (error) {
     console.error("❌ Erreur chargement sessions:", error);
-    
-    if (error.code === 'PERMISSION_DENIED') {
-      console.error("🚫 Permission refusée pour charger les sessions");
-    }
-    
     return [];
   }
 }
