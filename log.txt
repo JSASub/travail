@@ -1,0 +1,24 @@
+📖 Test 1: Lecture /sessions app.js:1216:15
+❌ ERREUR TEST FIREBASE: Error: permission_denied at /sessions: Client doesn't have permission to access the desired data.
+    onComplete util.ts:491
+    startListening Repo.ts:314
+    sendListen_ PersistentConnection.ts:333
+    onDataMessage_ PersistentConnection.ts:673
+    onDataMessage_ Connection.ts:321
+    onPrimaryMessageReceived_ Connection.ts:313
+    connReceiver_ Connection.ts:210
+    appendFrame_ WebSocketConnection.ts:302
+    handleIncomingFrame WebSocketConnection.ts:354
+    onmessage WebSocketConnection.ts:224
+app.js:1250:15
+❌ ERREUR TEST FIREBASE: Error: permission_denied at /sessions: Client doesn't have permission to access the desired data.
+    onComplete util.ts:491
+    startListening Repo.ts:314
+    sendListen_ PersistentConnection.ts:333
+    onDataMessage_ PersistentConnection.ts:673
+    onDataMessage_ Connection.ts:321
+    onPrimaryMessageReceived_ Connection.ts:313
+    connReceiver_ Connection.ts:210
+    appendFrame_ WebSocketConnection.ts:302
+    handleIncomingFrame WebSocketConnection.ts:354
+    onmessage WebSocketConnection.ts:224

@@ -1,0 +1,44 @@
+{
+  "rules": {
+    // Règles pour les données des plongeurs
+    "plongeurs": {
+      ".read": true,
+      ".write": true,
+      "$plongeur": {
+        ".validate": "newData.hasChildren(['nom', 'niveau']) && newData.child('nom').isString() && newData.child('niveau').isString()"
+      }
+    },
+    
+    // Règles pour les palanquées
+    "palanquees": {
+      ".read": true,
+      ".write": true,
+      "$palanquee": {
+        "$plongeur": {
+          ".validate": "newData.hasChildren(['nom', 'niveau']) && newData.child('nom').isString() && newData.child('niveau').isString()"
+        }
+      }
+    },
+    
+    // Règles pour les informations DP (Directeur de Plongée)
+    "dpInfo": {
+      ".read": true,
+      "$date": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['nom', 'date', 'lieu', 'timestamp']) && newData.child('nom').isString() && newData.child('date').isString() && newData.child('lieu').isString() && newData.child('timestamp').isNumber()"
+      }
+    },
+    
+    // Données de test (pour les tests de connexion)
+    "test": {
+      ".read": true,
+      ".write": true
+    },
+    
+    // Bloquer tout autre accès
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
