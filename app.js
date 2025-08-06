@@ -69,10 +69,73 @@ async function loadFromFirebase() {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
   }
+}
+
+// ===== DIAGNOSTIC SYSTÈME =====
+function diagnosticSystem() {
+  console.log("🔍 === DIAGNOSTIC SYSTÈME ===");
+  
+  // Test 1: Vérifier les éléments HTML
+  const compteurPlongeurs = $("compteur-plongeurs");
+  const compteurPalanquees = $("compteur-palanquees");
+  
+  console.log("🔍 Élément compteur-plongeurs:", compteurPlongeurs ? "✅ TROUVÉ" : "❌ MANQUANT");
+  console.log("🔍 Élément compteur-palanquees:", compteurPalanquees ? "✅ TROUVÉ" : "❌ MANQUANT");
+  
+  // Test 2: Vérifier les données
+  console.log("🔍 Nombre de plongeurs:", plongeurs.length);
+  console.log("🔍 Nombre de palanquées:", palanquees.length);
+  console.log("🔍 Détail palanquées:", palanquees.map(p => p.length));
+  
+  // Test 3: Vérifier le DOM
+  const titreListePlongeurs = document.querySelector("main strong");
+  const titrePalanquees = document.querySelector("#palanquees strong");
+  
+  console.log("🔍 Titre liste plongeurs:", titreListePlongeurs ? titreListePlongeurs.innerHTML : "NON TROUVÉ");
+  console.log("🔍 Titre palanquées:", titrePalanquees ? titrePalanquees.innerHTML : "NON TROUVÉ");
+  
+  // Conclusion
+  if (!compteurPlongeurs || !compteurPalanquees) {
+    console.error("❌ PROBLÈME: Les éléments HTML pour les compteurs n'existent pas !");
+    console.error("🔧 SOLUTION: Tu dois mettre à jour ton fichier index.html sur le serveur");
+    alert("❌ PROBLÈME DÉTECTÉ: Les éléments HTML pour les compteurs sont manquants !\n\n🔧 SOLUTION: Mets à jour ton fichier index.html sur le serveur avec la version qui contient les spans pour les compteurs.");
+  } else {
+    console.log("✅ Éléments HTML OK, problème ailleurs");
+  }
+}
+
+// ===== COMPTEURS D'AFFICHAGE =====
+function updateCompteurs() {
+  // Compteur plongeurs non assignés
+  const compteurPlongeurs = $("compteur-plongeurs");
+  if (compteurPlongeurs) {
+    compteurPlongeurs.textContent = `(${plongeurs.length})`;
+    compteurPlongeurs.style.color = plongeurs.length === 0 ? "#28a745" : "#007bff";
+  }
+  
+  // Compteur plongeurs dans palanquées
+  const totalPlongeursEnPalanquees = palanquees.flat().length;
+  const nombrePalanquees = palanquees.length;
+  const compteurPalanquees = $("compteur-palanquees");
+  
+  if (compteurPalanquees) {
+    if (nombrePalanquees === 0) {
+      compteurPalanquees.textContent = "(Aucune palanquée)";
+      compteurPalanquees.style.color = "#666";
+    } else {
+      const plurielPlongeurs = totalPlongeursEnPalanquees > 1 ? "plongeurs" : "plongeur";
+      const plurielPalanquees = nombrePalanquees > 1 ? "palanquées" : "palanquée";
+      compteurPalanquees.textContent = `(${totalPlongeursEnPalanquees} ${plurielPlongeurs} dans ${nombrePalanquees} ${plurielPalanquees})`;
+      compteurPalanquees.style.color = "#28a745";
+    }
+  }
+  
+  console.log(`📊 Compteurs mis à jour: ${plongeurs.length} non assignés, ${totalPlongeursEnPalanquees} en palanquées`);
 }
 
 // ===== SYSTÈME D'ALERTES AMÉLIORÉ =====
@@ -182,6 +245,7 @@ async function syncToDatabase() {
   renderPalanquees();
   renderPlongeurs();
   updateAlertes();
+  // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
   
   // Sauvegarde Firebase en arrière-plan
   if (firebaseConnected) {
@@ -206,18 +270,29 @@ async function syncToDatabase() {
 
 // NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
 async function saveSessionData() {
+  console.log("💾 DÉBUT saveSessionData()");
+  
   const dpNom = $("dp-nom").value.trim();
   const dpDate = $("dp-date").value;
   const dpPlongee = $("dp-plongee").value;
   
+  console.log("📝 Données récupérées:", { dpNom, dpDate, dpPlongee });
+  
   if (!dpNom || !dpDate || !dpPlongee) {
-    console.log("ℹ️ Pas de sauvegarde session : DP, date ou plongée manquant");
+    console.log("❌ Pas de sauvegarde session : DP, date ou plongée manquant");
+    console.log("🔍 Détail:", { 
+      dpNom: dpNom || "MANQUANT", 
+      dpDate: dpDate || "MANQUANT", 
+      dpPlongee: dpPlongee || "MANQUANT" 
+    });
     return;
   }
   
   // Créer une clé unique : date + première partie du nom DP + type de plongée
   const dpKey = dpNom.split(' ')[0].substring(0, 8); // Premier mot, max 8 char
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  console.log("🔑 Clé de session générée:", sessionKey);
   
   const sessionData = {
     meta: {
@@ -238,11 +313,26 @@ async function saveSessionData() {
     }
   };
   
+  console.log("📊 Données de session à sauvegarder:", sessionData);
+  console.log("🎯 Chemin Firebase:", `sessions/${sessionKey}`);
+  
   try {
+    console.log("🔥 Tentative de sauvegarde Firebase...");
     await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée:", sessionKey);
+    console.log("✅ Session sauvegardée avec succès:", sessionKey);
+    
+    // Vérification immédiate
+    console.log("🔍 Vérification de la sauvegarde...");
+    const verification = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (verification.exists()) {
+      console.log("✅ Vérification OK - Session bien sauvegardée");
+    } else {
+      console.error("❌ Vérification échouée - Session non trouvée après sauvegarde");
+    }
+    
   } catch (error) {
     console.error("❌ Erreur sauvegarde session:", error);
+    console.error("🔍 Détails erreur:", error.message);
   }
 }
 
@@ -285,18 +375,24 @@ async function loadAvailableSessions() {
 // NOUVELLE FONCTION : Charger une session spécifique
 async function loadSession(sessionKey) {
   try {
+    console.log("🔄 Chargement de la session:", sessionKey);
+    
     const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
     if (!sessionSnapshot.exists()) {
       console.error("❌ Session non trouvée:", sessionKey);
+      alert("Session non trouvée dans Firebase");
       return false;
     }
     
     const sessionData = sessionSnapshot.val();
+    console.log("📊 Données session récupérées:", sessionData);
     
     // Charger les données
     plongeurs = sessionData.plongeurs || [];
     palanquees = sessionData.palanquees || [];
     plongeursOriginaux = [...plongeurs];
+    
+    console.log("✅ Données chargées:", plongeurs.length, "plongeurs,", palanquees.length, "palanquées");
     
     // Mettre à jour les champs DP
     $("dp-nom").value = sessionData.meta.dp || "";
@@ -304,13 +400,15 @@ async function loadSession(sessionKey) {
     $("dp-lieu").value = sessionData.meta.lieu || "";
     $("dp-plongee").value = sessionData.meta.plongee || "matin";
     
-    // Rendu
+    // FORCER le rendu
+    console.log("🎨 Forçage du rendu...");
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     
     console.log("✅ Session chargée:", sessionKey);
-    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées affichés`);
     
     // Message utilisateur
     const dpMessage = $("dp-message");
@@ -321,32 +419,112 @@ async function loadSession(sessionKey) {
     
   } catch (error) {
     console.error("❌ Erreur chargement session:", error);
+    alert("Erreur lors du chargement de la session : " + error.message);
     return false;
   }
 }
 
-// NOUVELLE FONCTION : Populer le sélecteur de sessions
+// NOUVELLE FONCTION : Populer le sélecteur de sessions  
 async function populateSessionSelector() {
-  const sessions = await loadAvailableSessions();
-  const selector = $("session-selector");
-  
-  if (!selector) return;
-  
-  // Vider le sélecteur
-  selector.innerHTML = '<option value="">-- Charger une session --</option>';
-  
-  sessions.forEach(session => {
-    const option = document.createElement("option");
-    option.value = session.key;
+  try {
+    console.log("🔄 Chargement des sessions disponibles...");
+    const sessions = await loadAvailableSessions();
+    const selector = $("session-selector");
     
-    // Format d'affichage amélioré avec type de plongée
-    const plongeeType = session.plongee ? ` (${session.plongee})` : '';
-    option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+    if (!selector) {
+      console.error("❌ Sélecteur de sessions non trouvé");
+      return;
+    }
     
-    selector.appendChild(option);
-  });
+    // Vider le sélecteur
+    selector.innerHTML = '<option value="">-- Charger une session --</option>';
+    
+    if (sessions.length === 0) {
+      const option = document.createElement("option");
+      option.textContent = "Aucune session disponible";
+      option.disabled = true;
+      selector.appendChild(option);
+      console.log("ℹ️ Aucune session disponible");
+      return;
+    }
+    
+    sessions.forEach(session => {
+      const option = document.createElement("option");
+      option.value = session.key;
+      
+      // Format d'affichage amélioré avec type de plongée
+      const plongeeType = session.plongee ? ` (${session.plongee})` : '';
+      option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
+      
+      selector.appendChild(option);
+    });
+    
+    console.log("✅ Sélecteur de sessions mis à jour:", sessions.length, "sessions");
+  } catch (error) {
+    console.error("❌ Erreur lors du peuplement du sélecteur:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Supprimer une session spécifique
+async function deleteSession(sessionKey) {
+  if (!sessionKey) {
+    alert("Veuillez sélectionner une session à supprimer.");
+    return false;
+  }
   
-  console.log("✅ Sélecteur de sessions mis à jour");
+  try {
+    console.log("🗑️ Suppression session:", sessionKey);
+    await db.ref(`sessions/${sessionKey}`).remove();
+    console.log("✅ Session supprimée:", sessionKey);
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur suppression session:", error);
+    return false;
+  }
+}
+
+// NOUVELLE FONCTION : Supprimer toutes les sessions
+async function deleteAllSessions() {
+  try {
+    console.log("🗑️ Suppression de toutes les sessions...");
+    await db.ref('sessions').remove();
+    console.log("✅ Toutes les sessions supprimées");
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur suppression toutes sessions:", error);
+    return false;
+  }
+}
+
+// NOUVELLE FONCTION : Supprimer un DP spécifique
+async function deleteDP(dpKey) {
+  if (!dpKey) {
+    alert("Veuillez sélectionner une date à supprimer.");
+    return false;
+  }
+  
+  try {
+    console.log("🗑️ Suppression DP:", dpKey);
+    await db.ref(`dpInfo/${dpKey}`).remove();
+    console.log("✅ DP supprimé:", dpKey);
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    return false;
+  }
+}
+
+// NOUVELLE FONCTION : Supprimer tout l'historique DP
+async function deleteAllDP() {
+  try {
+    console.log("🗑️ Suppression de tout l'historique DP...");
+    await db.ref('dpInfo').remove();
+    console.log("✅ Tout l'historique DP supprimé");
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur suppression historique DP:", error);
+    return false;
+  }
 }
 
 // ===== EXPORT JSON AMÉLIORÉ =====
@@ -408,57 +586,59 @@ function renderPlongeurs() {
   
   if (plongeurs.length === 0) {
     liste.innerHTML = '<li style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur ajouté</li>';
-    return;
+  } else {
+    plongeurs.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.className = "plongeur-item";
+      li.draggable = true;
+      li.dataset.index = i;
+      
+      li.innerHTML = `
+        <div class="plongeur-content">
+          <span class="plongeur-nom">${p.nom}</span>
+          <span class="plongeur-niveau">${p.niveau}</span>
+          <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
+          <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
+        </div>
+      `;
+      
+      // Event listeners pour drag & drop - VERSION CORRIGÉE FIREBASE
+      li.addEventListener("dragstart", e => {
+        console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
+        li.classList.add('dragging');
+        
+        // IMPORTANT: Stocker les données du plongeur directement, pas l'index
+        const plongeurData = {
+          type: "fromMainList",
+          plongeur: { ...p }, // Clone de l'objet
+          originalIndex: i
+        };
+        
+        e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
+        e.dataTransfer.effectAllowed = "move";
+      });
+      
+      li.addEventListener("dragend", e => {
+        li.classList.remove('dragging');
+        console.log("🖱️ Fin drag plongeur");
+      });
+      
+      li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
+          plongeurs.splice(i, 1);
+          // Mettre à jour la liste originale
+          plongeursOriginaux = plongeursOriginaux.filter(po => po.nom !== p.nom);
+          syncToDatabase();
+        }
+      });
+      
+      liste.appendChild(li);
+    });
   }
   
-  plongeurs.forEach((p, i) => {
-    const li = document.createElement("li");
-    li.className = "plongeur-item";
-    li.draggable = true;
-    li.dataset.index = i;
-    
-    li.innerHTML = `
-      <div class="plongeur-content">
-        <span class="plongeur-nom">${p.nom}</span>
-        <span class="plongeur-niveau">${p.niveau}</span>
-        <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
-        <span class="delete-plongeur" title="Supprimer ce plongeur">❌</span>
-      </div>
-    `;
-    
-    // Event listeners pour drag & drop - VERSION CORRIGÉE FIREBASE
-    li.addEventListener("dragstart", e => {
-      console.log("🖱️ Début drag plongeur:", p.nom, "index:", i);
-      li.classList.add('dragging');
-      
-      // IMPORTANT: Stocker les données du plongeur directement, pas l'index
-      const plongeurData = {
-        type: "fromMainList",
-        plongeur: { ...p }, // Clone de l'objet
-        originalIndex: i
-      };
-      
-      e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
-      e.dataTransfer.effectAllowed = "move";
-    });
-    
-    li.addEventListener("dragend", e => {
-      li.classList.remove('dragging');
-      console.log("🖱️ Fin drag plongeur");
-    });
-    
-    li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
-        plongeurs.splice(i, 1);
-        // Mettre à jour la liste originale
-        plongeursOriginaux = plongeursOriginaux.filter(po => po.nom !== p.nom);
-        syncToDatabase();
-      }
-    });
-    
-    liste.appendChild(li);
-  });
+  // Mise à jour des compteurs après rendu
+  updateCompteurs();
 }
 
 function renderPalanquees() {
@@ -621,6 +801,9 @@ function renderPalanquees() {
   });
   
   setupPalanqueesEventListeners();
+  
+  // Mise à jour des compteurs après rendu des palanquées
+  updateCompteurs();
 }
 
 function setupPalanqueesEventListeners() {
@@ -697,17 +880,18 @@ function generatePDFPreview() {
       </div>
   `;
   
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  // Résumé avec compteurs détaillés
+  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
   const alertesTotal = checkAllAlerts();
   
   html += `
     <div class="resume">
-      <h3>Résumé</h3>
-      <p><strong>Nombre total de plongeurs :</strong> ${totalPlongeurs}</p>
-      <p><strong>Nombre de palanquées :</strong> ${palanquees.length}</p>
-      <p><strong>Plongeurs non assignés :</strong> ${plongeurs.length}</p>
-      <p><strong>Alertes :</strong> ${alertesTotal.length}</p>
+      <h3>Résumé détaillé</h3>
+      <p><strong>📊 Total des plongeurs :</strong> ${totalPlongeurs}</p>
+      <p><strong>🤿 Plongeurs non assignés :</strong> ${plongeurs.length}</p>
+      <p><strong>🏊 Plongeurs en palanquées :</strong> ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)</p>
+      <p><strong>⚠️ Nombre d'alertes :</strong> ${alertesTotal.length}</p>
     </div>
   `;
   
@@ -815,25 +999,26 @@ function exportToPDF() {
   doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
   yPosition += 15;
   
-  // Résumé
-  const totalPlongeurs = plongeurs.length + palanquees.flat().length;
+  // Résumé avec compteurs détaillés
+  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
   const alertesTotal = checkAllAlerts();
   
-  checkPageBreak(30);
+  checkPageBreak(40);
   doc.setFontSize(14);
   doc.setTextColor(0, 123, 255);
-  doc.text("Résumé", 20, yPosition);
-  yPosition += 10;
+  doc.text("Résumé détaillé", 20, yPosition);
+  yPosition += 12;
   
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Nombre total de plongeurs : ${totalPlongeurs}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Nombre de palanquées : ${palanquees.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
-  yPosition += 5;
-  doc.text(`Alertes : ${alertesTotal.length}`, 25, yPosition);
+  doc.text(`📊 Total des plongeurs : ${totalPlongeurs}`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`🤿 Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`🏊 Plongeurs en palanquées : ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)`, 25, yPosition);
+  yPosition += 6;
+  doc.text(`⚠️ Nombre d'alertes : ${alertesTotal.length}`, 25, yPosition);
   yPosition += 15;
   
   // Alertes
@@ -1022,6 +1207,131 @@ function setupEventListeners() {
     await populateSessionSelector();
   });
 
+  // Test Firebase - NOUVEAU
+  $("test-firebase").addEventListener("click", async () => {
+    console.log("🧪 === TEST FIREBASE COMPLET ===");
+    
+    try {
+      // Test 1: Lecture de sessions
+      console.log("📖 Test 1: Lecture /sessions");
+      const sessionsRead = await db.ref('sessions').once('value');
+      console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
+      
+      // Test 2: Écriture dans sessions
+      console.log("✏️ Test 2: Écriture /sessions/test");
+      await db.ref('sessions/test').set({
+        timestamp: Date.now(),
+        test: true
+      });
+      console.log("✅ Écriture sessions/test OK");
+      
+      // Test 3: Lecture de ce qu'on vient d'écrire
+      console.log("📖 Test 3: Relecture sessions/test");
+      const testRead = await db.ref('sessions/test').once('value');
+      console.log("✅ Relecture OK:", testRead.val());
+      
+      // Test 4: Sauvegarde session réelle
+      console.log("💾 Test 4: Sauvegarde session réelle");
+      await saveSessionData();
+      
+      // Test 5: Lecture des sessions après sauvegarde
+      console.log("📖 Test 5: Lecture sessions après sauvegarde");
+      const finalRead = await db.ref('sessions').once('value');
+      if (finalRead.exists()) {
+        const sessions = finalRead.val();
+        console.log("✅ Sessions trouvées:", Object.keys(sessions));
+      } else {
+        console.log("❌ Aucune session après sauvegarde");
+      }
+      
+      alert("Test Firebase terminé - regarde la console !");
+      
+    } catch (error) {
+      console.error("❌ ERREUR TEST FIREBASE:", error);
+      alert("Erreur Firebase: " + error.message);
+    }
+  });
+
+  // Sauvegarde manuelle de session - NOUVEAU  
+  $("save-session").addEventListener("click", async () => {
+    console.log("💾 Sauvegarde manuelle de session...");
+    await saveSessionData();
+    alert("Session sauvegardée !");
+    await populateSessionSelector(); // Actualiser la liste
+  });
+
+  // Suppression de session - NOUVEAU
+  $("delete-session").addEventListener("click", async () => {
+    const sessionKey = $("session-selector").value;
+    if (!sessionKey) {
+      alert("Veuillez sélectionner une session à supprimer.");
+      return;
+    }
+    
+    if (confirm(`Êtes-vous sûr de vouloir supprimer cette session ?\n\nCette action est irréversible.`)) {
+      const success = await deleteSession(sessionKey);
+      if (success) {
+        alert("Session supprimée avec succès !");
+        await populateSessionSelector(); // Actualiser la liste
+        $("session-selector").value = ""; // Réinitialiser la sélection
+      } else {
+        alert("Erreur lors de la suppression de la session.");
+      }
+    }
+  });
+
+  // Suppression de toutes les sessions - NOUVEAU
+  $("delete-all-sessions").addEventListener("click", async () => {
+    if (confirm(`⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUTES les sessions ?\n\nCette action est IRRÉVERSIBLE et supprimera toutes vos sessions sauvegardées !`)) {
+      if (confirm("Dernière confirmation : Supprimer TOUTES les sessions ?")) {
+        const success = await deleteAllSessions();
+        if (success) {
+          alert("Toutes les sessions ont été supprimées !");
+          await populateSessionSelector(); // Actualiser la liste
+        } else {
+          alert("Erreur lors de la suppression des sessions.");
+        }
+      }
+    }
+  });
+
+  // Suppression d'un DP - NOUVEAU
+  $("delete-dp").addEventListener("click", async () => {
+    const dpKey = $("dp-dates").value;
+    if (!dpKey) {
+      alert("Veuillez sélectionner une date à supprimer.");
+      return;
+    }
+    
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ce DP ?\n\nDate: ${dpKey}\n\nCette action est irréversible.`)) {
+      const success = await deleteDP(dpKey);
+      if (success) {
+        alert("DP supprimé avec succès !");
+        chargerHistoriqueDP(); // Actualiser la liste
+        $("dp-dates").value = ""; // Réinitialiser la sélection
+        $("historique-info").innerHTML = ""; // Vider les infos affichées
+      } else {
+        alert("Erreur lors de la suppression du DP.");
+      }
+    }
+  });
+
+  // Suppression de tout l'historique DP - NOUVEAU
+  $("delete-all-dp").addEventListener("click", async () => {
+    if (confirm(`⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUT l'historique des DP ?\n\nCette action est IRRÉVERSIBLE et supprimera tous vos directeurs de plongée enregistrés !`)) {
+      if (confirm("Dernière confirmation : Supprimer TOUT l'historique DP ?")) {
+        const success = await deleteAllDP();
+        if (success) {
+          alert("Tout l'historique DP a été supprimé !");
+          chargerHistoriqueDP(); // Actualiser la liste
+          $("historique-info").innerHTML = ""; // Vider les infos
+        } else {
+          alert("Erreur lors de la suppression de l'historique DP.");
+        }
+      }
+    }
+  });
+
   // Contrôles de tri
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1144,12 +1454,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Tentative de chargement DP depuis Firebase
     console.log("📥 Chargement des données DP...");
     try {
-      const snapshot = await db.ref(`dpInfo/${today}`).once('value');
+      const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
       if (snapshot.exists()) {
         const dpData = snapshot.val();
         console.log("✅ Données DP chargées:", dpData);
         dpNomInput.value = dpData.nom || "";
         dpLieuInput.value = dpData.lieu || "";
+        $("dp-plongee").value = dpData.plongee || "matin";
         const dpMessage = $("dp-message");
         dpMessage.textContent = "Informations du jour chargées.";
         dpMessage.style.color = "blue";
@@ -1237,6 +1548,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
+    // updateCompteurs() est maintenant appelé dans renderPlongeurs() et renderPalanquees()
     setupEventListeners();
     
     alert("Erreur de connexion Firebase. L'application fonctionne en mode local uniquement.");

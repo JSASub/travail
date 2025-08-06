@@ -335,3 +335,53 @@ button:hover {
   background-color: #e8f5e0;
   border-color: #4caf50;
 }
+
+/* BOUTONS DE SUPPRESSION */
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 2px;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-danger-dark {
+  background-color: #6f1016;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 2px;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger-dark:hover {
+  background-color: #5a0c12;
+}
+
+/* SECTIONS DE GESTION */
+#sessions-manager, #historique-dp {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+  background-color: #f8f9fa;
+}
+
+#sessions-manager strong, #historique-dp strong {
+  color: #495057;
+  display: block;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #dee2e6;
+}
