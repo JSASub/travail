@@ -76,6 +76,208 @@ async function loadFromFirebase() {
   }
 }
 
+// ===== FONCTIONS DE NETTOYAGE =====
+
+// Charger la liste des sessions pour nettoyage
+async function populateSessionsCleanupList() {
+  try {
+    console.log("🧹 Chargement liste sessions pour nettoyage...");
+    const sessions = await loadAvailableSessions();
+    const container = $("sessions-cleanup-list");
+    
+    if (!container) return;
+    
+    if (sessions.length === 0) {
+      container.innerHTML = '<em style="color: #666;">Aucune session à nettoyer</em>';
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    sessions.forEach(session => {
+      const item = document.createElement('label');
+      item.className = 'cleanup-item';
+      
+      const plongeeType = session.plongee ? ` (${session.plongee})` : '';
+      const dateFormatted = new Date(session.timestamp).toLocaleString('fr-FR');
+      
+      item.innerHTML = `
+        <input type="checkbox" value="${session.key}" class="session-cleanup-checkbox">
+        <div class="item-info">
+          <span class="item-date">${session.date}${plongeeType}</span>
+          <span class="item-details">${session.dp} - ${session.stats.nombrePalanquees} palanquées</span>
+          <span class="item-meta">Créé le ${dateFormatted}</span>
+        </div>
+      `;
+      
+      container.appendChild(item);
+    });
+    
+    console.log("✅ Liste sessions nettoyage mise à jour:", sessions.length, "sessions");
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement liste sessions nettoyage:", error);
+  }
+}
+
+// Charger la liste des DPs pour nettoyage
+async function populateDPCleanupList() {
+  try {
+    console.log("🧹 Chargement liste DP pour nettoyage...");
+    const snapshot = await db.ref("dpInfo").once('value');
+    const container = $("dp-cleanup-list");
+    
+    if (!container) return;
+    
+    if (!snapshot.exists()) {
+      container.innerHTML = '<em style="color: #666;">Aucun DP à nettoyer</em>';
+      return;
+    }
+    
+    const dpInfos = snapshot.val();
+    container.innerHTML = '';
+    
+    // Trier par date décroissante
+    const dpList = Object.entries(dpInfos).sort((a, b) => 
+      new Date(b[1].date) - new Date(a[1].date)
+    );
+    
+    dpList.forEach(([key, dpData]) => {
+      const item = document.createElement('label');
+      item.className = 'cleanup-item';
+      
+      const dateFormatted = new Date(dpData.timestamp).toLocaleString('fr-FR');
+      const plongeeType = dpData.plongee ? ` (${dpData.plongee})` : '';
+      
+      item.innerHTML = `
+        <input type="checkbox" value="${key}" class="dp-cleanup-checkbox">
+        <div class="item-info">
+          <span class="item-date">${dpData.date}${plongeeType}</span>
+          <span class="item-details">${dpData.nom} - ${dpData.lieu}</span>
+          <span class="item-meta">Créé le ${dateFormatted}</span>
+        </div>
+      `;
+      
+      container.appendChild(item);
+    });
+    
+    console.log("✅ Liste DP nettoyage mise à jour:", dpList.length, "DP");
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement liste DP nettoyage:", error);
+  }
+}
+
+// Supprimer les sessions sélectionnées
+async function deleteSelectedSessions() {
+  const checkboxes = document.querySelectorAll('.session-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucune session sélectionnée pour suppression.");
+    return;
+  }
+  
+  const sessionKeys = Array.from(checkboxes).map(cb => cb.value);
+  const confirmMessage = `Êtes-vous sûr de vouloir supprimer ${sessionKeys.length} session(s) ?\n\nCette action est irréversible !`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  try {
+    console.log("🗑️ Suppression de", sessionKeys.length, "sessions...");
+    
+    for (const sessionKey of sessionKeys) {
+      await db.ref(`sessions/${sessionKey}`).remove();
+      console.log("✅ Session supprimée:", sessionKey);
+    }
+    
+    console.log("✅ Suppression sessions terminée");
+    alert(`${sessionKeys.length} session(s) supprimée(s) avec succès !`);
+    
+    // Actualiser les listes
+    await populateSessionsCleanupList();
+    await populateSessionSelector();
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression sessions:", error);
+    alert("Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// Supprimer les DPs sélectionnés
+async function deleteSelectedDPs() {
+  const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucun DP sélectionné pour suppression.");
+    return;
+  }
+  
+  const dpKeys = Array.from(checkboxes).map(cb => cb.value);
+  const confirmMessage = `Êtes-vous sûr de vouloir supprimer ${dpKeys.length} DP ?\n\nCette action est irréversible !`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  try {
+    console.log("🗑️ Suppression de", dpKeys.length, "DP...");
+    
+    for (const dpKey of dpKeys) {
+      await db.ref(`dpInfo/${dpKey}`).remove();
+      console.log("✅ DP supprimé:", dpKey);
+    }
+    
+    console.log("✅ Suppression DP terminée");
+    alert(`${dpKeys.length} DP supprimé(s) avec succès !`);
+    
+    // Actualiser les listes
+    await populateDPCleanupList();
+    chargerHistoriqueDP();
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    alert("Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// Fonctions de sélection tout/rien
+function selectAllSessions(select = true) {
+  const checkboxes = document.querySelectorAll('.session-cleanup-checkbox');
+  checkboxes.forEach(cb => cb.checked = select);
+  updateCleanupSelection();
+}
+
+function selectAllDPs(select = true) {
+  const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox');
+  checkboxes.forEach(cb => cb.checked = select);
+  updateCleanupSelection();
+}
+
+// Mettre à jour l'apparence des items sélectionnés
+function updateCleanupSelection() {
+  // Sessions
+  document.querySelectorAll('.session-cleanup-checkbox').forEach(cb => {
+    const item = cb.closest('.cleanup-item');
+    if (cb.checked) {
+      item.classList.add('selected');
+    } else {
+      item.classList.remove('selected');
+    }
+  });
+  
+  // DPs
+  document.querySelectorAll('.dp-cleanup-checkbox').forEach(cb => {
+    const item = cb.closest('.cleanup-item');
+    if (cb.checked) {
+      item.classList.add('selected');
+    } else {
+      item.classList.remove('selected');
+    }
+  });
+}
+
 // ===== DIAGNOSTIC SYSTÈME =====
 function diagnosticSystem() {
   console.log("🔍 === DIAGNOSTIC SYSTÈME ===");
@@ -462,68 +664,6 @@ async function populateSessionSelector() {
     console.log("✅ Sélecteur de sessions mis à jour:", sessions.length, "sessions");
   } catch (error) {
     console.error("❌ Erreur lors du peuplement du sélecteur:", error);
-  }
-}
-
-// NOUVELLE FONCTION : Supprimer une session spécifique
-async function deleteSession(sessionKey) {
-  if (!sessionKey) {
-    alert("Veuillez sélectionner une session à supprimer.");
-    return false;
-  }
-  
-  try {
-    console.log("🗑️ Suppression session:", sessionKey);
-    await db.ref(`sessions/${sessionKey}`).remove();
-    console.log("✅ Session supprimée:", sessionKey);
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur suppression session:", error);
-    return false;
-  }
-}
-
-// NOUVELLE FONCTION : Supprimer toutes les sessions
-async function deleteAllSessions() {
-  try {
-    console.log("🗑️ Suppression de toutes les sessions...");
-    await db.ref('sessions').remove();
-    console.log("✅ Toutes les sessions supprimées");
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur suppression toutes sessions:", error);
-    return false;
-  }
-}
-
-// NOUVELLE FONCTION : Supprimer un DP spécifique
-async function deleteDP(dpKey) {
-  if (!dpKey) {
-    alert("Veuillez sélectionner une date à supprimer.");
-    return false;
-  }
-  
-  try {
-    console.log("🗑️ Suppression DP:", dpKey);
-    await db.ref(`dpInfo/${dpKey}`).remove();
-    console.log("✅ DP supprimé:", dpKey);
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
-    return false;
-  }
-}
-
-// NOUVELLE FONCTION : Supprimer tout l'historique DP
-async function deleteAllDP() {
-  try {
-    console.log("🗑️ Suppression de tout l'historique DP...");
-    await db.ref('dpInfo').remove();
-    console.log("✅ Tout l'historique DP supprimé");
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur suppression historique DP:", error);
-    return false;
   }
 }
 
@@ -1205,6 +1345,7 @@ function setupEventListeners() {
   $("refresh-sessions").addEventListener("click", async () => {
     console.log("🔄 Actualisation des sessions...");
     await populateSessionSelector();
+    await populateSessionsCleanupList(); // NOUVEAU
   });
 
   // Test Firebase - NOUVEAU
@@ -1258,76 +1399,56 @@ function setupEventListeners() {
     await saveSessionData();
     alert("Session sauvegardée !");
     await populateSessionSelector(); // Actualiser la liste
+    await populateSessionsCleanupList(); // Actualiser liste nettoyage
   });
 
-  // Suppression de session - NOUVEAU
-  $("delete-session").addEventListener("click", async () => {
-    const sessionKey = $("session-selector").value;
-    if (!sessionKey) {
-      alert("Veuillez sélectionner une session à supprimer.");
-      return;
+  // === NOUVEAUX EVENT LISTENERS POUR LE NETTOYAGE ===
+  
+  // Nettoyage des sessions
+  $("select-all-sessions").addEventListener("click", () => {
+    selectAllSessions(true);
+  });
+  
+  $("select-none-sessions").addEventListener("click", () => {
+    selectAllSessions(false);
+  });
+  
+  $("delete-selected-sessions").addEventListener("click", async () => {
+    await deleteSelectedSessions();
+  });
+  
+  // Nettoyage des DPs
+  $("select-all-dp").addEventListener("click", () => {
+    selectAllDPs(true);
+  });
+  
+  $("select-none-dp").addEventListener("click", () => {
+    selectAllDPs(false);
+  });
+  
+  $("delete-selected-dp").addEventListener("click", async () => {
+    await deleteSelectedDPs();
+  });
+  
+  $("refresh-dp-list").addEventListener("click", async () => {
+    await populateDPCleanupList();
+  });
+  
+  // Event delegation pour les changements de sélection
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("session-cleanup-checkbox") || 
+        e.target.classList.contains("dp-cleanup-checkbox")) {
+      updateCleanupSelection();
     }
     
-    if (confirm(`Êtes-vous sûr de vouloir supprimer cette session ?\n\nCette action est irréversible.`)) {
-      const success = await deleteSession(sessionKey);
-      if (success) {
-        alert("Session supprimée avec succès !");
-        await populateSessionSelector(); // Actualiser la liste
-        $("session-selector").value = ""; // Réinitialiser la sélection
-      } else {
-        alert("Erreur lors de la suppression de la session.");
-      }
-    }
-  });
-
-  // Suppression de toutes les sessions - NOUVEAU
-  $("delete-all-sessions").addEventListener("click", async () => {
-    if (confirm(`⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUTES les sessions ?\n\nCette action est IRRÉVERSIBLE et supprimera toutes vos sessions sauvegardées !`)) {
-      if (confirm("Dernière confirmation : Supprimer TOUTES les sessions ?")) {
-        const success = await deleteAllSessions();
-        if (success) {
-          alert("Toutes les sessions ont été supprimées !");
-          await populateSessionSelector(); // Actualiser la liste
-        } else {
-          alert("Erreur lors de la suppression des sessions.");
-        }
-      }
-    }
-  });
-
-  // Suppression d'un DP - NOUVEAU
-  $("delete-dp").addEventListener("click", async () => {
-    const dpKey = $("dp-dates").value;
-    if (!dpKey) {
-      alert("Veuillez sélectionner une date à supprimer.");
-      return;
-    }
-    
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ce DP ?\n\nDate: ${dpKey}\n\nCette action est irréversible.`)) {
-      const success = await deleteDP(dpKey);
-      if (success) {
-        alert("DP supprimé avec succès !");
-        chargerHistoriqueDP(); // Actualiser la liste
-        $("dp-dates").value = ""; // Réinitialiser la sélection
-        $("historique-info").innerHTML = ""; // Vider les infos affichées
-      } else {
-        alert("Erreur lors de la suppression du DP.");
-      }
-    }
-  });
-
-  // Suppression de tout l'historique DP - NOUVEAU
-  $("delete-all-dp").addEventListener("click", async () => {
-    if (confirm(`⚠️ ATTENTION ⚠️\n\nVoulez-vous vraiment supprimer TOUT l'historique des DP ?\n\nCette action est IRRÉVERSIBLE et supprimera tous vos directeurs de plongée enregistrés !`)) {
-      if (confirm("Dernière confirmation : Supprimer TOUT l'historique DP ?")) {
-        const success = await deleteAllDP();
-        if (success) {
-          alert("Tout l'historique DP a été supprimé !");
-          chargerHistoriqueDP(); // Actualiser la liste
-          $("historique-info").innerHTML = ""; // Vider les infos
-        } else {
-          alert("Erreur lors de la suppression de l'historique DP.");
-        }
+    if (e.target.classList.contains("plongeur-prerogatives-editable")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
+      const newPrerogatives = e.target.value.trim();
+      
+      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
+        palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
+        syncToDatabase();
       }
     }
   });
