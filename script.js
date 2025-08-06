@@ -1453,55 +1453,52 @@ function setupEventListeners() {
     await populateSessionsCleanupList(); // Actualiser liste nettoyage
   });
 
+// Fonction helper pour ajouter des event listeners de manière sécurisée
+function addSafeEventListener(elementId, event, callback) {
+  const element = $(elementId);
+  if (element) {
+    element.addEventListener(event, callback);
+    return true;
+  } else {
+    console.warn(`⚠️ Élément '${elementId}' non trouvé - event listener ignoré`);
+    return false;
+  }
+}
+
   // === NOUVEAUX EVENT LISTENERS POUR LE NETTOYAGE ===
   
-  // Nettoyage des sessions
-  $("select-all-sessions").addEventListener("click", () => {
+  // Nettoyage des sessions (avec vérification d'existence)
+  addSafeEventListener("select-all-sessions", "click", () => {
     selectAllSessions(true);
   });
   
-  $("select-none-sessions").addEventListener("click", () => {
+  addSafeEventListener("select-none-sessions", "click", () => {
     selectAllSessions(false);
   });
   
-  $("delete-selected-sessions").addEventListener("click", async () => {
+  addSafeEventListener("delete-selected-sessions", "click", async () => {
     await deleteSelectedSessions();
   });
   
-  // Nettoyage des DPs
-  $("select-all-dp").addEventListener("click", () => {
+  addSafeEventListener("refresh-sessions-list", "click", async () => {
+    await populateSessionsCleanupList();
+  });
+  
+  // Nettoyage des DPs (avec vérification d'existence)
+  addSafeEventListener("select-all-dp", "click", () => {
     selectAllDPs(true);
   });
   
-  $("select-none-dp").addEventListener("click", () => {
+  addSafeEventListener("select-none-dp", "click", () => {
     selectAllDPs(false);
   });
   
-  $("delete-selected-dp").addEventListener("click", async () => {
+  addSafeEventListener("delete-selected-dp", "click", async () => {
     await deleteSelectedDPs();
   });
   
-  $("refresh-dp-list").addEventListener("click", async () => {
+  addSafeEventListener("refresh-dp-list", "click", async () => {
     await populateDPCleanupList();
-  });
-  
-  // Event delegation pour les changements de sélection
-  document.addEventListener("change", (e) => {
-    if (e.target.classList.contains("session-cleanup-checkbox") || 
-        e.target.classList.contains("dp-cleanup-checkbox")) {
-      updateCleanupSelection();
-    }
-    
-    if (e.target.classList.contains("plongeur-prerogatives-editable")) {
-      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
-      const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
-      const newPrerogatives = e.target.value.trim();
-      
-      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
-        palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
-        syncToDatabase();
-      }
-    }
   });
 
   // Contrôles de tri
