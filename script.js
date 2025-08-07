@@ -1662,8 +1662,8 @@ function exportToPDF() {
     return;
   }
   
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
+  //const dpNom = $("dp-nom").value || "Non défini";
+  //const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
   const dpPlongee = $("dp-plongee").value || "matin";
   
