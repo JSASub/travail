@@ -1648,34 +1648,10 @@ function generatePDFPreview() {
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
-// Variables de protection globales
-let pageLoadTime = Date.now();
-let userHasInteracted = false;
-
-// Marquer l'interaction utilisateur
-document.addEventListener('click', () => {
-  userHasInteracted = true;
-}, { once: true });
 //
 function exportToPDF() {
-  // Protection multi-niveaux
-  const timeSinceLoad = Date.now() - pageLoadTime;
-  const isUserEvent = event && event.isTrusted;
-  const hasUserInteracted = userHasInteracted;
-  const isAfterLoadDelay = timeSinceLoad > 2000;
-  
-  // Vérifications
-  if (!isAfterLoadDelay) {
-    console.log("🚫 Export PDF bloqué - page en cours de chargement");
-    return;
-  }
-  
-  if (!hasUserInteracted) {
-    console.log("🚫 Export PDF bloqué - aucune interaction utilisateur détectée");
-    return;
-  }
-  
-  if (!isUserEvent) {
+    // Vérifier que c'est bien un clic utilisateur
+  if (!event || event.isTrusted === false) {
     console.log("🚫 Export PDF bloqué - événement non fiable");
     return;
   }
