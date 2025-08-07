@@ -1651,8 +1651,13 @@ function generatePDFPreview() {
 //
 function exportToPDF() {
   // Vérification de sécurité pour éviter les appels automatiques
+    // Protection simple et efficace
+  if (document.readyState === 'loading') {
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
+    return;
+  }
+  
   console.log("📄 Génération du PDF professionnel...");
-
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
