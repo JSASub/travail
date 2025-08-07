@@ -1188,7 +1188,7 @@ function generatePDFPreview() {
       nonAssignesHTML = `
           <section class="section">
             <div class="unassigned-section">
-              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
+              <h3 class="unassigned-title">⏳ Plongeurs en Attente d\'Assignation (${plongeurs.length})</h3>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
                 ${plongeursCards}
               </div>
@@ -1619,18 +1619,18 @@ function generatePDFPreview() {
           <div class="footer-content">
             <div class="footer-section">
               <h4>📋 Informations Légales</h4>
-              <p>Document officiel généré par l'application Palanquées JSAS</p>
+              <p>Document officiel généré par l\\'application Palanquées JSAS</p>
               <p>Conforme aux standards FFESSM</p>
             </div>
             <div class="footer-section">
               <h4>🔒 Sécurité</h4>
               <p>Vérification des prérogatives obligatoire</p>
-              <p>Respect des ratios d'encadrement</p>
+              <p>Respect des ratios d\\'encadrement</p>
             </div>
             <div class="footer-section">
               <h4>📞 Contact</h4>
               <p>JSAS - Club de Plongée</p>
-              <p>En cas d'urgence: contacter le DP</p>
+              <p>En cas d\\'urgence: contacter le DP</p>
             </div>
             <div class="footer-section">
               <h4>⚙️ Technique</h4>
