@@ -2129,6 +2129,13 @@ function setupEventListeners() {
   addSafeEventListener("exportPDF", "click", () => {
     exportToPDF();
   });
+  // Vérifier que la fonction existe
+  if (typeof exportToPDF === 'function') {
+    exportToPDF();
+  } else {
+    console.error("❌ Fonction exportToPDF non définie");
+    alert("Erreur: Fonction d'export PDF non disponible. Vérifiez le code JavaScript.");
+  }
 
   // Gestionnaire de sessions - NOUVEAU
   addSafeEventListener("load-session", "click", async () => {
