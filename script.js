@@ -1650,15 +1650,20 @@ function generatePDFPreview() {
 }
 //
 function exportToPDF() {
-  // Vérification de sécurité pour éviter les appels automatiques
-  const isAutomaticCall = !window.event && arguments.callee.caller === null;
+    console.log("📄 Génération du PDF professionnel...");
   
-  if (isAutomaticCall) {
-    console.log("🚫 Export PDF bloqué - appel automatique détecté");
+  // Vérifier que les éléments DOM existent
+  const dpNom = $("dp-nom");
+  const dpDate = $("dp-date");
+  
+  if (!dpNom || !dpDate) {
+    console.log("⚠️ Éléments DOM non prêts, export annulé");
     return;
   }
   
-  console.log("📄 Génération du PDF professionnel...");
+  // Continuer avec le reste de la fonction...
+  const dpNomValue = dpNom.value || "Non défini";
+  const dpDateValue = dpDate.value || "Non définie";
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
