@@ -1757,7 +1757,7 @@ function exportToPDF() {
     // Ligne décorative simple
     doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
     doc.setLineWidth(2);
-    doc.line(margin, yPosition + 2, margin + 60, yPosition + 2);
+    doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
     
     yPosition += 15;
     
@@ -1766,12 +1766,12 @@ function exportToPDF() {
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     
-    doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('                          PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+    doc.text('                          Palanquées: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
-    doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
-    doc.text('ALERTES: ' + alertesTotal.length, margin + 80, yPosition);
+    doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
+    doc.text('Alertes: ' + alertesTotal.length, margin + 80, yPosition);
     
     yPosition += 15;
     
@@ -1817,9 +1817,9 @@ function exportToPDF() {
       checkPageBreak(30);
       
       doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('REPARTITION PAR NIVEAU', margin, yPosition);
+      doc.text('RÉPARTITION PAR NIVEAU', margin, yPosition);
       yPosition += 12;
       
       const niveauEntries = Object.entries(statsNiveaux).sort(function(a, b) {
@@ -1881,11 +1881,12 @@ function exportToPDF() {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
         doc.rect(margin, yPosition, contentWidth, 12, 'F');
+		doc.html('<br>');
         
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text('Palanquee ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
+        doc.text('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
         
         // Statistiques de la palanquée
         const gps = pal.filter(function(p) { return ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau); });
@@ -1948,7 +1949,7 @@ function exportToPDF() {
       doc.setTextColor(133, 100, 4); // Couleur warning foncée
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      doc.text('PLONGEURS en attente (' + plongeurs.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
