@@ -1766,7 +1766,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('   PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
@@ -1816,9 +1816,9 @@ function exportToPDF() {
       checkPageBreak(30);
       
       doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('REPARTITION PAR NIVEAU', margin, yPosition);
+      doc.text('RÉPARTITION PAR NIVEAU', margin, yPosition);
       yPosition += 12;
       
       const niveauEntries = Object.entries(statsNiveaux).sort(function(a, b) {
@@ -1850,7 +1850,7 @@ function exportToPDF() {
     checkPageBreak(30, true);
     
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
     yPosition += 15;
