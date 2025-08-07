@@ -1651,6 +1651,16 @@ function generatePDFPreview() {
 //
 function exportToPDF() {
   // Vérification de sécurité pour éviter les appels automatiques
+  console.log("📄 Génération du PDF professionnel...");
+  
+  // Vérifier que les éléments DOM existent
+  const dpNom = $("dp-nom");
+  const dpDate = $("dp-date");
+  
+  if (!dpNom || !dpDate) {
+    console.log("⚠️ Éléments DOM non prêts, export annulé");
+    return;
+  }
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
