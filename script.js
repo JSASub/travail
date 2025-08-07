@@ -1762,7 +1762,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('          PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('                       PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
