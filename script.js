@@ -1919,7 +1919,9 @@ function exportToPDF() {
             
             doc.setFont(undefined, 'normal');
             //
-			doc.text('(' + p.niveau + ')', 180, margin + 20 + (nomClean.length * 1.8), yPosition);
+			doc.text('(' + p.niveau + ')', 50, margin + 20 + (nomClean.length * 1.8));
+            
+			//doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             if (preClean) {
               doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
