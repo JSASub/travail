@@ -1398,7 +1398,7 @@ function generatePDFPreview() {
     htmlContent += '<div class="logo">🤿</div>';
     htmlContent += '<div>';
     htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
-    htmlContent += '<p class="subtitle">Organisation Associative de Plongée</p>';
+    htmlContent += '<p class="subtitle">Organisation Professionnelle de Plongée</p>';
     htmlContent += '</div>';
     htmlContent += '</div>';
     
@@ -1483,7 +1483,7 @@ function generatePDFPreview() {
     if (palanquees.length === 0) {
       htmlContent += '<div class="unassigned-section">';
       htmlContent += '<div class="unassigned-title">Aucune palanquée créée</div>';
-      htmlContent += '<p>Tous les plongeurs sont encore en attente d assignation.</p>';
+      htmlContent += '<p>Tous les plongeurs sont encore en attente d\'assignation.</p>';
       htmlContent += '</div>';
     } else {
       htmlContent += '<div class="palanquees-grid">';
@@ -1766,7 +1766,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('   PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
@@ -1816,9 +1816,9 @@ function exportToPDF() {
       checkPageBreak(30);
       
       doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-      doc.setFontSize(12);
+      doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('RÉPARTITION PAR NIVEAU', margin, yPosition);
+      doc.text('REPARTITION PAR NIVEAU', margin, yPosition);
       yPosition += 12;
       
       const niveauEntries = Object.entries(statsNiveaux).sort(function(a, b) {
@@ -1850,7 +1850,7 @@ function exportToPDF() {
     checkPageBreak(30, true);
     
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
     yPosition += 15;
