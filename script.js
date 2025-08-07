@@ -1685,10 +1685,7 @@ function exportToPDF() {
     const contentWidth = pageWidth - (2 * margin);
     
     // Fonction pour vérifier les sauts de page
-    function checkPageBreak(heightNeeded, forceNewPage) {
-      heightNeeded = heightNeeded || 15;
-      forceNewPage = forceNewPage || false;
-      
+    function checkPageBreak(heightNeeded = 15, forceNewPage = false) {
       if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
         doc.addPage();
         yPosition = 20;
@@ -1709,7 +1706,7 @@ function exportToPDF() {
       }
     }
     
-    // Fonction pour formater la date française - simplifiée
+    // Fonction pour formater la date française
     function formatDateFrench(dateString) {
       if (!dateString) return "Non definie";
       const date = new Date(dateString);
@@ -1717,15 +1714,13 @@ function exportToPDF() {
     }
     
     // === EN-TÊTE PRINCIPAL ===
-    // Fond d'en-tête
+    // Fond d'en-tête (sans transparence)
     doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
     doc.rect(0, 0, pageWidth, 70, 'F');
     
-    // Logo simulé
+    // Logo simulé (sans transparence)
     doc.setFillColor(255, 255, 255);
-    doc.setGlobalAlpha(0.2);
     doc.circle(margin + 15, 25, 12, 'F');
-    doc.setGlobalAlpha(1);
     
     // Titre principal
     doc.setTextColor(255, 255, 255);
@@ -1737,13 +1732,12 @@ function exportToPDF() {
     doc.setFont(undefined, 'normal');
     doc.text('Organisation Professionnelle de Plongee', margin + 35, 38);
     
-    // Informations métier
+    // Informations métier en colonnes
     const metaY = 50;
     const colWidth = contentWidth / 4;
     
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.setGlobalAlpha(0.8);
     doc.text('DIRECTEUR DE PLONGEE', margin, metaY);
     doc.text('DATE DE PLONGEE', margin + colWidth, metaY);
     doc.text('LIEU', margin + (colWidth * 2), metaY);
@@ -1751,12 +1745,11 @@ function exportToPDF() {
     
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.setGlobalAlpha(1);
     
-    // Nettoyer les textes
-    const dpNomClean = dpNom.substring(0, 25);
-    const dpDateClean = formatDateFrench(dpDate).substring(0, 25);
-    const dpLieuClean = dpLieu.substring(0, 20);
+    // Nettoyer les textes pour éviter les caractères problématiques
+    const dpNomClean = dpNom.replace(/'/g, "'").substring(0, 25);
+    const dpDateClean = formatDateFrench(dpDate).replace(/'/g, "'").substring(0, 25);
+    const dpLieuClean = dpLieu.replace(/'/g, "'").substring(0, 20);
     const dpPlongeeClean = dpPlongee.toUpperCase();
     
     doc.text(dpNomClean, margin, metaY + 8);
@@ -1766,13 +1759,9 @@ function exportToPDF() {
     
     yPosition = 85;
     
-    // === STATISTIQUES ===
-    const totalPlongeurs = plongeurs.length + palanquees.reduce(function(total, pal) { 
-      return total + pal.length; 
-    }, 0);
-    const plongeursEnPalanquees = palanquees.reduce(function(total, pal) { 
-      return total + pal.length; 
-    }, 0);
+    // === TABLEAU DE BORD STATISTIQUES ===
+    const totalPlongeurs = plongeurs.length + palanquees.reduce(function(total, pal) { return total + pal.length; }, 0);
+    const plongeursEnPalanquees = palanquees.reduce(function(total, pal) { return total + pal.length; }, 0);
     const alertesTotal = checkAllAlerts();
     
     // Titre section
@@ -1791,20 +1780,19 @@ function exportToPDF() {
     
     yPosition += 15;
     
-    // Cartes statistiques simplifiées
+    // Cartes statistiques
     const cardWidth = (contentWidth - 15) / 4;
     const cardHeight = 25;
-    
-    const statsData = [
-      { label: 'TOTAL', value: totalPlongeurs, detail: 'plongeurs', x: 0 },
-      { label: 'PALANQUEES', value: palanquees.length, detail: 'creees', x: 1 },
-      { label: 'ASSIGNES', value: plongeursEnPalanquees, detail: 'organises', x: 2 },
-      { label: 'ALERTES', value: alertesTotal.length, detail: alertesTotal.length === 0 ? 'OK' : 'attention', x: 3 }
+    const stats = [
+      { label: 'TOTAL PLONGEURS', value: totalPlongeurs, detail: 'Tous niveaux', color: colors.primary },
+      { label: 'PALANQUEES', value: palanquees.length, detail: 'Moy: ' + (palanquees.length > 0 ? (plongeursEnPalanquees / palanquees.length).toFixed(1) : 0), color: colors.secondary },
+      { label: 'ASSIGNES', value: plongeursEnPalanquees, detail: (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%', color: colors.success },
+      { label: 'ALERTES', value: alertesTotal.length, detail: alertesTotal.length === 0 ? 'Tout OK' : 'Attention', color: alertesTotal.length === 0 ? colors.success : colors.danger }
     ];
     
-    for (let i = 0; i < statsData.length; i++) {
-      const stat = statsData[i];
-      const cardX = margin + (stat.x * (cardWidth + 5));
+    for (let i = 0; i < stats.length; i++) {
+      const stat = stats[i];
+      const cardX = margin + (i * (cardWidth + 5));
       
       // Fond de carte
       doc.setFillColor(248, 249, 250);
@@ -1812,12 +1800,11 @@ function exportToPDF() {
       
       // Bordure colorée
       doc.setLineWidth(2);
-      const borderColor = (i === 3 && alertesTotal.length > 0) ? colors.danger : colors.secondary;
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setDrawColor(stat.color[0], stat.color[1], stat.color[2]);
       doc.line(cardX, yPosition, cardX, yPosition + cardHeight);
       
       // Valeur principale
-      doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.setTextColor(stat.color[0], stat.color[1], stat.color[2]);
       doc.setFontSize(20);
       doc.setFont(undefined, 'bold');
       doc.text(stat.value.toString(), cardX + cardWidth/2, yPosition + 12, { align: 'center' });
@@ -1836,15 +1823,17 @@ function exportToPDF() {
     
     yPosition += 35;
     
-    // === ALERTES ===
+    // === ALERTES DE SÉCURITÉ ===
     if (alertesTotal.length > 0) {
       checkPageBreak(20 + (alertesTotal.length * 8));
       
+      // Titre alertes
       doc.setTextColor(colors.danger[0], colors.danger[1], colors.danger[2]);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.text('ALERTES DE SECURITE', margin, yPosition);
       
+      // Boîte d'alertes
       doc.setFillColor(255, 245, 245);
       doc.setDrawColor(colors.danger[0], colors.danger[1], colors.danger[2]);
       doc.setLineWidth(1);
@@ -1858,14 +1847,16 @@ function exportToPDF() {
       doc.setFont(undefined, 'normal');
       
       for (let i = 0; i < alertesTotal.length; i++) {
-        doc.text("• " + alertesTotal[i], margin + 5, yPosition + (i * 6));
+        // Nettoyer le texte des alertes
+        const alerteClean = alertesTotal[i].replace(/'/g, "'");
+        doc.text("• " + alerteClean, margin + 5, yPosition + (i * 6));
       }
       
       yPosition += (alertesTotal.length * 6) + 10;
     }
     
-    // === PALANQUÉES ===
-    checkPageBreak(30, true);
+    // === PALANQUÉES DÉTAILLÉES ===
+    checkPageBreak(30, true); // Force nouvelle page pour les palanquées
     
     doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
     doc.setFontSize(16);
@@ -1880,7 +1871,7 @@ function exportToPDF() {
       
       doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
       doc.setFontSize(12);
-      doc.text('Aucune palanquee creee', margin + 10, yPosition + 12);
+      doc.text('Aucune palanquee creee - Tous les plongeurs en attente', margin + 10, yPosition + 12);
       yPosition += 30;
     } else {
       for (let i = 0; i < palanquees.length; i++) {
@@ -1891,7 +1882,7 @@ function exportToPDF() {
         const isAlert = checkAlert(pal);
         const headerColor = isAlert ? colors.danger : colors.secondary;
         
-        // En-tête
+        // En-tête de palanquée
         doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
         doc.rect(margin, yPosition, contentWidth, 15, 'F');
         
@@ -1900,7 +1891,7 @@ function exportToPDF() {
         doc.setFont(undefined, 'bold');
         doc.text('Palanquee ' + (i + 1), margin + 5, yPosition + 10);
         
-        // Stats palanquée
+        // Statistiques de la palanquée
         const gps = pal.filter(function(p) { return ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau); });
         const n1s = pal.filter(function(p) { return p.niveau === "N1"; });
         const autonomes = pal.filter(function(p) { return ["N2", "N3"].includes(p.niveau); });
@@ -1909,7 +1900,7 @@ function exportToPDF() {
         doc.text(pal.length + " plongeurs • " + gps.length + " GP • " + n1s.length + " N1 • " + autonomes.length + " Autonomes", 
                  margin + 60, yPosition + 10);
         
-        // Corps
+        // Corps de la palanquée
         doc.setFillColor(248, 249, 250);
         doc.setDrawColor(200, 200, 200);
         doc.rect(margin, yPosition + 15, contentWidth, palanqueeHeight - 15, 'FD');
@@ -1931,28 +1922,31 @@ function exportToPDF() {
             const p = pal[j];
             const plongeurY = yPosition + (j * 8);
             
-            // Puce colorée
-            if (p.niveau === 'N1') doc.setFillColor(23, 162, 184);
-            else if (p.niveau === 'N2') doc.setFillColor(40, 167, 69);
-            else if (p.niveau === 'N3') doc.setFillColor(255, 193, 7);
-            else if (p.niveau === 'N4/GP') doc.setFillColor(253, 126, 20);
-            else doc.setFillColor(108, 117, 125);
+            // Puce colorée selon le niveau
+            const niveauColors = {
+              'N1': [23, 162, 184], 'N2': [40, 167, 69], 'N3': [255, 193, 7], 'N4/GP': [253, 126, 20],
+              'E1': [111, 66, 193], 'E2': [232, 62, 140], 'E3': [220, 53, 69], 'E4': [52, 58, 64]
+            };
             
+            const niveauColor = niveauColors[p.niveau] || colors.gray;
+            doc.setFillColor(niveauColor[0], niveauColor[1], niveauColor[2]);
             doc.circle(margin + 8, plongeurY - 1, 2, 'F');
             
-            // Nom
+            // Nom du plongeur (nettoyé)
+            const nomClean = p.nom.replace(/'/g, "'");
             doc.setFont(undefined, 'bold');
-            doc.text(p.nom, margin + 15, plongeurY);
+            doc.text(nomClean, margin + 15, plongeurY);
             
             // Niveau
             doc.setFont(undefined, 'normal');
-            doc.text('(' + p.niveau + ')', margin + 15 + (p.nom.length * 2), plongeurY);
+            doc.text("(" + p.niveau + ")", margin + 15 + (nomClean.length * 2), plongeurY);
             
-            // Prérogatives
+            // Prérogatives (nettoyées)
             if (p.pre) {
+              const preClean = p.pre.replace(/'/g, "'");
               doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
               doc.setFontSize(8);
-              doc.text('- ' + p.pre, margin + 15 + (p.nom.length * 2) + 20, plongeurY);
+              doc.text("- " + preClean, margin + 15 + (nomClean.length * 2) + 20, plongeurY);
               doc.setFontSize(10);
               doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
             }
@@ -1975,6 +1969,7 @@ function exportToPDF() {
       doc.text('PLONGEURS EN ATTENTE (' + plongeurs.length + ')', margin, yPosition);
       yPosition += 10;
       
+      // Boîte des non-assignés
       const unassignedHeight = 10 + (plongeurs.length * 6);
       doc.setFillColor(255, 243, 205);
       doc.setDrawColor(colors.warning[0], colors.warning[1], colors.warning[2]);
@@ -1989,61 +1984,46 @@ function exportToPDF() {
       for (let i = 0; i < plongeurs.length; i++) {
         const p = plongeurs[i];
         const plongeurY = yPosition + (i * 6);
-        const textLine = '• ' + p.nom + ' (' + p.niveau + ')' + (p.pre ? ' - ' + p.pre : '');
+        const nomClean = p.nom.replace(/'/g, "'");
+        const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+        const textLine = "• " + nomClean + " (" + p.niveau + ")" + (preClean ? " - " + preClean : '');
         doc.text(textLine, margin + 5, plongeurY);
       }
       
       yPosition += (plongeurs.length * 6) + 10;
     }
     
-    // === FOOTER ===
+    // === FOOTER SIMPLE ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
+    // Ajouter footer sur toutes les pages
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       doc.setPage(pageNum);
       
-      // Footer principal sur dernière page
-      if (pageNum === totalPages) {
-        const footerY = pageHeight - 30;
-        
-        doc.setLineWidth(1);
-        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.line(margin, footerY, pageWidth - margin, footerY);
-        
-        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
-        doc.setFontSize(8);
-        doc.setFont(undefined, 'bold');
-        
-        doc.text('Document officiel JSAS', margin, footerY + 10);
-        doc.text('Version 2.1.3 Professional', margin + 60, footerY + 10);
-        doc.text('Genere le ' + new Date().toLocaleDateString('fr-FR'), margin + 120, footerY + 10);
-      }
-      
-      // Numérotation
+      // Footer simple
       doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
       doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
       doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 15, pageHeight - 10);
       doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 10);
+      doc.text('Document officiel JSAS - Version 2.1.3 Pro', margin, pageHeight - 5);
     }
     
     // === TÉLÉCHARGEMENT ===
     const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-pro.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF professionnel généré:", fileName);
+    console.log("✅ PDF professionnel généré avec succès:", fileName);
     
-    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s)' : '\n✅ Aucune alerte';
-    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanquees.length + ' palanquées' + alertesText + '\n\n📁 ' + fileName);
+    // Message de confirmation
+    const alertesText = alertesTotal.length > 0 ? '\nAlertes detectees: ' + alertesTotal.length : '\nAucune alerte';
+    alert('PDF professionnel genere avec succes !\n\nPlongeurs: ' + totalPlongeurs + ' dans ' + palanquees.length + ' palanquees' + alertesText + '\n\nFichier: ' + fileName);
     
   } catch (error) {
     console.error("❌ Erreur PDF:", error);
-    alert("Erreur: " + error.message);
+    alert("Erreur lors de la génération du PDF professionnel : " + error.message);
   }
 }
-
-
-
 // Setup Event Listeners
 function setupEventListeners() {
   // Ajout de plongeur
