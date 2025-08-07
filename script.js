@@ -1648,6 +1648,14 @@ function generatePDFPreview() {
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
+// Variables de protection globales
+let pageLoadTime = Date.now();
+let userHasInteracted = false;
+
+// Marquer l'interaction utilisateur
+document.addEventListener('click', () => {
+  userHasInteracted = true;
+}, { once: true });
 //
 function exportToPDF() {
   // Protection multi-niveaux
