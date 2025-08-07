@@ -1,4 +1,186 @@
-// Firebase configuration (méthode classique)
+// ===== INITIALISATION AVEC AUTHENTIFICATION =====
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Application Palanquées JSAS v2.1.0 - Chargement...");
+  
+  try {
+    // ===== ÉTAPE 1: INITIALISATION DE L'AUTHENTIFICATION =====
+    console.log("🔐 Initialisation de l'authentification...");
+    await initializeAuth();
+    
+    // ===== ÉTAPE 2: TEST DE CONNEXION FIREBASE =====
+    console.log("🔥 Tentative de connexion Firebase...");
+    await testFirebaseConnection();
+    
+    // ===== ÉTAPE 3: CONFIGURATION DE L'INTERFACE =====
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    const dpDateInput = $("dp-date");
+    if (dpDateInput) {
+      dpDateInput.value = today;
+    }
+    
+    // ===== ÉTAPE 4: CHARGEMENT DES INFOS DP =====
+    const dpNomInput = $("dp-nom");
+    const dpLieuInput = $("dp-lieu");
+
+    // Tentative de chargement DP depuis Firebase (seulement si authentifié)
+    if (userAuthenticated) {
+      console.log("📥 Chargement des données DP...");
+      try {
+        const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
+        if (snapshot.exists()) {
+          const dpData = snapshot.val();
+          console.log("✅ Données DP chargées:", dpData);
+          if (dpNomInput) dpNomInput.value = dpData.nom || "";
+          if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+          const dpPlongeeInput = $("dp-plongee");
+          if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+          const dpMessage = $("dp-message");
+          if (dpMessage) {
+            dpMessage.textContent = "Informations du jour chargées.";
+            dpMessage.style.color = "blue";
+          }
+        } else {
+          console.log("ℹ️ Aucune donnée DP pour aujourd'hui");
+        }
+      } catch (error) {
+        console.error("❌ Erreur de lecture des données DP :", error);
+        if (error.code === 'PERMISSION_DENIED') {
+          console.error("🚫 Permission refusée pour charger les données DP");
+        }
+      }
+    }
+
+    // ===== ÉTAPE 5: GESTIONNAIRE DE VALIDATION DP =====
+    addSafeEventListener("valider-dp", "click", async () => {
+      if (!ensureAuthenticated()) {
+        alert("Erreur: Vous devez être authentifié pour sauvegarder les données.");
+        return;
+      }
+      
+      const nomDP = $("dp-nom")?.value?.trim() || "";
+      const date = $("dp-date")?.value || "";
+      const lieu = $("dp-lieu")?.value?.trim() || "";
+      const plongee = $("dp-plongee")?.value || "";
+      
+      console.log("📝 Validation DP:", nomDP, date, lieu, plongee);
+
+      if (!nomDP || !date || !lieu || !plongee) {
+        alert("Veuillez remplir tous les champs du DP.");
+        return;
+      }
+
+      const dpData = {
+        nom: nomDP,
+        date: date,
+        lieu: lieu,
+        plongee: plongee,
+        timestamp: Date.now()
+      };
+
+      const dpKey = `dpInfo/${date}_${plongee}`;
+      
+      // Affichage en attente
+      const dpMessage = $("dp-message");
+      if (dpMessage) {
+        dpMessage.textContent = "Enregistrement en cours...";
+        dpMessage.style.color = "orange";
+      }
+      
+      try {
+        await db.ref(dpKey).set(dpData);
+        console.log("✅ Données DP sauvegardées avec succès");
+        if (dpMessage) {
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
+          dpMessage.style.color = "green";
+        }
+      } catch (error) {
+        console.error("❌ Erreur Firebase DP:", error);
+        if (dpMessage) {
+          dpMessage.classList.remove("success-icon");
+          if (error.code === 'PERMISSION_DENIED') {
+            dpMessage.textContent = "Erreur de permission: impossible de sauvegarder.";
+          } else {
+            dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          }
+          dpMessage.style.color = "red";
+        }
+      }
+    });
+
+    // ===== ÉTAPE 6: CHARGEMENT DES DONNÉES HISTORIQUES =====
+    if (userAuthenticated) {
+      console.log("📜 Chargement historique DP...");
+      chargerHistoriqueDP();
+      
+      console.log("📊 Chargement des données principales...");
+      // loadFromFirebase() sera appelé automatiquement par testFirebaseConnection()
+      
+      console.log("📜 Chargement des sessions...");
+      await populateSessionSelector();
+      await populateSessionsCleanupList();
+      await populateDPCleanupList();
+    } else {
+      console.warn("⚠️ Chargement des données historiques ignoré - pas authentifié");
+    }
+    
+    // ===== ÉTAPE 7: SETUP DES EVENT LISTENERS =====
+    console.log("🎛️ Configuration des event listeners...");
+    setupEventListeners();
+    
+    // ===== ÉTAPE 8: AFFICHAGE DU STATUS =====
+    console.log("✅ Application initialisée avec succès!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées chargés`);
+    console.log(`🔥 Firebase connecté: ${firebaseConnected}`);
+    console.log(`🔐 Utilisateur authentifié: ${userAuthenticated}`);
+    
+    // Afficher un message de statut dans l'interface
+    const statusMessage = document.createElement("div");
+    statusMessage.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: ${userAuthenticated ? '#28a745' : '#ffc107'};
+      color: ${userAuthenticated ? 'white' : 'black'};
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8em;
+      z-index: 1000;
+    `;
+    statusMessage.textContent = userAuthenticated ? 
+      "🔐 Authentifié - Sauvegarde active" : 
+      "⚠️ Mode local - Pas de sauvegarde";
+    document.body.appendChild(statusMessage);
+    
+    // Masquer le message après 5 secondes
+    setTimeout(() => {
+      statusMessage.style.transition = "opacity 1s";
+      statusMessage.style.opacity = "0";
+      setTimeout(() => statusMessage.remove(), 1000);
+    }, 5000);
+    
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
+    console.error("Stack trace:", error.stack);
+    
+    // Mode dégradé sans Firebase
+    console.log("🔄 Tentative de fonctionnement en mode dégradé...");
+    plongeurs = [];
+    palanquees = [];
+    plongeursOriginaux = [];
+    userAuthenticated = false;
+    
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    setupEventListeners();
+    
+    alert("Erreur critique d'initialisation. L'application fonctionne en mode local uniquement.");
+    showDegradedModeWarning();
+  }
+});
+    // Firebase configuration (méthode classique)
 const firebaseConfig = {
   apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
   authDomain: "palanquees-jsas.firebaseapp.com",
@@ -467,8 +649,13 @@ function sortPlongeurs(type) {
   renderPlongeurs();
 }
 
-// Sauvegarde Firebase avec historique par date/DP
+// Sauvegarde Firebase avec historique par date/DP et vérification d'authentification
 async function syncToDatabase() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Synchronisation Firebase annulée - pas authentifié");
+    return;
+  }
+  
   console.log("💾 Synchronisation Firebase...");
   
   // Mettre à jour la liste originale pour le tri
@@ -480,7 +667,7 @@ async function syncToDatabase() {
   updateAlertes();
   
   // Sauvegarde Firebase en arrière-plan
-  if (firebaseConnected) {
+  if (firebaseConnected && userAuthenticated) {
     try {
       // Sauvegarde globale (pour compatibilité)
       await Promise.all([
@@ -494,14 +681,25 @@ async function syncToDatabase() {
       console.log("✅ Sauvegarde Firebase réussie");
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
+      
+      // Gestion des erreurs d'authentification
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error("🚫 Permission refusée lors de la sauvegarde");
+        alert("Erreur de permission Firebase. Les données ne peuvent pas être sauvegardées.");
+      }
     }
   } else {
-    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+    console.warn("⚠️ Firebase non connecté ou pas authentifié, données non sauvegardées");
   }
 }
 
-// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée)
+// NOUVELLE FONCTION : Sauvegarde par session (date + DP + plongée) avec authentification
 async function saveSessionData() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Sauvegarde session annulée - pas authentifié");
+    return;
+  }
+  
   console.log("💾 DÉBUT saveSessionData()");
   
   const dpNom = $("dp-nom").value.trim();
@@ -565,11 +763,22 @@ async function saveSessionData() {
   } catch (error) {
     console.error("❌ Erreur sauvegarde session:", error);
     console.error("🔍 Détails erreur:", error.message);
+    
+    // Gestion spécifique des erreurs d'authentification
+    if (error.code === 'PERMISSION_DENIED') {
+      console.error("🚫 Permission refusée pour la sauvegarde de session");
+      alert("Erreur de permission: impossible de sauvegarder la session");
+    }
   }
 }
 
-// NOUVELLE FONCTION : Charger les sessions disponibles - VERSION CORRIGÉE
+// NOUVELLE FONCTION : Charger les sessions disponibles avec authentification
 async function loadAvailableSessions() {
+  if (!ensureAuthenticated()) {
+    console.warn("⚠️ Chargement sessions annulé - pas authentifié");
+    return [];
+  }
+  
   try {
     const sessionsSnapshot = await db.ref('sessions').once('value');
     if (!sessionsSnapshot.exists()) {
@@ -651,6 +860,11 @@ async function loadAvailableSessions() {
     
   } catch (error) {
     console.error("❌ Erreur chargement sessions:", error);
+    
+    if (error.code === 'PERMISSION_DENIED') {
+      console.error("🚫 Permission refusée pour charger les sessions");
+    }
+    
     return [];
   }
 }
@@ -913,7 +1127,7 @@ function renderPalanquees() {
           </div>
         `;
         
-        // Event listener pour drag & drop - VERSION CORRIGÉE
+        // Event listener pour drag & drop - VERSION AMÉLIORÉE
         li.addEventListener("dragstart", e => {
           console.log("🖱️ Début drag depuis palanquée", idx + 1, "plongeur", plongeurIndex, ":", plg.nom);
           li.classList.add('dragging');
@@ -1176,7 +1390,7 @@ function generatePDFPreview() {
 }
 
 function exportToPDF() {
-  console.log("📄 Génération du PDF...");
+  console.log("📄 Génération du PDF professionnel...");
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -1189,137 +1403,286 @@ function exportToPDF() {
   
   let yPosition = 20;
   const pageHeight = doc.internal.pageSize.height;
-  const marginBottom = 20;
+  const pageWidth = doc.internal.pageSize.width;
+  const marginBottom = 30;
+  const marginLeft = 20;
+  const marginRight = 20;
+  
+  // Couleurs
+  const bleuJSAS = [0, 64, 128];
+  const bleuClair = [0, 123, 255];
+  const vertSecurite = [40, 167, 69];
+  const rougeAlerte = [220, 53, 69];
+  const gris = [108, 117, 125];
   
   // Fonction pour ajouter une nouvelle page si nécessaire
   function checkPageBreak(height = 10) {
     if (yPosition + height > pageHeight - marginBottom) {
       doc.addPage();
       yPosition = 20;
+      addHeader(); // Ajouter l'en-tête sur chaque page
       return true;
     }
     return false;
   }
   
-  // Titre principal
-  doc.setFontSize(20);
-  doc.setTextColor(0, 64, 128);
-  doc.text("Palanquées JSAS", 20, yPosition);
-  yPosition += 15;
+  // En-tête professionnel
+  function addHeader() {
+    // Fond bleu pour l'en-tête
+    doc.setFillColor(...bleuJSAS);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    // Logo/Titre
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("JSAS", marginLeft, 25);
+    
+    // Sous-titre
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Gestion des Palanquées", marginLeft + 50, 25);
+    
+    // Date du document
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth - 60, 25);
+    
+    yPosition = 45;
+  }
   
-  // Informations DP
-  doc.setFontSize(12);
+  // Ajouter l'en-tête initial
+  addHeader();
+  
+  // Informations de la plongée dans un cadre
+  doc.setFillColor(248, 249, 250);
+  doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 35, 'F');
+  doc.setDrawColor(...gris);
+  doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 35);
+  
+  yPosition += 10;
+  doc.setTextColor(...bleuJSAS);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("INFORMATIONS DE LA PLONGÉE", marginLeft + 5, yPosition);
+  
+  yPosition += 8;
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0);
-  doc.text(`Directeur de Plongée : ${dpNom}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Date : ${dpDate}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
+  doc.text(`Directeur de Plongée : ${dpNom}`, marginLeft + 5, yPosition);
+  yPosition += 6;
+  doc.text(`Date : ${dpDate}`, marginLeft + 5, yPosition);
+  doc.text(`Lieu : ${dpLieu}`, marginLeft + 90, yPosition);
+  yPosition += 6;
+  doc.text(`Type de plongée : ${dpPlongee}`, marginLeft + 5, yPosition);
+  
   yPosition += 15;
   
-  // Résumé avec compteurs détaillés
+  // Résumé statistiques dans un tableau
   const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
   const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
   const alertesTotal = checkAllAlerts();
   
-  checkPageBreak(40);
+  checkPageBreak(45);
+  
+  // Titre résumé
+  doc.setTextColor(...bleuClair);
   doc.setFontSize(14);
-  doc.setTextColor(0, 123, 255);
-  doc.text("Résumé détaillé", 20, yPosition);
-  yPosition += 12;
+  doc.setFont("helvetica", "bold");
+  doc.text("RÉSUMÉ STATISTIQUES", marginLeft, yPosition);
+  yPosition += 10;
   
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`📊 Total des plongeurs : ${totalPlongeurs}`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`🤿 Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`🏊 Plongeurs en palanquées : ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`⚠️ Nombre d'alertes : ${alertesTotal.length}`, 25, yPosition);
-  yPosition += 15;
+  // Tableau des statistiques
+  const tableData = [
+    ["Total des plongeurs", totalPlongeurs.toString()],
+    ["Plongeurs en palanquées", `${plongeursEnPalanquees} (${palanquees.length} palanquées)`],
+    ["Plongeurs non assignés", plongeurs.length.toString()],
+    ["Alertes de sécurité", alertesTotal.length.toString()]
+  ];
   
-  // Alertes
-  if (alertesTotal.length > 0) {
-    checkPageBreak(20 + alertesTotal.length * 5);
-    doc.setFontSize(14);
-    doc.setTextColor(220, 53, 69);
-    doc.text("⚠️ Alertes", 20, yPosition);
-    yPosition += 10;
+  tableData.forEach(([label, value], i) => {
+    const isAlert = label.includes("Alertes") && alertesTotal.length > 0;
     
-    doc.setFontSize(9);
+    // Fond alternant
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 249, 250);
+      doc.rect(marginLeft, yPosition - 2, pageWidth - marginLeft - marginRight, 8, 'F');
+    }
+    
     doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(label, marginLeft + 2, yPosition + 3);
+    
+    // Valeur avec couleur selon le type
+    if (isAlert) {
+      doc.setTextColor(...rougeAlerte);
+      doc.setFont("helvetica", "bold");
+    } else if (label.includes("palanquées")) {
+      doc.setTextColor(...vertSecurite);
+      doc.setFont("helvetica", "bold");
+    }
+    
+    doc.text(value, pageWidth - 60, yPosition + 3);
+    yPosition += 8;
+  });
+  
+  yPosition += 10;
+  
+  // Alertes de sécurité
+  if (alertesTotal.length > 0) {
+    checkPageBreak(25 + alertesTotal.length * 6);
+    
+    // Titre alertes avec fond rouge
+    doc.setFillColor(...rougeAlerte);
+    doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("⚠️ ALERTES DE SÉCURITÉ", marginLeft + 5, yPosition + 8);
+    yPosition += 15;
+    
+    doc.setTextColor(...rougeAlerte);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
     alertesTotal.forEach(alerte => {
-      doc.text(`• ${alerte}`, 25, yPosition);
+      doc.text(`• ${alerte}`, marginLeft + 5, yPosition);
       yPosition += 5;
     });
     yPosition += 10;
   }
   
-  // Palanquées
+  // Palanquées détaillées
+  doc.setTextColor(...bleuClair);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("COMPOSITION DES PALANQUÉES", marginLeft, yPosition);
+  yPosition += 15;
+  
   palanquees.forEach((pal, i) => {
-    const palanqueeHeight = 15 + (pal.length * 5) + (pal.length === 0 ? 5 : 0);
+    const palanqueeHeight = 20 + (pal.length * 6) + (pal.length === 0 ? 8 : 0);
     checkPageBreak(palanqueeHeight);
     
-    doc.setFontSize(12);
     const isAlert = checkAlert(pal);
-    doc.setTextColor(isAlert ? 220 : 0, isAlert ? 53 : 123, isAlert ? 69 : 255);
-    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 20, yPosition);
-    yPosition += 8;
+    
+    // En-tête palanquée
+    doc.setFillColor(isAlert ? 255 : 227, isAlert ? 245 : 242, isAlert ? 245 : 253);
+    doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 12, 'F');
+    
+    if (isAlert) {
+      doc.setDrawColor(...rougeAlerte);
+      doc.setLineWidth(1);
+      doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 12);
+    }
+    
+    doc.setTextColor(isAlert ? ...rougeAlerte : ...bleuClair);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, marginLeft + 5, yPosition + 8);
+    yPosition += 15;
     
     if (pal.length === 0) {
-      doc.setFontSize(9);
-      doc.setTextColor(128, 128, 128);
-      doc.text("Aucun plongeur assigné", 25, yPosition);
-      yPosition += 5;
+      doc.setTextColor(...gris);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "italic");
+      doc.text("Aucun plongeur assigné", marginLeft + 10, yPosition);
+      yPosition += 8;
     } else {
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      pal.forEach(p => {
-        const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-        doc.text(ligne, 25, yPosition);
-        yPosition += 5;
+      pal.forEach((p, idx) => {
+        // Icône selon le niveau
+        let couleurNiveau = gris;
+        if (["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau)) {
+          couleurNiveau = vertSecurite; // Guide/Encadrant
+        } else if (["N2", "N3"].includes(p.niveau)) {
+          couleurNiveau = bleuClair; // Autonome
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${idx + 1}.`, marginLeft + 10, yPosition);
+        doc.text(p.nom, marginLeft + 18, yPosition);
+        
+        // Badge niveau
+        doc.setTextColor(...couleurNiveau);
+        doc.setFont("helvetica", "bold");
+        doc.text(`[${p.niveau}]`, marginLeft + 100, yPosition);
+        
+        // Prérogatives
+        if (p.pre) {
+          doc.setTextColor(...gris);
+          doc.setFont("helvetica", "normal");
+          doc.text(`- ${p.pre}`, marginLeft + 130, yPosition);
+        }
+        
+        yPosition += 6;
       });
     }
-    yPosition += 5;
+    yPosition += 8;
   });
   
   // Plongeurs non assignés
   if (plongeurs.length > 0) {
-    const nonAssignesHeight = 15 + (plongeurs.length * 5);
+    const nonAssignesHeight = 20 + (plongeurs.length * 6);
     checkPageBreak(nonAssignesHeight);
     
+    doc.setFillColor(255, 243, 205);
+    doc.rect(marginLeft, yPosition, pageWidth - marginLeft - marginRight, 12, 'F');
+    doc.setTextColor(255, 193, 7);
     doc.setFontSize(12);
-    doc.setTextColor(0, 123, 255);
-    doc.text("Plongeurs non assignés", 20, yPosition);
-    yPosition += 8;
+    doc.setFont("helvetica", "bold");
+    doc.text("⚠️ PLONGEURS NON ASSIGNÉS", marginLeft + 5, yPosition + 8);
+    yPosition += 15;
     
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    plongeurs.forEach(p => {
-      const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-      doc.text(ligne, 25, yPosition);
-      yPosition += 5;
+    plongeurs.forEach((p, idx) => {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${idx + 1}.`, marginLeft + 10, yPosition);
+      doc.text(p.nom, marginLeft + 18, yPosition);
+      
+      doc.setTextColor(...gris);
+      doc.setFont("helvetica", "bold");
+      doc.text(`[${p.niveau}]`, marginLeft + 100, yPosition);
+      
+      if (p.pre) {
+        doc.setFont("helvetica", "normal");
+        doc.text(`- ${p.pre}`, marginLeft + 130, yPosition);
+      }
+      
+      yPosition += 6;
     });
   }
   
-  // Footer
+  // Pied de page professionnel sur toutes les pages
   const finalPage = doc.internal.getCurrentPageInfo().pageNumber;
   for (let i = 1; i <= finalPage; i++) {
     doc.setPage(i);
+    
+    // Ligne de séparation
+    doc.setDrawColor(...gris);
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, pageHeight - 25, pageWidth - marginRight, pageHeight - 25);
+    
+    // Informations du pied de page
+    doc.setTextColor(...gris);
     doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, 20, pageHeight - 10);
-    doc.text(`Application Palanquées JSAS v2.1.0 - Page ${i}/${finalPage}`, 120, pageHeight - 10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, marginLeft, pageHeight - 15);
+    doc.text(`Application Palanquées JSAS v2.1.0`, marginLeft, pageHeight - 10);
+    
+    // Numéro de page
+    doc.text(`Page ${i} / ${finalPage}`, pageWidth - 40, pageHeight - 15);
+    
+    // Signature DP
+    doc.text("Signature du Directeur de Plongée :", pageWidth - 80, pageHeight - 10);
   }
   
   // Télécharger le PDF
   const fileName = `palanquees-${dpDate || 'export'}-${dpPlongee}.pdf`;
   doc.save(fileName);
   
-  console.log("✅ PDF téléchargé:", fileName);
+  console.log("✅ PDF professionnel téléchargé:", fileName);
 }
 
 // Setup Event Listeners
