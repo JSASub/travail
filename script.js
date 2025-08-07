@@ -1920,15 +1920,17 @@ function exportToPDF() {
             doc.setFont(undefined, 'normal');
             
             if (preClean) {
-              doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+              //doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
               //
 			  doc.text('Prérogative: ' + preClean, 95, yPosition);
 			  //doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
-              doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+              //doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             }
 			
 			//
+			doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
 			doc.text('Niveau: ' + p.niveau + '', 130, yPosition);
+			doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             //doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             yPosition += 6;
