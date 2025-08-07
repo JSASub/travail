@@ -1895,7 +1895,7 @@ function exportToPDF() {
         doc.setFontSize(9);
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
-        yPosition += 20;
+        yPosition += 18;
         
         // Corps de la palanquée
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
