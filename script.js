@@ -1881,7 +1881,6 @@ function exportToPDF() {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
         doc.rect(margin, yPosition, contentWidth, 12, 'F');
-		doc.text/html('<br>');
         
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
@@ -1896,7 +1895,7 @@ function exportToPDF() {
         doc.setFontSize(9);
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
-        yPosition += 15;
+        yPosition += 20;
         
         // Corps de la palanquée
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
