@@ -1483,7 +1483,7 @@ function generatePDFPreview() {
     if (palanquees.length === 0) {
       htmlContent += '<div class="unassigned-section">';
       htmlContent += '<div class="unassigned-title">Aucune palanquée créée</div>';
-      htmlContent += '<p>Tous les plongeurs sont encore en attente d\'assignation.</p>';
+      htmlContent += '<p>Tous les plongeurs sont encore en attente d assignation.</p>';
       htmlContent += '</div>';
     } else {
       htmlContent += '<div class="palanquees-grid">';
