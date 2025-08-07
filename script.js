@@ -1064,117 +1064,677 @@ function setupPalanqueesEventListeners() {
   });
 }
 
-// ===== FONCTIONS PDF =====
+// Fonction pour générer les palanquées HTML (partie 3)
+function generatePalanqueesHTML() {
+  let html = `
+          <!-- Palanquées Organisées -->
+          <section class="section">
+            <h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>`;
+  
+  if (palanquees.length === 0) {
+    html += `
+            <div class="unassigned-section">
+              <div class="unassigned-title">Aucune palanquée créée</div>
+              <p>Toutes les plongeurs sont encore en attente d'assignation.</p>
+            </div>`;
+  } else {
+    html += `<div class="palanquees-grid">`;
+    
+    palanquees.forEach((pal, i) => {
+      const isAlert = checkAlert(pal);
+      const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+      const n1s = pal.filter(p => p.niveau === "N1");
+      const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+      
+      html += `
+              <div class="palanquee-card${isAlert ? ' has-alert' : ''}">
+                <div class="palanquee-header">
+                  <div class="palanquee-number">Palanquée ${i + 1}</div>
+                  <div class="palanquee-stats">
+                    ${pal.length} plongeur${pal.length > 1 ? 's' : ''} • 
+                    ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes
+                  </div>
+                </div>
+                <div class="palanquee-body">`;
+      
+      if (pal.length === 0) {
+        html += `<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>`;
+      } else {
+        pal.forEach(p => {
+          // Générer les initiales pour l'avatar
+          const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+          
+          // Couleur du badge niveau
+          const niveauColors = {
+            'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+            'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+          };
+          
+          html += `
+                  <div class="plongeur-card">
+                    <div class="plongeur-avatar">${initiales}</div>
+                    <div class="plongeur-info">
+                      <div class="plongeur-nom">${p.nom}</div>
+                      <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
+                    </div>
+                    <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
+                  </div>`;
+        });
+      }
+      
+      html += `
+                </div>
+              </div>`;
+    });
+    
+    html += `</div>`;
+  }
+  
+  html += `</section>`;
+  
+  // Section Plongeurs Non Assignés
+  if (plongeurs.length > 0) {
+    html += `
+          <!-- Plongeurs Non Assignés -->
+          <section class="section">
+            <div class="unassigned-section">
+              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">`;
+    
+    plongeurs.forEach(p => {
+      const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+      const niveauColors = {
+        'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+        'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+      };
+      
+      html += `
+                <div class="plongeur-card">
+                  <div class="plongeur-avatar">${initiales}</div>
+                  <div class="plongeur-info">
+                    <div class="plongeur-nom">${p.nom}</div>
+                    <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
+                  </div>
+                  <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
+                </div>`;
+    });
+    
+    html += `
+              </div>
+            </div>
+          </section>`;
+  }
+  
+  return html;
+}
+
+// Fonction pour générer le footer HTML
+function generateFooterHTML() {
+  return `
+        </main>
+
+        <footer class="footer">
+          <div class="footer-content">
+            <div class="footer-section">
+              <h4>📋 Informations Légales</h4>
+              <p>Document officiel généré par l'application Palanquées JSAS</p>
+              <p>Conforme aux standards FFESSM</p>
+            </div>
+            <div class="footer-section">
+              <h4>🔒 Sécurité</h4>
+              <p>Vérification des prérogatives obligatoire</p>
+              <p>Respect des ratios d'encadrement</p>
+            </div>
+            <div class="footer-section">
+              <h4>📞 Contact</h4>
+              <p>JSAS - Club de Plongée</p>
+              <p>En cas d'urgence: contacter le DP</p>
+            </div>
+            <div class="footer-section">
+              <h4>⚙️ Technique</h4>
+              <p>Version: 2.1.3 Professional</p>
+              <p>Dernière mise à jour: ${new Date().toLocaleDateString('fr-FR')}</p>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <p>Document généré automatiquement le ${new Date().toLocaleString('fr-FR')} • 
+            Ne pas modifier manuellement • Valable uniquement avec signature du DP</p>
+          </div>
+        </footer>
+      </div>
+    </body>
+    </html>`;
+}
+
+// Fonction principale pour générer l'aperçu PDF professionnel
 function generatePDFPreview() {
+  console.log("🎨 Génération de l'aperçu PDF professionnel...");
+  
+  try {
+    // Générer le HTML complet
+    let htmlContent = generateProfessionalHTMLPreview();
+    htmlContent += generateProfessionalHTMLPreview_Part2();
+    htmlContent += generatePalanqueesHTML();
+    htmlContent += generateFooterHTML();
+    
+    // Créer le blob et l'URL
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    // Afficher l'aperçu
+    const previewContainer = $("previewContainer");
+    const pdfPreview = $("pdfPreview");
+    
+    if (previewContainer && pdfPreview) {
+      previewContainer.style.display = "block";
+      pdfPreview.src = url;
+      
+      // Scroll vers l'aperçu avec une animation douce
+      previewContainer.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      console.log("✅ Aperçu PDF professionnel généré avec succès");
+      
+      // Nettoyer l'URL après 30 secondes pour libérer la mémoire
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 30000);
+      
+    } else {
+      console.error("❌ Éléments d'aperçu non trouvés");
+      alert("Erreur: impossible d'afficher l'aperçu PDF");
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur génération aperçu PDF:", error);
+    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+  }
+}
+
+// Fonction pour exporter en PDF professionnel avec jsPDF amélioré
+function exportToPDF() {
+  console.log("📄 Génération du PDF professionnel...");
+  
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
   const dpPlongee = $("dp-plongee").value || "matin";
   
-  let html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Palanquées JSAS - ${dpDate} (${dpPlongee})</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        .meta-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .palanquee { border: 1px solid #dee2e6; margin: 15px 0; padding: 15px; border-radius: 5px; }
-        .palanquee-title { font-weight: bold; color: #007bff; font-size: 1.2em; margin-bottom: 10px; }
-        .plongeur { margin: 5px 0; padding: 8px; background: #e0f0ff; border-radius: 3px; }
-        .alert { background: #fff5f5; border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; }
-        .niveau { background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.9em; }
-        .resume { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        @media print { body { margin: 0; } }
-      </style>
-    </head>
-    <body>
-      <h1>Palanquées JSAS</h1>
-      <div class="meta-info">
-        <p><strong>Directeur de Plongée :</strong> ${dpNom}</p>
-        <p><strong>Date :</strong> ${dpDate}</p>
-        <p><strong>Lieu :</strong> ${dpLieu}</p>
-        <p><strong>Plongée :</strong> ${dpPlongee}</p>
-      </div>
-  `;
-  
-  // Résumé avec compteurs détaillés
-  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-  const alertesTotal = checkAllAlerts();
-  
-  html += `
-    <div class="resume">
-      <h3>Résumé détaillé</h3>
-      <p><strong>📊 Total des plongeurs :</strong> ${totalPlongeurs}</p>
-      <p><strong>🤿 Plongeurs non assignés :</strong> ${plongeurs.length}</p>
-      <p><strong>🏊 Plongeurs en palanquées :</strong> ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)</p>
-      <p><strong>⚠️ Nombre d'alertes :</strong> ${alertesTotal.length}</p>
-    </div>
-  `;
-  
-  // Alertes
-  if (alertesTotal.length > 0) {
-    html += '<div class="alert"><h3>⚠️ Alertes</h3><ul>';
-    alertesTotal.forEach(alerte => {
-      html += `<li>${alerte}</li>`;
+  try {
+    // Créer le document PDF avec marges optimisées
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
     });
-    html += '</ul></div>';
-  }
-  
-  // Palanquées
-  palanquees.forEach((pal, i) => {
-    const isAlert = checkAlert(pal);
-    html += `<div class="palanquee${isAlert ? ' alert' : ''}">`;
-    html += `<div class="palanquee-title">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</div>`;
     
-    if (pal.length === 0) {
-      html += '<p><em>Aucun plongeur assigné</em></p>';
+    // Configuration des couleurs et polices
+    const colors = {
+      primary: [0, 64, 128],
+      secondary: [0, 123, 255],
+      success: [40, 167, 69],
+      warning: [255, 193, 7],
+      danger: [220, 53, 69],
+      dark: [52, 58, 64],
+      gray: [108, 117, 125]
+    };
+    
+    let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    
+    // Fonction pour vérifier et gérer les sauts de page
+    function checkPageBreak(heightNeeded = 15, forceNewPage = false) {
+      if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
+        doc.addPage();
+        yPosition = 20;
+        addPageHeader();
+        return true;
+      }
+      return false;
+    }
+    
+    // Fonction pour ajouter un en-tête de page
+    function addPageHeader() {
+      if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
+        doc.setFontSize(10);
+        doc.setTextColor(...colors.gray);
+        doc.text(`Palanquées JSAS - ${dpDate} (${dpPlongee})`, margin, 15);
+        doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber}`, pageWidth - margin - 20, 15);
+        yPosition = 25;
+      }
+    }
+    
+    // Fonction pour dessiner une boîte avec dégradé simulé
+    function drawGradientBox(x, y, width, height, color1, color2, alpha = 1) {
+      doc.setFillColor(...color1);
+      doc.setGlobalAlpha(alpha);
+      doc.rect(x, y, width, height, 'F');
+      doc.setGlobalAlpha(1);
+    }
+    
+    // === EN-TÊTE PRINCIPAL ===
+    // Fond d'en-tête
+    drawGradientBox(0, 0, pageWidth, 70, colors.primary, colors.secondary, 0.9);
+    
+    // Logo simulé
+    doc.setFillColor(255, 255, 255);
+    doc.setGlobalAlpha(0.2);
+    doc.circle(margin + 15, 25, 12, 'F');
+    doc.setGlobalAlpha(1);
+    
+    // Titre principal
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text('PALANQUÉES JSAS', margin + 35, 30);
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text('Organisation Professionnelle de Plongée', margin + 35, 38);
+    
+    // Informations métier en colonnes
+    const metaY = 50;
+    const colWidth = contentWidth / 4;
+    
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.setGlobalAlpha(0.8);
+    doc.text('DIRECTEUR DE PLONGÉE', margin, metaY);
+    doc.text('DATE DE PLONGÉE', margin + colWidth, metaY);
+    doc.text('LIEU', margin + (colWidth * 2), metaY);
+    doc.text('SESSION', margin + (colWidth * 3), metaY);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setGlobalAlpha(1);
+    doc.text(dpNom.substring(0, 25), margin, metaY + 8);
+    doc.text(formatDateFrench(dpDate).substring(0, 25), margin + colWidth, metaY + 8);
+    doc.text(dpLieu.substring(0, 20), margin + (colWidth * 2), metaY + 8);
+    doc.text(capitalize(dpPlongee), margin + (colWidth * 3), metaY + 8);
+    
+    yPosition = 85;
+    
+    // === TABLEAU DE BORD STATISTIQUES ===
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    // Titre section
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('📊 TABLEAU DE BORD', margin, yPosition);
+    
+    // Ligne décorative
+    doc.setLineWidth(2);
+    doc.setDrawColor(...colors.secondary);
+    doc.line(margin, yPosition + 2, margin + 60, yPosition + 2);
+    doc.setLineWidth(1);
+    doc.setDrawColor(...colors.success);
+    doc.line(margin, yPosition + 4, margin + 30, yPosition + 4);
+    
+    yPosition += 15;
+    
+    // Cartes statistiques
+    const cardWidth = (contentWidth - 15) / 4;
+    const cardHeight = 25;
+    const stats = [
+      { label: 'TOTAL PLONGEURS', value: totalPlongeurs, detail: 'Tous niveaux', color: colors.primary },
+      { label: 'PALANQUÉES', value: palanquees.length, detail: `Moy: ${palanquees.length > 0 ? (plongeursEnPalanquees / palanquees.length).toFixed(1) : 0}`, color: colors.secondary },
+      { label: 'ASSIGNÉS', value: plongeursEnPalanquees, detail: `${totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0}%`, color: colors.success },
+      { label: 'ALERTES', value: alertesTotal.length, detail: alertesTotal.length === 0 ? 'Tout OK' : 'Attention', color: alertesTotal.length === 0 ? colors.success : colors.danger }
+    ];
+    
+    stats.forEach((stat, index) => {
+      const cardX = margin + (index * (cardWidth + 5));
+      
+      // Fond de carte
+      doc.setFillColor(248, 249, 250);
+      doc.rect(cardX, yPosition, cardWidth, cardHeight, 'F');
+      
+      // Bordure colorée
+      doc.setLineWidth(2);
+      doc.setDrawColor(...stat.color);
+      doc.line(cardX, yPosition, cardX, yPosition + cardHeight);
+      
+      // Valeur principale
+      doc.setTextColor(...stat.color);
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text(stat.value.toString(), cardX + cardWidth/2, yPosition + 12, { align: 'center' });
+      
+      // Label
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(stat.label, cardX + cardWidth/2, yPosition + 18, { align: 'center' });
+      
+      // Détail
+      doc.setTextColor(...colors.gray);
+      doc.setFontSize(7);
+      doc.text(stat.detail, cardX + cardWidth/2, yPosition + 22, { align: 'center' });
+    });
+    
+    yPosition += 35;
+    
+    // === ALERTES DE SÉCURITÉ ===
+    if (alertesTotal.length > 0) {
+      checkPageBreak(20 + (alertesTotal.length * 8));
+      
+      // Titre alertes avec icône
+      doc.setTextColor(...colors.danger);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('⚠️ ALERTES DE SÉCURITÉ', margin, yPosition);
+      
+      // Boîte d'alertes
+      doc.setFillColor(255, 245, 245);
+      doc.setDrawColor(...colors.danger);
+      doc.setLineWidth(1);
+      const alertHeight = 10 + (alertesTotal.length * 6);
+      doc.rect(margin, yPosition + 5, contentWidth, alertHeight, 'FD');
+      
+      yPosition += 12;
+      
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      
+      alertesTotal.forEach((alerte, index) => {
+        doc.text(`• ${alerte}`, margin + 5, yPosition + (index * 6));
+      });
+      
+      yPosition += (alertesTotal.length * 6) + 10;
+    }
+    
+    // === ANALYSE PAR NIVEAU ===
+    const statsNiveaux = {};
+    const allPlongeurs = [...plongeurs, ...palanquees.flat()];
+    allPlongeurs.forEach(p => {
+      statsNiveaux[p.niveau] = (statsNiveaux[p.niveau] || 0) + 1;
+    });
+    
+    if (Object.keys(statsNiveaux).length > 0) {
+      checkPageBreak(40);
+      
+      doc.setTextColor(...colors.primary);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('📈 RÉPARTITION PAR NIVEAU', margin, yPosition);
+      yPosition += 10;
+      
+      const niveauEntries = Object.entries(statsNiveaux).sort((a, b) => {
+        const order = {'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8};
+        return (order[a[0]] || 9) - (order[b[0]] || 9);
+      });
+      
+      const niveauColors = {
+        'N1': [23, 162, 184], 'N2': [40, 167, 69], 'N3': [255, 193, 7], 'N4/GP': [253, 126, 20],
+        'E1': [111, 66, 193], 'E2': [232, 62, 140], 'E3': [220, 53, 69], 'E4': [52, 58, 64]
+      };
+      
+      // Graphique en barres horizontal
+      const barWidth = contentWidth * 0.6;
+      const barHeight = 8;
+      const maxCount = Math.max(...niveauEntries.map(([, count]) => count));
+      
+      niveauEntries.forEach(([niveau, count], index) => {
+        const barY = yPosition + (index * 12);
+        const pourcentage = ((count / allPlongeurs.length) * 100).toFixed(1);
+        const barLength = (count / maxCount) * barWidth;
+        
+        // Label du niveau
+        doc.setTextColor(...colors.dark);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text(niveau, margin, barY + 5);
+        
+        // Barre de progression
+        const barX = margin + 25;
+        doc.setFillColor(...(niveauColors[niveau] || colors.gray));
+        doc.rect(barX, barY, barLength, barHeight, 'F');
+        
+        // Bordure de la barre
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.rect(barX, barY, barWidth, barHeight, 'S');
+        
+        // Valeurs
+        doc.setTextColor(...colors.dark);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text(`${count} (${pourcentage}%)`, barX + barWidth + 5, barY + 5);
+      });
+      
+      yPosition += (niveauEntries.length * 12) + 15;
+    }
+    
+    // === PALANQUÉES DÉTAILLÉES ===
+    checkPageBreak(30, true); // Force nouvelle page pour les palanquées
+    
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('🏊‍♂️ ORGANISATION DES PALANQUÉES', margin, yPosition);
+    yPosition += 15;
+    
+    if (palanquees.length === 0) {
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(...colors.warning);
+      doc.rect(margin, yPosition, contentWidth, 20, 'FD');
+      
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(12);
+      doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 12);
+      yPosition += 30;
     } else {
-      pal.forEach(p => {
-        html += `<div class="plongeur">
-          <strong>${p.nom}</strong> 
-          <span class="niveau">${p.niveau}</span>
-          ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-        </div>`;
+      palanquees.forEach((pal, i) => {
+        const palanqueeHeight = 25 + (pal.length * 8);
+        checkPageBreak(palanqueeHeight + 10);
+        
+        const isAlert = checkAlert(pal);
+        const headerColor = isAlert ? colors.danger : colors.secondary;
+        
+        // En-tête de palanquée
+        doc.setFillColor(...headerColor);
+        doc.rect(margin, yPosition, contentWidth, 15, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Palanquée ${i + 1}`, margin + 5, yPosition + 10);
+        
+        // Statistiques de la palanquée
+        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+        const n1s = pal.filter(p => p.niveau === "N1");
+        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+        
+        doc.setFontSize(9);
+        doc.text(`${pal.length} plongeurs • ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes`, 
+                 margin + 60, yPosition + 10);
+        
+        // Corps de la palanquée
+        doc.setFillColor(248, 249, 250);
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(margin, yPosition + 15, contentWidth, palanqueeHeight - 15, 'FD');
+        
+        yPosition += 20;
+        
+        if (pal.length === 0) {
+          doc.setTextColor(...colors.gray);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'italic');
+          doc.text('Aucun plongeur assigné', margin + 10, yPosition + 5);
+          yPosition += 8;
+        } else {
+          doc.setTextColor(...colors.dark);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          
+          pal.forEach((p, plongeurIndex) => {
+            const plongeurY = yPosition + (plongeurIndex * 8);
+            
+            // Puce colorée selon le niveau
+            const niveauColors = {
+              'N1': [23, 162, 184], 'N2': [40, 167, 69], 'N3': [255, 193, 7], 'N4/GP': [253, 126, 20],
+              'E1': [111, 66, 193], 'E2': [232, 62, 140], 'E3': [220, 53, 69], 'E4': [52, 58, 64]
+            };
+            
+            doc.setFillColor(...(niveauColors[p.niveau] || colors.gray));
+            doc.circle(margin + 8, plongeurY - 1, 2, 'F');
+            
+            // Nom du plongeur
+            doc.setFont(undefined, 'bold');
+            doc.text(p.nom, margin + 15, plongeurY);
+            
+            // Niveau
+            doc.setFont(undefined, 'normal');
+            doc.text(`(${p.niveau})`, margin + 15 + (p.nom.length * 2), plongeurY);
+            
+            // Prérogatives
+            if (p.pre) {
+              doc.setTextColor(...colors.gray);
+              doc.setFontSize(8);
+              doc.text(`- ${p.pre}`, margin + 15 + (p.nom.length * 2) + 20, plongeurY);
+              doc.setFontSize(10);
+              doc.setTextColor(...colors.dark);
+            }
+          });
+          
+          yPosition += (pal.length * 8);
+        }
+        
+        yPosition += 15;
       });
     }
-    html += '</div>';
-  });
-  
-  // Plongeurs non assignés
-  if (plongeurs.length > 0) {
-    html += '<div class="palanquee"><div class="palanquee-title">Plongeurs non assignés</div>';
-    plongeurs.forEach(p => {
-      html += `<div class="plongeur">
-        <strong>${p.nom}</strong> 
-        <span class="niveau">${p.niveau}</span>
-        ${p.pre ? `<em> - ${p.pre}</em>` : ''}
-      </div>`;
-    });
-    html += '</div>';
+    
+    // === PLONGEURS NON ASSIGNÉS ===
+    if (plongeurs.length > 0) {
+      checkPageBreak(30 + (plongeurs.length * 8));
+      
+      doc.setTextColor(...colors.warning[0], ...colors.warning.slice(1));
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(`⏳ PLONGEURS EN ATTENTE (${plongeurs.length})`, margin, yPosition);
+      yPosition += 10;
+      
+      // Boîte des non-assignés
+      const unassignedHeight = 10 + (plongeurs.length * 6);
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(...colors.warning);
+      doc.rect(margin, yPosition, contentWidth, unassignedHeight, 'FD');
+      
+      yPosition += 8;
+      
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      plongeurs.forEach((p, index) => {
+        const plongeurY = yPosition + (index * 6);
+        doc.text(`• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`, margin + 5, plongeurY);
+      });
+      
+      yPosition += (plongeurs.length * 6) + 10;
+    }
+    
+    // === FOOTER PROFESSIONNEL ===
+    // Aller à la dernière page pour le footer
+    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
+    
+    // Ajouter footer sur toutes les pages
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      doc.setPage(pageNum);
+      
+      // Footer principal seulement sur la dernière page
+      if (pageNum === totalPages) {
+        const footerY = pageHeight - 40;
+        
+        // Ligne décorative
+        doc.setLineWidth(1);
+        doc.setDrawColor(...colors.primary);
+        doc.line(margin, footerY, pageWidth - margin, footerY);
+        
+        // Informations footer en colonnes
+        doc.setTextColor(...colors.dark);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        
+        const footerSections = [
+          { title: '📋 LÉGAL', content: ['Document officiel JSAS', 'Conforme FFESSM'] },
+          { title: '🔒 SÉCURITÉ', content: ['Vérification prérogatives', 'Respect ratios'] },
+          { title: '⚙️ TECHNIQUE', content: ['Version 2.1.3 Pro', `Généré le ${new Date().toLocaleDateString('fr-FR')}`] }
+        ];
+        
+        const sectionWidth = contentWidth / 3;
+        footerSections.forEach((section, index) => {
+          const sectionX = margin + (index * sectionWidth);
+          
+          doc.text(section.title, sectionX, footerY + 8);
+          
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(7);
+          section.content.forEach((line, lineIndex) => {
+            doc.text(line, sectionX, footerY + 15 + (lineIndex * 4));
+          });
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(8);
+        });
+      }
+      
+      // Numérotation des pages
+      doc.setTextColor(...colors.gray);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Page ${pageNum}/${totalPages}`, pageWidth - margin - 15, pageHeight - 10);
+      doc.text(`${new Date().toLocaleString('fr-FR')}`, margin, pageHeight - 10);
+    }
+    
+    // === TÉLÉCHARGEMENT ===
+    const fileName = `palanquees-jsas-${dpDate || 'export'}-${dpPlongee}-pro.pdf`;
+    doc.save(fileName);
+    
+    console.log("✅ PDF professionnel généré avec succès:", fileName);
+    
+    // Message de confirmation
+    const alertesText = alertesTotal.length > 0 ? `\n⚠️ ${alertesTotal.length} alerte(s) détectée(s)` : '\n✅ Aucune alerte';
+    alert(`PDF professionnel généré avec succès !\n\n📊 ${totalPlongeurs} plongeurs dans ${palanquees.length} palanquées${alertesText}\n\n📁 Fichier: ${fileName}`);
+    
+  } catch (error) {
+    console.error("❌ Erreur génération PDF professionnel:", error);
+    alert("Erreur lors de la génération du PDF professionnel : " + error.message);
   }
-  
-  html += `
-      <div style="margin-top: 40px; text-align: center; font-size: 0.9em; color: #666;">
-        <p>Document généré le ${new Date().toLocaleString('fr-FR')}</p>
-        <p>Application Palanquées JSAS v2.1.0</p>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  $("previewContainer").style.display = "block";
-  $("pdfPreview").src = url;
-  
-  // Scroll vers l'aperçu
-  $("previewContainer").scrollIntoView({ behavior: 'smooth' });
 }
 
+// Fonction utilitaire pour améliorer l'interface des boutons PDF
+function enhancePDFButtons() {
+  const generateBtn = $("generatePDF");
+  const exportBtn = $("exportPDF");
+  
+  if (generateBtn) {
+    generateBtn.innerHTML = "🔍 Aperçu Professionnel";
+    generateBtn.title = "Générer un aperçu PDF avec design professionnel";
+  }
+  
+  if (exportBtn) {
+    exportBtn.innerHTML = "📄 PDF Professionnel";
+    exportBtn.title = "Télécharger le PDF avec mise en page professionnelle";
+  }
+}
+
+// Initialiser les améliorations PDF au chargement
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    enhancePDFButtons();
+  }, 1000);
+});
 function exportToPDF() {
   console.log("📄 Génération du PDF...");
   
