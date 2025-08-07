@@ -1068,32 +1068,33 @@ function setupPalanqueesEventListeners() {
 function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
-  const dpLieu = $("dp-lieu").value || "Non défini";
-  const dpPlongee = $("dp-plongee").value || "matin";
-  
-  // Calculs statistiques
-  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-  const alertesTotal = checkAllAlerts();
-  
-  // Fonction pour formater la date
-  function formatDateFrench(dateString) {
-    if (!dateString) return "Non définie";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-  
-  // Fonction pour capitaliser
-  function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  }
+  try {
+    const dpNom = $("dp-nom").value || "Non défini";
+    const dpDate = $("dp-date").value || "Non définie";
+    const dpLieu = $("dp-lieu").value || "Non défini";
+    const dpPlongee = $("dp-plongee").value || "matin";
+    
+    // Calculs statistiques
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    // Fonction pour formater la date
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
+    // Fonction pour capitaliser
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
 
   const html = `
     <!DOCTYPE html>
@@ -1628,33 +1629,39 @@ function generatePDFPreview() {
     </body>
     </html>`;
 
-  // Créer et afficher l'aperçu
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  
-  const previewContainer = $("previewContainer");
-  const pdfPreview = $("pdfPreview");
-  
-  if (previewContainer && pdfPreview) {
-    previewContainer.style.display = "block";
-    pdfPreview.src = url;
     
-    // Scroll vers l'aperçu
-    previewContainer.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'start'
-    });
+    // Créer et afficher l'aperçu
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     
-    console.log("✅ Aperçu PDF professionnel généré avec succès");
+    const previewContainer = $("previewContainer");
+    const pdfPreview = $("pdfPreview");
     
-    // Nettoyer l'URL après 30 secondes
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 30000);
+    if (previewContainer && pdfPreview) {
+      previewContainer.style.display = "block";
+      pdfPreview.src = url;
+      
+      // Scroll vers l'aperçu
+      previewContainer.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      console.log("✅ Aperçu PDF professionnel généré avec succès");
+      
+      // Nettoyer l'URL après 30 secondes
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 30000);
+      
+    } else {
+      console.error("❌ Éléments d'aperçu non trouvés");
+      alert("Erreur: impossible d'afficher l'aperçu PDF");
+    }
     
-  } else {
-    console.error("❌ Éléments d'aperçu non trouvés");
-    alert("Erreur: impossible d'afficher l'aperçu PDF");
+  } catch (error) {
+    console.error("❌ Erreur génération aperçu PDF:", error);
+    alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
 
