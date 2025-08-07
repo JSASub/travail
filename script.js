@@ -1658,24 +1658,22 @@ function exportToPDF() {
   const dpPlongee = $("dp-plongee").value || "matin";
   
   try {
-    // Créer le document PDF
+    // Créer le document PDF - VERSION COMPATIBLE
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4',
-      compress: true
+      format: 'a4'
     });
     
-    // Configuration des couleurs
+    // Configuration des couleurs (RGB uniquement pour compatibilité)
     const colors = {
-      primary: [0, 64, 128],
-      secondary: [0, 123, 255],
-      success: [40, 167, 69],
-      warning: [255, 193, 7],
-      danger: [220, 53, 69],
-      dark: [52, 58, 64],
-      gray: [108, 117, 125]
+      primaryR: 0, primaryG: 64, primaryB: 128,
+      secondaryR: 0, secondaryG: 123, secondaryB: 255,
+      successR: 40, successG: 167, successB: 69,
+      dangerR: 220, dangerG: 53, dangerB: 69,
+      darkR: 52, darkG: 58, darkB: 64,
+      grayR: 108, grayG: 117, grayB: 125
     };
     
     let yPosition = 20;
@@ -1685,7 +1683,7 @@ function exportToPDF() {
     const contentWidth = pageWidth - (2 * margin);
     
     // Fonction pour vérifier les sauts de page
-    function checkPageBreak(heightNeeded = 15, forceNewPage = false) {
+    function checkPageBreak(heightNeeded, forceNewPage) {
       if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
         doc.addPage();
         yPosition = 20;
@@ -1699,151 +1697,96 @@ function exportToPDF() {
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
         doc.setFontSize(10);
-        doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
         doc.text("Palanquees JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
         doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
         yPosition = 25;
       }
     }
     
-    // Fonction pour formater la date française
+    // Fonction pour formater la date française - VERSION SIMPLE
     function formatDateFrench(dateString) {
       if (!dateString) return "Non definie";
       const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
     }
     
-    // === EN-TÊTE PRINCIPAL ===
-    // Fond d'en-tête (sans transparence)
-    doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.rect(0, 0, pageWidth, 70, 'F');
-    
-    // Logo simulé (sans transparence)
-    doc.setFillColor(255, 255, 255);
-    doc.circle(margin + 15, 25, 12, 'F');
+    // === EN-TÊTE PRINCIPAL - VERSION SIMPLIFIÉE ===
+    // Fond d'en-tête
+    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.rect(0, 0, pageWidth, 60, 'F');
     
     // Titre principal
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont(undefined, 'bold');
-    doc.text('PALANQUEES JSAS', margin + 35, 30);
+    doc.text('PALANQUEES JSAS', margin, 25);
     
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
-    doc.text('Organisation Professionnelle de Plongee', margin + 35, 38);
+    doc.text('Organisation Professionnelle de Plongee', margin, 35);
     
-    // Informations métier en colonnes
-    const metaY = 50;
-    const colWidth = contentWidth / 4;
-    
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text('DIRECTEUR DE PLONGEE', margin, metaY);
-    doc.text('DATE DE PLONGEE', margin + colWidth, metaY);
-    doc.text('LIEU', margin + (colWidth * 2), metaY);
-    doc.text('SESSION', margin + (colWidth * 3), metaY);
-    
+    // Informations métier
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
+    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
+    doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
+    doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
     
-    // Nettoyer les textes pour éviter les caractères problématiques
-    const dpNomClean = dpNom.replace(/'/g, "'").substring(0, 25);
-    const dpDateClean = formatDateFrench(dpDate).replace(/'/g, "'").substring(0, 25);
-    const dpLieuClean = dpLieu.replace(/'/g, "'").substring(0, 20);
-    const dpPlongeeClean = dpPlongee.toUpperCase();
+    yPosition = 75;
     
-    doc.text(dpNomClean, margin, metaY + 8);
-    doc.text(dpDateClean, margin + colWidth, metaY + 8);
-    doc.text(dpLieuClean, margin + (colWidth * 2), metaY + 8);
-    doc.text(dpPlongeeClean, margin + (colWidth * 3), metaY + 8);
-    
-    yPosition = 85;
-    
-    // === TABLEAU DE BORD STATISTIQUES ===
+    // === STATISTIQUES ===
     const totalPlongeurs = plongeurs.length + palanquees.reduce(function(total, pal) { return total + pal.length; }, 0);
     const plongeursEnPalanquees = palanquees.reduce(function(total, pal) { return total + pal.length; }, 0);
     const alertesTotal = checkAllAlerts();
     
     // Titre section
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.text('TABLEAU DE BORD', margin, yPosition);
     
-    // Ligne décorative
+    // Ligne décorative simple
+    doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
     doc.setLineWidth(2);
-    doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
     doc.line(margin, yPosition + 2, margin + 60, yPosition + 2);
-    doc.setLineWidth(1);
-    doc.setDrawColor(colors.success[0], colors.success[1], colors.success[2]);
-    doc.line(margin, yPosition + 4, margin + 30, yPosition + 4);
     
     yPosition += 15;
     
-    // Cartes statistiques
-    const cardWidth = (contentWidth - 15) / 4;
-    const cardHeight = 25;
-    const stats = [
-      { label: 'TOTAL PLONGEURS', value: totalPlongeurs, detail: 'Tous niveaux', color: colors.primary },
-      { label: 'PALANQUEES', value: palanquees.length, detail: 'Moy: ' + (palanquees.length > 0 ? (plongeursEnPalanquees / palanquees.length).toFixed(1) : 0), color: colors.secondary },
-      { label: 'ASSIGNES', value: plongeursEnPalanquees, detail: (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%', color: colors.success },
-      { label: 'ALERTES', value: alertesTotal.length, detail: alertesTotal.length === 0 ? 'Tout OK' : 'Attention', color: alertesTotal.length === 0 ? colors.success : colors.danger }
-    ];
+    // Statistiques en texte simple (compatible)
+    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
     
-    for (let i = 0; i < stats.length; i++) {
-      const stat = stats[i];
-      const cardX = margin + (i * (cardWidth + 5));
-      
-      // Fond de carte
-      doc.setFillColor(248, 249, 250);
-      doc.rect(cardX, yPosition, cardWidth, cardHeight, 'F');
-      
-      // Bordure colorée
-      doc.setLineWidth(2);
-      doc.setDrawColor(stat.color[0], stat.color[1], stat.color[2]);
-      doc.line(cardX, yPosition, cardX, yPosition + cardHeight);
-      
-      // Valeur principale
-      doc.setTextColor(stat.color[0], stat.color[1], stat.color[2]);
-      doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
-      doc.text(stat.value.toString(), cardX + cardWidth/2, yPosition + 12, { align: 'center' });
-      
-      // Label
-      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'normal');
-      doc.text(stat.label, cardX + cardWidth/2, yPosition + 18, { align: 'center' });
-      
-      // Détail
-      doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
-      doc.setFontSize(7);
-      doc.text(stat.detail, cardX + cardWidth/2, yPosition + 22, { align: 'center' });
-    }
+    doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
+    doc.text('PALANQUEES: ' + palanquees.length, margin + 50, yPosition);
+    yPosition += 8;
     
-    yPosition += 35;
+    doc.text('ASSIGNES: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
+    doc.text('ALERTES: ' + alertesTotal.length, margin + 80, yPosition);
+    
+    yPosition += 15;
     
     // === ALERTES DE SÉCURITÉ ===
     if (alertesTotal.length > 0) {
       checkPageBreak(20 + (alertesTotal.length * 8));
       
+      // Encadré d'alerte simple
+      doc.setDrawColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      doc.setLineWidth(2);
+      doc.rect(margin, yPosition, contentWidth, 15 + (alertesTotal.length * 6), 'S');
+      
       // Titre alertes
-      doc.setTextColor(colors.danger[0], colors.danger[1], colors.danger[2]);
+      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('ALERTES DE SECURITE', margin, yPosition);
+      doc.text('ALERTES DE SECURITE (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
       
-      // Boîte d'alertes
-      doc.setFillColor(255, 245, 245);
-      doc.setDrawColor(colors.danger[0], colors.danger[1], colors.danger[2]);
-      doc.setLineWidth(1);
-      const alertHeight = 10 + (alertesTotal.length * 6);
-      doc.rect(margin, yPosition + 5, contentWidth, alertHeight, 'FD');
+      yPosition += 18;
       
-      yPosition += 12;
-      
-      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
-      doc.setFontSize(9);
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       
       for (let i = 0; i < alertesTotal.length; i++) {
@@ -1855,41 +1798,87 @@ function exportToPDF() {
       yPosition += (alertesTotal.length * 6) + 10;
     }
     
-    // === PALANQUÉES DÉTAILLÉES ===
-    checkPageBreak(30, true); // Force nouvelle page pour les palanquées
+    // === ANALYSE PAR NIVEAU ===
+    const statsNiveaux = {};
+    const allPlongeurs = plongeurs.concat(palanquees.flat());
+    for (let i = 0; i < allPlongeurs.length; i++) {
+      const niveau = allPlongeurs[i].niveau;
+      statsNiveaux[niveau] = (statsNiveaux[niveau] || 0) + 1;
+    }
     
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    if (Object.keys(statsNiveaux).length > 0) {
+      checkPageBreak(30);
+      
+      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('REPARTITION PAR NIVEAU', margin, yPosition);
+      yPosition += 12;
+      
+      const niveauEntries = Object.entries(statsNiveaux).sort(function(a, b) {
+        const order = {'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8};
+        return (order[a[0]] || 9) - (order[b[0]] || 9);
+      });
+      
+      // Tableau simple des niveaux
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      for (let i = 0; i < niveauEntries.length; i++) {
+        const entry = niveauEntries[i];
+        const niveau = entry[0];
+        const count = entry[1];
+        const pourcentage = ((count / allPlongeurs.length) * 100).toFixed(1);
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(niveau + ':', margin, yPosition + (i * 8));
+        doc.setFont(undefined, 'normal');
+        doc.text(count + ' plongeurs (' + pourcentage + '%)', margin + 25, yPosition + (i * 8));
+      }
+      
+      yPosition += (niveauEntries.length * 8) + 15;
+    }
+    
+    // === PALANQUÉES DÉTAILLÉES ===
+    checkPageBreak(30, true);
+    
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.text('ORGANISATION DES PALANQUEES', margin, yPosition);
     yPosition += 15;
     
     if (palanquees.length === 0) {
-      doc.setFillColor(255, 243, 205);
-      doc.setDrawColor(colors.warning[0], colors.warning[1], colors.warning[2]);
-      doc.rect(margin, yPosition, contentWidth, 20, 'FD');
+      // Encadré d'avertissement
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(1);
+      doc.rect(margin, yPosition, contentWidth, 15, 'S');
       
-      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
       doc.setFontSize(12);
-      doc.text('Aucune palanquee creee - Tous les plongeurs en attente', margin + 10, yPosition + 12);
-      yPosition += 30;
+      doc.text('Aucune palanquee creee - Tous les plongeurs en attente', margin + 10, yPosition + 10);
+      yPosition += 25;
     } else {
       for (let i = 0; i < palanquees.length; i++) {
         const pal = palanquees[i];
-        const palanqueeHeight = 25 + (pal.length * 8);
-        checkPageBreak(palanqueeHeight + 10);
+        const palanqueeHeight = 20 + (pal.length * 6);
+        checkPageBreak(palanqueeHeight + 5);
         
         const isAlert = checkAlert(pal);
-        const headerColor = isAlert ? colors.danger : colors.secondary;
         
-        // En-tête de palanquée
-        doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-        doc.rect(margin, yPosition, contentWidth, 15, 'F');
+        // En-tête de palanquée - Version simple
+        if (isAlert) {
+          doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
+        } else {
+          doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+        }
+        doc.rect(margin, yPosition, contentWidth, 12, 'F');
         
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text('Palanquee ' + (i + 1), margin + 5, yPosition + 10);
+        doc.text('Palanquee ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
         
         // Statistiques de la palanquée
         const gps = pal.filter(function(p) { return ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau); });
@@ -1897,97 +1886,72 @@ function exportToPDF() {
         const autonomes = pal.filter(function(p) { return ["N2", "N3"].includes(p.niveau); });
         
         doc.setFontSize(9);
-        doc.text(pal.length + " plongeurs • " + gps.length + " GP • " + n1s.length + " N1 • " + autonomes.length + " Autonomes", 
-                 margin + 60, yPosition + 10);
-        
-        // Corps de la palanquée
-        doc.setFillColor(248, 249, 250);
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(margin, yPosition + 15, contentWidth, palanqueeHeight - 15, 'FD');
-        
-        yPosition += 20;
-        
-        if (pal.length === 0) {
-          doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'italic');
-          doc.text('Aucun plongeur assigne', margin + 10, yPosition + 5);
-          yPosition += 8;
-        } else {
-          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          
-          for (let j = 0; j < pal.length; j++) {
-            const p = pal[j];
-            const plongeurY = yPosition + (j * 8);
-            
-            // Puce colorée selon le niveau
-            const niveauColors = {
-              'N1': [23, 162, 184], 'N2': [40, 167, 69], 'N3': [255, 193, 7], 'N4/GP': [253, 126, 20],
-              'E1': [111, 66, 193], 'E2': [232, 62, 140], 'E3': [220, 53, 69], 'E4': [52, 58, 64]
-            };
-            
-            const niveauColor = niveauColors[p.niveau] || colors.gray;
-            doc.setFillColor(niveauColor[0], niveauColor[1], niveauColor[2]);
-            doc.circle(margin + 8, plongeurY - 1, 2, 'F');
-            
-            // Nom du plongeur (nettoyé)
-            const nomClean = p.nom.replace(/'/g, "'");
-            doc.setFont(undefined, 'bold');
-            doc.text(nomClean, margin + 15, plongeurY);
-            
-            // Niveau
-            doc.setFont(undefined, 'normal');
-            doc.text("(" + p.niveau + ")", margin + 15 + (nomClean.length * 2), plongeurY);
-            
-            // Prérogatives (nettoyées)
-            if (p.pre) {
-              const preClean = p.pre.replace(/'/g, "'");
-              doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
-              doc.setFontSize(8);
-              doc.text("- " + preClean, margin + 15 + (nomClean.length * 2) + 20, plongeurY);
-              doc.setFontSize(10);
-              doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
-            }
-          }
-          
-          yPosition += (pal.length * 8);
-        }
+        doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
         yPosition += 15;
+        
+        // Corps de la palanquée
+        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        
+        if (pal.length === 0) {
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('Aucun plongeur assigne', margin + 10, yPosition);
+          yPosition += 8;
+        } else {
+          for (let j = 0; j < pal.length; j++) {
+            const p = pal[j];
+            const nomClean = p.nom.replace(/'/g, "'");
+            const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+            
+            // Ligne du plongeur
+            doc.setFont(undefined, 'bold');
+            doc.text('• ' + nomClean, margin + 5, yPosition);
+            
+            doc.setFont(undefined, 'normal');
+            doc.text('(' + p.niveau + ')', margin + 5 + (nomClean.length * 1.8), yPosition);
+            
+            if (preClean) {
+              doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+              doc.text('- ' + preClean, margin + 5 + (nomClean.length * 1.8) + 15, yPosition);
+              doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+            }
+            
+            yPosition += 6;
+          }
+        }
+        
+        yPosition += 10;
       }
     }
     
     // === PLONGEURS NON ASSIGNÉS ===
     if (plongeurs.length > 0) {
-      checkPageBreak(30 + (plongeurs.length * 8));
+      checkPageBreak(25 + (plongeurs.length * 6));
       
-      doc.setTextColor(colors.warning[0], colors.warning[1], colors.warning[2]);
+      // Encadré d'avertissement
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(2);
+      doc.rect(margin, yPosition, contentWidth, 15 + (plongeurs.length * 6), 'S');
+      
+      doc.setTextColor(133, 100, 4); // Couleur warning foncée
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS EN ATTENTE (' + plongeurs.length + ')', margin, yPosition);
-      yPosition += 10;
+      doc.text('PLONGEURS EN ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
       
-      // Boîte des non-assignés
-      const unassignedHeight = 10 + (plongeurs.length * 6);
-      doc.setFillColor(255, 243, 205);
-      doc.setDrawColor(colors.warning[0], colors.warning[1], colors.warning[2]);
-      doc.rect(margin, yPosition, contentWidth, unassignedHeight, 'FD');
+      yPosition += 18;
       
-      yPosition += 8;
-      
-      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       
       for (let i = 0; i < plongeurs.length; i++) {
         const p = plongeurs[i];
-        const plongeurY = yPosition + (i * 6);
         const nomClean = p.nom.replace(/'/g, "'");
         const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-        const textLine = "• " + nomClean + " (" + p.niveau + ")" + (preClean ? " - " + preClean : '');
-        doc.text(textLine, margin + 5, plongeurY);
+        const textLine = '• ' + nomClean + ' (' + p.niveau + ')' + (preClean ? ' - ' + preClean : '');
+        doc.text(textLine, margin + 5, yPosition + (i * 6));
       }
       
       yPosition += (plongeurs.length * 6) + 10;
@@ -2000,13 +1964,25 @@ function exportToPDF() {
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       doc.setPage(pageNum);
       
-      // Footer simple
-      doc.setTextColor(colors.gray[0], colors.gray[1], colors.gray[2]);
+      // Ligne de séparation
+      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      
+      // Informations footer
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
       doc.setFontSize(8);
       doc.setFont(undefined, 'normal');
-      doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 15, pageHeight - 10);
-      doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 10);
-      doc.text('Document officiel JSAS - Version 2.1.3 Pro', margin, pageHeight - 5);
+      
+      // Footer principal sur dernière page
+      if (pageNum === totalPages) {
+        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15);
+        doc.text('Genere le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
+      }
+      
+      // Numérotation des pages
+      doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5);
     }
     
     // === TÉLÉCHARGEMENT ===
@@ -2016,14 +1992,15 @@ function exportToPDF() {
     console.log("✅ PDF professionnel généré avec succès:", fileName);
     
     // Message de confirmation
-    const alertesText = alertesTotal.length > 0 ? '\nAlertes detectees: ' + alertesTotal.length : '\nAucune alerte';
-    alert('PDF professionnel genere avec succes !\n\nPlongeurs: ' + totalPlongeurs + ' dans ' + palanquees.length + ' palanquees' + alertesText + '\n\nFichier: ' + fileName);
+    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) detectee(s)' : '\n✅ Aucune alerte';
+    alert('PDF professionnel genere avec succes !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanquees.length + ' palanquees' + alertesText + '\n\n📁 Fichier: ' + fileName);
     
   } catch (error) {
     console.error("❌ Erreur PDF:", error);
-    alert("Erreur lors de la génération du PDF professionnel : " + error.message);
+    alert("Erreur lors de la génération du PDF : " + error.message);
   }
 }
+
 // Setup Event Listeners
 function setupEventListeners() {
   // Ajout de plongeur
