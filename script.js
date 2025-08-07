@@ -1398,7 +1398,7 @@ function generatePDFPreview() {
     htmlContent += '<div class="logo">🤿</div>';
     htmlContent += '<div>';
     htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
-    htmlContent += '<p class="subtitle">Organisation Professionnelle de Plongée</p>';
+    htmlContent += '<p class="subtitle">Organisation Associative de Plongée</p>';
     htmlContent += '</div>';
     htmlContent += '</div>';
     
@@ -1591,11 +1591,11 @@ function generatePDFPreview() {
     htmlContent += '<div class="footer-section">';
     htmlContent += '<h4>🔒 Sécurité</h4>';
     htmlContent += '<p>Vérification des prérogatives obligatoire</p>';
-    htmlContent += '<p>Respect des ratios d\'encadrement</p>';
+    htmlContent += '<p>Respect des ratios d'encadrement</p>';
     htmlContent += '</div>';
     htmlContent += '<div class="footer-section">';
     htmlContent += '<h4>📞 Contact</h4>';
-    htmlContent += '<p>JSAS - Club de Plongée</p>';
+    htmlContent += '<p>JSAS - Club associatif de Plongée</p>';
     htmlContent += '<p>En cas d\'urgence: contacter le DP</p>';
     htmlContent += '</div>';
     htmlContent += '<div class="footer-section">';
@@ -1650,7 +1650,13 @@ function generatePDFPreview() {
 }
 //
 function exportToPDF() {
-  console.log("📄 Génération du PDF professionnel...");
+  // Vérification de sécurité pour éviter les appels automatiques
+  if (arguments.length === 0 && !window.userClickedExport) {
+    console.log("⚠️ Export PDF bloqué - pas d'interaction utilisateur");
+    return;
+  }
+  
+  console.log("📄 Génération du PDF professionnel...");console.log("📄 Génération du PDF professionnel...");
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -1760,10 +1766,10 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('PALANQUEES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
-    doc.text('ASSIGNES: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
+    doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
     doc.text('ALERTES: ' + alertesTotal.length, margin + 80, yPosition);
     
     yPosition += 15;
@@ -1846,7 +1852,7 @@ function exportToPDF() {
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
-    doc.text('ORGANISATION DES PALANQUEES', margin, yPosition);
+    doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
     yPosition += 15;
     
     if (palanquees.length === 0) {
@@ -1857,7 +1863,7 @@ function exportToPDF() {
       
       doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
       doc.setFontSize(12);
-      doc.text('Aucune palanquee creee - Tous les plongeurs en attente', margin + 10, yPosition + 10);
+      doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 10);
       yPosition += 25;
     } else {
       for (let i = 0; i < palanquees.length; i++) {
@@ -1907,14 +1913,17 @@ function exportToPDF() {
             
             // Ligne du plongeur
             doc.setFont(undefined, 'bold');
-            doc.text('• ' + nomClean, margin + 5, yPosition);
+            //
+			doc.text('• ' + nomClean, margin + 5, yPosition);
             
             doc.setFont(undefined, 'normal');
-            doc.text('(' + p.niveau + ')', margin + 5 + (nomClean.length * 1.8), yPosition);
+            //
+			doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             if (preClean) {
               doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-              doc.text('- ' + preClean, margin + 5 + (nomClean.length * 1.8) + 15, yPosition);
+              //
+			  doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
               doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             }
             
@@ -1938,7 +1947,7 @@ function exportToPDF() {
       doc.setTextColor(133, 100, 4); // Couleur warning foncée
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS EN ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
@@ -1976,8 +1985,8 @@ function exportToPDF() {
       
       // Footer principal sur dernière page
       if (pageNum === totalPages) {
-        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15);
-        doc.text('Genere le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
+        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro - RA -', margin, pageHeight - 15);
+        doc.text('Genéré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
       }
       
       // Numérotation des pages
