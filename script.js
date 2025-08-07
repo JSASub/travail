@@ -1096,7 +1096,107 @@ function generatePDFPreview() {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 
-  const html = `
+    // Génération des sections HTML
+    let alertesHTML = '';
+    if (alertesTotal.length > 0) {
+      alertesHTML = `
+          <section class="section">
+            <div class="alerts-section">
+              <h3 class="alerts-title">
+                <span>⚠️</span>
+                <span>Alertes de Sécurité (${alertesTotal.length})</span>
+              </h3>
+              ${alertesTotal.map(alerte => `<div class="alert-item">${alerte}</div>`).join('')}
+            </div>
+          </section>`;
+    }
+
+    // Génération des palanquées
+    let palanqueesHTML = '';
+    if (palanquees.length === 0) {
+      palanqueesHTML = `
+            <div class="unassigned-section">
+              <div class="unassigned-title">Aucune palanquée créée</div>
+              <p>Tous les plongeurs sont encore en attente d'assignation.</p>
+            </div>`;
+    } else {
+      const palanqueesCards = palanquees.map((pal, i) => {
+        const isAlert = checkAlert(pal);
+        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+        const n1s = pal.filter(p => p.niveau === "N1");
+        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+        
+        const plongeursCards = pal.length === 0 ? 
+          '<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>' :
+          pal.map(p => {
+            const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+            const niveauColors = {
+              'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+              'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+            };
+            
+            return `
+            <div class="plongeur-card">
+              <div class="plongeur-avatar">${initiales}</div>
+              <div class="plongeur-info">
+                <div class="plongeur-nom">${p.nom}</div>
+                <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
+              </div>
+              <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
+            </div>`;
+          }).join('');
+        
+        return `
+        <div class="palanquee-card${isAlert ? ' has-alert' : ''}">
+          <div class="palanquee-header">
+            <div class="palanquee-number">Palanquée ${i + 1}</div>
+            <div class="palanquee-stats">
+              ${pal.length} plongeur${pal.length > 1 ? 's' : ''} • 
+              ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes
+            </div>
+          </div>
+          <div class="palanquee-body">
+            ${plongeursCards}
+          </div>
+        </div>`;
+      }).join('');
+      
+      palanqueesHTML = `<div class="palanquees-grid">${palanqueesCards}</div>`;
+    }
+
+    // Génération des plongeurs non assignés
+    let nonAssignesHTML = '';
+    if (plongeurs.length > 0) {
+      const plongeursCards = plongeurs.map(p => {
+        const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+        const niveauColors = {
+          'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+          'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+        };
+        
+        return `
+        <div class="plongeur-card">
+          <div class="plongeur-avatar">${initiales}</div>
+          <div class="plongeur-info">
+            <div class="plongeur-nom">${p.nom}</div>
+            <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
+          </div>
+          <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
+        </div>`;
+      }).join('');
+
+      nonAssignesHTML = `
+          <section class="section">
+            <div class="unassigned-section">
+              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
+                ${plongeursCards}
+              </div>
+            </div>
+          </section>`;
+    }
+
+    const html = `
     <!DOCTYPE html>
     <html lang="fr">
     <head>
@@ -1479,7 +1579,6 @@ function generatePDFPreview() {
         </header>
 
         <main class="content">
-          <!-- Dashboard Statistiques -->
           <section class="section">
             <h2 class="section-title">📊 Tableau de Bord</h2>
             <div class="stats-dashboard">
@@ -1506,95 +1605,14 @@ function generatePDFPreview() {
             </div>
           </section>
 
-          ${alertesTotal.length > 0 ? `
-          <!-- Alertes -->
-          <section class="section">
-            <div class="alerts-section">
-              <h3 class="alerts-title">
-                <span>⚠️</span>
-                <span>Alertes de Sécurité (${alertesTotal.length})</span>
-              </h3>
-              ${alertesTotal.map(alerte => `<div class="alert-item">${alerte}</div>`).join('')}
-            </div>
-          </section>` : ''}
+          ${alertesHTML}
 
-          <!-- Palanquées -->
           <section class="section">
             <h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>
-            ${palanquees.length === 0 ? `
-            <div class="unassigned-section">
-              <div class="unassigned-title">Aucune palanquée créée</div>
-              <p>Tous les plongeurs sont encore en attente d'assignation.</p>
-            </div>` : `
-            <div class="palanquees-grid">
-              ${palanquees.map((pal, i) => {
-                const isAlert = checkAlert(pal);
-                const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-                const n1s = pal.filter(p => p.niveau === "N1");
-                const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
-                
-                return `
-                <div class="palanquee-card${isAlert ? ' has-alert' : ''}">
-                  <div class="palanquee-header">
-                    <div class="palanquee-number">Palanquée ${i + 1}</div>
-                    <div class="palanquee-stats">
-                      ${pal.length} plongeur${pal.length > 1 ? 's' : ''} • 
-                      ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes
-                    </div>
-                  </div>
-                  <div class="palanquee-body">
-                    ${pal.length === 0 ? 
-                      '<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>' :
-                      pal.map(p => {
-                        const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-                        const niveauColors = {
-                          'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
-                          'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
-                        };
-                        
-                        return `
-                        <div class="plongeur-card">
-                          <div class="plongeur-avatar">${initiales}</div>
-                          <div class="plongeur-info">
-                            <div class="plongeur-nom">${p.nom}</div>
-                            <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
-                          </div>
-                          <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
-                        </div>`;
-                      }).join('')
-                    }
-                  </div>
-                </div>`;
-              }).join('')}
-            </div>`}
+            ${palanqueesHTML}
           </section>
 
-          ${plongeurs.length > 0 ? `
-          <!-- Plongeurs Non Assignés -->
-          <section class="section">
-            <div class="unassigned-section">
-              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
-                ${plongeurs.map(p => {
-                  const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-                  const niveauColors = {
-                    'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
-                    'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
-                  };
-                  
-                  return `
-                  <div class="plongeur-card">
-                    <div class="plongeur-avatar">${initiales}</div>
-                    <div class="plongeur-info">
-                      <div class="plongeur-nom">${p.nom}</div>
-                      <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
-                    </div>
-                    <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
-                  </div>`;
-                }).join('')}
-              </div>
-            </div>
-          </section>` : ''}
+          ${nonAssignesHTML}
         </main>
 
         <footer class="footer">
@@ -1629,7 +1647,6 @@ function generatePDFPreview() {
     </body>
     </html>`;
 
-    
     // Créer et afficher l'aperçu
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
