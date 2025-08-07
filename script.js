@@ -1398,7 +1398,7 @@ function generatePDFPreview() {
     htmlContent += '<div class="logo">🤿</div>';
     htmlContent += '<div>';
     htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
-    htmlContent += '<p class="subtitle">Organisation Professionnelle de Plongée</p>';
+    htmlContent += '<p class="subtitle">Organisation Associative de Plongée</p>';
     htmlContent += '</div>';
     htmlContent += '</div>';
     
@@ -1704,7 +1704,7 @@ function exportToPDF() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
         doc.setFontSize(10);
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquees JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
         doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
         yPosition = 25;
       }
@@ -1725,7 +1725,7 @@ function exportToPDF() {
     
     // Titre principal
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(20);
     doc.setFont(undefined, 'bold');
     doc.text('PALANQUÉES JSAS', margin, 25);
     
@@ -1749,7 +1749,7 @@ function exportToPDF() {
     
     // Titre section
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('TABLEAU DE BORD', margin, yPosition);
     
@@ -1787,7 +1787,7 @@ function exportToPDF() {
       doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('ALERTES DE SECURITE (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
+      doc.text('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
