@@ -1654,16 +1654,13 @@ function exportToPDF() {
   console.log("📄 Génération du PDF professionnel...");
   
   // Vérifier que les éléments DOM existent
-  const dpNom = $("dp-nom");
-  const dpDate = $("dp-date");
-  
   if (!dpNom || !dpDate) {
     console.log("⚠️ Éléments DOM non prêts, export annulé");
     return;
   }
   
-  //const dpNom = $("dp-nom").value || "Non défini";
-  //const dpDate = $("dp-date").value || "Non définie";
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
   const dpPlongee = $("dp-plongee").value || "matin";
   
