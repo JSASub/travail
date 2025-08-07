@@ -1721,11 +1721,11 @@ function exportToPDF() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont(undefined, 'bold');
-    doc.text('PALANQUEES JSAS', margin, 25);
+    doc.text('PALANQUÉES JSAS', margin, 25);
     
-    doc.setFontSize(12);
+    doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
-    doc.text('Organisation Professionnelle de Plongee', margin, 35);
+    doc.text('Organisation Associative de Plongée', margin, 35);
     
     // Informations métier
     doc.setFontSize(10);
