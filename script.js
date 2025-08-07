@@ -1654,10 +1654,10 @@ function exportToPDF() {
   console.log("📄 Génération du PDF professionnel...");
   
   // Vérifier que les éléments DOM existent
-  if (!dpNom || !dpDate) {
-    console.log("⚠️ Éléments DOM non prêts, export annulé");
-    return;
-  }
+  //if (!dpNom || !dpDate) {
+    //console.log("⚠️ Éléments DOM non prêts, export annulé");
+    //return;
+  //}
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
