@@ -1919,14 +1919,14 @@ function exportToPDF() {
             
             doc.setFont(undefined, 'normal');
             //
-			doc.text('(' + p.niveau + ')', 100, yPosition);
-            
-			//doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
+			doc.text('(' + p.niveau + ')', 150, yPosition);
+            //doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             if (preClean) {
               doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
               //
-			  doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
+			  doc.text('- ' + preClean, 180, yPosition);
+			  //doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
               doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             }
             
