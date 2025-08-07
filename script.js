@@ -1918,17 +1918,18 @@ function exportToPDF() {
 			doc.text('• ' + nomClean, margin + 5, yPosition);
             
             doc.setFont(undefined, 'normal');
-            //
-			doc.text('(' + p.niveau + ')', 95, yPosition);
-            //doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             if (preClean) {
               doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
               //
-			  doc.text('- ' + preClean, 120, yPosition);
+			  doc.text('Prérogative: ' + preClean, 130, yPosition);
 			  //doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
               doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             }
+			
+			            //
+			doc.text('Niveau: ' + p.niveau + ')', 95, yPosition);
+            //doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
             
             yPosition += 6;
           }
