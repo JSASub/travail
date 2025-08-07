@@ -1591,7 +1591,7 @@ function generatePDFPreview() {
     htmlContent += '<div class="footer-section">';
     htmlContent += '<h4>🔒 Sécurité</h4>';
     htmlContent += '<p>Vérification des prérogatives obligatoire</p>';
-    htmlContent += '<p>Respect des ratios d'encadrement</p>';
+    htmlContent += '<p>Respect des ratios d\'encadrement</p>';
     htmlContent += '</div>';
     htmlContent += '<div class="footer-section">';
     htmlContent += '<h4>📞 Contact</h4>';
