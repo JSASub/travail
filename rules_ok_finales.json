@@ -1,0 +1,114 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    
+    "plongeurs": {
+      ".read": true,
+      ".write": true,
+      "$plongeur_id": {
+        ".validate": "newData.hasChildren(['nom', 'niveau'])",
+        "nom": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+        },
+        "niveau": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 10"
+        },
+        "pre": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    
+    "palanquees": {
+      ".read": true,
+      ".write": true,
+      ".validate": true
+    },
+    
+    "sessions": {
+      ".read": true,
+      ".write": true,
+      "$session_id": {
+        ".validate": "newData.hasChildren(['meta', 'plongeurs', 'palanquees', 'stats'])",
+        "meta": {
+          ".validate": "newData.hasChildren(['dp', 'date', 'lieu', 'plongee', 'timestamp'])",
+          "dp": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+          },
+          "date": {
+            ".validate": "newData.isString() && newData.val().length == 10"
+          },
+          "lieu": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "plongee": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber() && newData.val() > 1000000000000"
+          },
+          "sessionKey": {
+            ".validate": "newData.isString() && newData.val().length <= 100"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "plongeurs": {
+          ".validate": true
+        },
+        "palanquees": {
+          ".validate": true
+        },
+        "stats": {
+          ".validate": true
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    
+    "dpInfo": {
+      ".read": true,
+      ".write": true,
+      "$dp_key": {
+        ".validate": "newData.hasChildren(['nom', 'date', 'lieu', 'plongee', 'timestamp'])",
+        "nom": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+        },
+        "date": {
+          ".validate": "newData.isString() && newData.val().length == 10"
+        },
+        "lieu": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "plongee": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber() && newData.val() > 1000000000000"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    
+    "test": {
+      ".read": true,
+      ".write": true,
+      ".validate": true
+    },
+    
+    "$other": {
+      ".read": false,
+      ".write": false,
+      ".validate": false
+    }
+  }
+}
