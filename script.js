@@ -1064,53 +1064,524 @@ function setupPalanqueesEventListeners() {
   });
 }
 
-// Fonction pour générer les palanquées HTML (partie 3)
-function generatePalanqueesHTML() {
-  let html = `
-          <!-- Palanquées Organisées -->
-          <section class="section">
-            <h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>`;
+// ===== FONCTIONS PDF =====
+function generatePDFPreview() {
+  console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
-  if (palanquees.length === 0) {
-    html += `
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
+  
+  // Calculs statistiques
+  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+  const alertesTotal = checkAllAlerts();
+  
+  // Fonction pour formater la date
+  function formatDateFrench(dateString) {
+    if (!dateString) return "Non définie";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+  
+  // Fonction pour capitaliser
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Palanquées JSAS - ${formatDateFrench(dpDate)} (${capitalize(dpPlongee)})</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          min-height: 100vh;
+        }
+        
+        .container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          min-height: 297mm;
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
+          color: white;
+          padding: 30px;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .header::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -50%;
+          width: 100%;
+          height: 100%;
+          background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/></svg>') repeat;
+          opacity: 0.3;
+        }
+        
+        .header-content { position: relative; z-index: 2; }
+        
+        .logo-title {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+        
+        .logo {
+          width: 60px;
+          height: 60px;
+          background: rgba(255,255,255,0.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        
+        .main-title {
+          font-size: 28px;
+          font-weight: 300;
+          letter-spacing: 2px;
+        }
+        
+        .subtitle {
+          font-size: 16px;
+          opacity: 0.9;
+          font-weight: 300;
+        }
+        
+        .meta-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-top: 25px;
+        }
+        
+        .meta-item {
+          background: rgba(255,255,255,0.1);
+          padding: 15px;
+          border-radius: 8px;
+          backdrop-filter: blur(5px);
+        }
+        
+        .meta-label {
+          font-size: 12px;
+          opacity: 0.8;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 5px;
+        }
+        
+        .meta-value {
+          font-size: 16px;
+          font-weight: 500;
+        }
+        
+        .content { padding: 40px; }
+        .section { margin-bottom: 40px; }
+        
+        .section-title {
+          font-size: 20px;
+          color: #004080;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 3px solid #007bff;
+          position: relative;
+        }
+        
+        .section-title::after {
+          content: '';
+          position: absolute;
+          bottom: -3px;
+          left: 0;
+          width: 60px;
+          height: 3px;
+          background: #28a745;
+        }
+        
+        .stats-dashboard {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        
+        .stat-card {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          border-radius: 12px;
+          padding: 25px;
+          text-align: center;
+          border-left: 5px solid #007bff;
+          transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover { transform: translateY(-5px); }
+        
+        .stat-number {
+          font-size: 36px;
+          font-weight: bold;
+          color: #004080;
+          margin-bottom: 5px;
+        }
+        
+        .stat-label {
+          font-size: 14px;
+          color: #6c757d;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        
+        .stat-detail {
+          font-size: 12px;
+          color: #28a745;
+          margin-top: 5px;
+          font-weight: 500;
+        }
+        
+        .alerts-section {
+          background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+          border-radius: 12px;
+          padding: 25px;
+          margin: 30px 0;
+          border-left: 5px solid #dc3545;
+        }
+        
+        .alerts-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 18px;
+          color: #dc3545;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+        
+        .alert-item {
+          background: white;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          border-left: 4px solid #dc3545;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .palanquees-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 25px;
+        }
+        
+        .palanquee-card {
+          background: white;
+          border-radius: 15px;
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          border: 2px solid #e9ecef;
+          transition: all 0.3s ease;
+        }
+        
+        .palanquee-card.has-alert {
+          border-color: #dc3545;
+          box-shadow: 0 8px 25px rgba(220, 53, 69, 0.2);
+        }
+        
+        .palanquee-header {
+          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+          color: white;
+          padding: 20px;
+          position: relative;
+        }
+        
+        .palanquee-card.has-alert .palanquee-header {
+          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .palanquee-number {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        
+        .palanquee-stats {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        
+        .palanquee-body { padding: 25px; }
+        
+        .plongeur-card {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 15px;
+          margin: 10px 0;
+          border-left: 4px solid #28a745;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          transition: all 0.3s ease;
+        }
+        
+        .plongeur-card:hover {
+          background: #e9ecef;
+          transform: translateX(5px);
+        }
+        
+        .plongeur-avatar {
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 16px;
+        }
+        
+        .plongeur-info { flex: 1; }
+        
+        .plongeur-nom {
+          font-weight: 600;
+          color: #004080;
+          margin-bottom: 2px;
+        }
+        
+        .plongeur-details {
+          font-size: 12px;
+          color: #6c757d;
+        }
+        
+        .niveau-badge {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        
+        .unassigned-section {
+          background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+          border-radius: 12px;
+          padding: 25px;
+          border-left: 5px solid #ffc107;
+        }
+        
+        .unassigned-title {
+          color: #856404;
+          font-size: 18px;
+          margin-bottom: 20px;
+          font-weight: 600;
+        }
+        
+        .footer {
+          background: #343a40;
+          color: white;
+          padding: 30px;
+          text-align: center;
+          margin-top: 50px;
+        }
+        
+        .footer-content {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        .footer-section h4 {
+          color: #007bff;
+          margin-bottom: 10px;
+        }
+        
+        .footer-bottom {
+          border-top: 1px solid #495057;
+          padding-top: 20px;
+          font-size: 12px;
+          opacity: 0.8;
+        }
+        
+        @media print {
+          body { background: white !important; }
+          .container { box-shadow: none !important; max-width: none !important; }
+          .palanquees-grid { grid-template-columns: 1fr 1fr; }
+          .stats-dashboard { grid-template-columns: repeat(4, 1fr); }
+          .palanquee-card { break-inside: avoid; margin-bottom: 20px; }
+        }
+        
+        @media (max-width: 768px) {
+          .container { margin: 0; box-shadow: none; }
+          .header { padding: 20px; }
+          .content { padding: 20px; }
+          .palanquees-grid { grid-template-columns: 1fr; }
+          .stats-dashboard { grid-template-columns: repeat(2, 1fr); }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <header class="header">
+          <div class="header-content">
+            <div class="logo-title">
+              <div class="logo">🤿</div>
+              <div>
+                <h1 class="main-title">PALANQUÉES JSAS</h1>
+                <p class="subtitle">Organisation Professionnelle de Plongée</p>
+              </div>
+            </div>
+            
+            <div class="meta-grid">
+              <div class="meta-item">
+                <div class="meta-label">Directeur de Plongée</div>
+                <div class="meta-value">${dpNom}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Date de Plongée</div>
+                <div class="meta-value">${formatDateFrench(dpDate)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Lieu</div>
+                <div class="meta-value">${dpLieu}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Session</div>
+                <div class="meta-value">${capitalize(dpPlongee)}</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="content">
+          <!-- Dashboard Statistiques -->
+          <section class="section">
+            <h2 class="section-title">📊 Tableau de Bord</h2>
+            <div class="stats-dashboard">
+              <div class="stat-card">
+                <div class="stat-number">${totalPlongeurs}</div>
+                <div class="stat-label">Total Plongeurs</div>
+                <div class="stat-detail">Tous niveaux confondus</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number">${palanquees.length}</div>
+                <div class="stat-label">Palanquées</div>
+                <div class="stat-detail">Taille moyenne: ${palanquees.length > 0 ? (plongeursEnPalanquees / palanquees.length).toFixed(1) : 0}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number">${plongeursEnPalanquees}</div>
+                <div class="stat-label">Assignés</div>
+                <div class="stat-detail">${totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(1) : 0}% du total</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number">${alertesTotal.length}</div>
+                <div class="stat-label">Alertes</div>
+                <div class="stat-detail">${alertesTotal.length === 0 ? 'Tout est OK ✅' : 'Attention requise ⚠️'}</div>
+              </div>
+            </div>
+          </section>
+
+          ${alertesTotal.length > 0 ? `
+          <!-- Alertes -->
+          <section class="section">
+            <div class="alerts-section">
+              <h3 class="alerts-title">
+                <span>⚠️</span>
+                <span>Alertes de Sécurité (${alertesTotal.length})</span>
+              </h3>
+              ${alertesTotal.map(alerte => `<div class="alert-item">${alerte}</div>`).join('')}
+            </div>
+          </section>` : ''}
+
+          <!-- Palanquées -->
+          <section class="section">
+            <h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>
+            ${palanquees.length === 0 ? `
             <div class="unassigned-section">
               <div class="unassigned-title">Aucune palanquée créée</div>
-              <p>Toutes les plongeurs sont encore en attente d'assignation.</p>
-            </div>`;
-  } else {
-    html += `<div class="palanquees-grid">`;
-    
-    palanquees.forEach((pal, i) => {
-      const isAlert = checkAlert(pal);
-      const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-      const n1s = pal.filter(p => p.niveau === "N1");
-      const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
-      
-      html += `
-              <div class="palanquee-card${isAlert ? ' has-alert' : ''}">
-                <div class="palanquee-header">
-                  <div class="palanquee-number">Palanquée ${i + 1}</div>
-                  <div class="palanquee-stats">
-                    ${pal.length} plongeur${pal.length > 1 ? 's' : ''} • 
-                    ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes
+              <p>Tous les plongeurs sont encore en attente d'assignation.</p>
+            </div>` : `
+            <div class="palanquees-grid">
+              ${palanquees.map((pal, i) => {
+                const isAlert = checkAlert(pal);
+                const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+                const n1s = pal.filter(p => p.niveau === "N1");
+                const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+                
+                return `
+                <div class="palanquee-card${isAlert ? ' has-alert' : ''}">
+                  <div class="palanquee-header">
+                    <div class="palanquee-number">Palanquée ${i + 1}</div>
+                    <div class="palanquee-stats">
+                      ${pal.length} plongeur${pal.length > 1 ? 's' : ''} • 
+                      ${gps.length} GP • ${n1s.length} N1 • ${autonomes.length} Autonomes
+                    </div>
                   </div>
-                </div>
-                <div class="palanquee-body">`;
-      
-      if (pal.length === 0) {
-        html += `<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>`;
-      } else {
-        pal.forEach(p => {
-          // Générer les initiales pour l'avatar
-          const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-          
-          // Couleur du badge niveau
-          const niveauColors = {
-            'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
-            'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
-          };
-          
-          html += `
+                  <div class="palanquee-body">
+                    ${pal.length === 0 ? 
+                      '<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>' :
+                      pal.map(p => {
+                        const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+                        const niveauColors = {
+                          'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+                          'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+                        };
+                        
+                        return `
+                        <div class="plongeur-card">
+                          <div class="plongeur-avatar">${initiales}</div>
+                          <div class="plongeur-info">
+                            <div class="plongeur-nom">${p.nom}</div>
+                            <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
+                          </div>
+                          <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
+                        </div>`;
+                      }).join('')
+                    }
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>`}
+          </section>
+
+          ${plongeurs.length > 0 ? `
+          <!-- Plongeurs Non Assignés -->
+          <section class="section">
+            <div class="unassigned-section">
+              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
+                ${plongeurs.map(p => {
+                  const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+                  const niveauColors = {
+                    'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
+                    'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
+                  };
+                  
+                  return `
                   <div class="plongeur-card">
                     <div class="plongeur-avatar">${initiales}</div>
                     <div class="plongeur-info">
@@ -1119,58 +1590,10 @@ function generatePalanqueesHTML() {
                     </div>
                     <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
                   </div>`;
-        });
-      }
-      
-      html += `
-                </div>
-              </div>`;
-    });
-    
-    html += `</div>`;
-  }
-  
-  html += `</section>`;
-  
-  // Section Plongeurs Non Assignés
-  if (plongeurs.length > 0) {
-    html += `
-          <!-- Plongeurs Non Assignés -->
-          <section class="section">
-            <div class="unassigned-section">
-              <h3 class="unassigned-title">⏳ Plongeurs en Attente d'Assignation (${plongeurs.length})</h3>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">`;
-    
-    plongeurs.forEach(p => {
-      const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-      const niveauColors = {
-        'N1': '#17a2b8', 'N2': '#28a745', 'N3': '#ffc107', 'N4/GP': '#fd7e14',
-        'E1': '#6f42c1', 'E2': '#e83e8c', 'E3': '#dc3545', 'E4': '#343a40'
-      };
-      
-      html += `
-                <div class="plongeur-card">
-                  <div class="plongeur-avatar">${initiales}</div>
-                  <div class="plongeur-info">
-                    <div class="plongeur-nom">${p.nom}</div>
-                    <div class="plongeur-details">${p.pre || 'Aucune prérogative spécifiée'}</div>
-                  </div>
-                  <div class="niveau-badge" style="background: ${niveauColors[p.niveau] || '#6c757d'}">${p.niveau}</div>
-                </div>`;
-    });
-    
-    html += `
+                }).join('')}
               </div>
             </div>
-          </section>`;
-  }
-  
-  return html;
-}
-
-// Fonction pour générer le footer HTML
-function generateFooterHTML() {
-  return `
+          </section>` : ''}
         </main>
 
         <footer class="footer">
@@ -1204,56 +1627,37 @@ function generateFooterHTML() {
       </div>
     </body>
     </html>`;
-}
 
-// Fonction principale pour générer l'aperçu PDF professionnel
-function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel...");
+  // Créer et afficher l'aperçu
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   
-  try {
-    // Générer le HTML complet
-    let htmlContent = generateProfessionalHTMLPreview();
-    htmlContent += generateProfessionalHTMLPreview_Part2();
-    htmlContent += generatePalanqueesHTML();
-    htmlContent += generateFooterHTML();
+  const previewContainer = $("previewContainer");
+  const pdfPreview = $("pdfPreview");
+  
+  if (previewContainer && pdfPreview) {
+    previewContainer.style.display = "block";
+    pdfPreview.src = url;
     
-    // Créer le blob et l'URL
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    // Scroll vers l'aperçu
+    previewContainer.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
     
-    // Afficher l'aperçu
-    const previewContainer = $("previewContainer");
-    const pdfPreview = $("pdfPreview");
+    console.log("✅ Aperçu PDF professionnel généré avec succès");
     
-    if (previewContainer && pdfPreview) {
-      previewContainer.style.display = "block";
-      pdfPreview.src = url;
-      
-      // Scroll vers l'aperçu avec une animation douce
-      previewContainer.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-      
-      console.log("✅ Aperçu PDF professionnel généré avec succès");
-      
-      // Nettoyer l'URL après 30 secondes pour libérer la mémoire
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 30000);
-      
-    } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
-      alert("Erreur: impossible d'afficher l'aperçu PDF");
-    }
+    // Nettoyer l'URL après 30 secondes
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 30000);
     
-  } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
-    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+  } else {
+    console.error("❌ Éléments d'aperçu non trouvés");
+    alert("Erreur: impossible d'afficher l'aperçu PDF");
   }
 }
 
-// Fonction pour exporter en PDF professionnel avec jsPDF amélioré
 function exportToPDF() {
   console.log("📄 Génération du PDF professionnel...");
   
@@ -1263,7 +1667,7 @@ function exportToPDF() {
   const dpPlongee = $("dp-plongee").value || "matin";
   
   try {
-    // Créer le document PDF avec marges optimisées
+    // Créer le document PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -1272,7 +1676,7 @@ function exportToPDF() {
       compress: true
     });
     
-    // Configuration des couleurs et polices
+    // Configuration des couleurs
     const colors = {
       primary: [0, 64, 128],
       secondary: [0, 123, 255],
@@ -1289,7 +1693,7 @@ function exportToPDF() {
     const margin = 20;
     const contentWidth = pageWidth - (2 * margin);
     
-    // Fonction pour vérifier et gérer les sauts de page
+    // Fonction pour vérifier les sauts de page
     function checkPageBreak(heightNeeded = 15, forceNewPage = false) {
       if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
         doc.addPage();
@@ -1311,17 +1715,22 @@ function exportToPDF() {
       }
     }
     
-    // Fonction pour dessiner une boîte avec dégradé simulé
-    function drawGradientBox(x, y, width, height, color1, color2, alpha = 1) {
-      doc.setFillColor(...color1);
-      doc.setGlobalAlpha(alpha);
-      doc.rect(x, y, width, height, 'F');
-      doc.setGlobalAlpha(1);
+    // Fonction pour formater la date française
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
     }
     
     // === EN-TÊTE PRINCIPAL ===
     // Fond d'en-tête
-    drawGradientBox(0, 0, pageWidth, 70, colors.primary, colors.secondary, 0.9);
+    doc.setFillColor(...colors.primary);
+    doc.rect(0, 0, pageWidth, 70, 'F');
     
     // Logo simulé
     doc.setFillColor(255, 255, 255);
@@ -1332,43 +1741,6 @@ function exportToPDF() {
     // Titre principal
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
-    doc.text('PALANQUÉES JSAS', margin + 35, 30);
-    
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text('Organisation Professionnelle de Plongée', margin + 35, 38);
-    
-    // Informations métier en colonnes
-    const metaY = 50;
-    const colWidth = contentWidth / 4;
-    
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.setGlobalAlpha(0.8);
-    doc.text('DIRECTEUR DE PLONGÉE', margin, metaY);
-    doc.text('DATE DE PLONGÉE', margin + colWidth, metaY);
-    doc.text('LIEU', margin + (colWidth * 2), metaY);
-    doc.text('SESSION', margin + (colWidth * 3), metaY);
-    
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.setGlobalAlpha(1);
-    doc.text(dpNom.substring(0, 25), margin, metaY + 8);
-    doc.text(formatDateFrench(dpDate).substring(0, 25), margin + colWidth, metaY + 8);
-    doc.text(dpLieu.substring(0, 20), margin + (colWidth * 2), metaY + 8);
-    doc.text(capitalize(dpPlongee), margin + (colWidth * 3), metaY + 8);
-    
-    yPosition = 85;
-    
-    // === TABLEAU DE BORD STATISTIQUES ===
-    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-    const alertesTotal = checkAllAlerts();
-    
-    // Titre section
-    doc.setTextColor(...colors.primary);
-    doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.text('📊 TABLEAU DE BORD', margin, yPosition);
     
@@ -1619,7 +1991,7 @@ function exportToPDF() {
     if (plongeurs.length > 0) {
       checkPageBreak(30 + (plongeurs.length * 8));
       
-      doc.setTextColor(...colors.warning[0], ...colors.warning.slice(1));
+      doc.setTextColor(...colors.warning);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.text(`⏳ PLONGEURS EN ATTENTE (${plongeurs.length})`, margin, yPosition);
@@ -1646,7 +2018,6 @@ function exportToPDF() {
     }
     
     // === FOOTER PROFESSIONNEL ===
-    // Aller à la dernière page pour le footer
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     // Ajouter footer sur toutes les pages
@@ -1711,176 +2082,45 @@ function exportToPDF() {
     console.error("❌ Erreur génération PDF professionnel:", error);
     alert("Erreur lors de la génération du PDF professionnel : " + error.message);
   }
-}
-
-// Fonction utilitaire pour améliorer l'interface des boutons PDF
-function enhancePDFButtons() {
-  const generateBtn = $("generatePDF");
-  const exportBtn = $("exportPDF");
-  
-  if (generateBtn) {
-    generateBtn.innerHTML = "🔍 Aperçu Professionnel";
-    generateBtn.title = "Générer un aperçu PDF avec design professionnel";
-  }
-  
-  if (exportBtn) {
-    exportBtn.innerHTML = "📄 PDF Professionnel";
-    exportBtn.title = "Télécharger le PDF avec mise en page professionnelle";
-  }
-}
-
-// Initialiser les améliorations PDF au chargement
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    enhancePDFButtons();
-  }, 1000);
-});
-function exportToPDF() {
-  console.log("📄 Génération du PDF...");
-  
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
-  const dpLieu = $("dp-lieu").value || "Non défini";
-  const dpPlongee = $("dp-plongee").value || "matin";
-  
-  // Créer le document PDF
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  
-  let yPosition = 20;
-  const pageHeight = doc.internal.pageSize.height;
-  const marginBottom = 20;
-  
-  // Fonction pour ajouter une nouvelle page si nécessaire
-  function checkPageBreak(height = 10) {
-    if (yPosition + height > pageHeight - marginBottom) {
-      doc.addPage();
-      yPosition = 20;
-      return true;
-    }
-    return false;
-  }
-  
-  // Titre principal
-  doc.setFontSize(20);
-  doc.setTextColor(0, 64, 128);
-  doc.text("Palanquées JSAS", 20, yPosition);
-  yPosition += 15;
-  
-  // Informations DP
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Directeur de Plongée : ${dpNom}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Date : ${dpDate}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Lieu : ${dpLieu}`, 20, yPosition);
-  yPosition += 7;
-  doc.text(`Plongée : ${dpPlongee}`, 20, yPosition);
-  yPosition += 15;
-  
-  // Résumé avec compteurs détaillés
-  const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-  const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-  const alertesTotal = checkAllAlerts();
-  
-  checkPageBreak(40);
-  doc.setFontSize(14);
-  doc.setTextColor(0, 123, 255);
-  doc.text("Résumé détaillé", 20, yPosition);
-  yPosition += 12;
-  
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`📊 Total des plongeurs : ${totalPlongeurs}`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`🤿 Plongeurs non assignés : ${plongeurs.length}`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`🏊 Plongeurs en palanquées : ${plongeursEnPalanquees} (dans ${palanquees.length} palanquées)`, 25, yPosition);
-  yPosition += 6;
-  doc.text(`⚠️ Nombre d'alertes : ${alertesTotal.length}`, 25, yPosition);
-  yPosition += 15;
-  
-  // Alertes
-  if (alertesTotal.length > 0) {
-    checkPageBreak(20 + alertesTotal.length * 5);
-    doc.setFontSize(14);
-    doc.setTextColor(220, 53, 69);
-    doc.text("⚠️ Alertes", 20, yPosition);
-    yPosition += 10;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    alertesTotal.forEach(alerte => {
-      doc.text(`• ${alerte}`, 25, yPosition);
-      yPosition += 5;
-    });
-    yPosition += 10;
-  }
-  
-  // Palanquées
-  palanquees.forEach((pal, i) => {
-    const palanqueeHeight = 15 + (pal.length * 5) + (pal.length === 0 ? 5 : 0);
-    checkPageBreak(palanqueeHeight);
+}d, 'bold');
+    doc.text('PALANQUÉES JSAS', margin + 35, 30);
     
     doc.setFontSize(12);
-    const isAlert = checkAlert(pal);
-    doc.setTextColor(isAlert ? 220 : 0, isAlert ? 53 : 123, isAlert ? 69 : 255);
-    doc.text(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 20, yPosition);
-    yPosition += 8;
+    doc.setFont(undefined, 'normal');
+    doc.text('Organisation Professionnelle de Plongée', margin + 35, 38);
     
-    if (pal.length === 0) {
-      doc.setFontSize(9);
-      doc.setTextColor(128, 128, 128);
-      doc.text("Aucun plongeur assigné", 25, yPosition);
-      yPosition += 5;
-    } else {
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      pal.forEach(p => {
-        const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-        doc.text(ligne, 25, yPosition);
-        yPosition += 5;
-      });
-    }
-    yPosition += 5;
-  });
-  
-  // Plongeurs non assignés
-  if (plongeurs.length > 0) {
-    const nonAssignesHeight = 15 + (plongeurs.length * 5);
-    checkPageBreak(nonAssignesHeight);
+    // Informations métier en colonnes
+    const metaY = 50;
+    const colWidth = contentWidth / 4;
     
-    doc.setFontSize(12);
-    doc.setTextColor(0, 123, 255);
-    doc.text("Plongeurs non assignés", 20, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    plongeurs.forEach(p => {
-      const ligne = `• ${p.nom} (${p.niveau})${p.pre ? ` - ${p.pre}` : ''}`;
-      doc.text(ligne, 25, yPosition);
-      yPosition += 5;
-    });
-  }
-  
-  // Footer
-  const finalPage = doc.internal.getCurrentPageInfo().pageNumber;
-  for (let i = 1; i <= finalPage; i++) {
-    doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(`Document généré le ${new Date().toLocaleString('fr-FR')}`, 20, pageHeight - 10);
-    doc.text(`Application Palanquées JSAS v2.1.0 - Page ${i}/${finalPage}`, 120, pageHeight - 10);
-  }
-  
-  // Télécharger le PDF
-  const fileName = `palanquees-${dpDate || 'export'}-${dpPlongee}.pdf`;
-  doc.save(fileName);
-  
-  console.log("✅ PDF téléchargé:", fileName);
-}
+    doc.setTextColor(255, 255, 255);
+    doc.setGlobalAlpha(0.8);
+    doc.text('DIRECTEUR DE PLONGÉE', margin, metaY);
+    doc.text('DATE DE PLONGÉE', margin + colWidth, metaY);
+    doc.text('LIEU', margin + (colWidth * 2), metaY);
+    doc.text('SESSION', margin + (colWidth * 3), metaY);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setGlobalAlpha(1);
+    doc.text(dpNom.substring(0, 25), margin, metaY + 8);
+    doc.text(formatDateFrench(dpDate).substring(0, 25), margin + colWidth, metaY + 8);
+    doc.text(dpLieu.substring(0, 20), margin + (colWidth * 2), metaY + 8);
+    doc.text(dpPlongee.toUpperCase(), margin + (colWidth * 3), metaY + 8);
+    
+    yPosition = 85;
+    
+    // === TABLEAU DE BORD STATISTIQUES ===
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    // Titre section
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(16);
+    doc.setFont(undefine
+
 
 // Setup Event Listeners
 function setupEventListeners() {
