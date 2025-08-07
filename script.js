@@ -1881,7 +1881,7 @@ function exportToPDF() {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
         doc.rect(margin, yPosition, contentWidth, 12, 'F');
-		doc.html('<br>');
+		doc.text/html('<br>');
         
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
@@ -1949,7 +1949,7 @@ function exportToPDF() {
       doc.setTextColor(133, 100, 4); // Couleur warning foncée
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS en attente (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
