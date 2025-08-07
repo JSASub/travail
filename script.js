@@ -1652,12 +1652,7 @@ function generatePDFPreview() {
 function exportToPDF() {
   // Vérification de sécurité pour éviter les appels automatiques
   console.log("📄 Génération du PDF professionnel...");
-  
-  // Vérifier que les éléments DOM existent
-  if (!dpNom || !dpDate) {
-    console.log("⚠️ Éléments DOM non prêts, export annulé");
-    return;
-  }
+
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -1767,7 +1762,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('TOTAL PLONGEURS: ' + totalPlongeurs, margin, yPosition);
-    doc.text('<br>PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('        PALANQUÉES: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('ASSIGNÉS: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
