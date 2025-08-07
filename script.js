@@ -19,6 +19,7 @@ let palanquees = [];
 let plongeursOriginaux = []; // Pour le tri
 let currentSort = 'none';
 let firebaseConnected = false;
+let pageLoadTime = Date.now();
 
 // DOM helpers
 function $(id) {
@@ -1650,9 +1651,9 @@ function generatePDFPreview() {
 }
 //
 function exportToPDF() {
-    // Vérifier que c'est bien un clic utilisateur
-  if (!event || event.isTrusted === false) {
-    console.log("🚫 Export PDF bloqué - événement non fiable");
+  // Bloquer l'export dans les 3 premières secondes
+  if (Date.now() - pageLoadTime < 3000) {
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
     return;
   }
     
