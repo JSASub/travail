@@ -287,10 +287,10 @@ button:hover {
   background: transparent;
   color: #666;
   font-style: italic;
-  padding: 10px 6px;
+  padding: 1px 6px;
   border-radius: 3px;
   font-size: 0.8em;
-  /*flex: 1;
+  flex: 1;
   text-align: center;
   transition: all 0.2s ease;
   cursor: text;
