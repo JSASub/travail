@@ -454,3 +454,30 @@ button:hover {
   display: block;
   margin-top: 2px;
 }
+
+/* Solution simple et efficace */
+.palanquee-plongeur-item .plongeur-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.palanquee-plongeur-item .plongeur-nom {
+  flex: 1 !important;
+  order: 1 !important;
+}
+
+.palanquee-plongeur-item .plongeur-prerogatives-editable {
+  flex: 0 0 140px !important;
+  order: 2 !important;
+}
+
+.palanquee-plongeur-item .plongeur-niveau {
+  flex: 0 0 70px !important;
+  order: 3 !important;
+}
+
+.palanquee-plongeur-item .return-plongeur {
+  flex: 0 0 30px !important;
+  order: 4 !important;
+}
