@@ -212,17 +212,24 @@ button:hover {
 /* Pastilles dans les palanquées - PLUS PETITES */
 #palanqueesContainer .plongeur-niveau {
   order: 3;
-  background: #28a745;
-  color: white;
-  padding: 0px !important;  
+background: #28a745 !important;
+  color: white !important;
   border-radius: 4px !important;
   font-size: 0.8em !important;
   font-weight: bold !important;
-  min-width: 45px !important;
-  width: 25px !important;
+  min-width: 25px !important;
+  width: 45px !important;
   height: 16px !important;
-  line-height: 16px !important; 
-  text-align: center !important;
+  
+  /* Centrage parfait */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Reset des autres propriétés */
+  padding: 0px !important;
+  margin: 0px !important;
+  line-height: normal !important;
 }
 
 .plongeur-prerogatives {
