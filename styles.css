@@ -209,17 +209,17 @@ button:hover {
   text-align: center;
 }
 
-/* Pastilles dans les palanquées - PLUS PETITES */
+/* Pastilles dans les palanquées */
 #palanqueesContainer .plongeur-niveau {
   order: 3;
 background: #28a745 !important;
   color: white !important;
   border-radius: 4px !important;
-  font-size: 0.7em !important;
+  font-size: 0.75em !important;
   font-weight: bold !important;
   min-width: 25px !important;
   width: 45px !important;
-  height: 20px !important;
+  height: 26px !important;
   
   /* Centrage parfait */
   display: flex !important;
