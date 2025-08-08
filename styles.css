@@ -197,19 +197,19 @@ button:hover {
 }
 
 .plongeur-niveau {
-  order: 3;
+  order: 2;
   background: #28a745;
   color: white;
   padding: 1px 4px;        /* ← Plus petit */
   border-radius: 8px;      /* ← Moins arrondi */
   font-size: 0.7em;        /* ← Texte plus petit */
   font-weight: bold;
-  min-width: 45px;         /* ← Plus étroit */
+  min-width: 40px;         /* ← Plus étroit */
   text-align: center;
 }
 
 .plongeur-prerogatives {
-  order: 2;
+  order: 3;
   color: #666;
   font-style: italic;
   flex: 1;
