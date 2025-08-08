@@ -482,10 +482,32 @@ button:hover {
   order: 4 !important;
 }
 
-/* Pastilles compactes dans les palanquées */
-.palanquee-plongeur-item .plongeur-niveau {
-  padding: 1px 4px !important;
-  font-size: 0.7em !important;
-  /*min-width: 35px !important;
-  border-radius: 5px !important;
+/* Pastilles responsive dans les palanquées */
+
+/* Desktop */
+@media (min-width: 768px) {
+  .palanquee-plongeur-item .plongeur-niveau {
+    padding: 2px 5px !important;
+    font-size: 0.75em !important;
+    min-width: 50px !important;
+  }
+}
+
+/* Tablette */
+@media (min-width: 480px) and (max-width: 767px) {
+  .palanquee-plongeur-item .plongeur-niveau {
+    padding: 1px 4px !important;
+    font-size: 0.7em !important;
+    min-width: 42px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 479px) {
+  .palanquee-plongeur-item .plongeur-niveau {
+    padding: 1px 3px !important;
+    font-size: 0.65em !important;
+    min-width: 38px !important;
+    border-radius: 4px !important;
+  }
 }
