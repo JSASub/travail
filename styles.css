@@ -485,13 +485,11 @@ button:hover {
 .palanquee .palanquee-plongeur-item .plongeur-content .plongeur-prerogatives-editable {
   position: absolute;
   left: 150px;
-  width: 40px;
+  width: 45px;
   height: 24px;
 }
 
-.palanquee .palanquee-plongeur-item .plongeur-content {
-  position: relative;
-}
+
 
 /* Pastilles plus petites dans les palanquées seulement */
 /* Sélecteur très précis pour forcer l'application */
