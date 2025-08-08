@@ -218,7 +218,6 @@ button:hover {
 }
 
 .delete-plongeur {
-  order: 5;
   cursor: pointer;
   font-size: 0.9em;
   opacity: 0.7;
