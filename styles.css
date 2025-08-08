@@ -493,12 +493,13 @@ button:hover {
   position: relative;
 }
 
-/* Pastilles de niveau plus petites dans les palanquées */
+/* Pastilles compactes mais lisibles dans les palanquées */
 .palanquee-plongeur-item .plongeur-niveau {
   padding: 1px 3px;
   font-size: 0.6em;
-  min-width: 35px;
+  min-width: 32px;
   border-radius: 4px;
   height: 18px;
   line-height: 16px;
+  text-align: center;
 }
