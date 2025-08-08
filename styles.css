@@ -193,7 +193,7 @@ button:hover {
   font-weight: bold;
   color: #003366;
   font-size: 12px;
-  flex: 1;
+  /*flex: 1;
 }
 
 .plongeur-niveau {
