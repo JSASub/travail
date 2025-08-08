@@ -486,6 +486,6 @@ button:hover {
 .palanquee-plongeur-item .plongeur-niveau {
   padding: 1px 4px !important;
   font-size: 0.7em !important;
-  min-width: 40px !important;
+  min-width: 35px !important;
   border-radius: 5px !important;
 }
