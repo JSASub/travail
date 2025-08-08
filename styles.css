@@ -218,10 +218,10 @@ button:hover {
   border-radius: 4px !important;
   font-size: 0.5em !important;
   font-weight: bold !important;
-  min-width: 25px !important;
+  min-width: 55px !important;
   width: 25px !important;
   height: 16px !important;
-  line-height: 14px !important;
+  line-height: 10px !important;
   text-align: center !important;
 }
 
@@ -298,21 +298,6 @@ button:hover {
 }
 
 /* CHAMP ÉDITABLE POUR LES PRÉROGATIVES */
-.plongeur-prerogatives-editable {
-  order: 2;
-  border: 1px dashed #ccc;
-  background: transparent;
-  color: #666;
-  font-style: italic;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.8em;
-  flex: 1;
-  text-align: center;
-  transition: all 0.2s ease;
-  cursor: text;
-}
-
 /* Écrans très larges (desktop large) */
 @media (min-width: 1200px) {
   .plongeur-prerogatives-editable {
