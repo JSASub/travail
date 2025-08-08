@@ -497,7 +497,7 @@ button:hover {
 .palanquee .plongeur-niveau {
   padding: 0px 2px;
   font-size: 0.7em;
-  min-width: 12px;
+  min-width: 2px;
   border-radius: 2px;
   height: 14px;
   line-height: 12px;
