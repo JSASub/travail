@@ -2141,7 +2141,7 @@ function setupEventListeners() {
       
       // Test 2: Écriture dans sessions
       console.log("✏️ Test 2: Écriture /sessions/test");
-      await db.ref('sessions/test').set({
+      await db.ref('test').set({
         timestamp: Date.now(),
         test: true
       });
