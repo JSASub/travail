@@ -215,7 +215,7 @@ button:hover {
 background: #28a745 !important;
   color: white !important;
   border-radius: 4px !important;
-  font-size: 0.8em !important;
+  font-size: 0.7em !important;
   font-weight: bold !important;
   min-width: 25px !important;
   width: 45px !important;
@@ -427,7 +427,7 @@ background: #28a745 !important;
 }
 
 .palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 100 0 10px !important;
+  flex: 0 0 50px !important;    /* ← Nouvelle valeur */
   order: 2 !important;
 }
 
