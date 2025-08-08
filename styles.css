@@ -468,7 +468,7 @@ button:hover {
 }
 
 .palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 0 0 140px !important;
+  flex: 0 0 20px !important;
   order: 2 !important;
 }
 
