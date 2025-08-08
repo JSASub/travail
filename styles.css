@@ -495,6 +495,11 @@ button:hover {
 
 /* Test - fond rouge pour vérifier */
 .palanquee .plongeur-niveau {
-  background-color: red !important;
-  color: white !important;
+  padding: 0px 2px;
+  font-size: 0.5em;
+  min-width: 22px;
+  border-radius: 2px;
+  height: 14px;
+  line-height: 12px;
+  font-weight: bold;
 }
