@@ -492,3 +492,14 @@ button:hover {
 .palanquee .palanquee-plongeur-item .plongeur-content {
   position: relative;
 }
+
+/* Pastilles plus petites dans les palanquées seulement */
+.palanquee-body .plongeur-niveau,
+.palanquee .plongeur-niveau {
+  padding: 1px 3px;
+  font-size: 0.6em;
+  min-width: 30px;
+  border-radius: 4px;
+  height: 18px;
+  line-height: 16px;
+}
