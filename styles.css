@@ -484,8 +484,8 @@ button:hover {
 
 .palanquee .palanquee-plongeur-item .plongeur-content .plongeur-prerogatives-editable {
   position: absolute;
-  left: 200px;
-  width: 120px;
+  left: 120px;
+  width: 80px;
   height: 24px;
 }
 
