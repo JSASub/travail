@@ -468,7 +468,7 @@ button:hover {
 }
 
 .palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 0 0 20px !important;
+  flex: 0 0 10px !important;
   order: 2 !important;
 }
 
@@ -498,7 +498,7 @@ button:hover {
   .palanquee-plongeur-item .plongeur-niveau {
     padding: 1px 4px !important;
     font-size: 0.7em !important;
-    min-width: 42px !important;
+    min-width: 38px !important;
   }
 }
 
@@ -507,7 +507,7 @@ button:hover {
   .palanquee-plongeur-item .plongeur-niveau {
     padding: 1px 3px !important;
     font-size: 0.65em !important;
-    min-width: 38px !important;
+    min-width: 32px !important;
     border-radius: 4px !important;
   }
 }
