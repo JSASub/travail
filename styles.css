@@ -198,11 +198,11 @@ button:hover {
 .plongeur-niveau {
   background: #28a745;
   color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 0.8em;
+  padding: 1px 4px;        /* ← Plus petit */
+  border-radius: 8px;      /* ← Moins arrondi */
+  font-size: 0.8em;        /* ← Texte plus petit */
   font-weight: bold;
-  min-width: 60px;
+  min-width: 45px;         /* ← Plus étroit */
   text-align: center;
 }
 
@@ -211,7 +211,7 @@ button:hover {
   font-style: italic;
   flex: 1;
   text-align: center;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .delete-plongeur {
@@ -283,7 +283,7 @@ button:hover {
   font-style: italic;
   padding: 2px 6px;
   border-radius: 3px;
-  font-size: 0.9em;
+  font-size: 0.7em;
   flex: 1;
   text-align: center;
   transition: all 0.2s ease;
