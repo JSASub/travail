@@ -184,8 +184,8 @@ button:hover {
 .plongeur-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-con
+  font-size: 12px; 
 }
 
 .plongeur-nom {
