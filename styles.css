@@ -482,7 +482,7 @@ button:hover {
   order: 4 !important;
 }
 
-/.palanquee .palanquee-plongeur-item .plongeur-content .plongeur-prerogatives-editable {
+.palanquee .palanquee-plongeur-item .plongeur-content .plongeur-prerogatives-editable {
   position: absolute;
   left: 100px;
   width: 120px;
