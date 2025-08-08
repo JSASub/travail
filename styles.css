@@ -282,7 +282,7 @@ button:hover {
 
 /* CHAMP ÉDITABLE POUR LES PRÉROGATIVES */
 .plongeur-prerogatives-editable {
-  /*order: 2;
+  order: 2;
   border: 1px dashed #ccc;
   background: transparent;
   color: #666;
