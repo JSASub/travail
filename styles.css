@@ -473,7 +473,7 @@ button:hover {
 }
 
 .palanquee-plongeur-item .plongeur-niveau {
-  flex: 0 0 70px !important;
+  flex: 0 0 30px !important;
   order: 3 !important;
 }
 
