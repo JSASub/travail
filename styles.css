@@ -489,6 +489,6 @@ button:hover {
   height: 24px;
 }
 
-.palanquee .palanquee-plongeur-item .plongeur-content {
+.palanquee .palanquee-plongeur-item .plongeur-content .plongeur-niveau {
   position: relative;
 }
