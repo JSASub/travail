@@ -483,10 +483,6 @@ button:hover {
 }
 
 
-.palanquee .palanquee-plongeur-item .plongeur-content .plongeur-niveau {
-  position: relative;
-}
-
 #palanqueesContainer .plongeur-niveau {
   padding: 1px 3px !important;
   font-size: 0.6em !important;
