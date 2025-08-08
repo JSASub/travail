@@ -200,7 +200,7 @@ button:hover {
   color: white;
   padding: 1px 4px;        /* ← Plus petit */
   border-radius: 8px;      /* ← Moins arrondi */
-  font-size: 0.8em;        /* ← Texte plus petit */
+  font-size: 0.7em;        /* ← Texte plus petit */
   font-weight: bold;
   min-width: 45px;         /* ← Plus étroit */
   text-align: center;
