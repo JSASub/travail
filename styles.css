@@ -496,6 +496,6 @@ button:hover {
 #palanqueesContainer .plongeur-niveau {
   padding: 1px 3px !important;
   font-size: 0.6em !important;
-  min-width: 20px !important;
+  min-width: 30px !important;
   height: 18px !important;
 }
