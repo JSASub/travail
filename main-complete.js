@@ -595,10 +595,8 @@ function exportToPDF() {
         const pal = palanquees[i];
         
         // Calculer la hauteur nécessaire en tenant compte des détails
-        let extraHeight = 0;
-        if (pal.horaire || pal.profondeurPrevue || pal.dureePrevue) extraHeight += 7;
-        if (pal.profondeurRealisee || pal.dureeRealisee) extraHeight += 7;
-        if (pal.paliers && pal.paliers.trim()) extraHeight += 7;
+        // On affiche toujours 3 lignes de détails maintenant
+        let extraHeight = 21; // 3 lignes x 7 points chacune
         
         const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
@@ -626,38 +624,33 @@ function exportToPDF() {
         
         yPosition += 18;
         
-        // Affichage des détails de la palanquée
+        // Affichage des détails de la palanquée (TOUJOURS afficher tous les paramètres)
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         
-        let detailsText = '';
-        if (pal.horaire) detailsText += 'Horaire: ' + pal.horaire + ' | ';
-        if (pal.profondeurPrevue) detailsText += 'Prof. prévue: ' + pal.profondeurPrevue + 'm | ';
-        if (pal.dureePrevue) detailsText += 'Durée prévue: ' + pal.dureePrevue + 'min';
+        // Ligne 1: Horaire, Profondeur prévue, Durée prévue
+        let ligne1 = '';
+        ligne1 += 'Horaire: ' + (pal.horaire || 'Non défini') + ' | ';
+        ligne1 += 'Prof. prévue: ' + (pal.profondeurPrevue || 'Non définie') + 'm | ';
+        ligne1 += 'Durée prévue: ' + (pal.dureePrevue || 'Non définie') + 'min';
         
-        if (detailsText) {
-          doc.text(detailsText, margin + 5, yPosition);
-          yPosition += 7;
-        }
+        doc.text(ligne1, margin + 5, yPosition);
+        yPosition += 7;
         
-        let realisationText = '';
-        if (pal.profondeurRealisee) realisationText += 'Prof. réalisée: ' + pal.profondeurRealisee + 'm | ';
-        if (pal.dureeRealisee) realisationText += 'Durée réalisée: ' + pal.dureeRealisee + 'min';
+        // Ligne 2: Profondeur réalisée, Durée réalisée
+        let ligne2 = '';
+        ligne2 += 'Prof. réalisée: ' + (pal.profondeurRealisee || 'Non définie') + 'm | ';
+        ligne2 += 'Durée réalisée: ' + (pal.dureeRealisee || 'Non définie') + 'min';
         
-        if (realisationText) {
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          doc.text(realisationText, margin + 5, yPosition);
-          yPosition += 7;
-        }
+        doc.setTextColor(colors.successR, colors.successG, colors.successB);
+        doc.text(ligne2, margin + 5, yPosition);
+        yPosition += 7;
         
-        // Affichage des paliers s'ils existent
-        if (pal.paliers && pal.paliers.trim()) {
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          doc.setFont(undefined, 'bold');
-          doc.text('Paliers: ' + pal.paliers, margin + 5, yPosition);
-          yPosition += 7;
-        }
+        // Ligne 3: Paliers (toujours afficher)
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.text('Paliers: ' + (pal.paliers || 'Aucun palier spécifié'), margin + 5, yPosition);
+        yPosition += 7;
         
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
         doc.setFontSize(10);
