@@ -1139,6 +1139,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Setup event listeners
     setupEventListeners();
     
+    // Vérification du bouton test Firebase
+    const testButton = $("test-firebase");
+    if (testButton) {
+      console.log("✅ Bouton test Firebase trouvé");
+    } else {
+      console.error("❌ Bouton test Firebase non trouvé dans le DOM");
+    }
+    
     console.log("✅ Application initialisée!");
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
     
