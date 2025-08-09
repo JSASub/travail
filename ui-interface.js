@@ -74,9 +74,15 @@ function updateAlertes() {
 }
 
 function checkAlert(palanquee) {
-  const n1s = palanquee.filter(p => p.niveau === "N1");
-  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-  const autonomes = palanquee.filter(p => ["N2", "N3"].includes(p.niveau));
+  // Vérifier que palanquee est bien un tableau
+  if (!Array.isArray(palanquee)) {
+    console.warn("⚠️ checkAlert: palanquee n'est pas un tableau:", palanquee);
+    return false;
+  }
+  
+  const n1s = palanquee.filter(p => p && p.niveau === "N1");
+  const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+  const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
   
   return (
     palanquee.length > 5 ||
