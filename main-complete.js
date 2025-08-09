@@ -664,9 +664,9 @@ function exportToPDF() {
         
         // Ligne 1: Horaire de mise à l'eau
         doc.text('Horaire mise à l\'eau:', margin + 5, yPosition);
-        doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.setLineWidth(0.5);
-        doc.line(margin + 45, yPosition - 1, margin + 80, yPosition - 1); // Ligne à remplir
+        doc.setDrawColor(180, 180, 180); // Gris plus clair
+        doc.setLineWidth(0.3);
+        doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1); // Ligne plus basse
         doc.setFont(undefined, 'normal');
         doc.setFontSize(8);
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
@@ -678,31 +678,31 @@ function exportToPDF() {
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         doc.text('Prof. prévue:', margin + 5, yPosition);
-        doc.line(margin + 25, yPosition - 1, margin + 45, yPosition - 1);
+        doc.line(margin + 25, yPosition + 1, margin + 45, yPosition + 1);
         doc.text('m', margin + 47, yPosition);
         
         doc.text('Durée prévue:', margin + 60, yPosition);
-        doc.line(margin + 82, yPosition - 1, margin + 102, yPosition - 1);
+        doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
         doc.text('min', margin + 104, yPosition);
         yPosition += 8;
         
         // Ligne 3: Profondeurs et durées réalisées
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
         doc.text('Prof. réalisée:', margin + 5, yPosition);
-        doc.setDrawColor(colors.successR, colors.successG, colors.successB);
-        doc.line(margin + 28, yPosition - 1, margin + 48, yPosition - 1);
+        doc.setDrawColor(180, 180, 180); // Gris plus clair
+        doc.line(margin + 28, yPosition + 1, margin + 48, yPosition + 1);
         doc.text('m', margin + 50, yPosition);
         
         doc.text('Durée réalisée:', margin + 60, yPosition);
-        doc.line(margin + 85, yPosition - 1, margin + 105, yPosition - 1);
+        doc.line(margin + 85, yPosition + 1, margin + 105, yPosition + 1);
         doc.text('min', margin + 107, yPosition);
         yPosition += 8;
         
         // Ligne 4: Paliers (ligne plus longue)
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.text('Paliers:', margin + 5, yPosition);
-        doc.setDrawColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.line(margin + 20, yPosition - 1, margin + 120, yPosition - 1); // Ligne plus longue pour les paliers
+        doc.setDrawColor(180, 180, 180); // Gris plus clair
+        doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1); // Ligne plus basse
         doc.setFont(undefined, 'normal');
         doc.setFontSize(8);
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
