@@ -1354,4 +1354,70 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Encadré d'avertissement
       doc.setDrawColor(255, 193, 7);
       doc.setLineWidth(2);
-      doc.rect(margin
+      doc.rect(margin, yPosition, contentWidth, 15 + (plongeurs.length * 6), 'S');
+      
+      doc.setTextColor(133, 100, 4); // Couleur warning foncée
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      
+      yPosition += 18;
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      for (let i = 0; i < plongeurs.length; i++) {
+        const p = plongeurs[i];
+        const nomClean = p.nom.replace(/'/g, "'");
+        const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+        const textLine = '• ' + nomClean + ' (' + p.niveau + ')' + (preClean ? ' - ' + preClean : '');
+        doc.text(textLine, margin + 5, yPosition + (i * 6));
+      }
+      
+      yPosition += (plongeurs.length * 6) + 10;
+    }
+    
+    // === FOOTER SIMPLE ===
+    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
+    
+    // Ajouter footer sur toutes les pages
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      doc.setPage(pageNum);
+      
+      // Ligne de séparation
+      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      
+      // Informations footer
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      
+      // Footer principal sur dernière page
+      if (pageNum === totalPages) {
+        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro - RA -', margin, pageHeight - 15);
+        doc.text('Genéré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
+      }
+      
+      // Numérotation des pages
+      doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5);
+    }
+    
+    // === TÉLÉCHARGEMENT ===
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-pro.pdf';
+    doc.save(fileName);
+    
+    console.log("✅ PDF professionnel généré avec succès:", fileName);
+    
+    // Message de confirmation
+    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) detectee(s)' : '\n✅ Aucune alerte';
+    alert('PDF professionnel genere avec succes !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanquees.length + ' palanquees' + alertesText + '\n\n📁 Fichier: ' + fileName);
+    
+  } catch (error) {
+    console.error("❌ Erreur PDF:", error);
+    alert("Erreur lors de la génération du PDF : " + error.message);
+  }
+}
