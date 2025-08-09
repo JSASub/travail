@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestion de Palanquées JSAS</title>
+  <link rel="stylesheet" href="styles.css" />
+  
+  <!-- Firebase SDK version 8 (compatible syntaxe classique) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
+  <!-- jsPDF pour l'export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Palanquées JSAS</h1>
+  
+  <div id="meta-info">
+    <label><strong>Directeur de Plongée</strong>
+      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />
+    </label>
+    <label>Date : <input type="date" id="dp-date" /></label>
+    <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
+    <label>Plongée : 
+      <select id="dp-plongee">
+        <option value="matin">Matin</option>
+        <option value="apres-midi">Après-midi</option>
+        <option value="soir">Soir</option>
+        <option value="nuit">Nuit</option>
+        <option value="plg1">Plg1</option>
+        <option value="plg2">Plg2</option>
+        <option value="plg3">Plg3</option>
+        <option value="plg4">Plg4</option>
+        <option value="formation">Formation</option>
+        <option value="autre">Autre</option>
+      </select>
+    </label>
+    <button type="submit" id="valider-dp">Valider DP</button>
+    <div id="dp-message" class="dp-valide"></div>
+  </div>
+	
+  </header>
+
+  <!-- SECTION ALERTES -->
+  <div id="alertes-section" class="alert-section alert-hidden">
+    <div class="alert-title">⚠️ Alertes Palanquées</div>
+    <div id="alertes-content"></div>
+  </div>
+
+  <main>
+    </br></br>
+    <strong>Liste des plongeurs <span id="compteur-plongeurs" style="color: #007bff;">(0)</span></strong>
+    
+    <!-- CONTRÔLES DE TRI -->
+    <div class="sort-controls">
+      <span>Trier par :</span>
+      <button class="sort-btn active" data-sort="none">Ordre d'ajout</button>
+      <button class="sort-btn" data-sort="nom">Nom A-Z</button>
+      <button class="sort-btn" data-sort="niveau">Niveau</button>
+    </div>
+    
+	<form id="addForm">  
+    <input type="text" id="nom" placeholder="NOM & Prénom" required />
+      <select id="niveau" required>
+        <option value="">-- Sélectionner le niveau --</option>
+        <option>N1</option>
+		<option>N2</option>
+		<option>N3</option>
+        <option>N4/GP</option>
+		<option>E1</option>
+		<option>E2</option>
+        <option>E3</option>
+		<option>E4</option>
+      </select>
+    
+    Prérogatives : 
+	<input type="text" id="pre" placeholder="PE20, PA40 ..." />
+    </br>
+	<button type="submit" id="ajouter-plongeur">Ajouter</button>
+  </form>
+
+  <ul id="listePlongeurs" class="dropzone"></ul>
+  </br>
+  
+  <button id="exportJSON" class="btn-success">Exporter JSON</button>
+  </br>
+  <input type="file" id="importJSON" accept=".json" />
+
+  </br></br>
+  <section id="palanquees">
+    <strong>Palanquées <span id="compteur-palanquees" style="color: #28a745;">(0 plongeurs dans 0 palanquées)</span></strong>
+    </br>
+    <button id="addPalanquee">Nouvelle palanquée</button>
+    </br></br>
+    
+    <div id="palanqueesContainer"></div>
+    
+    </br></br>
+    <button id="generatePDF" class="btn-secondary">Aperçu PDF</button>
+    <button id="exportPDF" class="btn-success">Télécharger PDF</button>
+   </section>
+  </main>
+
+  <div id="previewContainer" style="display:none;">
+    <strong>Aperçu PDF</strong>
+    <iframe id="pdfPreview" width="100%" height="500px"></iframe>
+  </div>
+  
+  <hr>
+  <section id="sessions-manager">
+    <strong>Gestion des Sessions</strong>
+    <div style="margin: 10px 0;">
+      <label>Charger une session précédente :</label>
+      <select id="session-selector" style="margin: 5px 10px;">
+        <option value="">-- Charger une session --</option>
+      </select>
+      <button id="load-session" class="btn-secondary">Charger</button>
+      <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
+      <button id="save-session" class="btn-success">Sauvegarder Session</button>
+      <button id="test-firebase" style="background: orange; color: white;">Test Firebase</button>
+    </div>
+    <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
+      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+    </div>
+  </section>
+
+  <hr>
+  <section id="sessions-manager-extended">
+    <strong>Nettoyage des Sessions</strong>
+    <div style="margin: 10px 0;">
+      <label>Sélectionner les sessions à supprimer :</label>
+      <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
+        <em>Chargement automatique...</em>
+      </div>
+      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
+      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
+      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
+      <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
+    </div>
+  </section>
+  
+  <hr>
+  <section id="historique-dp">
+    <strong>Historique des DP</strong>
+    <div style="margin: 10px 0;">
+      <label for="dp-dates">Sélectionner une date :</label>
+      <select id="dp-dates">
+        <option value="">-- Choisir une date --</option>
+      </select>
+    </div>
+    <div id="historique-info"></div>
+    
+    <!-- NOUVEAU: Section de nettoyage des DPs -->
+    <div style="margin: 15px 0; border-top: 1px solid #dee2e6; padding-top: 15px;">
+      <strong style="color: #dc3545;">🧹 Nettoyage des DP</strong>
+      <div style="margin: 10px 0;">
+        <label>Sélectionner les DP à supprimer :</label>
+        <div id="dp-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
+          <em>Chargement automatique...</em>
+        </div>
+        <button id="select-all-dp" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
+        <button id="select-none-dp" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
+        <button id="delete-selected-dp" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnés</button>
+        <button id="refresh-dp-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
+      </div>
+    </div>
+  </section>
+  
+  <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
+  Version 2.1.3 - RA - 2025 -
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
