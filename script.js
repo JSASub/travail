@@ -763,7 +763,7 @@ function exportToJSON() {
       date: dpDate,
       lieu: dpLieu,
       plongee: dpPlongee,
-      version: "2.0.0",
+      version: "2.1.0",
       exportDate: new Date().toISOString()
     },
     plongeurs: plongeurs.map(p => ({
@@ -771,17 +771,36 @@ function exportToJSON() {
       niveau: p.niveau,
       prerogatives: p.pre || ""
     })),
-    palanquees: palanquees.map((pal, idx) => ({
-      numero: idx + 1,
-      plongeurs: pal.map(p => ({
-        nom: p.nom,
-        niveau: p.niveau,
-        prerogatives: p.pre || ""
-      })),
-      alertes: checkAlert(pal) ? checkAllAlerts().filter(a => a.includes(`Palanquée ${idx + 1}`)) : []
-    })),
+    palanquees: palanquees.map((palanqueeData, idx) => {
+      // Gérer l'ancien format et le nouveau format
+      const plongeursList = Array.isArray(palanqueeData) ? palanqueeData : (palanqueeData.plongeurs || []);
+      const details = Array.isArray(palanqueeData) ? 
+        { heureDepart: '', profondeurPrevue: '', tempsPrevue: '', profondeurRealisee: '', tempsRealise: '', paliers: '' } : 
+        palanqueeData;
+      
+      return {
+        numero: idx + 1,
+        plongeurs: plongeursList.map(p => ({
+          nom: p.nom,
+          niveau: p.niveau,
+          prerogatives: p.pre || ""
+        })),
+        details: {
+          heureDepart: details.heureDepart || '',
+          profondeurPrevue: details.profondeurPrevue || '',
+          tempsPrevue: details.tempsPrevue || '',
+          profondeurRealisee: details.profondeurRealisee || '',
+          tempsRealise: details.tempsRealise || '',
+          paliers: details.paliers || ''
+        },
+        alertes: checkAlert(palanqueeData) ? checkAllAlerts().filter(a => a.includes(`Palanquée ${idx + 1}`)) : []
+      };
+    }),
     resume: {
-      totalPlongeurs: plongeurs.length + palanquees.flat().length,
+      totalPlongeurs: plongeurs.length + palanquees.reduce((total, pal) => {
+        const plongeursList = Array.isArray(pal) ? pal : (pal.plongeurs || []);
+        return total + plongeursList.length;
+      }, 0),
       nombrePalanquees: palanquees.length,
       plongeursNonAssignes: plongeurs.length,
       alertesTotal: checkAllAlerts().length
@@ -1945,90 +1964,170 @@ function exportToPDF() {
     doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
     yPosition += 15;
     
-    if (palanquees.length === 0) {
-      // Encadré d'avertissement
-      doc.setDrawColor(255, 193, 7);
-      doc.setLineWidth(1);
-      doc.rect(margin, yPosition, contentWidth, 15, 'S');
-      
-      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      doc.setFontSize(12);
-      doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 10);
-      yPosition += 25;
+if (palanquees.length === 0) {
+  doc.setFillColor(255, 243, 205);
+  doc.setDrawColor(...colors.warning);
+  doc.rect(margin, yPosition, contentWidth, 20, 'FD');
+  
+  doc.setTextColor(...colors.dark);
+  doc.setFontSize(12);
+  doc.text('Aucune palanquee creee - Tous les plongeurs en attente', margin + 10, yPosition + 12);
+  yPosition += 30;
+} else {
+  for (let i = 0; i < palanquees.length; i++) {
+    const palanqueeData = palanquees[i];
+    
+    // Gérer l'ancien format (array) et le nouveau format (objet)
+    const plongeursList = Array.isArray(palanqueeData) ? palanqueeData : (palanqueeData.plongeurs || []);
+    const details = Array.isArray(palanqueeData) ? 
+      { heureDepart: '', profondeurPrevue: '', tempsPrevue: '', profondeurRealisee: '', tempsRealise: '', paliers: '' } : 
+      palanqueeData;
+    
+    // Calculer la hauteur nécessaire
+    const baseHeight = 45; // En-tête + détails de plongée
+    const plongeursHeight = plongeursList.length * 8;
+    const totalHeight = baseHeight + plongeursHeight + 20;
+    
+    checkPageBreak(totalHeight + 10);
+    
+    const isAlert = checkAlert(palanqueeData);
+    const headerColor = isAlert ? colors.danger : colors.secondary;
+    
+    // === EN-TÊTE DE PALANQUÉE ===
+    doc.setFillColor(...headerColor);
+    doc.rect(margin, yPosition, contentWidth, 15, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Palanquee ' + (i + 1), margin + 5, yPosition + 10);
+    
+    // Statistiques de la palanquée
+    const gps = plongeursList.filter(function(p) { return ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau); });
+    const n1s = plongeursList.filter(function(p) { return p.niveau === "N1"; });
+    const autonomes = plongeursList.filter(function(p) { return ["N2", "N3"].includes(p.niveau); });
+    
+    doc.setFontSize(9);
+    doc.text(plongeursList.length + " plongeurs • " + gps.length + " GP • " + n1s.length + " N1 • " + autonomes.length + " Autonomes", 
+             margin + 70, yPosition + 10);
+    
+    yPosition += 18;
+    
+    // === DÉTAILS DE PLONGÉE (NOUVEAUX CHAMPS) ===
+    doc.setFillColor(245, 247, 250);
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(margin, yPosition, contentWidth, 28, 'FD');
+    
+    // Titre de section
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Détails de la plongée', margin + 5, yPosition + 8);
+    
+    // Première ligne : Heure, Profondeur prévue, Temps prévu
+    doc.setTextColor(...colors.dark);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    
+    const col1X = margin + 5;
+    const col2X = margin + (contentWidth / 3);
+    const col3X = margin + (contentWidth * 2 / 3);
+    
+    // Labels
+    doc.setFont(undefined, 'bold');
+    doc.text('Heure départ:', col1X, yPosition + 16);
+    doc.text('Prof. prévue:', col2X, yPosition + 16);
+    doc.text('Temps prévu:', col3X, yPosition + 16);
+    
+    // Valeurs
+    doc.setFont(undefined, 'normal');
+    const heureText = details.heureDepart || '--:--';
+    const profPrevueText = details.profondeurPrevue ? details.profondeurPrevue + 'm' : '--m';
+    const tempsPrevuText = details.tempsPrevue ? details.tempsPrevue + 'min' : '--min';
+    
+    doc.text(heureText, col1X + 25, yPosition + 16);
+    doc.text(profPrevueText, col2X + 25, yPosition + 16);
+    doc.text(tempsPrevuText, col3X + 25, yPosition + 16);
+    
+    // Deuxième ligne : Profondeur réalisée, Temps réalisé, Paliers
+    doc.setFont(undefined, 'bold');
+    doc.text('Prof. réalisée:', col1X, yPosition + 24);
+    doc.text('Temps réalisé:', col2X, yPosition + 24);
+    doc.text('Paliers:', col3X, yPosition + 24);
+    
+    doc.setFont(undefined, 'normal');
+    const profRealiseeText = details.profondeurRealisee ? details.profondeurRealisee + 'm' : '--m';
+    const tempsRealiseText = details.tempsRealise ? details.tempsRealise + 'min' : '--min';
+    const paliersText = details.paliers || '--';
+    
+    doc.text(profRealiseeText, col1X + 25, yPosition + 24);
+    doc.text(tempsRealiseText, col2X + 25, yPosition + 24);
+    doc.text(paliersText.substring(0, 15), col3X + 15, yPosition + 24); // Limiter la longueur
+    
+    yPosition += 33;
+    
+    // === LISTE DES PLONGEURS ===
+    doc.setFillColor(248, 249, 250);
+    doc.setDrawColor(200, 200, 200);
+    const plongeursBoxHeight = Math.max(20, plongeursList.length * 8 + 10);
+    doc.rect(margin, yPosition, contentWidth, plongeursBoxHeight, 'FD');
+    
+    if (plongeursList.length === 0) {
+      doc.setTextColor(...colors.gray);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'italic');
+      doc.text('Aucun plongeur assigne', margin + 10, yPosition + 12);
     } else {
-      for (let i = 0; i < palanquees.length; i++) {
-        const pal = palanquees[i];
-        const palanqueeHeight = 20 + (pal.length * 6);
-        checkPageBreak(palanqueeHeight + 5);
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      // Titre de section plongeurs
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...colors.primary);
+      doc.text('Équipe (' + plongeursList.length + ' plongeurs):', margin + 5, yPosition + 10);
+      
+      doc.setTextColor(...colors.dark);
+      doc.setFont(undefined, 'normal');
+      
+      for (let j = 0; j < plongeursList.length; j++) {
+        const p = plongeursList[j];
+        const plongeurY = yPosition + 18 + (j * 6);
         
-        const isAlert = checkAlert(pal);
+        // Puce colorée selon le niveau
+        const niveauColors = {
+          'N1': [23, 162, 184], 'N2': [40, 167, 69], 'N3': [255, 193, 7], 'N4/GP': [253, 126, 20],
+          'E1': [111, 66, 193], 'E2': [232, 62, 140], 'E3': [220, 53, 69], 'E4': [52, 58, 64]
+        };
         
-        // En-tête de palanquée - Version simple
-        if (isAlert) {
-          doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
-        } else {
-          doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-        }
-        doc.rect(margin, yPosition, contentWidth, 12, 'F');
+        doc.setFillColor(...(niveauColors[p.niveau] || colors.gray));
+        doc.circle(margin + 8, plongeurY - 1, 1.5, 'F');
         
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
+        // Nom du plongeur (nettoyé)
+        const nomClean = p.nom.replace(/'/g, "'");
         doc.setFont(undefined, 'bold');
-        doc.text('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
-        
-        // Statistiques de la palanquée
-        const gps = pal.filter(function(p) { return ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau); });
-        const n1s = pal.filter(function(p) { return p.niveau === "N1"; });
-        const autonomes = pal.filter(function(p) { return ["N2", "N3"].includes(p.niveau); });
-        
         doc.setFontSize(9);
-        doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
+        doc.text(nomClean, margin + 15, plongeurY);
         
-        yPosition += 18;
-        
-        // Corps de la palanquée
-        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-        doc.setFontSize(10);
+        // Niveau à position fixe
         doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.text('(' + p.niveau + ')', 100, plongeurY); // Position fixe à 100mm
         
-        if (pal.length === 0) {
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.text('Aucun plongeur assigne', margin + 10, yPosition);
-          yPosition += 8;
-        } else {
-          for (let j = 0; j < pal.length; j++) {
-            const p = pal[j];
-            const nomClean = p.nom.replace(/'/g, "'");
-            const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-            
-            // Ligne du plongeur
-            doc.setFont(undefined, 'bold');
-            //
-			doc.text('• ' + nomClean, margin + 5, yPosition);
-            
-            doc.setFont(undefined, 'normal');
-            
-            if (preClean) {
-              //doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-              //
-			  doc.text('Prérogative: ' + preClean, 100, yPosition);
-			  //doc.text('- ' + preClean, margin + 20 + (nomClean.length * 1.8) + 15, yPosition);
-              //doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-            }
-			
-			//
-			doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-			doc.text('Niveau: ' + p.niveau + '', 135, yPosition);
-			doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-            //doc.text('(' + p.niveau + ')', margin + 20 + (nomClean.length * 1.8), yPosition);
-            
-            yPosition += 6;
-          }
+        // Prérogatives (nettoyées)
+        if (p.pre) {
+          const preClean = p.pre.replace(/'/g, "'");
+          doc.setTextColor(...colors.gray);
+          doc.setFontSize(7);
+          doc.text('- ' + preClean, margin + 120, plongeurY);
+          doc.setTextColor(...colors.dark);
         }
-        
-        yPosition += 10;
       }
     }
+    
+    yPosition += plongeursBoxHeight + 15;
+  }
+
     
     // === PLONGEURS NON ASSIGNÉS ===
     if (plongeurs.length > 0) {
