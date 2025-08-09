@@ -82,7 +82,57 @@ async function loadFromFirebase() {
     
     const palanqueesSnapshot = await db.ref('palanquees').once('value');
     if (palanqueesSnapshot.exists()) {
-      palanquees = palanqueesSnapshot.val() || [];
+      const rawPalanquees = palanqueesSnapshot.val() || [];
+      
+      // Nettoyer et corriger les palanquées pour assurer la compatibilité
+      palanquees = rawPalanquees.map((pal, index) => {
+        // Vérifier si la palanquée est un tableau ou un objet
+        if (Array.isArray(pal)) {
+          // C'est déjà un tableau, juste ajouter les propriétés manquantes
+          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
+          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
+          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
+          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
+          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
+          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
+          return pal;
+        } else if (pal && typeof pal === 'object') {
+          // C'est un objet, extraire les plongeurs et les propriétés
+          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+          
+          const nouveauTableau = [];
+          
+          // Extraire les plongeurs (propriétés numériques)
+          Object.keys(pal).forEach(key => {
+            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
+              nouveauTableau.push(pal[key]);
+            }
+          });
+          
+          // Ajouter les propriétés de palanquée
+          nouveauTableau.horaire = pal.horaire || '';
+          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
+          nouveauTableau.dureePrevue = pal.dureePrevue || '';
+          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
+          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
+          nouveauTableau.paliers = pal.paliers || '';
+          
+          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          return nouveauTableau;
+        } else {
+          // Cas inattendu, créer une palanquée vide
+          console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
+          const nouveauTableau = [];
+          nouveauTableau.horaire = '';
+          nouveauTableau.profondeurPrevue = '';
+          nouveauTableau.dureePrevue = '';
+          nouveauTableau.profondeurRealisee = '';
+          nouveauTableau.dureeRealisee = '';
+          nouveauTableau.paliers = '';
+          return nouveauTableau;
+        }
+      });
+      
       console.log("✅ Palanquées chargées:", palanquees.length);
     }
     
