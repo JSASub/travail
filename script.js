@@ -2127,6 +2127,8 @@ if (palanquees.length === 0) {
     
     yPosition += plongeursBoxHeight + 15;
   }
+}
+
 
     
     // === PLONGEURS NON ASSIGNÉS ===
