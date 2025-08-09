@@ -425,17 +425,19 @@ function updateAlertes() {
   }
 }
 
-function checkAlert(palanquee) {
-  const n1s = palanquee.filter(p => p.niveau === "N1");
-  const gps = palanquee.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-  const autonomes = palanquee.filter(p => ["N2", "N3"].includes(p.niveau));
+function checkAlert(palanqueedata) {
+  const plongeursList = Array.isArray(palanqueeData) ? palanqueeData : (palanqueeData.plongeurs || []);
+  
+  const n1s = plongeursList.filter(p => p.niveau === "N1");
+  const gps = plongeursList.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+  const autonomes = plongeursList.filter(p => ["N2", "N3"].includes(p.niveau));
   
   return (
-    palanquee.length > 5 ||
-    palanquee.length <= 1 ||
+    plongeursList.length > 5 ||
+    plongeursList.length <= 1 ||
     (n1s.length > 0 && gps.length === 0) ||
     autonomes.length > 3 ||
-    ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0)
+    ((plongeursList.length === 4 || plongeursList.length === 5) && gps.length === 0)
   );
 }
 
@@ -871,15 +873,59 @@ function renderPalanquees() {
   if (palanquees.length === 0) return;
   
   palanquees.forEach((palanquee, idx) => {
+    const plongeursList = Array.isArray(palanquee) ? palanquee : (palanquee.plongeurs || []);
+    const palanqueeData = Array.isArray(palanquee) ? 
+      { plongeurs: palanquee, heureDepart: '', profondeurPrevue: '', tempsPrevue: '', profondeurRealisee: '', tempsRealise: '', paliers: '' } : 
+      palanquee;
+    
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
-    div.dataset.alert = checkAlert(palanquee) ? "true" : "false";
+    div.dataset.alert = checkAlert(plongeursList) ? "true" : "false";
     
     div.innerHTML = `
       <div class="palanquee-title">
-        <span>Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
+        <span>Palanquée ${idx + 1} (${plongeursList.length} plongeur${plongeursList.length > 1 ? 's' : ''})</span>
         <span class="remove-palanquee" style="color: red; cursor: pointer;">❌</span>
+      </div>
+      
+      <!-- NOUVEAUX CHAMPS DE PLONGÉE -->
+      <div class="palanquee-details">
+        <div class="palanquee-row">
+          <div class="palanquee-field">
+            <label>🕐 Heure départ:</label>
+            <input type="time" class="palanquee-input" data-field="heureDepart" data-palanquee="${idx}" 
+                   value="${palanqueeData.heureDepart || ''}" placeholder="--:--">
+          </div>
+          <div class="palanquee-field">
+            <label>📏 Prof. prévue (m):</label>
+            <input type="number" class="palanquee-input" data-field="profondeurPrevue" data-palanquee="${idx}" 
+                   value="${palanqueeData.profondeurPrevue || ''}" placeholder="ex: 20" min="0" max="60">
+          </div>
+          <div class="palanquee-field">
+            <label>⏱️ Temps prévu (min):</label>
+            <input type="number" class="palanquee-input" data-field="tempsPrevue" data-palanquee="${idx}" 
+                   value="${palanqueeData.tempsPrevue || ''}" placeholder="ex: 45" min="0" max="120">
+          </div>
+        </div>
+        
+        <div class="palanquee-row">
+          <div class="palanquee-field">
+            <label>📊 Prof. réalisée (m):</label>
+            <input type="number" class="palanquee-input" data-field="profondeurRealisee" data-palanquee="${idx}" 
+                   value="${palanqueeData.profondeurRealisee || ''}" placeholder="ex: 18" min="0" max="60">
+          </div>
+          <div class="palanquee-field">
+            <label>⏰ Temps réalisé (min):</label>
+            <input type="number" class="palanquee-input" data-field="tempsRealise" data-palanquee="${idx}" 
+                   value="${palanqueeData.tempsRealise || ''}" placeholder="ex: 42" min="0" max="120">
+          </div>
+          <div class="palanquee-field">
+            <label>🔄 Paliers:</label>
+            <input type="text" class="palanquee-input" data-field="paliers" data-palanquee="${idx}" 
+                   value="${palanqueeData.paliers || ''}" placeholder="ex: 3min à 3m">
+          </div>
+        </div>
       </div>
     `;
     
@@ -914,7 +960,7 @@ function renderPalanquees() {
           </div>
         `;
         
-        // Event listener pour drag & drop - VERSION CORRIGÉE
+        // Event listener pour drag & drop
         li.addEventListener("dragstart", e => {
           console.log("🖱️ Début drag depuis palanquée", idx + 1, "plongeur", plongeurIndex, ":", plg.nom);
           li.classList.add('dragging');
@@ -929,19 +975,18 @@ function renderPalanquees() {
         
         li.addEventListener("dragend", e => {
           li.classList.remove('dragging');
-          console.log("🖱️ Fin drag depuis palanquée");
         });
         
-        plongeursList.appendChild(li);
+        plongeursList_ul.appendChild(li);
       });
       
-      div.appendChild(plongeursList);
+      div.appendChild(plongeursList_ul);
     }
 
     // Event listeners
     div.querySelector(".remove-palanquee").addEventListener("click", () => {
       if (confirm(`Supprimer la palanquée ${idx + 1} ?`)) {
-        palanquee.forEach(plg => {
+        plongeursList.forEach(plg => {
           plongeurs.push(plg);
           plongeursOriginaux.push(plg);
         });
@@ -955,45 +1000,49 @@ function renderPalanquees() {
       div.classList.remove('drag-over');
       
       const data = e.dataTransfer.getData("text/plain");
-      console.log("🎯 Drop dans palanquée", idx + 1, "data reçue:", data);
       
       try {
         const dragData = JSON.parse(data);
-        console.log("📝 Données parsées:", dragData);
         
         if (dragData.type === "fromPalanquee") {
-          console.log("🔄 Déplacement entre palanquées détecté");
           if (dragData.palanqueeIndex !== undefined && 
               dragData.plongeurIndex !== undefined && 
-              palanquees[dragData.palanqueeIndex] &&
-              palanquees[dragData.palanqueeIndex][dragData.plongeurIndex]) {
+              palanquees[dragData.palanqueeIndex]) {
             
-            const sourcePalanquee = palanquees[dragData.palanqueeIndex];
+            const sourcePalanquee = Array.isArray(palanquees[dragData.palanqueeIndex]) ? 
+              palanquees[dragData.palanqueeIndex] : 
+              palanquees[dragData.palanqueeIndex].plongeurs;
+            
             const plongeur = sourcePalanquee.splice(dragData.plongeurIndex, 1)[0];
-            palanquee.push(plongeur);
-            console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
+            
+            if (Array.isArray(palanquees[idx])) {
+              palanquees[idx].push(plongeur);
+            } else {
+              palanquees[idx].plongeurs.push(plongeur);
+            }
+            
             syncToDatabase();
           }
           return;
         }
         
         if (dragData.type === "fromMainList") {
-          console.log("📝 Déplacement depuis liste principale détecté");
-          // Utiliser les données du plongeur directement
           const plongeurToMove = dragData.plongeur;
           
-          // Trouver et supprimer le plongeur de la liste principale
           const indexToRemove = plongeurs.findIndex(p => 
             p.nom === plongeurToMove.nom && p.niveau === plongeurToMove.niveau
           );
           
           if (indexToRemove !== -1) {
             plongeurs.splice(indexToRemove, 1);
-            palanquee.push(plongeurToMove);
-            console.log("✅ Plongeur ajouté depuis liste principale:", plongeurToMove.nom);
+            
+            if (Array.isArray(palanquees[idx])) {
+              palanquees[idx].push(plongeurToMove);
+            } else {
+              palanquees[idx].plongeurs.push(plongeurToMove);
+            }
+            
             syncToDatabase();
-          } else {
-            console.error("❌ Plongeur non trouvé dans la liste principale");
           }
           return;
         }
@@ -1003,18 +1052,15 @@ function renderPalanquees() {
       }
     });
 
-    // Drag & drop amélioré
     div.addEventListener("dragover", e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       div.classList.add('drag-over');
-      console.log("🎯 Survol palanquée", idx + 1);
     });
     
     div.addEventListener("dragleave", e => {
       if (!div.contains(e.relatedTarget)) {
         div.classList.remove('drag-over');
-        console.log("🎯 Sortie palanquée", idx + 1);
       }
     });
 
@@ -1022,9 +1068,24 @@ function renderPalanquees() {
   });
   
   setupPalanqueesEventListeners();
-  
-  // Mise à jour des compteurs après rendu des palanquées
   updateCompteurs();
+}
+
+
+
+//rajout parametres
+function addPalanquee() {
+  const nouvellePalanquee = {
+    plongeurs: [],
+    heureDepart: '',
+    profondeurPrevue: '',
+    tempsPrevue: '',
+    profondeurRealisee: '',
+    tempsRealise: '',
+    paliers: ''
+  };
+  palanquees.push(nouvellePalanquee);
+  syncToDatabase();
 }
 
 function setupPalanqueesEventListeners() {
@@ -1034,8 +1095,11 @@ function setupPalanqueesEventListeners() {
       const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       
-      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
-        const plongeur = palanquees[palanqueeIdx].splice(plongeurIdx, 1)[0];
+      const palanqueeData = palanquees[palanqueeIdx];
+      const plongeursList = Array.isArray(palanqueeData) ? palanqueeData : palanqueeData.plongeurs;
+      
+      if (plongeursList && plongeursList[plongeurIdx]) {
+        const plongeur = plongeursList.splice(plongeurIdx, 1)[0];
         plongeurs.push(plongeur);
         plongeursOriginaux.push(plongeur);
         syncToDatabase();
@@ -1043,21 +1107,48 @@ function setupPalanqueesEventListeners() {
     }
   });
   
-  // Event delegation pour la modification des prérogatives
+  // Event listeners pour prérogatives
   document.addEventListener("change", (e) => {
     if (e.target.classList.contains("plongeur-prerogatives-editable")) {
       const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       const newPrerogatives = e.target.value.trim();
       
-      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
-        palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
+      const palanqueeData = palanquees[palanqueeIdx];
+      const plongeursList = Array.isArray(palanqueeData) ? palanqueeData : palanqueeData.plongeurs;
+      
+      if (plongeursList && plongeursList[plongeurIdx]) {
+        plongeursList[plongeurIdx].pre = newPrerogatives;
         syncToDatabase();
       }
     }
+    
+    // NOUVEAUX EVENT LISTENERS pour les champs de palanquée
+    if (e.target.classList.contains("palanquee-input")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanquee);
+      const field = e.target.dataset.field;
+      const value = e.target.value.trim();
+      
+      console.log(`Mise à jour palanquée ${palanqueeIdx}, champ ${field}: ${value}`);
+      
+      // Convertir l'ancien format si nécessaire
+      if (Array.isArray(palanquees[palanqueeIdx])) {
+        palanquees[palanqueeIdx] = {
+          plongeurs: palanquees[palanqueeIdx],
+          heureDepart: '',
+          profondeurPrevue: '',
+          tempsPrevue: '',
+          profondeurRealisee: '',
+          tempsRealise: '',
+          paliers: ''
+        };
+      }
+      
+      palanquees[palanqueeIdx][field] = value;
+      syncToDatabase();
+    }
   });
   
-  // Empêcher le drag & drop sur les champs input
   document.addEventListener("mousedown", (e) => {
     if (e.target.classList.contains("plongeur-prerogatives-editable")) {
       e.stopPropagation();
