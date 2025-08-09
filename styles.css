@@ -435,5 +435,184 @@ background: #28a745 !important;
   flex: 0 0 10px !important;
   order: 4 !important;
 }
+/* Conteneur des détails de palanquée */
+.palanquee-details {
+  background: rgba(248, 249, 250, 0.8);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px 0;
+  border: 1px solid #dee2e6;
+}
 
+/* Lignes de champs */
+.palanquee-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.palanquee-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Champs individuels */
+.palanquee-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.palanquee-field label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Inputs des champs */
+.palanquee-input {
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background: white;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.palanquee-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  background: #fff;
+}
+
+.palanquee-input:hover {
+  border-color: #adb5bd;
+}
+
+.palanquee-input::placeholder {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Styles spécifiques par type de champ */
+.palanquee-input[type="time"] {
+  width: 100px;
+}
+
+.palanquee-input[type="number"] {
+  width: 80px;
+  text-align: center;
+}
+
+.palanquee-input[type="text"] {
+  min-width: 120px;
+}
+
+/* Section titre avec séparateur */
+.palanquee-details::before {
+  content: "📋 Détails de la plongée";
+  display: block;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.95em;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .palanquee-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .palanquee-details {
+    padding: 10px;
+  }
+  
+  .palanquee-field {
+    gap: 2px;
+  }
+  
+  .palanquee-field label {
+    font-size: 0.8em;
+  }
+  
+  .palanquee-input {
+    padding: 5px 6px;
+    font-size: 0.85em;
+  }
+}
+
+@media (max-width: 480px) {
+  .palanquee-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .palanquee-input[type="time"],
+  .palanquee-input[type="number"],
+  .palanquee-input[type="text"] {
+    width: 100%;
+  }
+}
+
+/* Animation pour les nouveaux champs */
+.palanquee-details {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Indicateurs visuels pour les champs requis */
+.palanquee-input.required {
+  border-left: 3px solid #ffc107;
+}
+
+.palanquee-input.completed {
+  border-left: 3px solid #28a745;
+}
+
+/* Style pour les champs en erreur */
+.palanquee-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+/* Groupes de champs avec titres */
+.palanquee-row.prevision::before {
+  content: "📋 Prévision";
+  grid-column: 1 / -1;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: -8px;
+  padding-left: 5px;
+}
+
+.palanquee-row.realisation::before {
+  content: "✅ Réalisation";
+  grid-column: 1 / -1;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #28a745;
+  margin-bottom: -8px;
+  padding-left: 5px;
+}
 
