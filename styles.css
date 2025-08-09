@@ -436,4 +436,105 @@ background: #28a745 !important;
   order: 4 !important;
 }
 
+/* Solution simple et efficace */
+.palanquee-plongeur-item .plongeur-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.palanquee-plongeur-item .plongeur-nom {
+  flex: 1 !important;
+  order: 1 !important;
+}
+
+.palanquee-plongeur-item .plongeur-prerogatives-editable {
+  flex: 0 0 50px !important;    /* ← Nouvelle valeur */
+  order: 2 !important;
+}
+
+.palanquee-plongeur-item .return-plongeur {
+  flex: 0 0 10px !important;
+  order: 4 !important;
+}
+
+/* STYLES POUR LES DÉTAILS DE PALANQUÉE */
+.palanquee-details {
+  background: #f8f9fa;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.detail-row label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #495057;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.palanquee-horaire,
+.palanquee-prof-prevue,
+.palanquee-duree-prevue,
+.palanquee-prof-realisee,
+.palanquee-duree-realisee {
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  font-size: 12px;
+  width: 80px;
+  text-align: center;
+}
+
+.palanquee-horaire {
+  width: 100px;
+}
+
+.palanquee-prof-prevue,
+.palanquee-prof-realisee {
+  background-color: #e3f2fd;
+}
+
+.palanquee-duree-prevue,
+.palanquee-duree-realisee {
+  background-color: #f3e5f5;
+}
+
+.palanquee-horaire {
+  background-color: #fff3e0;
+}
+
+.detail-row input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
+}
+
+/* Responsive pour les détails */
+@media (max-width: 768px) {
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .palanquee-horaire,
+  .palanquee-prof-prevue,
+  .palanquee-duree-prevue,
+  .palanquee-prof-realisee,
+  .palanquee-duree-realisee {
+    width: 100%;
+    max-width: 150px;
+  }
+}
 

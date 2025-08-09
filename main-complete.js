@@ -593,7 +593,13 @@ function exportToPDF() {
     } else {
       for (let i = 0; i < palanquees.length; i++) {
         const pal = palanquees[i];
-        const palanqueeHeight = 20 + (pal.length * 6);
+        
+        // Calculer la hauteur nécessaire en tenant compte des détails
+        let extraHeight = 0;
+        if (pal.horaire || pal.profondeurPrevue || pal.dureePrevue) extraHeight += 7;
+        if (pal.profondeurRealisee || pal.dureeRealisee) extraHeight += 7;
+        
+        const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
         
         const isAlert = checkAlert(pal);
@@ -618,6 +624,31 @@ function exportToPDF() {
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
         yPosition += 18;
+        
+        // Affichage des détails de la palanquée
+        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        
+        let detailsText = '';
+        if (pal.horaire) detailsText += 'Horaire: ' + pal.horaire + ' | ';
+        if (pal.profondeurPrevue) detailsText += 'Prof. prévue: ' + pal.profondeurPrevue + 'm | ';
+        if (pal.dureePrevue) detailsText += 'Durée prévue: ' + pal.dureePrevue + 'min';
+        
+        if (detailsText) {
+          doc.text(detailsText, margin + 5, yPosition);
+          yPosition += 7;
+        }
+        
+        let realisationText = '';
+        if (pal.profondeurRealisee) realisationText += 'Prof. réalisée: ' + pal.profondeurRealisee + 'm | ';
+        if (pal.dureeRealisee) realisationText += 'Durée réalisée: ' + pal.dureeRealisee + 'min';
+        
+        if (realisationText) {
+          doc.setTextColor(colors.successR, colors.successG, colors.successB);
+          doc.text(realisationText, margin + 5, yPosition);
+          yPosition += 7;
+        }
         
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
         doc.setFontSize(10);
@@ -748,7 +779,15 @@ function setupEventListeners() {
 
   // Ajout de palanquée
   addSafeEventListener("addPalanquee", "click", () => {
-    palanquees.push([]);
+    // Créer une nouvelle palanquée avec les propriétés par défaut
+    const nouvellePalanquee = [];
+    nouvellePalanquee.horaire = '';
+    nouvellePalanquee.profondeurPrevue = '';
+    nouvellePalanquee.dureePrevue = '';
+    nouvellePalanquee.profondeurRealisee = '';
+    nouvellePalanquee.dureeRealisee = '';
+    
+    palanquees.push(nouvellePalanquee);
     syncToDatabase();
   });
 

@@ -78,6 +78,24 @@ function renderPalanquees() {
         <span>Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
         <span class="remove-palanquee" style="color: red; cursor: pointer;">❌</span>
       </div>
+      <div class="palanquee-details">
+        <div class="detail-row">
+          <label>Horaire mise à l'eau:</label>
+          <input type="time" class="palanquee-horaire" data-palanquee-idx="${idx}" value="${palanquee.horaire || ''}" placeholder="HH:MM">
+        </div>
+        <div class="detail-row">
+          <label>Profondeur prévue (m):</label>
+          <input type="number" class="palanquee-prof-prevue" data-palanquee-idx="${idx}" value="${palanquee.profondeurPrevue || ''}" placeholder="ex: 20" min="0" max="100">
+          <label>Durée prévue (min):</label>
+          <input type="number" class="palanquee-duree-prevue" data-palanquee-idx="${idx}" value="${palanquee.dureePrevue || ''}" placeholder="ex: 45" min="0" max="120">
+        </div>
+        <div class="detail-row">
+          <label>Profondeur réalisée (m):</label>
+          <input type="number" class="palanquee-prof-realisee" data-palanquee-idx="${idx}" value="${palanquee.profondeurRealisee || ''}" placeholder="ex: 18" min="0" max="100">
+          <label>Durée réalisée (min):</label>
+          <input type="number" class="palanquee-duree-realisee" data-palanquee-idx="${idx}" value="${palanquee.dureeRealisee || ''}" placeholder="ex: 42" min="0" max="120">
+        </div>
+      </div>
     `;
     
     if (palanquee.length === 0) {
@@ -136,6 +154,7 @@ function renderPalanquees() {
     // Event listeners
     div.querySelector(".remove-palanquee").addEventListener("click", () => {
       if (confirm(`Supprimer la palanquée ${idx + 1} ?`)) {
+        // Remettre tous les plongeurs dans la liste principale
         palanquee.forEach(plg => {
           plongeurs.push(plg);
           plongeursOriginaux.push(plg);
@@ -236,11 +255,57 @@ function setupPalanqueesEventListeners() {
         syncToDatabase();
       }
     }
+    
+    // Event delegation pour les détails de palanquée
+    if (e.target.classList.contains("palanquee-horaire")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].horaire = e.target.value;
+        syncToDatabase();
+      }
+    }
+    
+    if (e.target.classList.contains("palanquee-prof-prevue")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].profondeurPrevue = e.target.value;
+        syncToDatabase();
+      }
+    }
+    
+    if (e.target.classList.contains("palanquee-duree-prevue")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].dureePrevue = e.target.value;
+        syncToDatabase();
+      }
+    }
+    
+    if (e.target.classList.contains("palanquee-prof-realisee")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].profondeurRealisee = e.target.value;
+        syncToDatabase();
+      }
+    }
+    
+    if (e.target.classList.contains("palanquee-duree-realisee")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].dureeRealisee = e.target.value;
+        syncToDatabase();
+      }
+    }
   });
   
   // Empêcher le drag & drop sur les champs input
   document.addEventListener("mousedown", (e) => {
-    if (e.target.classList.contains("plongeur-prerogatives-editable")) {
+    if (e.target.classList.contains("plongeur-prerogatives-editable") ||
+        e.target.classList.contains("palanquee-horaire") ||
+        e.target.classList.contains("palanquee-prof-prevue") ||
+        e.target.classList.contains("palanquee-duree-prevue") ||
+        e.target.classList.contains("palanquee-prof-realisee") ||
+        e.target.classList.contains("palanquee-duree-realisee")) {
       e.stopPropagation();
     }
   });
