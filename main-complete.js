@@ -595,8 +595,8 @@ function exportToPDF() {
         const pal = palanquees[i];
         
         // Calculer la hauteur nécessaire en tenant compte des détails
-        // On affiche toujours 3 lignes de détails maintenant
-        let extraHeight = 21; // 3 lignes x 7 points chacune
+        // Hauteur des paramètres : 5 (espace) + 8 (horaire) + 8 (prévues) + 8 (réalisées) + 10 (paliers) = 39
+        let extraHeight = 39;
         
         const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
@@ -623,34 +623,6 @@ function exportToPDF() {
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
         yPosition += 18;
-        
-        // Affichage des détails de la palanquée (TOUJOURS afficher tous les paramètres)
-        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'bold');
-        
-        // Ligne 1: Horaire, Profondeur prévue, Durée prévue
-        let ligne1 = '';
-        ligne1 += 'Horaire: ' + (pal.horaire || 'Non défini') + ' | ';
-        ligne1 += 'Prof. prévue: ' + (pal.profondeurPrevue || 'Non définie') + 'm | ';
-        ligne1 += 'Durée prévue: ' + (pal.dureePrevue || 'Non définie') + 'min';
-        
-        doc.text(ligne1, margin + 5, yPosition);
-        yPosition += 7;
-        
-        // Ligne 2: Profondeur réalisée, Durée réalisée
-        let ligne2 = '';
-        ligne2 += 'Prof. réalisée: ' + (pal.profondeurRealisee || 'Non définie') + 'm | ';
-        ligne2 += 'Durée réalisée: ' + (pal.dureeRealisee || 'Non définie') + 'min';
-        
-        doc.setTextColor(colors.successR, colors.successG, colors.successB);
-        doc.text(ligne2, margin + 5, yPosition);
-        yPosition += 7;
-        
-        // Ligne 3: Paliers (toujours afficher)
-        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.text('Paliers: ' + (pal.paliers || 'Aucun palier spécifié'), margin + 5, yPosition);
-        yPosition += 7;
         
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
         doc.setFontSize(10);
@@ -682,6 +654,60 @@ function exportToPDF() {
             yPosition += 6;
           }
         }
+        
+        // AJOUTER LES PARAMÈTRES APRÈS LA LISTE DES PLONGEURS avec zones à remplir
+        yPosition += 5; // Petit espace avant les paramètres
+        
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        
+        // Ligne 1: Horaire de mise à l'eau
+        doc.text('Horaire mise à l\'eau:', margin + 5, yPosition);
+        doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.setLineWidth(0.5);
+        doc.line(margin + 45, yPosition - 1, margin + 80, yPosition - 1); // Ligne à remplir
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text('(HH:MM)', margin + 82, yPosition);
+        yPosition += 8;
+        
+        // Ligne 2: Profondeurs et durées prévues
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('Prof. prévue:', margin + 5, yPosition);
+        doc.line(margin + 25, yPosition - 1, margin + 45, yPosition - 1);
+        doc.text('m', margin + 47, yPosition);
+        
+        doc.text('Durée prévue:', margin + 60, yPosition);
+        doc.line(margin + 82, yPosition - 1, margin + 102, yPosition - 1);
+        doc.text('min', margin + 104, yPosition);
+        yPosition += 8;
+        
+        // Ligne 3: Profondeurs et durées réalisées
+        doc.setTextColor(colors.successR, colors.successG, colors.successB);
+        doc.text('Prof. réalisée:', margin + 5, yPosition);
+        doc.setDrawColor(colors.successR, colors.successG, colors.successB);
+        doc.line(margin + 28, yPosition - 1, margin + 48, yPosition - 1);
+        doc.text('m', margin + 50, yPosition);
+        
+        doc.text('Durée réalisée:', margin + 60, yPosition);
+        doc.line(margin + 85, yPosition - 1, margin + 105, yPosition - 1);
+        doc.text('min', margin + 107, yPosition);
+        yPosition += 8;
+        
+        // Ligne 4: Paliers (ligne plus longue)
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.text('Paliers:', margin + 5, yPosition);
+        doc.setDrawColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.line(margin + 20, yPosition - 1, margin + 120, yPosition - 1); // Ligne plus longue pour les paliers
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text('(ex: 3min à 3m)', margin + 122, yPosition);
+        yPosition += 10; // Plus d'espace après les paliers
         
         yPosition += 10;
       }
