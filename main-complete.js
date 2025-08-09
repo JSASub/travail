@@ -892,6 +892,75 @@ function setupEventListeners() {
     await populateSessionsCleanupList();
   });
 
+  // Test Firebase - CORRIGÉ
+  addSafeEventListener("test-firebase", "click", async () => {
+    console.log("🧪 === TEST FIREBASE COMPLET ===");
+    
+    try {
+      // Test 1: Vérification de la connexion
+      console.log("📡 Test 1: Vérification connexion Firebase");
+      console.log("Firebase connecté:", firebaseConnected);
+      console.log("Instance db:", db ? "✅ OK" : "❌ MANQUANTE");
+      
+      // Test 2: Lecture de sessions
+      console.log("📖 Test 2: Lecture /sessions");
+      const sessionsRead = await db.ref('sessions').once('value');
+      console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
+      if (sessionsRead.exists()) {
+        const sessions = sessionsRead.val();
+        console.log("Nombre de sessions:", Object.keys(sessions).length);
+      }
+      
+      // Test 3: Écriture test
+      console.log("✏️ Test 3: Écriture test");
+      const testData = {
+        timestamp: Date.now(),
+        test: true,
+        message: "Test depuis bouton"
+      };
+      await db.ref('test-button').set(testData);
+      console.log("✅ Écriture test OK");
+      
+      // Test 4: Lecture de ce qu'on vient d'écrire
+      console.log("📖 Test 4: Relecture test");
+      const testRead = await db.ref('test-button').once('value');
+      console.log("✅ Relecture OK:", testRead.val());
+      
+      // Test 5: Test des plongeurs et palanquées
+      console.log("📊 Test 5: Données actuelles");
+      console.log("Plongeurs en mémoire:", plongeurs.length);
+      console.log("Palanquées en mémoire:", palanquees.length);
+      
+      // Test 6: Sauvegarde session réelle
+      console.log("💾 Test 6: Test sauvegarde session");
+      await saveSessionData();
+      
+      // Test 7: Lecture finale
+      console.log("📖 Test 7: Vérification sessions après sauvegarde");
+      const finalRead = await db.ref('sessions').once('value');
+      if (finalRead.exists()) {
+        const sessions = finalRead.val();
+        console.log("✅ Sessions après sauvegarde:", Object.keys(sessions).length);
+      } else {
+        console.log("❌ Aucune session après sauvegarde");
+      }
+      
+      // Test 8: Nettoyage
+      console.log("🧹 Test 8: Nettoyage test");
+      await db.ref('test-button').remove();
+      console.log("✅ Nettoyage OK");
+      
+      console.log("🎉 === TOUS LES TESTS TERMINÉS ===");
+      alert("Test Firebase terminé avec succès !\n\nRegardez la console pour les détails.\n\n✅ Firebase fonctionne correctement !");
+      
+    } catch (error) {
+      console.error("❌ ERREUR TEST FIREBASE:", error);
+      console.error("Détails:", error.message);
+      console.error("Stack:", error.stack);
+      alert("❌ Erreur Firebase: " + error.message + "\n\nRegardez la console pour plus de détails.");
+    }
+  });
+
   // Nettoyage
   addSafeEventListener("select-all-sessions", "click", () => selectAllSessions(true));
   addSafeEventListener("select-none-sessions", "click", () => selectAllSessions(false));
