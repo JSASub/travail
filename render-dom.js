@@ -95,6 +95,10 @@ function renderPalanquees() {
           <label>Durée réalisée (min):</label>
           <input type="number" class="palanquee-duree-realisee" data-palanquee-idx="${idx}" value="${palanquee.dureeRealisee || ''}" placeholder="ex: 42" min="0" max="120">
         </div>
+        <div class="detail-row paliers-row">
+          <label>Paliers effectués:</label>
+          <input type="text" class="palanquee-paliers" data-palanquee-idx="${idx}" value="${palanquee.paliers || ''}" placeholder="ex: 3min à 3m, 5min à 6m" style="flex: 1; min-width: 200px;">
+        </div>
       </div>
     `;
     
@@ -296,6 +300,14 @@ function setupPalanqueesEventListeners() {
         syncToDatabase();
       }
     }
+    
+    if (e.target.classList.contains("palanquee-paliers")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      if (palanquees[palanqueeIdx]) {
+        palanquees[palanqueeIdx].paliers = e.target.value;
+        syncToDatabase();
+      }
+    }
   });
   
   // Empêcher le drag & drop sur les champs input
@@ -305,7 +317,8 @@ function setupPalanqueesEventListeners() {
         e.target.classList.contains("palanquee-prof-prevue") ||
         e.target.classList.contains("palanquee-duree-prevue") ||
         e.target.classList.contains("palanquee-prof-realisee") ||
-        e.target.classList.contains("palanquee-duree-realisee")) {
+        e.target.classList.contains("palanquee-duree-realisee") ||
+        e.target.classList.contains("palanquee-paliers")) {
       e.stopPropagation();
     }
   });

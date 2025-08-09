@@ -598,6 +598,7 @@ function exportToPDF() {
         let extraHeight = 0;
         if (pal.horaire || pal.profondeurPrevue || pal.dureePrevue) extraHeight += 7;
         if (pal.profondeurRealisee || pal.dureeRealisee) extraHeight += 7;
+        if (pal.paliers && pal.paliers.trim()) extraHeight += 7;
         
         const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
@@ -647,6 +648,14 @@ function exportToPDF() {
         if (realisationText) {
           doc.setTextColor(colors.successR, colors.successG, colors.successB);
           doc.text(realisationText, margin + 5, yPosition);
+          yPosition += 7;
+        }
+        
+        // Affichage des paliers s'ils existent
+        if (pal.paliers && pal.paliers.trim()) {
+          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+          doc.setFont(undefined, 'bold');
+          doc.text('Paliers: ' + pal.paliers, margin + 5, yPosition);
           yPosition += 7;
         }
         
@@ -786,6 +795,7 @@ function setupEventListeners() {
     nouvellePalanquee.dureePrevue = '';
     nouvellePalanquee.profondeurRealisee = '';
     nouvellePalanquee.dureeRealisee = '';
+    nouvellePalanquee.paliers = '';
     
     palanquees.push(nouvellePalanquee);
     syncToDatabase();

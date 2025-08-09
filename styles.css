@@ -436,28 +436,6 @@ background: #28a745 !important;
   order: 4 !important;
 }
 
-/* Solution simple et efficace */
-.palanquee-plongeur-item .plongeur-content {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-}
-
-.palanquee-plongeur-item .plongeur-nom {
-  flex: 1 !important;
-  order: 1 !important;
-}
-
-.palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 0 0 50px !important;    /* ← Nouvelle valeur */
-  order: 2 !important;
-}
-
-.palanquee-plongeur-item .return-plongeur {
-  flex: 0 0 10px !important;
-  order: 4 !important;
-}
-
 /* STYLES POUR LES DÉTAILS DE PALANQUÉE */
 .palanquee-details {
   background: #f8f9fa;
@@ -487,7 +465,8 @@ background: #28a745 !important;
 .palanquee-prof-prevue,
 .palanquee-duree-prevue,
 .palanquee-prof-realisee,
-.palanquee-duree-realisee {
+.palanquee-duree-realisee,
+.palanquee-paliers {
   padding: 4px 8px;
   border: 1px solid #ced4da;
   border-radius: 3px;
@@ -498,6 +477,21 @@ background: #28a745 !important;
 
 .palanquee-horaire {
   width: 100px;
+}
+
+.palanquee-paliers {
+  width: auto;
+  text-align: left;
+  background-color: #f0f8f0;
+  min-width: 200px;
+}
+
+.paliers-row {
+  flex-wrap: nowrap;
+}
+
+.paliers-row input {
+  flex: 1;
 }
 
 .palanquee-prof-prevue,
@@ -528,6 +522,10 @@ background: #28a745 !important;
     gap: 5px;
   }
   
+  .paliers-row {
+    flex-direction: column;
+  }
+  
   .palanquee-horaire,
   .palanquee-prof-prevue,
   .palanquee-duree-prevue,
@@ -536,5 +534,8 @@ background: #28a745 !important;
     width: 100%;
     max-width: 150px;
   }
+  
+  .palanquee-paliers {
+    width: 100%;
+  }
 }
-
