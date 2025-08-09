@@ -425,3 +425,5 @@ function generatePDFPreview() {
       console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
+    
+  
