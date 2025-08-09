@@ -425,3 +425,599 @@ function generatePDFPreview() {
       console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
+    
+  } catch (error) {
+    console.error("❌ Erreur génération aperçu PDF:", error);
+    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+  }
+}
+
+function exportToPDF() {
+  if (Date.now() - pageLoadTime < 3000) {
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
+    return;
+  }
+    
+  console.log("📄 Génération du PDF professionnel...");
+  
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
+  
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const colors = {
+      primaryR: 0, primaryG: 64, primaryB: 128,
+      secondaryR: 0, secondaryG: 123, secondaryB: 255,
+      successR: 40, successG: 167, successB: 69,
+      dangerR: 220, dangerG: 53, dangerB: 69,
+      darkR: 52, darkG: 58, darkB: 64,
+      grayR: 108, grayG: 117, grayB: 125
+    };
+    
+    let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    
+    function checkPageBreak(heightNeeded, forceNewPage) {
+      if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
+        doc.addPage();
+        yPosition = 20;
+        addPageHeader();
+        return true;
+      }
+      return false;
+    }
+    
+    function addPageHeader() {
+      if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
+        doc.setFontSize(10);
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
+        yPosition = 25;
+      }
+    }
+    
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non definie";
+      const date = new Date(dateString);
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
+    }
+    
+    // === EN-TÊTE PRINCIPAL ===
+    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.rect(0, 0, pageWidth, 60, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('PALANQUÉES JSAS', margin, 25);
+    
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text('Organisation Associative de Plongée', margin, 35);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
+    doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
+    doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
+    
+    yPosition = 75;
+    
+    // === STATISTIQUES ===
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('TABLEAU DE BORD', margin, yPosition);
+    
+    doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+    doc.setLineWidth(2);
+    doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
+    
+    yPosition += 15;
+    
+    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    
+    doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+    doc.text('Palanquées: ' + palanquees.length, margin + 50, yPosition);
+    yPosition += 8;
+    
+    doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
+    doc.text('Alertes: ' + alertesTotal.length, margin + 80, yPosition);
+    
+    yPosition += 15;
+    
+    // === ALERTES DE SÉCURITÉ ===
+    if (alertesTotal.length > 0) {
+      checkPageBreak(20 + (alertesTotal.length * 8));
+      
+      doc.setDrawColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      doc.setLineWidth(2);
+      doc.rect(margin, yPosition, contentWidth, 15 + (alertesTotal.length * 6), 'S');
+      
+      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
+      
+      yPosition += 18;
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      for (let i = 0; i < alertesTotal.length; i++) {
+        const alerteClean = alertesTotal[i].replace(/'/g, "'");
+        doc.text("• " + alerteClean, margin + 5, yPosition + (i * 6));
+      }
+      
+      yPosition += (alertesTotal.length * 6) + 10;
+    }
+    
+    // === PALANQUÉES DÉTAILLÉES ===
+    checkPageBreak(30, true);
+    
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
+    yPosition += 15;
+    
+    if (palanquees.length === 0) {
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(1);
+      doc.rect(margin, yPosition, contentWidth, 15, 'S');
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(12);
+      doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 10);
+      yPosition += 25;
+    } else {
+      for (let i = 0; i < palanquees.length; i++) {
+        const pal = palanquees[i];
+        const palanqueeHeight = 20 + (pal.length * 6);
+        checkPageBreak(palanqueeHeight + 5);
+        
+        const isAlert = checkAlert(pal);
+        
+        if (isAlert) {
+          doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
+        } else {
+          doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+        }
+        doc.rect(margin, yPosition, contentWidth, 12, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
+        
+        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+        const n1s = pal.filter(p => p.niveau === "N1");
+        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+        
+        doc.setFontSize(9);
+        doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
+        
+        yPosition += 18;
+        
+        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        
+        if (pal.length === 0) {
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('Aucun plongeur assigne', margin + 10, yPosition);
+          yPosition += 8;
+        } else {
+          for (let j = 0; j < pal.length; j++) {
+            const p = pal[j];
+            const nomClean = p.nom.replace(/'/g, "'");
+            const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('• ' + nomClean, margin + 5, yPosition);
+            
+            doc.setFont(undefined, 'normal');
+            
+            if (preClean) {
+              doc.text('Prérogative: ' + preClean, 100, yPosition);
+            }
+            
+            doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+            doc.text('Niveau: ' + p.niveau, 135, yPosition);
+            doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+            
+            yPosition += 6;
+          }
+        }
+        
+        yPosition += 10;
+      }
+    }
+    
+    // === PLONGEURS NON ASSIGNÉS ===
+    if (plongeurs.length > 0) {
+      checkPageBreak(25 + (plongeurs.length * 6));
+      
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(2);
+      doc.rect(margin, yPosition, contentWidth, 15 + (plongeurs.length * 6), 'S');
+      
+      doc.setTextColor(133, 100, 4);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      
+      yPosition += 18;
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      for (let i = 0; i < plongeurs.length; i++) {
+        const p = plongeurs[i];
+        const nomClean = p.nom.replace(/'/g, "'");
+        const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+        const textLine = '• ' + nomClean + ' (' + p.niveau + ')' + (preClean ? ' - ' + preClean : '');
+        doc.text(textLine, margin + 5, yPosition + (i * 6));
+      }
+      
+      yPosition += (plongeurs.length * 6) + 10;
+    }
+    
+    // === FOOTER ===
+    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
+    
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      doc.setPage(pageNum);
+      
+      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      
+      if (pageNum === totalPages) {
+        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15);
+        doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
+      }
+      
+      doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5);
+    }
+    
+    // === TÉLÉCHARGEMENT ===
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-pro.pdf';
+    doc.save(fileName);
+    
+    console.log("✅ PDF généré:", fileName);
+    
+    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
+    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanquees.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
+    
+  } catch (error) {
+    console.error("❌ Erreur PDF:", error);
+    alert("Erreur lors de la génération du PDF : " + error.message);
+  }
+}
+
+// ===== EVENT HANDLERS =====
+function setupEventListeners() {
+  // Ajout de plongeur
+  addSafeEventListener("addForm", "submit", e => {
+    e.preventDefault();
+    const nom = $("nom").value.trim();
+    const niveau = $("niveau").value;
+    const pre = $("pre").value.trim();
+    if (!nom || !niveau) {
+      alert("Veuillez remplir le nom et le niveau du plongeur.");
+      return;
+    }
+    
+    const nouveauPlongeur = { nom, niveau, pre };
+    plongeurs.push(nouveauPlongeur);
+    plongeursOriginaux.push(nouveauPlongeur);
+    
+    $("nom").value = "";
+    $("niveau").value = "";
+    $("pre").value = "";
+    
+    syncToDatabase();
+  });
+
+  // Ajout de palanquée
+  addSafeEventListener("addPalanquee", "click", () => {
+    palanquees.push([]);
+    syncToDatabase();
+  });
+
+  // Export/Import JSON
+  addSafeEventListener("exportJSON", "click", exportToJSON);
+
+  addSafeEventListener("importJSON", "change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e2 => {
+      try {
+        const data = JSON.parse(e2.target.result);
+        
+        if (data.plongeurs && Array.isArray(data.plongeurs)) {
+          plongeurs = data.plongeurs.map(p => ({
+            nom: p.nom,
+            niveau: p.niveau,
+            pre: p.prerogatives || p.pre || ""
+          }));
+          
+          if (data.palanquees && Array.isArray(data.palanquees)) {
+            palanquees = data.palanquees.map(pal => 
+              pal.plongeurs ? pal.plongeurs.map(p => ({
+                nom: p.nom,
+                niveau: p.niveau,
+                pre: p.prerogatives || p.pre || ""
+              })) : pal
+            );
+          }
+        } else if (Array.isArray(data)) {
+          plongeurs = data;
+        }
+        
+        plongeursOriginaux = [...plongeurs];
+        syncToDatabase();
+        alert("Import réussi !");
+      } catch (error) {
+        console.error("Erreur import:", error);
+        alert("Erreur lors de l'import du fichier JSON");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // PDF
+  addSafeEventListener("generatePDF", "click", generatePDFPreview);
+  addSafeEventListener("exportPDF", "click", exportToPDF);
+
+  // Sessions
+  addSafeEventListener("load-session", "click", async () => {
+    const sessionKey = $("session-selector").value;
+    if (!sessionKey) {
+      alert("Veuillez sélectionner une session à charger.");
+      return;
+    }
+    
+    const success = await loadSession(sessionKey);
+    if (!success) {
+      alert("Erreur lors du chargement de la session.");
+    }
+  });
+  
+  addSafeEventListener("refresh-sessions", "click", async () => {
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+  });
+
+  addSafeEventListener("save-session", "click", async () => {
+    await saveSessionData();
+    alert("Session sauvegardée !");
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+  });
+
+  // Nettoyage
+  addSafeEventListener("select-all-sessions", "click", () => selectAllSessions(true));
+  addSafeEventListener("select-none-sessions", "click", () => selectAllSessions(false));
+  addSafeEventListener("delete-selected-sessions", "click", deleteSelectedSessions);
+  addSafeEventListener("refresh-sessions-list", "click", populateSessionsCleanupList);
+  
+  addSafeEventListener("select-all-dp", "click", () => selectAllDPs(true));
+  addSafeEventListener("select-none-dp", "click", () => selectAllDPs(false));
+  addSafeEventListener("delete-selected-dp", "click", deleteSelectedDPs);
+  addSafeEventListener("refresh-dp-list", "click", populateDPCleanupList);
+  
+  // Event delegation pour les changements
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("session-cleanup-checkbox") || 
+        e.target.classList.contains("dp-cleanup-checkbox")) {
+      updateCleanupSelection();
+    }
+    
+    if (e.target.classList.contains("plongeur-prerogatives-editable")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
+      const newPrerogatives = e.target.value.trim();
+      
+      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
+        palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
+        syncToDatabase();
+      }
+    }
+  });
+
+  // Contrôles de tri
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sortPlongeurs(btn.dataset.sort);
+    });
+  });
+
+  // Drag & drop pour la zone principale
+  const listePlongeurs = $("listePlongeurs");
+  
+  if (listePlongeurs) {
+    listePlongeurs.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      listePlongeurs.classList.add('drag-over');
+    });
+    
+    listePlongeurs.addEventListener("dragleave", e => {
+      if (!listePlongeurs.contains(e.relatedTarget)) {
+        listePlongeurs.classList.remove('drag-over');
+      }
+    });
+    
+    listePlongeurs.addEventListener("drop", e => {
+      e.preventDefault();
+      listePlongeurs.classList.remove('drag-over');
+      
+      const data = e.dataTransfer.getData("text/plain");
+      
+      try {
+        const dragData = JSON.parse(data);
+        
+        if (dragData.type === "fromPalanquee") {
+          if (palanquees[dragData.palanqueeIndex] && 
+              palanquees[dragData.palanqueeIndex][dragData.plongeurIndex]) {
+            
+            const plongeur = palanquees[dragData.palanqueeIndex].splice(dragData.plongeurIndex, 1)[0];
+            plongeurs.push(plongeur);
+            plongeursOriginaux.push(plongeur);
+            syncToDatabase();
+          }
+        }
+      } catch (error) {
+        console.log("📝 Erreur parsing:", error);
+      }
+    });
+  }
+
+  // Gestionnaire de validation DP
+  addSafeEventListener("valider-dp", "click", () => {
+    const nomDP = $("dp-nom")?.value?.trim() || "";
+    const date = $("dp-date")?.value || "";
+    const lieu = $("dp-lieu")?.value?.trim() || "";
+    const plongee = $("dp-plongee")?.value || "";
+
+    if (!nomDP || !date || !lieu || !plongee) {
+      alert("Veuillez remplir tous les champs du DP.");
+      return;
+    }
+
+    const dpData = {
+      nom: nomDP,
+      date: date,
+      lieu: lieu,
+      plongee: plongee,
+      timestamp: Date.now()
+    };
+
+    const dpKey = `dpInfo/${date}_${plongee}`;
+    
+    const dpMessage = $("dp-message");
+    if (dpMessage) {
+      dpMessage.textContent = "Enregistrement en cours...";
+      dpMessage.style.color = "orange";
+    }
+    
+    db.ref(dpKey).set(dpData)
+      .then(() => {
+        if (dpMessage) {
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
+          dpMessage.style.color = "green";
+        }
+      })
+      .catch((error) => {
+        if (dpMessage) {
+          dpMessage.classList.remove("success-icon");
+          dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          dpMessage.style.color = "red";
+        }
+      });
+  });
+}
+
+// ===== INITIALISATION =====
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Application Palanquées JSAS v2.1.0 - Chargement...");
+  
+  try {
+    // Initialisation Firebase
+    const firebaseInitialized = initializeFirebase();
+    
+    if (!firebaseInitialized) {
+      throw new Error("Échec de l'initialisation Firebase");
+    }
+    
+    // Test de connexion Firebase
+    await testFirebaseConnection();
+    
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    const dpDateInput = $("dp-date");
+    if (dpDateInput) {
+      dpDateInput.value = today;
+    }
+    
+    // Chargement des infos DP du jour
+    try {
+      const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
+      if (snapshot.exists()) {
+        const dpData = snapshot.val();
+        const dpNomInput = $("dp-nom");
+        const dpLieuInput = $("dp-lieu");
+        const dpPlongeeInput = $("dp-plongee");
+        const dpMessage = $("dp-message");
+        
+        if (dpNomInput) dpNomInput.value = dpData.nom || "";
+        if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+        if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+        if (dpMessage) {
+          dpMessage.textContent = "Informations du jour chargées.";
+          dpMessage.style.color = "blue";
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement DP:", error);
+    }
+
+    // Chargement historique et données
+    chargerHistoriqueDP();
+    await loadFromFirebase();
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+    await populateDPCleanupList();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    console.log("✅ Application initialisée!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE:", error);
+    
+    // Mode dégradé
+    plongeurs = [];
+    palanquees = [];
+    plongeursOriginaux = [];
+    
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    setupEventListeners();
+    
+    alert("Erreur de connexion Firebase. Mode local uniquement.");
+  }
+});
