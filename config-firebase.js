@@ -351,40 +351,88 @@ async function loadAvailableSessions() {
 }
 
 // Charger une session spécifique
-async function loadSession(sessionKey) {
-  try {
-    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
-    if (!sessionSnapshot.exists()) {
-      alert("Session non trouvée dans Firebase");
-      return false;
+// Dans config-firebase.js, dans la fonction loadSession
+
+async function loadSession(sessionId) {
+    try {
+        console.log('🔄 Chargement session:', sessionId);
+        
+        const sessionRef = doc(db, 'sessions', sessionId);
+        const sessionSnap = await getDoc(sessionRef);
+        
+        if (sessionSnap.exists()) {
+            const sessionData = sessionSnap.data();
+            console.log('📄 Session chargée:', sessionData);
+            
+            // 🔧 FIX: Normaliser les données de palanquées
+            if (sessionData.palanquees) {
+                sessionData.palanquees = normalizePalanqueesData(sessionData.palanquees);
+                console.log('✅ Palanquées normalisées:', sessionData.palanquees.length);
+            }
+            
+            // Rendre les palanquées
+            renderPalanquees(sessionData);
+            
+            // Mettre à jour les infos de session
+            updateSessionInfo(sessionData);
+            
+        } else {
+            console.log('❌ Session non trouvée');
+            document.getElementById('palanquees-container').innerHTML = 
+                '<div class="error">Session non trouvée</div>';
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement session:', error);
+        document.getElementById('palanquees-container').innerHTML = 
+            '<div class="error">Erreur de chargement</div>';
+    }
+}
+
+// Fonction utilitaire pour normaliser les palanquées
+function normalizePalanqueesData(palanqueesData) {
+    console.log('🔍 Normalisation palanquées, type:', typeof palanqueesData, palanqueesData);
+    
+    if (!palanqueesData) {
+        console.log('📝 Pas de données palanquées');
+        return [];
     }
     
-    const sessionData = sessionSnapshot.val();
-    
-    plongeurs = sessionData.plongeurs || [];
-    palanquees = sessionData.palanquees || [];
-    plongeursOriginaux = [...plongeurs];
-    
-    $("dp-nom").value = sessionData.meta.dp || "";
-    $("dp-date").value = sessionData.meta.date || "";
-    $("dp-lieu").value = sessionData.meta.lieu || "";
-    $("dp-plongee").value = sessionData.meta.plongee || "matin";
-    
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
-    
-    const dpMessage = $("dp-message");
-    if (dpMessage) {
-      dpMessage.innerHTML = `✓ Session "${sessionData.meta.dp}" du ${sessionData.meta.date} (${sessionData.meta.plongee || 'matin'}) chargée`;
-      dpMessage.style.color = "green";
+    if (Array.isArray(palanqueesData)) {
+        console.log('✅ Déjà un tableau');
+        return palanqueesData;
     }
     
-    return true;
+    if (typeof palanqueesData === 'object') {
+        console.log('🔄 Conversion objet vers tableau');
+        
+        // Séparer les propriétés des palanquées des métadonnées
+        const palanquees = [];
+        const metadata = {};
+        
+        Object.keys(palanqueesData).forEach(key => {
+            const value = palanqueesData[key];
+            
+            // Si la clé est un nombre, c'est probablement une palanquée
+            if (!isNaN(key) && typeof value === 'object' && value !== null) {
+                palanquees.push(value);
+            } else {
+                // Sinon c'est une métadonnée (dureePrevue, horaire, etc.)
+                metadata[key] = value;
+            }
+        });
+        
+        // Si on a trouvé des palanquées, les retourner
+        if (palanquees.length > 0) {
+            console.log(`✅ ${palanquees.length} palanquées extraites, métadonnées:`, metadata);
+            return palanquees;
+        }
+        
+        // Sinon, traiter l'objet comme une seule palanquée
+        console.log('📝 Objet traité comme une seule palanquée');
+        return [palanqueesData];
+    }
     
-  } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
-    alert("Erreur lors du chargement de la session : " + error.message);
-    return false;
-  }
+    console.log('⚠️ Type de données non supporté');
+    return [];
 }

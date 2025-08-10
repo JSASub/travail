@@ -73,52 +73,80 @@ function updateAlertes() {
   }
 }
 
-function checkAlert(palanquee) {
-  // Vérifier que palanquee est bien un tableau
-  if (!Array.isArray(palanquee)) {
-    console.warn("⚠️ checkAlert: palanquee n'est pas un tableau:", palanquee);
-    return false;
-  }
-  
-  const n1s = palanquee.filter(p => p && p.niveau === "N1");
-  const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-  const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
-  
-  return (
-    palanquee.length > 5 ||
-    palanquee.length <= 1 ||
-    (n1s.length > 0 && gps.length === 0) ||
-    autonomes.length > 3 ||
-    ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0)
-  );
-}
+// Dans ui-interface.js, modifiez la fonction checkAlert
 
-// ===== TRI DES PLONGEURS =====
-function sortPlongeurs(type) {
-  currentSort = type;
-  
-  document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.sort === type) {
-      btn.classList.add('active');
+function checkAlert(palanquee, index) {
+    // Vérifier si palanquee est un objet valide
+    if (!palanquee || typeof palanquee !== 'object') {
+        console.warn(`⚠️ checkAlert: palanquée ${index} invalide:`, palanquee);
+        return;
     }
-  });
-  
-  switch(type) {
-    case 'nom':
-      plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
-      break;
-    case 'niveau':
-      const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
-      plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 9) - (niveauOrder[b.niveau] || 9));
-      break;
-    case 'none':
-    default:
-      plongeurs = [...plongeursOriginaux];
-      break;
-  }
-  
-  renderPlongeurs();
+
+    // Si c'est un objet qui ressemble à un tableau (avec des clés numériques)
+    if (!Array.isArray(palanquee) && typeof palanquee === 'object') {
+        // Vérifier s'il s'agit des données d'une palanquée ou d'un tableau mal formaté
+        const hasNumericKeys = Object.keys(palanquee).some(key => !isNaN(key));
+        const hasPalanqueeProperties = palanquee.hasOwnProperty('dureePrevue') || 
+                                      palanquee.hasOwnProperty('profondeurPrevue') ||
+                                      palanquee.hasOwnProperty('horaire');
+        
+        if (hasNumericKeys && !hasPalanqueeProperties) {
+            console.warn('⚠️ checkAlert: palanquee semble être un tableau mal formaté:', palanquee);
+            // Essayer de convertir en utilisant la première entrée valide
+            const firstValidEntry = Object.values(palanquee).find(item => 
+                typeof item === 'object' && item !== null && 
+                (item.dureePrevue || item.profondeurPrevue)
+            );
+            
+            if (firstValidEntry) {
+                palanquee = firstValidEntry;
+            } else {
+                return;
+            }
+        }
+    }
+
+    // Maintenant traiter la palanquée normalement
+    const alertContainer = document.getElementById(`alert-${index}`);
+    if (!alertContainer) return;
+
+    let alerts = [];
+
+    // Vérifier profondeur réalisée vs prévue
+    if (palanquee.profondeurRealisee && palanquee.profondeurPrevue) {
+        const prevue = parseInt(palanquee.profondeurPrevue);
+        const realisee = parseInt(palanquee.profondeurRealisee);
+        
+        if (realisee > prevue + 3) {
+            alerts.push({
+                type: 'warning',
+                message: `Profondeur dépassée: ${realisee}m (prévu: ${prevue}m)`
+            });
+        }
+    }
+
+    // Vérifier durée réalisée vs prévue
+    if (palanquee.dureeRealisee && palanquee.dureePrevue) {
+        const prevue = parseInt(palanquee.dureePrevue);
+        const realisee = parseInt(palanquee.dureeRealisee);
+        
+        if (realisee > prevue + 5) {
+            alerts.push({
+                type: 'warning',
+                message: `Durée dépassée: ${realisee}min (prévu: ${prevue}min)`
+            });
+        }
+    }
+
+    // Afficher les alertes
+    if (alerts.length > 0) {
+        alertContainer.innerHTML = alerts.map(alert => 
+            `<div class="alert alert-${alert.type}">${alert.message}</div>`
+        ).join('');
+        alertContainer.style.display = 'block';
+    } else {
+        alertContainer.style.display = 'none';
+    }
 }
 
 // ===== EXPORT JSON =====
