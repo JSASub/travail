@@ -161,23 +161,345 @@
     <iframe id="pdfPreview" width="100%" height="500px"></iframe>
   </div>
   
-  <hr>
-  <section id="sessions-manager">
-    <strong>Gestion des Sessions</strong>
-    <div style="margin: 10px 0;">
-      <label>Charger une session précédente :</label>
-      <select id="session-selector" style="margin: 5px 10px;">
-        <option value="">-- Charger une session --</option>
-      </select>
-      <button id="load-session" class="btn-secondary">Charger</button>
-      <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
-      <button id="save-session" class="btn-success">Sauvegarder Session</button>
-      <button id="test-firebase" style="background: orange; color: white;">Test Firebase</button>
+<!-- Dans votre index.html, REMPLACEZ cette section existante : -->
+
+<!-- ANCIENNE SECTION À REMPLACER (lignes ~115-130 environ) -->
+<!--
+<hr>
+<section id="sessions-manager">
+  <strong>Gestion des Sessions</strong>
+  <div style="margin: 10px 0;">
+    <label>Charger une session précédente :</label>
+    <select id="session-selector" style="margin: 5px 10px;">
+      <option value="">-- Charger une session --</option>
+    </select>
+    <button id="load-session" class="btn-secondary">Charger</button>
+    <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
+    <button id="save-session" class="btn-success">Sauvegarder Session</button>
+    <button id="test-firebase" style="background: orange; color: white;">Test Firebase</button>
+  </div>
+  <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
+    Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+  </div>
+</section>
+-->
+
+<!-- PAR CETTE NOUVELLE SECTION AMÉLIORÉE : -->
+
+<hr>
+<section id="sessions-manager">
+  <!-- Section du sélecteur de sessions -->
+  <div class="session-selector-container">
+    <div class="selector-header">
+      <h2>📋 Gestion des Sessions</h2>
+      <p>Choisissez une session pour voir les détails des palanquées</p>
     </div>
-    <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
-      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+    
+    <div class="selector-controls">
+      <div class="select-wrapper">
+        <label for="session-select">Session :</label>
+        <select id="session-select" class="session-select">
+          <option value="">-- Sélectionnez une session --</option>
+          <!-- Les options seront chargées dynamiquement par JavaScript -->
+        </select>
+      </div>
+      
+      <div class="control-buttons">
+        <button id="btn-refresh-sessions" class="btn btn-refresh" title="Actualiser la liste des sessions">
+          🔄 Actualiser
+        </button>
+        <button id="btn-test-firebase" class="btn btn-test" title="Tester la connexion Firebase">
+          🔥 Tester Firebase
+        </button>
+        <button id="save-session" class="btn btn-success">
+          💾 Sauvegarder Session
+        </button>
+      </div>
     </div>
-  </section>
+    
+    <!-- Indicateur de statut -->
+    <div id="session-status" class="session-status">
+      <span class="status-text">Les sessions sont automatiquement sauvegardées par date et directeur de plongée</span>
+    </div>
+  </div>
+
+  <!-- Section du contenu de session (initialement masquée) -->
+  <div class="session-content" id="session-content" style="display: none;">
+    <div class="session-header">
+      <h3 id="session-title">Détails de la session</h3>
+      <div class="session-info" id="session-info">
+        <span id="session-date"></span>
+        <span id="session-location"></span>
+        <span id="session-time"></span>
+      </div>
+    </div>
+    
+    <!-- Container principal pour les palanquées -->
+    <div id="palanquees-container" class="palanquees-container">
+      <div class="loading">Sélectionnez une session pour voir les palanquées</div>
+    </div>
+    
+    <!-- Container pour les actions -->
+    <div class="session-actions">
+      <button id="btn-add-palanquee" class="btn btn-primary">
+        ➕ Ajouter une palanquée
+      </button>
+      <button id="btn-export-session" class="btn btn-secondary">
+        📋 Exporter la session
+      </button>
+      <button id="btn-edit-session" class="btn btn-info">
+        ✏️ Modifier la session
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- AJOUTEZ AUSSI CES STYLES À LA FIN DE VOTRE <head>, juste avant </head> -->
+<style>
+/* Styles pour le sélecteur de sessions amélioré */
+.session-selector-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.selector-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.selector-header h2 {
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.selector-header p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.selector-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.select-wrapper label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.session-select {
+  padding: 10px 16px;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 280px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.session-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.control-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-refresh {
+  background: #28a745;
+  color: white;
+}
+
+.btn-refresh:hover {
+  background: #218838;
+}
+
+.btn-test {
+  background: #fd7e14;
+  color: white;
+}
+
+.btn-test:hover {
+  background: #e8590c;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #117a8b;
+}
+
+.session-status {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  text-align: center;
+  border-left: 4px solid #007bff;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #495057;
+  font-style: italic;
+}
+
+.session-content {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.session-header {
+  margin-bottom: 20px;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 15px;
+}
+
+.session-header h3 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.session-info {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  color: #666;
+  font-size: 13px;
+}
+
+.session-info span {
+  padding: 3px 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.palanquees-container {
+  margin: 15px 0;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  min-height: 150px;
+  border: 1px solid #dee2e6;
+}
+
+.loading {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+  text-align: center;
+  font-weight: 500;
+}
+
+.session-actions {
+  margin-top: 20px;
+  text-align: center;
+  padding-top: 15px;
+  border-top: 2px solid #dee2e6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .session-select {
+    min-width: 220px;
+    font-size: 13px;
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    min-width: 140px;
+  }
+  
+  .session-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+</style>
 
   <hr>
   <section id="sessions-manager-extended">
