@@ -89,7 +89,9 @@ function signOut() {
 function showAuthContainer() {
   const authContainer = $("auth-container");
   const mainApp = $("main-app");
+  const loadingScreen = $("loading-screen");
   
+  if (loadingScreen) loadingScreen.style.display = "none";
   if (authContainer) authContainer.style.display = "block";
   if (mainApp) mainApp.style.display = "none";
 }
@@ -97,7 +99,9 @@ function showAuthContainer() {
 function showMainApp() {
   const authContainer = $("auth-container");
   const mainApp = $("main-app");
+  const loadingScreen = $("loading-screen");
   
+  if (loadingScreen) loadingScreen.style.display = "none";
   if (authContainer) authContainer.style.display = "none";
   if (mainApp) mainApp.style.display = "block";
 }
