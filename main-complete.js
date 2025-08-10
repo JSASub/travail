@@ -537,7 +537,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
-    doc.text('                         Palanquées: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('                        Palanquées: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
@@ -595,8 +595,13 @@ function exportToPDF() {
         const pal = palanquees[i];
         
         // Calculer la hauteur nécessaire en tenant compte des détails
-        // Hauteur des paramètres : 5 (espace) + 8 (horaire) + 8 (prévues) + 8 (réalisées) + 10 (paliers) = 39
+        // Hauteur de base : 5 (espace) + 8 (horaire) + 8 (prévues) + 8 (réalisées) + 10 (paliers) = 39
         let extraHeight = 39;
+        
+        // Ajouter 6 points si les paliers ont une valeur (ligne correction supplémentaire)
+        if (pal.paliers && pal.paliers.trim()) {
+          extraHeight += 6;
+        }
         
         const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
@@ -664,49 +669,146 @@ function exportToPDF() {
         
         // Ligne 1: Horaire de mise à l'eau
         doc.text('Horaire mise à l\'eau:', margin + 5, yPosition);
-        doc.setDrawColor(180, 180, 180); // Gris plus clair
-        doc.setLineWidth(0.3);
-        doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1); // Ligne plus basse
-        doc.setFont(undefined, 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text('(HH:MM)', margin + 82, yPosition);
+        
+        if (pal.horaire && pal.horaire.trim()) {
+          // Afficher la valeur saisie + zone de correction
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.horaire, margin + 45, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(8);
+          doc.text('Correction:', margin + 85, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.setLineWidth(0.3);
+          doc.line(margin + 105, yPosition + 1, margin + 140, yPosition + 1);
+        } else {
+          // Zone vide à remplir
+          doc.setDrawColor(180, 180, 180);
+          doc.setLineWidth(0.3);
+          doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('(HH:MM)', margin + 82, yPosition);
+        }
         yPosition += 8;
         
         // Ligne 2: Profondeurs et durées prévues
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('Prof. prévue:', margin + 5, yPosition);
-        doc.line(margin + 25, yPosition + 1, margin + 45, yPosition + 1);
-        doc.text('m', margin + 47, yPosition);
         
+        // Profondeur prévue
+        doc.text('Prof. prévue:', margin + 5, yPosition);
+        if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.profondeurPrevue + 'm', margin + 25, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(8);
+          doc.text('Corr:', margin + 35, yPosition);
+          doc.line(margin + 43, yPosition + 1, margin + 53, yPosition + 1);
+        } else {
+          doc.line(margin + 25, yPosition + 1, margin + 45, yPosition + 1);
+          doc.text('m', margin + 47, yPosition);
+        }
+        
+        // Durée prévue
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
         doc.text('Durée prévue:', margin + 60, yPosition);
-        doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
-        doc.text('min', margin + 104, yPosition);
+        if (pal.dureePrevue && pal.dureePrevue.trim()) {
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.dureePrevue + 'min', margin + 82, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(8);
+          doc.text('Corr:', margin + 95, yPosition);
+          doc.line(margin + 103, yPosition + 1, margin + 113, yPosition + 1);
+        } else {
+          doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
+          doc.text('min', margin + 104, yPosition);
+        }
         yPosition += 8;
         
         // Ligne 3: Profondeurs et durées réalisées
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
-        doc.text('Prof. réalisée:', margin + 5, yPosition);
-        doc.setDrawColor(180, 180, 180); // Gris plus clair
-        doc.line(margin + 28, yPosition + 1, margin + 48, yPosition + 1);
-        doc.text('m', margin + 50, yPosition);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
         
+        // Profondeur réalisée
+        doc.text('Prof. réalisée:', margin + 5, yPosition);
+        if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.profondeurRealisee + 'm', margin + 28, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(8);
+          doc.text('Corr:', margin + 38, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 46, yPosition + 1, margin + 56, yPosition + 1);
+        } else {
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 28, yPosition + 1, margin + 48, yPosition + 1);
+          doc.text('m', margin + 50, yPosition);
+        }
+        
+        // Durée réalisée
+        doc.setTextColor(colors.successR, colors.successG, colors.successB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
         doc.text('Durée réalisée:', margin + 60, yPosition);
-        doc.line(margin + 85, yPosition + 1, margin + 105, yPosition + 1);
-        doc.text('min', margin + 107, yPosition);
+        if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.dureeRealisee + 'min', margin + 85, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(8);
+          doc.text('Corr:', margin + 98, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 106, yPosition + 1, margin + 116, yPosition + 1);
+        } else {
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 85, yPosition + 1, margin + 105, yPosition + 1);
+          doc.text('min', margin + 107, yPosition);
+        }
         yPosition += 8;
         
-        // Ligne 4: Paliers (ligne plus longue)
+        // Ligne 4: Paliers
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
         doc.text('Paliers:', margin + 5, yPosition);
-        doc.setDrawColor(180, 180, 180); // Gris plus clair
-        doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1); // Ligne plus basse
-        doc.setFont(undefined, 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text('(ex: 3min à 3m)', margin + 122, yPosition);
+        
+        if (pal.paliers && pal.paliers.trim()) {
+          // Afficher la valeur saisie
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.text(pal.paliers, margin + 20, yPosition);
+          yPosition += 6;
+          
+          // Zone de correction en dessous
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('Correction paliers:', margin + 5, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 35, yPosition + 1, margin + 120, yPosition + 1);
+        } else {
+          // Zone vide à remplir
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('(ex: 3min à 3m)', margin + 122, yPosition);
+        }
         yPosition += 10; // Plus d'espace après les paliers
         
         yPosition += 10;
