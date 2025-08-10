@@ -362,23 +362,102 @@ async function loadSession(sessionKey) {
     const sessionData = sessionSnapshot.val();
     
     plongeurs = sessionData.plongeurs || [];
-    palanquees = sessionData.palanquees || [];
+    
+    // CORRECTION PRINCIPALE : Conversion des palanquées objet→tableau
+    if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+      palanquees = sessionData.palanquees.map((pal, index) => {
+        // Si c'est déjà un tableau, on le garde
+        if (Array.isArray(pal)) {
+          // Ajouter les propriétés manquantes
+          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
+          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
+          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
+          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
+          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
+          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
+          return pal;
+        }
+        
+        // Si c'est un objet (le cas de votre erreur), on le convertit
+        if (pal && typeof pal === 'object') {
+          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+          
+          const nouveauTableau = [];
+          
+          // Extraire les plongeurs (propriétés avec clés numériques)
+          Object.keys(pal).forEach(key => {
+            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
+              nouveauTableau.push(pal[key]);
+            }
+          });
+          
+          // Conserver les propriétés de palanquée
+          nouveauTableau.horaire = pal.horaire || '';
+          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
+          nouveauTableau.dureePrevue = pal.dureePrevue || '';
+          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
+          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
+          nouveauTableau.paliers = pal.paliers || '';
+          
+          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          return nouveauTableau;
+        }
+        
+        // Cas par défaut : palanquée vide
+        console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
+        const nouveauTableau = [];
+        nouveauTableau.horaire = '';
+        nouveauTableau.profondeurPrevue = '';
+        nouveauTableau.dureePrevue = '';
+        nouveauTableau.profondeurRealisee = '';
+        nouveauTableau.dureeRealisee = '';
+        nouveauTableau.paliers = '';
+        return nouveauTableau;
+      });
+    } else {
+      palanquees = [];
+    }
+    
     plongeursOriginaux = [...plongeurs];
     
-    $("dp-nom").value = sessionData.meta.dp || "";
-    $("dp-date").value = sessionData.meta.date || "";
-    $("dp-lieu").value = sessionData.meta.lieu || "";
-    $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    // Charger les métadonnées
+    if (sessionData.meta) {
+      $("dp-nom").value = sessionData.meta.dp || "";
+      $("dp-date").value = sessionData.meta.date || "";
+      $("dp-lieu").value = sessionData.meta.lieu || "";
+      $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    } else {
+      // Format ancien
+      $("dp-nom").value = sessionData.dp || "";
+      $("dp-date").value = sessionData.date || "";
+      $("dp-lieu").value = sessionData.lieu || "";
+      $("dp-plongee").value = sessionData.plongee || "matin";
+    }
     
-    renderPalanquees();
+    // Rendu avec gestion d'erreur
+    try {
+      renderPalanquees();
+    } catch (renderError) {
+      console.error("❌ Erreur renderPalanquees:", renderError);
+      // Essayer de nettoyer et re-rendre
+      palanquees = palanquees.map(pal => Array.isArray(pal) ? pal : []);
+      renderPalanquees();
+    }
+    
     renderPlongeurs();
     updateAlertes();
     
     const dpMessage = $("dp-message");
     if (dpMessage) {
-      dpMessage.innerHTML = `✓ Session "${sessionData.meta.dp}" du ${sessionData.meta.date} (${sessionData.meta.plongee || 'matin'}) chargée`;
+      const dpName = sessionData.meta ? sessionData.meta.dp : sessionData.dp || "Session";
+      const dpDate = sessionData.meta ? sessionData.meta.date : sessionData.date || "";
+      const dpPlongee = sessionData.meta ? sessionData.meta.plongee : sessionData.plongee || "matin";
+      
+      dpMessage.innerHTML = `✓ Session "${dpName}" du ${dpDate} (${dpPlongee}) chargée`;
       dpMessage.style.color = "green";
     }
+    
+    console.log("✅ Session chargée avec succès:", sessionKey);
     
     return true;
     
