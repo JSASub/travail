@@ -9,18 +9,55 @@
   <!-- Firebase SDK version 8 (compatible syntaxe classique) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
   <!-- jsPDF pour l'export PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
+  <!-- SECTION DE CONNEXION -->
+  <div id="auth-container" style="display: none;">
+    <div style="max-width: 400px; margin: 50px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <h2 style="text-align: center; color: #004080; margin-bottom: 30px;">🤿 Connexion JSAS</h2>
+      
+      <form id="login-form">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email :</label>
+          <input type="email" id="login-email" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mot de passe :</label>
+          <input type="password" id="login-password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+          Se connecter
+        </button>
+      </form>
+      
+      <div id="auth-error" style="margin-top: 15px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 5px; display: none;"></div>
+      <div id="auth-loading" style="margin-top: 15px; text-align: center; color: #666; display: none;">Connexion en cours...</div>
+    </div>
+  </div>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="main-app" style="display: none;">
   <header>
-    <h1>Palanquées JSAS</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>Palanquées JSAS</h1>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <span id="user-info" style="color: #666; font-size: 14px;"></span>
+        <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
+          Déconnexion
+        </button>
+      </div>
+    </div>
   
   <div id="meta-info">
     <label><strong>Directeur de Plongée</strong>
-      <input type="text" id="dp-nom" placeholder="NOM & Prénom & grade du DP" />
+      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />
     </label>
     <label>Date : <input type="date" id="dp-date" /></label>
     <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
@@ -170,8 +207,10 @@
   </section>
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 2.1.3 - RA - 2025 -
+  Version 2.5.0 - RA - 2025 - JSA Subaquatique
   </footer>
+
+  </div> <!-- Fin main-app -->
 
   <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
   <script src="config-firebase.js"></script>
