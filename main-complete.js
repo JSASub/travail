@@ -884,165 +884,358 @@ function exportToPDF() {
 }
 
 // ===== EVENT HANDLERS =====
-// Dans main-complete.js, modifiez la fonction setupEventListeners
-
 function setupEventListeners() {
-    console.log('🔧 Configuration des écouteurs d\'événements...');
-
-    // Gestionnaire pour le sélecteur de sessions
-    const sessionSelect = document.getElementById('session-select');
-    if (sessionSelect) {
-        sessionSelect.addEventListener('change', function() {
-            const selectedSession = this.value;
-            console.log('📋 Session sélectionnée:', selectedSession);
-            
-            if (selectedSession) {
-                // Afficher le container de contenu de session
-                const sessionContent = document.getElementById('session-content');
-                if (sessionContent) {
-                    sessionContent.style.display = 'block';
-                }
-                
-                // Vérifier que le container palanquées existe
-                let container = document.getElementById('palanquees-container');
-                if (!container) {
-                    console.log('🔧 Container manquant, création...');
-                    createPalanqueesContainer();
-                    container = document.getElementById('palanquees-container');
-                }
-                
-                // Afficher un état de chargement
-                if (container) {
-                    container.innerHTML = '<div class="loading">🔄 Chargement de la session...</div>';
-                }
-                
-                // Charger la session
-                if (typeof loadSession === 'function') {
-                    loadSession(selectedSession);
-                } else {
-                    console.error('❌ Fonction loadSession non disponible');
-                    if (container) {
-                        container.innerHTML = '<div class="error">Erreur: fonction loadSession non trouvée</div>';
-                    }
-                }
-            } else {
-                // Masquer le contenu si aucune session sélectionnée
-                const sessionContent = document.getElementById('session-content');
-                if (sessionContent) {
-                    sessionContent.style.display = 'none';
-                }
-            }
-        });
-        console.log('✅ Gestionnaire session-select configuré');
-    } else {
-        console.error('❌ Élément session-select non trouvé');
-    }
-
-    // Gestionnaire pour le bouton test Firebase
-    const btnTestFirebase = document.getElementById('btn-test-firebase');
-    if (btnTestFirebase) {
-        btnTestFirebase.addEventListener('click', async function() {
-            this.disabled = true;
-            this.textContent = 'Test en cours...';
-            
-            try {
-                const isConnected = await testFirebaseConnection();
-                this.textContent = isConnected ? '✅ Connexion OK' : '❌ Erreur connexion';
-                
-                setTimeout(() => {
-                    this.textContent = 'Tester Firebase';
-                    this.disabled = false;
-                }, 3000);
-                
-            } catch (error) {
-                console.error('Erreur test Firebase:', error);
-                this.textContent = '❌ Erreur';
-                setTimeout(() => {
-                    this.textContent = 'Tester Firebase';
-                    this.disabled = false;
-                }, 3000);
-            }
-        });
-        console.log('✅ Gestionnaire btn-test-firebase configuré');
-    }
-
-    // Gestionnaire pour ajouter une palanquée
-    const btnAddPalanquee = document.getElementById('btn-add-palanquee');
-    if (btnAddPalanquee) {
-        btnAddPalanquee.addEventListener('click', function() {
-            console.log('➕ Ajout d\'une nouvelle palanquée');
-            // TODO: Implémenter l'ajout de palanquée
-            alert('Fonctionnalité en cours de développement');
-        });
-    }
-
-    // Gestionnaire pour exporter la session
-    const btnExportSession = document.getElementById('btn-export-session');
-    if (btnExportSession) {
-        btnExportSession.addEventListener('click', function() {
-            console.log('📋 Export de la session');
-            // TODO: Implémenter l'export
-            alert('Fonctionnalité en cours de développement');
-        });
-    }
-}
-
-// Fonction pour vérifier l'état du DOM
-function checkDOMElements() {
-    console.log('🔍 Vérification des éléments du DOM:');
+  // === AUTHENTIFICATION ===
+  addSafeEventListener("login-form", "submit", async (e) => {
+    e.preventDefault();
     
-    const requiredElements = [
-        'session-select',
-        'palanquees-container',
-        'session-content'
-    ];
+    const email = $("login-email").value.trim();
+    const password = $("login-password").value;
+    const errorDiv = $("auth-error");
+    const loadingDiv = $("auth-loading");
     
-    const missingElements = [];
+    if (!email || !password) {
+      showAuthError("Veuillez remplir tous les champs");
+      return;
+    }
     
-    requiredElements.forEach(elementId => {
-        const element = document.getElementById(elementId);
-        if (element) {
-            console.log(`✅ ${elementId}: trouvé`);
-        } else {
-            console.log(`❌ ${elementId}: manquant`);
-            missingElements.push(elementId);
+    try {
+      if (loadingDiv) loadingDiv.style.display = "block";
+      if (errorDiv) errorDiv.style.display = "none";
+      
+      await signIn(email, password);
+      console.log("✅ Connexion réussie");
+      
+    } catch (error) {
+      console.error("❌ Erreur connexion:", error);
+      
+      let message = "Erreur de connexion";
+      if (error.code === 'auth/user-not-found') {
+        message = "Utilisateur non trouvé";
+      } else if (error.code === 'auth/wrong-password') {
+        message = "Mot de passe incorrect";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "Email invalide";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Trop de tentatives. Réessayez plus tard.";
+      }
+      
+      showAuthError(message);
+    } finally {
+      if (loadingDiv) loadingDiv.style.display = "none";
+    }
+  });
+  
+  addSafeEventListener("logout-btn", "click", async () => {
+    try {
+      await signOut();
+      console.log("✅ Déconnexion réussie");
+    } catch (error) {
+      console.error("❌ Erreur déconnexion:", error);
+    }
+  });
+
+  // === RESTE DES EVENT LISTENERS ===
+  // Ajout de plongeur
+  addSafeEventListener("addForm", "submit", e => {
+    e.preventDefault();
+    const nom = $("nom").value.trim();
+    const niveau = $("niveau").value;
+    const pre = $("pre").value.trim();
+    if (!nom || !niveau) {
+      alert("Veuillez remplir le nom et le niveau du plongeur.");
+      return;
+    }
+    
+    const nouveauPlongeur = { nom, niveau, pre };
+    plongeurs.push(nouveauPlongeur);
+    plongeursOriginaux.push(nouveauPlongeur);
+    
+    $("nom").value = "";
+    $("niveau").value = "";
+    $("pre").value = "";
+    
+    syncToDatabase();
+  });
+
+  // Ajout de palanquée
+  addSafeEventListener("addPalanquee", "click", () => {
+    // Créer une nouvelle palanquée avec les propriétés par défaut
+    const nouvellePalanquee = [];
+    nouvellePalanquee.horaire = '';
+    nouvellePalanquee.profondeurPrevue = '';
+    nouvellePalanquee.dureePrevue = '';
+    nouvellePalanquee.profondeurRealisee = '';
+    nouvellePalanquee.dureeRealisee = '';
+    nouvellePalanquee.paliers = '';
+    
+    palanquees.push(nouvellePalanquee);
+    syncToDatabase();
+  });
+
+  // Export/Import JSON
+  addSafeEventListener("exportJSON", "click", exportToJSON);
+
+  addSafeEventListener("importJSON", "change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e2 => {
+      try {
+        const data = JSON.parse(e2.target.result);
+        
+        if (data.plongeurs && Array.isArray(data.plongeurs)) {
+          plongeurs = data.plongeurs.map(p => ({
+            nom: p.nom,
+            niveau: p.niveau,
+            pre: p.prerogatives || p.pre || ""
+          }));
+          
+          if (data.palanquees && Array.isArray(data.palanquees)) {
+            palanquees = data.palanquees.map(pal => 
+              pal.plongeurs ? pal.plongeurs.map(p => ({
+                nom: p.nom,
+                niveau: p.niveau,
+                pre: p.prerogatives || p.pre || ""
+              })) : pal
+            );
+          }
+        } else if (Array.isArray(data)) {
+          plongeurs = data;
         }
+        
+        plongeursOriginaux = [...plongeurs];
+        syncToDatabase();
+        alert("Import réussi !");
+      } catch (error) {
+        console.error("Erreur import:", error);
+        alert("Erreur lors de l'import du fichier JSON");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // PDF
+  addSafeEventListener("generatePDF", "click", generatePDFPreview);
+  addSafeEventListener("exportPDF", "click", exportToPDF);
+
+  // Sessions
+  addSafeEventListener("load-session", "click", async () => {
+    const sessionKey = $("session-selector").value;
+    if (!sessionKey) {
+      alert("Veuillez sélectionner une session à charger.");
+      return;
+    }
+    
+    const success = await loadSession(sessionKey);
+    if (!success) {
+      alert("Erreur lors du chargement de la session.");
+    }
+  });
+  
+  addSafeEventListener("refresh-sessions", "click", async () => {
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+  });
+
+  addSafeEventListener("save-session", "click", async () => {
+    await saveSessionData();
+    alert("Session sauvegardée !");
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+  });
+
+  // Test Firebase - CORRIGÉ
+  addSafeEventListener("test-firebase", "click", async () => {
+    console.log("🧪 === TEST FIREBASE COMPLET ===");
+    
+    try {
+      // Test 1: Vérification de la connexion
+      console.log("📡 Test 1: Vérification connexion Firebase");
+      console.log("Firebase connecté:", firebaseConnected);
+      console.log("Instance db:", db ? "✅ OK" : "❌ MANQUANTE");
+      
+      // Test 2: Lecture de sessions
+      console.log("📖 Test 2: Lecture /sessions");
+      const sessionsRead = await db.ref('sessions').once('value');
+      console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
+      if (sessionsRead.exists()) {
+        const sessions = sessionsRead.val();
+        console.log("Nombre de sessions:", Object.keys(sessions).length);
+      }
+      
+      // Test 3: Écriture test
+      console.log("✏️ Test 3: Écriture test");
+      const testData = {
+        timestamp: Date.now(),
+        test: true,
+        message: "Test depuis bouton"
+      };
+      await db.ref('test-button').set(testData);
+      console.log("✅ Écriture test OK");
+      
+      // Test 4: Lecture de ce qu'on vient d'écrire
+      console.log("📖 Test 4: Relecture test");
+      const testRead = await db.ref('test-button').once('value');
+      console.log("✅ Relecture OK:", testRead.val());
+      
+      // Test 5: Test des plongeurs et palanquées
+      console.log("📊 Test 5: Données actuelles");
+      console.log("Plongeurs en mémoire:", plongeurs.length);
+      console.log("Palanquées en mémoire:", palanquees.length);
+      
+      // Test 6: Sauvegarde session réelle
+      console.log("💾 Test 6: Test sauvegarde session");
+      await saveSessionData();
+      
+      // Test 7: Lecture finale
+      console.log("📖 Test 7: Vérification sessions après sauvegarde");
+      const finalRead = await db.ref('sessions').once('value');
+      if (finalRead.exists()) {
+        const sessions = finalRead.val();
+        console.log("✅ Sessions après sauvegarde:", Object.keys(sessions).length);
+      } else {
+        console.log("❌ Aucune session après sauvegarde");
+      }
+      
+      // Test 8: Nettoyage
+      console.log("🧹 Test 8: Nettoyage test");
+      await db.ref('test-button').remove();
+      console.log("✅ Nettoyage OK");
+      
+      console.log("🎉 === TOUS LES TESTS TERMINÉS ===");
+      alert("Test Firebase terminé avec succès !\n\nRegardez la console pour les détails.\n\n✅ Firebase fonctionne correctement !");
+      
+    } catch (error) {
+      console.error("❌ ERREUR TEST FIREBASE:", error);
+      console.error("Détails:", error.message);
+      console.error("Stack:", error.stack);
+      alert("❌ Erreur Firebase: " + error.message + "\n\nRegardez la console pour plus de détails.");
+    }
+  });
+
+  // Nettoyage
+  addSafeEventListener("select-all-sessions", "click", () => selectAllSessions(true));
+  addSafeEventListener("select-none-sessions", "click", () => selectAllSessions(false));
+  addSafeEventListener("delete-selected-sessions", "click", deleteSelectedSessions);
+  addSafeEventListener("refresh-sessions-list", "click", populateSessionsCleanupList);
+  
+  addSafeEventListener("select-all-dp", "click", () => selectAllDPs(true));
+  addSafeEventListener("select-none-dp", "click", () => selectAllDPs(false));
+  addSafeEventListener("delete-selected-dp", "click", deleteSelectedDPs);
+  addSafeEventListener("refresh-dp-list", "click", populateDPCleanupList);
+  
+  // Event delegation pour les changements
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("session-cleanup-checkbox") || 
+        e.target.classList.contains("dp-cleanup-checkbox")) {
+      updateCleanupSelection();
+    }
+    
+    if (e.target.classList.contains("plongeur-prerogatives-editable")) {
+      const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
+      const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
+      const newPrerogatives = e.target.value.trim();
+      
+      if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
+        palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
+        syncToDatabase();
+      }
+    }
+  });
+
+  // Contrôles de tri
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sortPlongeurs(btn.dataset.sort);
+    });
+  });
+
+  // Drag & drop pour la zone principale
+  const listePlongeurs = $("listePlongeurs");
+  
+  if (listePlongeurs) {
+    listePlongeurs.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      listePlongeurs.classList.add('drag-over');
     });
     
-    if (missingElements.length > 0) {
-        console.warn('⚠️ Éléments manquants:', missingElements);
+    listePlongeurs.addEventListener("dragleave", e => {
+      if (!listePlongeurs.contains(e.relatedTarget)) {
+        listePlongeurs.classList.remove('drag-over');
+      }
+    });
+    
+    listePlongeurs.addEventListener("drop", e => {
+      e.preventDefault();
+      listePlongeurs.classList.remove('drag-over');
+      
+      const data = e.dataTransfer.getData("text/plain");
+      
+      try {
+        const dragData = JSON.parse(data);
         
-        // Créer les éléments manquants si possible
-        if (missingElements.includes('palanquees-container')) {
-            createPalanqueesContainer();
+        if (dragData.type === "fromPalanquee") {
+          if (palanquees[dragData.palanqueeIndex] && 
+              palanquees[dragData.palanqueeIndex][dragData.plongeurIndex]) {
+            
+            const plongeur = palanquees[dragData.palanqueeIndex].splice(dragData.plongeurIndex, 1)[0];
+            plongeurs.push(plongeur);
+            plongeursOriginaux.push(plongeur);
+            syncToDatabase();
+          }
         }
+      } catch (error) {
+        console.log("📝 Erreur parsing:", error);
+      }
+    });
+  }
+
+  // Gestionnaire de validation DP
+  addSafeEventListener("valider-dp", "click", () => {
+    const nomDP = $("dp-nom")?.value?.trim() || "";
+    const date = $("dp-date")?.value || "";
+    const lieu = $("dp-lieu")?.value?.trim() || "";
+    const plongee = $("dp-plongee")?.value || "";
+
+    if (!nomDP || !date || !lieu || !plongee) {
+      alert("Veuillez remplir tous les champs du DP.");
+      return;
+    }
+
+    const dpData = {
+      nom: nomDP,
+      date: date,
+      lieu: lieu,
+      plongee: plongee,
+      timestamp: Date.now()
+    };
+
+    const dpKey = `dpInfo/${date}_${plongee}`;
+    
+    const dpMessage = $("dp-message");
+    if (dpMessage) {
+      dpMessage.textContent = "Enregistrement en cours...";
+      dpMessage.style.color = "orange";
     }
     
-    return missingElements.length === 0;
-}
-
-// Initialisation avec vérification
-function initializeApp() {
-    console.log('🚀 Initialisation de l\'application...');
-    
-    // Vérifier les éléments DOM
-    const domOk = checkDOMElements();
-    
-    if (domOk) {
-        console.log('✅ DOM vérifié, configuration des événements...');
-        setupEventListeners();
-        console.log('✅ Application initialisée avec succès!');
-    } else {
-        console.warn('⚠️ DOM incomplet, retry dans 1 seconde...');
-        setTimeout(initializeApp, 1000);
-    }
-}
-
-// Lancement quand le DOM est prêt
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-    initializeApp();
+    db.ref(dpKey).set(dpData)
+      .then(() => {
+        if (dpMessage) {
+          dpMessage.classList.add("success-icon");
+          dpMessage.textContent = ` Informations du DP enregistrées avec succès.`;
+          dpMessage.style.color = "green";
+        }
+      })
+      .catch((error) => {
+        if (dpMessage) {
+          dpMessage.classList.remove("success-icon");
+          dpMessage.textContent = "Erreur lors de l'enregistrement : " + error.message;
+          dpMessage.style.color = "red";
+        }
+      });
+  });
 }
 
 // Fonction helper pour afficher les erreurs d'authentification

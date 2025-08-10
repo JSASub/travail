@@ -59,83 +59,184 @@ function renderPlongeurs() {
   updateCompteurs();
 }
 
-// Dans render-dom.js, modifiez la fonction renderPalanquees
-
-function renderPalanquees(sessionData) {
-    const container = document.getElementById('palanquees-container');
-    if (!container) {
-        console.error('Container palanquees-container non trouvé');
-        return;
-    }
-
-    container.innerHTML = '';
-
-    if (!sessionData || !sessionData.palanquees) {
-        container.innerHTML = '<div class="no-data">Aucune palanquée trouvée</div>';
-        return;
-    }
-
-    // 🔧 FIX: Convertir l'objet en tableau si nécessaire
-    let palanqueesArray = sessionData.palanquees;
+function renderPalanquees() {
+  const container = $("palanqueesContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  if (palanquees.length === 0) return;
+  
+  palanquees.forEach((palanquee, idx) => {
+    const div = document.createElement("div");
+    div.className = "palanquee";
+    div.dataset.index = idx;
+    div.dataset.alert = checkAlert(palanquee) ? "true" : "false";
     
-    // Vérifier si c'est un objet avec des clés numériques au lieu d'un tableau
-    if (palanqueesArray && typeof palanqueesArray === 'object' && !Array.isArray(palanqueesArray)) {
-        console.log('🔄 Conversion objet vers tableau pour palanquées');
+    div.innerHTML = `
+      <div class="palanquee-title">
+        <span>Palanquée ${idx + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
+        <span class="remove-palanquee" style="color: red; cursor: pointer;">❌</span>
+      </div>
+    `;
+    
+    if (palanquee.length === 0) {
+      const emptyMsg = document.createElement("div");
+      emptyMsg.className = "palanquee-empty";
+      emptyMsg.textContent = "Glissez des plongeurs ici ⬇️";
+      div.appendChild(emptyMsg);
+    } else {
+      const plongeursList = document.createElement("ul");
+      plongeursList.className = "palanquee-plongeurs-list";
+      
+      palanquee.forEach((plg, plongeurIndex) => {
+        const li = document.createElement("li");
+        li.className = "plongeur-item palanquee-plongeur-item";
+        li.draggable = true;
         
-        // Extraire les valeurs qui sont des objets (ignorer les autres propriétés)
-        const values = Object.values(palanqueesArray).filter(item => 
-            typeof item === 'object' && item !== null && !Array.isArray(item)
-        );
+        li.innerHTML = `
+          <div class="plongeur-content">
+            <span class="plongeur-nom">${plg.nom}</span>
+            <span class="plongeur-niveau">${plg.niveau}</span>
+            <input type="text" class="plongeur-prerogatives-editable" 
+                   value="${plg.pre || ''}" 
+                   placeholder="PE20, PA40..."
+                   data-palanquee-idx="${idx}"
+                   data-plongeur-idx="${plongeurIndex}"
+                   title="Cliquez pour modifier les prérogatives">
+            <span class="return-plongeur" 
+                  data-palanquee-idx="${idx}"
+                  data-plongeur-idx="${plongeurIndex}"
+                  title="Remettre dans la liste">⬅️</span>
+          </div>
+        `;
         
-        palanqueesArray = values;
+        // Event listener pour drag & drop
+        li.addEventListener("dragstart", e => {
+          li.classList.add('dragging');
+          e.dataTransfer.setData("text/plain", JSON.stringify({
+            type: "fromPalanquee",
+            palanqueeIndex: idx,
+            plongeurIndex: plongeurIndex,
+            plongeur: plg
+          }));
+          e.dataTransfer.effectAllowed = "move";
+        });
+        
+        li.addEventListener("dragend", e => {
+          li.classList.remove('dragging');
+        });
+        
+        plongeursList.appendChild(li);
+      });
+      
+      div.appendChild(plongeursList);
     }
 
-    // Vérifier que c'est maintenant un tableau
-    if (!Array.isArray(palanqueesArray)) {
-        console.error('❌ palanqueesArray n\'est toujours pas un tableau:', palanqueesArray);
-        container.innerHTML = '<div class="error">Erreur: format de données invalide</div>';
-        return;
-    }
+    // Ajouter les détails de la palanquée APRÈS la liste des plongeurs (toujours présents)
+    const detailsDiv = document.createElement("div");
+    detailsDiv.className = "palanquee-details";
+    detailsDiv.innerHTML = `
+      <div class="detail-row">
+        <label>Horaire mise à l'eau:</label>
+        <input type="time" class="palanquee-horaire" data-palanquee-idx="${idx}" value="${palanquee.horaire || ''}" placeholder="HH:MM">
+      </div>
+      <div class="detail-row">
+        <label>Profondeur prévue (m):</label>
+        <input type="number" class="palanquee-prof-prevue" data-palanquee-idx="${idx}" value="${palanquee.profondeurPrevue || ''}" placeholder="ex: 20" min="0" max="100">
+        <label>Durée prévue (min):</label>
+        <input type="number" class="palanquee-duree-prevue" data-palanquee-idx="${idx}" value="${palanquee.dureePrevue || ''}" placeholder="ex: 45" min="0" max="120">
+      </div>
+      <div class="detail-row">
+        <label>Profondeur réalisée (m):</label>
+        <input type="number" class="palanquee-prof-realisee" data-palanquee-idx="${idx}" value="${palanquee.profondeurRealisee || ''}" placeholder="ex: 18" min="0" max="100">
+        <label>Durée réalisée (min):</label>
+        <input type="number" class="palanquee-duree-realisee" data-palanquee-idx="${idx}" value="${palanquee.dureeRealisee || ''}" placeholder="ex: 42" min="0" max="120">
+      </div>
+      <div class="detail-row paliers-row">
+        <label>Paliers effectués:</label>
+        <input type="text" class="palanquee-paliers" data-palanquee-idx="${idx}" value="${palanquee.paliers || ''}" placeholder="ex: 3min à 3m, 5min à 6m" style="flex: 1; min-width: 200px;">
+      </div>
+    `;
+    
+    div.appendChild(detailsDiv);
 
-    console.log(`✅ Rendu ${palanqueesArray.length} palanquées`);
-
-    palanqueesArray.forEach((palanquee, index) => {
-        // Vérifier que chaque palanquée est un objet valide
-        if (!palanquee || typeof palanquee !== 'object') {
-            console.warn(`⚠️ Palanquée ${index} invalide:`, palanquee);
-            return;
-        }
-
-        // Continuer avec le rendu normal de chaque palanquée
-        const palanqueeElement = createPalanqueeElement(palanquee, index);
-        container.appendChild(palanqueeElement);
-        
-        // Vérifier les alertes pour cette palanquée
-        checkAlert(palanquee, index);
+    // Event listeners
+    div.querySelector(".remove-palanquee").addEventListener("click", () => {
+      if (confirm(`Supprimer la palanquée ${idx + 1} ?`)) {
+        // Remettre tous les plongeurs dans la liste principale
+        palanquee.forEach(plg => {
+          plongeurs.push(plg);
+          plongeursOriginaux.push(plg);
+        });
+        palanquees.splice(idx, 1);
+        syncToDatabase();
+      }
     });
+
+    div.addEventListener("drop", e => {
+      e.preventDefault();
+      div.classList.remove('drag-over');
+      
+      const data = e.dataTransfer.getData("text/plain");
+      
+      try {
+        const dragData = JSON.parse(data);
+        
+        if (dragData.type === "fromPalanquee") {
+          if (dragData.palanqueeIndex !== undefined && 
+              dragData.plongeurIndex !== undefined && 
+              palanquees[dragData.palanqueeIndex] &&
+              palanquees[dragData.palanqueeIndex][dragData.plongeurIndex]) {
+            
+            const sourcePalanquee = palanquees[dragData.palanqueeIndex];
+            const plongeur = sourcePalanquee.splice(dragData.plongeurIndex, 1)[0];
+            palanquee.push(plongeur);
+            syncToDatabase();
+          }
+          return;
+        }
+        
+        if (dragData.type === "fromMainList") {
+          const plongeurToMove = dragData.plongeur;
+          
+          const indexToRemove = plongeurs.findIndex(p => 
+            p.nom === plongeurToMove.nom && p.niveau === plongeurToMove.niveau
+          );
+          
+          if (indexToRemove !== -1) {
+            plongeurs.splice(indexToRemove, 1);
+            palanquee.push(plongeurToMove);
+            syncToDatabase();
+          }
+          return;
+        }
+        
+      } catch (error) {
+        console.error("❌ Erreur parsing données drag:", error);
+      }
+    });
+
+    // Drag & drop amélioré
+    div.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      div.classList.add('drag-over');
+    });
+    
+    div.addEventListener("dragleave", e => {
+      if (!div.contains(e.relatedTarget)) {
+        div.classList.remove('drag-over');
+      }
+    });
+
+    container.appendChild(div);
+  });
+  
+  setupPalanqueesEventListeners();
+  updateCompteurs();
 }
 
-// Fonction utilitaire pour normaliser les données de palanquées
-function normalizePalanqueesData(palanqueesData) {
-    if (!palanqueesData) return [];
-    
-    if (Array.isArray(palanqueesData)) {
-        return palanqueesData;
-    }
-    
-    if (typeof palanqueesData === 'object') {
-        // Convertir objet en tableau, en filtrant les vraies palanquées
-        return Object.values(palanqueesData).filter(item => 
-            typeof item === 'object' && 
-            item !== null && 
-            !Array.isArray(item) &&
-            // Vérifier que l'objet a des propriétés de palanquée
-            (item.hasOwnProperty('dureePrevue') || item.hasOwnProperty('profondeurPrevue'))
-        );
-    }
-    
-    return [];
-}
 function setupPalanqueesEventListeners() {
   // Event delegation pour les boutons de retour
   document.addEventListener("click", (e) => {
