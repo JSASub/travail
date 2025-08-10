@@ -20,7 +20,10 @@ let firebaseConnected = false;
 let pageLoadTime = Date.now();
 
 // Firebase instances
-let app, db;
+let app, db, auth;
+
+// État d'authentification
+let currentUser = null;
 
 // DOM helpers
 function $(id) {
@@ -43,11 +46,60 @@ function initializeFirebase() {
   try {
     app = firebase.initializeApp(firebaseConfig);
     db = firebase.database();
+    auth = firebase.auth();
+    
     console.log("✅ Firebase initialisé");
+    
+    // Écouter les changements d'authentification
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        console.log("✅ Utilisateur connecté:", user.email);
+        currentUser = user;
+        showMainApp();
+        updateUserInfo(user);
+      } else {
+        console.log("❌ Utilisateur non connecté");
+        currentUser = null;
+        showAuthContainer();
+      }
+    });
+    
     return true;
   } catch (error) {
     console.error("❌ Erreur initialisation Firebase:", error);
     return false;
+  }
+}
+
+// Fonctions d'authentification
+function signIn(email, password) {
+  return auth.signInWithEmailAndPassword(email, password);
+}
+
+function signOut() {
+  return auth.signOut();
+}
+
+function showAuthContainer() {
+  const authContainer = $("auth-container");
+  const mainApp = $("main-app");
+  
+  if (authContainer) authContainer.style.display = "block";
+  if (mainApp) mainApp.style.display = "none";
+}
+
+function showMainApp() {
+  const authContainer = $("auth-container");
+  const mainApp = $("main-app");
+  
+  if (authContainer) authContainer.style.display = "none";
+  if (mainApp) mainApp.style.display = "block";
+}
+
+function updateUserInfo(user) {
+  const userInfo = $("user-info");
+  if (userInfo) {
+    userInfo.textContent = `Connecté : ${user.email}`;
   }
 }
 
