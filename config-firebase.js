@@ -51,12 +51,18 @@ function initializeFirebase() {
     console.log("✅ Firebase initialisé");
     
     // Écouter les changements d'authentification
-    auth.onAuthStateChanged((user) => {
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
         console.log("✅ Utilisateur connecté:", user.email);
         currentUser = user;
         showMainApp();
         updateUserInfo(user);
+        
+        // Charger les données uniquement si on vient de se connecter (pas au démarrage)
+        if (document.readyState === 'complete') {
+          console.log("🔄 Chargement des données après connexion...");
+          await initializeAppData();
+        }
       } else {
         console.log("❌ Utilisateur non connecté");
         currentUser = null;
