@@ -1249,10 +1249,11 @@ function showAuthError(message) {
 
 // ===== INITIALISATION =====
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 Application Palanquées JSAS v2.1.0 - Chargement...");
+  console.log("🚀 Application Palanquées JSAS v2.5.0 - Chargement...");
   
   try {
     // Initialisation Firebase
+    console.log("🔧 Initialisation Firebase...");
     const firebaseInitialized = initializeFirebase();
     
     if (!firebaseInitialized) {
@@ -1260,6 +1261,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
     // Setup des event listeners (toujours faire ça en premier)
+    console.log("🎯 Configuration des event listeners...");
     setupEventListeners();
     
     // Attendre que Firebase Auth soit prêt
@@ -1273,15 +1275,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
     
-    // Timeout de 5 secondes maximum
+    // Timeout de 10 secondes maximum (augmenté)
     const timeoutPromise = new Promise((resolve) => {
-      setTimeout(() => resolve(null), 5000);
+      setTimeout(() => resolve(null), 10000);
     });
     
     const user = await Promise.race([authPromise, timeoutPromise]);
     
     if (user) {
-      console.log("✅ Utilisateur déjà connecté, chargement de l'application...");
+      console.log("✅ Utilisateur déjà connecté:", user.email);
       await initializeAppData();
     } else {
       console.log("ℹ️ Pas d'utilisateur connecté, affichage de la connexion");
@@ -1289,15 +1291,107 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
   } catch (error) {
-    console.error("❌ ERREUR CRITIQUE:", error);
+    console.error("❌ ERREUR CRITIQUE lors de l'initialisation:", error);
+    console.error("Stack trace complète:", error.stack);
+    
+    // Forcer l'affichage de la connexion
     showAuthContainer();
-    showAuthError("Erreur d'initialisation de l'application");
+    
+    // Afficher l'erreur
+    const authError = $("auth-error");
+    if (authError) {
+      authError.textContent = "Erreur d'initialisation de l'application: " + error.message;
+      authError.style.display = "block";
+    }
+    
+    // Essayer de configurer les event listeners même en cas d'erreur
+    try {
+      setupEventListeners();
+    } catch (eventError) {
+      console.error("❌ Erreur configuration event listeners:", eventError);
+    }
   }
 });
+
+// Fonction helper pour gérer les erreurs de façon plus robuste
+function handleError(error, context = "Application") {
+  console.error(`❌ Erreur ${context}:`, error);
+  
+  if (error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
+  
+  // Log des informations de debug
+  console.log("Debug info:", {
+    firebaseConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined',
+    currentUser: typeof currentUser !== 'undefined' ? (currentUser ? currentUser.email : 'null') : 'undefined',
+    plongeursLength: Array.isArray(plongeurs) ? plongeurs.length : 'not array',
+    palanqueesLength: Array.isArray(palanquees) ? palanquees.length : 'not array'
+  });
+  
+  return false;
+}
+
+// Correction de testFirebaseConnection pour être plus robuste
+async function testFirebaseConnection() {
+  try {
+    console.log("🧪 Test de connexion Firebase...");
+    
+    // Vérifier que les instances existent
+    if (!db) {
+      throw new Error("Instance Firebase Database non initialisée");
+    }
+    
+    if (!auth) {
+      throw new Error("Instance Firebase Auth non initialisée");
+    }
+    
+    // Test de connexion réseau
+    const testRef = db.ref('.info/connected');
+    const connectedPromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        testRef.off('value');
+        reject(new Error("Timeout test connexion Firebase"));
+      }, 5000);
+      
+      testRef.on('value', (snapshot) => {
+        clearTimeout(timeout);
+        testRef.off('value');
+        
+        firebaseConnected = snapshot.val() === true;
+        console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
+        resolve(firebaseConnected);
+      });
+    });
+    
+    await connectedPromise;
+    
+    // Test d'écriture simple
+    if (firebaseConnected) {
+      await db.ref('test').set({ 
+        timestamp: Date.now(),
+        testType: "connection-check"
+      });
+      console.log("✅ Test d'écriture Firebase réussi");
+      
+      // Nettoyer le test
+      await db.ref('test').remove();
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Test Firebase échoué:", error.message);
+    firebaseConnected = false;
+    return false;
+  }
+}
 
 // Fonction séparée pour initialiser les données de l'application
 async function initializeAppData() {
   try {
+    console.log("🔄 Initialisation des données de l'application...");
+    
     // Test de connexion Firebase
     await testFirebaseConnection();
     
@@ -1325,6 +1419,10 @@ async function initializeAppData() {
           dpMessage.textContent = "Informations du jour chargées.";
           dpMessage.style.color = "blue";
         }
+        
+        console.log("✅ Informations DP du jour chargées");
+      } else {
+        console.log("ℹ️ Aucune information DP pour aujourd'hui");
       }
     } catch (error) {
       console.error("❌ Erreur chargement DP:", error);
@@ -1332,35 +1430,92 @@ async function initializeAppData() {
 
     // Chargement historique et données
     console.log("📜 Chargement des données...");
-    chargerHistoriqueDP();
-    await loadFromFirebase();
-    await populateSessionSelector();
-    await populateSessionsCleanupList();
-    await populateDPCleanupList();
+    
+    // Chargement de l'historique DP
+    try {
+      chargerHistoriqueDP();
+      console.log("✅ Historique DP chargé");
+    } catch (error) {
+      console.error("❌ Erreur chargement historique DP:", error);
+    }
+    
+    // Chargement des données Firebase (plongeurs et palanquées)
+    try {
+      await loadFromFirebase();
+      console.log("✅ Données Firebase chargées");
+    } catch (error) {
+      console.error("❌ Erreur chargement Firebase:", error);
+      // Mode dégradé
+      plongeurs = [];
+      palanquees = [];
+      plongeursOriginaux = [];
+    }
+    
+    // Chargement des sessions
+    try {
+      await populateSessionSelector();
+      console.log("✅ Sessions chargées");
+    } catch (error) {
+      console.error("❌ Erreur chargement sessions:", error);
+    }
+    
+    try {
+      await populateSessionsCleanupList();
+      console.log("✅ Liste nettoyage sessions chargée");
+    } catch (error) {
+      console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+    }
+    
+    try {
+      await populateDPCleanupList();
+      console.log("✅ Liste nettoyage DP chargée");
+    } catch (error) {
+      console.error("❌ Erreur chargement liste nettoyage DP:", error);
+    }
     
     // Vérification du bouton test Firebase
     const testButton = $("test-firebase");
     if (testButton) {
       console.log("✅ Bouton test Firebase trouvé");
     } else {
-      console.error("❌ Bouton test Firebase non trouvé dans le DOM");
+      console.warn("⚠️ Bouton test Firebase non trouvé dans le DOM");
     }
+    
+    // Rendu initial
+    renderPalanquees();
+    renderPlongeurs();
+    updateAlertes();
+    updateCompteurs();
     
     console.log("✅ Application initialisée!");
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
     
   } catch (error) {
     console.error("❌ Erreur initialisation données:", error);
+    console.error("Stack trace:", error.stack);
     
-    // Mode dégradé
-    plongeurs = [];
-    palanquees = [];
-    plongeursOriginaux = [];
+    // Mode dégradé - s'assurer que les variables sont initialisées
+    if (!Array.isArray(plongeurs)) plongeurs = [];
+    if (!Array.isArray(palanquees)) palanquees = [];
+    if (!Array.isArray(plongeursOriginaux)) plongeursOriginaux = [];
     
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
+    // Rendu en mode dégradé
+    try {
+      renderPalanquees();
+      renderPlongeurs();
+      updateAlertes();
+      updateCompteurs();
+    } catch (renderError) {
+      console.error("❌ Erreur rendu en mode dégradé:", renderError);
+    }
     
-    showAuthError("Erreur de chargement des données. Mode local activé.");
+    // Afficher l'erreur à l'utilisateur si possible
+    const authError = $("auth-error");
+    if (authError) {
+      authError.textContent = "Erreur de chargement des données. Mode local activé.";
+      authError.style.display = "block";
+    }
+    
+    alert("Erreur de chargement. L'application fonctionne en mode dégradé.\n\nVeuillez actualiser la page ou contacter l'administrateur.");
   }
 }
