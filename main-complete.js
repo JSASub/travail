@@ -537,7 +537,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
-    doc.text('                       Palanquées: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('                         Palanquées: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
@@ -1157,6 +1157,45 @@ document.addEventListener("DOMContentLoaded", async () => {
       throw new Error("Échec de l'initialisation Firebase");
     }
     
+    // Setup des event listeners (toujours faire ça en premier)
+    setupEventListeners();
+    
+    // Attendre que Firebase Auth soit prêt
+    console.log("⏳ Attente de Firebase Auth...");
+    
+    // Firebase Auth peut prendre du temps, on attend un utilisateur ou un timeout
+    const authPromise = new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe(); // Se désabonner après la première réponse
+        resolve(user);
+      });
+    });
+    
+    // Timeout de 5 secondes maximum
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => resolve(null), 5000);
+    });
+    
+    const user = await Promise.race([authPromise, timeoutPromise]);
+    
+    if (user) {
+      console.log("✅ Utilisateur déjà connecté, chargement de l'application...");
+      await initializeAppData();
+    } else {
+      console.log("ℹ️ Pas d'utilisateur connecté, affichage de la connexion");
+      showAuthContainer();
+    }
+    
+  } catch (error) {
+    console.error("❌ ERREUR CRITIQUE:", error);
+    showAuthContainer();
+    showAuthError("Erreur d'initialisation de l'application");
+  }
+});
+
+// Fonction séparée pour initialiser les données de l'application
+async function initializeAppData() {
+  try {
     // Test de connexion Firebase
     await testFirebaseConnection();
     
@@ -1190,14 +1229,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Chargement historique et données
+    console.log("📜 Chargement des données...");
     chargerHistoriqueDP();
     await loadFromFirebase();
     await populateSessionSelector();
     await populateSessionsCleanupList();
     await populateDPCleanupList();
-    
-    // Setup event listeners
-    setupEventListeners();
     
     // Vérification du bouton test Firebase
     const testButton = $("test-firebase");
@@ -1211,7 +1248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
     
   } catch (error) {
-    console.error("❌ ERREUR CRITIQUE:", error);
+    console.error("❌ Erreur initialisation données:", error);
     
     // Mode dégradé
     plongeurs = [];
@@ -1221,8 +1258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderPalanquees();
     renderPlongeurs();
     updateAlertes();
-    setupEventListeners();
     
-    alert("Erreur de connexion Firebase. Mode local uniquement.");
+    showAuthError("Erreur de chargement des données. Mode local activé.");
   }
-});
+}
