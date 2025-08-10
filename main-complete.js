@@ -783,6 +783,57 @@ function exportToPDF() {
 
 // ===== EVENT HANDLERS =====
 function setupEventListeners() {
+  // === AUTHENTIFICATION ===
+  addSafeEventListener("login-form", "submit", async (e) => {
+    e.preventDefault();
+    
+    const email = $("login-email").value.trim();
+    const password = $("login-password").value;
+    const errorDiv = $("auth-error");
+    const loadingDiv = $("auth-loading");
+    
+    if (!email || !password) {
+      showAuthError("Veuillez remplir tous les champs");
+      return;
+    }
+    
+    try {
+      if (loadingDiv) loadingDiv.style.display = "block";
+      if (errorDiv) errorDiv.style.display = "none";
+      
+      await signIn(email, password);
+      console.log("✅ Connexion réussie");
+      
+    } catch (error) {
+      console.error("❌ Erreur connexion:", error);
+      
+      let message = "Erreur de connexion";
+      if (error.code === 'auth/user-not-found') {
+        message = "Utilisateur non trouvé";
+      } else if (error.code === 'auth/wrong-password') {
+        message = "Mot de passe incorrect";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "Email invalide";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Trop de tentatives. Réessayez plus tard.";
+      }
+      
+      showAuthError(message);
+    } finally {
+      if (loadingDiv) loadingDiv.style.display = "none";
+    }
+  });
+  
+  addSafeEventListener("logout-btn", "click", async () => {
+    try {
+      await signOut();
+      console.log("✅ Déconnexion réussie");
+    } catch (error) {
+      console.error("❌ Erreur déconnexion:", error);
+    }
+  });
+
+  // === RESTE DES EVENT LISTENERS ===
   // Ajout de plongeur
   addSafeEventListener("addForm", "submit", e => {
     e.preventDefault();
@@ -1083,6 +1134,15 @@ function setupEventListeners() {
         }
       });
   });
+}
+
+// Fonction helper pour afficher les erreurs d'authentification
+function showAuthError(message) {
+  const errorDiv = $("auth-error");
+  if (errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = "block";
+  }
 }
 
 // ===== INITIALISATION =====
