@@ -67,6 +67,44 @@ function renderPalanquees() {
   
   if (palanquees.length === 0) return;
   
+  // NOUVELLE VÉRIFICATION : S'assurer que toutes les palanquées sont des tableaux
+  palanquees = palanquees.map((palanquee, idx) => {
+    if (!Array.isArray(palanquee)) {
+      console.warn(`⚠️ Correction palanquée ${idx + 1} dans renderPalanquees`);
+      
+      if (palanquee && typeof palanquee === 'object') {
+        const nouveauTableau = [];
+        
+        // Extraire les plongeurs
+        Object.keys(palanquee).forEach(key => {
+          if (!isNaN(key) && palanquee[key] && typeof palanquee[key] === 'object' && palanquee[key].nom) {
+            nouveauTableau.push(palanquee[key]);
+          }
+        });
+        
+        // Préserver les propriétés
+        nouveauTableau.horaire = palanquee.horaire || '';
+        nouveauTableau.profondeurPrevue = palanquee.profondeurPrevue || '';
+        nouveauTableau.dureePrevue = palanquee.dureePrevue || '';
+        nouveauTableau.profondeurRealisee = palanquee.profondeurRealisee || '';
+        nouveauTableau.dureeRealisee = palanquee.dureeRealisee || '';
+        nouveauTableau.paliers = palanquee.paliers || '';
+        
+        return nouveauTableau;
+      } else {
+        // Palanquée vide
+        const nouveauTableau = [];
+        nouveauTableau.horaire = '';
+        nouveauTableau.profondeurPrevue = '';
+        nouveauTableau.dureePrevue = '';
+        nouveauTableau.profondeurRealisee = '';
+        nouveauTableau.dureeRealisee = '';
+        nouveauTableau.paliers = '';
+        return nouveauTableau;
+      }
+    }
+    return palanquee;
+  });
   palanquees.forEach((palanquee, idx) => {
     const div = document.createElement("div");
     div.className = "palanquee";
