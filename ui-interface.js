@@ -77,6 +77,30 @@ function checkAlert(palanquee) {
   // Vérifier que palanquee est bien un tableau
   if (!Array.isArray(palanquee)) {
     console.warn("⚠️ checkAlert: palanquee n'est pas un tableau:", palanquee);
+    
+    // Si c'est un objet, essayer de le convertir à la volée
+    if (palanquee && typeof palanquee === 'object') {
+      const plongeursArray = [];
+      Object.keys(palanquee).forEach(key => {
+        if (!isNaN(key) && palanquee[key] && typeof palanquee[key] === 'object' && palanquee[key].nom) {
+          plongeursArray.push(palanquee[key]);
+        }
+      });
+      
+      // Utiliser le tableau converti pour la vérification
+      const n1s = plongeursArray.filter(p => p && p.niveau === "N1");
+      const gps = plongeursArray.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+      const autonomes = plongeursArray.filter(p => p && ["N2", "N3"].includes(p.niveau));
+      
+      return (
+        plongeursArray.length > 5 ||
+        plongeursArray.length <= 1 ||
+        (n1s.length > 0 && gps.length === 0) ||
+        autonomes.length > 3 ||
+        ((plongeursArray.length === 4 || plongeursArray.length === 5) && gps.length === 0)
+      );
+    }
+    
     return false;
   }
   
