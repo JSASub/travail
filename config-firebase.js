@@ -1,361 +1,61 @@
-// config-firebase.js - Configuration Firebase et services de base
+// Dans config-firebase.js - Vérifier que tous les imports sont présents
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { 
+    getFirestore, 
+    collection, 
+    doc,           // ← AJOUT MANQUANT
+    getDoc,        // ← AJOUT MANQUANT
+    getDocs, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    query, 
+    orderBy, 
+    where, 
+    onSnapshot 
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // Configuration Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
-  authDomain: "palanquees-jsas.firebaseapp.com",
-  databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "palanquees-jsas",
-  storageBucket: "palanquees-jsas.firebasestorage.app",
-  messagingSenderId: "284449736616",
-  appId: "1:284449736616:web:a0949a9b669def06323f9d"
+    apiKey: "AIzaSyBvOH_4Qmwn_Xu5qBG7mEbmfXDTFLW5g-A",
+    authDomain: "plongee-carnet.firebaseapp.com",
+    projectId: "plongee-carnet",
+    storageBucket: "plongee-carnet.firebasestorage.app",
+    messagingSenderId: "912594107524",
+    appId: "1:912594107524:web:78f49aee15f7d8e0c5b5b0"
 };
 
-// Variables globales
-let plongeurs = [];
-let palanquees = [];
-let plongeursOriginaux = [];
-let currentSort = 'none';
-let firebaseConnected = false;
-let pageLoadTime = Date.now();
-
-// Firebase instances
-let app, db, auth;
-
-// État d'authentification
-let currentUser = null;
-
-// DOM helpers
-function $(id) {
-  return document.getElementById(id);
-}
-
-function addSafeEventListener(elementId, event, callback) {
-  const element = $(elementId);
-  if (element) {
-    element.addEventListener(event, callback);
-    return true;
-  } else {
-    console.warn(`⚠️ Élément '${elementId}' non trouvé - event listener ignoré`);
-    return false;
-  }
-}
-
 // Initialisation Firebase
-function initializeFirebase() {
-  try {
-    app = firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    auth = firebase.auth();
-    
-    console.log("✅ Firebase initialisé");
-    
-    // Écouter les changements d'authentification
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log("✅ Utilisateur connecté:", user.email);
-        currentUser = user;
-        showMainApp();
-        updateUserInfo(user);
-        
-        // Charger les données uniquement si on vient de se connecter (pas au démarrage)
-        if (document.readyState === 'complete') {
-          console.log("🔄 Chargement des données après connexion...");
-          await initializeAppData();
-        }
-      } else {
-        console.log("❌ Utilisateur non connecté");
-        currentUser = null;
-        showAuthContainer();
-      }
-    });
-    
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur initialisation Firebase:", error);
-    return false;
-  }
-}
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Fonctions d'authentification
-function signIn(email, password) {
-  return auth.signInWithEmailAndPassword(email, password);
-}
-
-function signOut() {
-  return auth.signOut();
-}
-
-function showAuthContainer() {
-  const authContainer = $("auth-container");
-  const mainApp = $("main-app");
-  const loadingScreen = $("loading-screen");
-  
-  if (loadingScreen) loadingScreen.style.display = "none";
-  if (authContainer) authContainer.style.display = "block";
-  if (mainApp) mainApp.style.display = "none";
-}
-
-function showMainApp() {
-  const authContainer = $("auth-container");
-  const mainApp = $("main-app");
-  const loadingScreen = $("loading-screen");
-  
-  if (loadingScreen) loadingScreen.style.display = "none";
-  if (authContainer) authContainer.style.display = "none";
-  if (mainApp) mainApp.style.display = "block";
-}
-
-function updateUserInfo(user) {
-  const userInfo = $("user-info");
-  if (userInfo) {
-    userInfo.textContent = `Connecté : ${user.email}`;
-  }
-}
-
-// Test de connexion Firebase
+// Fonction pour tester la connexion Firebase
 async function testFirebaseConnection() {
-  try {
-    const testRef = db.ref('.info/connected');
-    testRef.on('value', (snapshot) => {
-      firebaseConnected = snapshot.val() === true;
-      console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
-    });
-    
-    await db.ref('test').set({ timestamp: Date.now() });
-    console.log("✅ Test d'écriture Firebase réussi");
-    return true;
-  } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
-    return false;
-  }
-}
-
-// Chargement des données depuis Firebase
-async function loadFromFirebase() {
-  try {
-    console.log("📥 Chargement des données depuis Firebase...");
-    
-    const plongeursSnapshot = await db.ref('plongeurs').once('value');
-    if (plongeursSnapshot.exists()) {
-      plongeurs = plongeursSnapshot.val() || [];
-      console.log("✅ Plongeurs chargés:", plongeurs.length);
-    }
-    
-    const palanqueesSnapshot = await db.ref('palanquees').once('value');
-    if (palanqueesSnapshot.exists()) {
-      const rawPalanquees = palanqueesSnapshot.val() || [];
-      
-      // Nettoyer et corriger les palanquées pour assurer la compatibilité
-      palanquees = rawPalanquees.map((pal, index) => {
-        // Vérifier si la palanquée est un tableau ou un objet
-        if (Array.isArray(pal)) {
-          // C'est déjà un tableau, juste ajouter les propriétés manquantes
-          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
-          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
-          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
-          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
-          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
-          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
-          return pal;
-        } else if (pal && typeof pal === 'object') {
-          // C'est un objet, extraire les plongeurs et les propriétés
-          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
-          
-          const nouveauTableau = [];
-          
-          // Extraire les plongeurs (propriétés numériques)
-          Object.keys(pal).forEach(key => {
-            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
-              nouveauTableau.push(pal[key]);
-            }
-          });
-          
-          // Ajouter les propriétés de palanquée
-          nouveauTableau.horaire = pal.horaire || '';
-          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
-          nouveauTableau.dureePrevue = pal.dureePrevue || '';
-          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
-          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
-          nouveauTableau.paliers = pal.paliers || '';
-          
-          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
-          return nouveauTableau;
-        } else {
-          // Cas inattendu, créer une palanquée vide
-          console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
-          const nouveauTableau = [];
-          nouveauTableau.horaire = '';
-          nouveauTableau.profondeurPrevue = '';
-          nouveauTableau.dureePrevue = '';
-          nouveauTableau.profondeurRealisee = '';
-          nouveauTableau.dureeRealisee = '';
-          nouveauTableau.paliers = '';
-          return nouveauTableau;
-        }
-      });
-      
-      console.log("✅ Palanquées chargées:", palanquees.length);
-    }
-    
-    plongeursOriginaux = [...plongeurs];
-    
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement Firebase:", error);
-  }
-}
-
-// Sauvegarde Firebase
-async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
-  
-  plongeursOriginaux = [...plongeurs];
-  
-  renderPalanquees();
-  renderPlongeurs();
-  updateAlertes();
-  
-  if (firebaseConnected) {
     try {
-      await Promise.all([
-        db.ref('plongeurs').set(plongeurs),
-        db.ref('palanquees').set(palanquees)
-      ]);
-      
-      await saveSessionData();
-      
-      console.log("✅ Sauvegarde Firebase réussie");
+        console.log('🔄 Test connexion Firebase...');
+        const testCollection = collection(db, 'test');
+        console.log('✅ Firebase connecté avec succès!');
+        return true;
     } catch (error) {
-      console.error("❌ Erreur sync Firebase:", error.message);
+        console.error('❌ Erreur connexion Firebase:', error);
+        return false;
     }
-  } else {
-    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
-  }
 }
 
-// Sauvegarde par session
-async function saveSessionData() {
-  const dpNom = $("dp-nom").value.trim();
-  const dpDate = $("dp-date").value;
-  const dpPlongee = $("dp-plongee").value;
-  
-  if (!dpNom || !dpDate || !dpPlongee) {
-    console.log("❌ Pas de sauvegarde session : DP, date ou plongée manquant");
-    return;
-  }
-  
-  const dpKey = dpNom.split(' ')[0].substring(0, 8);
-  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
-  
-  const sessionData = {
-    meta: {
-      dp: dpNom,
-      date: dpDate,
-      lieu: $("dp-lieu").value.trim() || "Non défini",
-      plongee: dpPlongee,
-      timestamp: Date.now(),
-      sessionKey: sessionKey
-    },
-    plongeurs: plongeurs,
-    palanquees: palanquees,
-    stats: {
-      totalPlongeurs: plongeurs.length + palanquees.flat().length,
-      nombrePalanquees: palanquees.length,
-      plongeursNonAssignes: plongeurs.length,
-      alertes: checkAllAlerts()
-    }
-  };
-  
-  try {
-    await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée avec succès:", sessionKey);
-  } catch (error) {
-    console.error("❌ Erreur sauvegarde session:", error);
-  }
-}
-
-// Charger les sessions disponibles
-async function loadAvailableSessions() {
-  try {
-    const sessionsSnapshot = await db.ref('sessions').once('value');
-    if (!sessionsSnapshot.exists()) {
-      return [];
-    }
-    
-    const sessions = sessionsSnapshot.val();
-    const sessionsList = [];
-    
-    for (const [key, data] of Object.entries(sessions)) {
-      if (!data || typeof data !== 'object') {
-        console.warn(`⚠️ Session ${key} invalide, ignorée`);
-        continue;
-      }
-      
-      let sessionInfo;
-      
-      if (data.meta) {
-        sessionInfo = {
-          key: key,
-          dp: data.meta.dp || "DP non défini",
-          date: data.meta.date || "Date inconnue",
-          lieu: data.meta.lieu || "Lieu non défini",
-          plongee: data.meta.plongee || "Non défini",
-          timestamp: data.meta.timestamp || Date.now(),
-          stats: data.stats || {
-            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
-            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
-            plongeursNonAssignes: (data.plongeurs || []).length
-          }
-        };
-      } else {
-        const keyParts = key.split('_');
-        sessionInfo = {
-          key: key,
-          dp: data.dp || "DP non défini (ancien format)",
-          date: data.date || keyParts[0] || "Date inconnue",
-          lieu: data.lieu || "Lieu non défini",
-          plongee: data.plongee || keyParts[keyParts.length - 1] || "Non défini",
-          timestamp: data.timestamp || Date.now(),
-          stats: {
-            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
-            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
-            plongeursNonAssignes: (data.plongeurs || []).length
-          }
-        };
-      }
-      
-      sessionsList.push(sessionInfo);
-    }
-    
-    sessionsList.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      
-      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-        return dateB - dateA;
-      } else {
-        return (b.timestamp || 0) - (a.timestamp || 0);
-      }
-    });
-    
-    return sessionsList;
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement sessions:", error);
-    return [];
-  }
-}
-
-// Charger une session spécifique
-// Dans config-firebase.js, dans la fonction loadSession
-
+// Fonction loadSession corrigée avec gestion d'erreurs
 async function loadSession(sessionId) {
     try {
         console.log('🔄 Chargement session:', sessionId);
+        
+        // Vérifier que le container existe avant de charger
+        const container = document.getElementById('palanquees-container');
+        if (!container) {
+            console.error('❌ Container palanquees-container non trouvé dans le DOM');
+            // Créer le container s'il n'existe pas
+            createPalanqueesContainer();
+            return;
+        }
         
         const sessionRef = doc(db, 'sessions', sessionId);
         const sessionSnap = await getDoc(sessionRef);
@@ -364,7 +64,7 @@ async function loadSession(sessionId) {
             const sessionData = sessionSnap.data();
             console.log('📄 Session chargée:', sessionData);
             
-            // 🔧 FIX: Normaliser les données de palanquées
+            // Normaliser les données de palanquées
             if (sessionData.palanquees) {
                 sessionData.palanquees = normalizePalanqueesData(sessionData.palanquees);
                 console.log('✅ Palanquées normalisées:', sessionData.palanquees.length);
@@ -374,65 +74,45 @@ async function loadSession(sessionId) {
             renderPalanquees(sessionData);
             
             // Mettre à jour les infos de session
-            updateSessionInfo(sessionData);
+            if (typeof updateSessionInfo === 'function') {
+                updateSessionInfo(sessionData);
+            }
             
         } else {
             console.log('❌ Session non trouvée');
-            document.getElementById('palanquees-container').innerHTML = 
-                '<div class="error">Session non trouvée</div>';
+            container.innerHTML = '<div class="error">Session non trouvée</div>';
         }
         
     } catch (error) {
         console.error('❌ Erreur chargement session:', error);
-        document.getElementById('palanquees-container').innerHTML = 
-            '<div class="error">Erreur de chargement</div>';
+        const container = document.getElementById('palanquees-container');
+        if (container) {
+            container.innerHTML = `<div class="error">Erreur de chargement: ${error.message}</div>`;
+        }
     }
 }
 
-// Fonction utilitaire pour normaliser les palanquées
-function normalizePalanqueesData(palanqueesData) {
-    console.log('🔍 Normalisation palanquées, type:', typeof palanqueesData, palanqueesData);
+// Fonction pour créer le container s'il n'existe pas
+function createPalanqueesContainer() {
+    console.log('🔧 Création du container palanquees-container');
     
-    if (!palanqueesData) {
-        console.log('📝 Pas de données palanquées');
-        return [];
-    }
+    // Chercher un endroit logique pour l'insérer
+    let targetElement = document.getElementById('session-content') || 
+                       document.getElementById('main-content') ||
+                       document.querySelector('.session-details') ||
+                       document.body;
     
-    if (Array.isArray(palanqueesData)) {
-        console.log('✅ Déjà un tableau');
-        return palanqueesData;
-    }
+    const container = document.createElement('div');
+    container.id = 'palanquees-container';
+    container.className = 'palanquees-container';
+    container.innerHTML = '<div class="loading">Chargement des palanquées...</div>';
     
-    if (typeof palanqueesData === 'object') {
-        console.log('🔄 Conversion objet vers tableau');
-        
-        // Séparer les propriétés des palanquées des métadonnées
-        const palanquees = [];
-        const metadata = {};
-        
-        Object.keys(palanqueesData).forEach(key => {
-            const value = palanqueesData[key];
-            
-            // Si la clé est un nombre, c'est probablement une palanquée
-            if (!isNaN(key) && typeof value === 'object' && value !== null) {
-                palanquees.push(value);
-            } else {
-                // Sinon c'est une métadonnée (dureePrevue, horaire, etc.)
-                metadata[key] = value;
-            }
-        });
-        
-        // Si on a trouvé des palanquées, les retourner
-        if (palanquees.length > 0) {
-            console.log(`✅ ${palanquees.length} palanquées extraites, métadonnées:`, metadata);
-            return palanquees;
-        }
-        
-        // Sinon, traiter l'objet comme une seule palanquée
-        console.log('📝 Objet traité comme une seule palanquée');
-        return [palanqueesData];
-    }
-    
-    console.log('⚠️ Type de données non supporté');
-    return [];
+    targetElement.appendChild(container);
+    console.log('✅ Container palanquees-container créé');
 }
+
+// Export des fonctions et variables
+window.db = db;
+window.testFirebaseConnection = testFirebaseConnection;
+window.loadSession = loadSession;
+window.createPalanqueesContainer = createPalanqueesContainer;
