@@ -500,18 +500,18 @@ function exportToPDF() {
     doc.rect(0, 0, pageWidth, 60, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
+    doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text('Palanquées JSAS', margin, 20);
 	doc.setFontSize(20);
-    doc.text('Fiche de Sécurité', margin, 28);
+    doc.text('Fiche de Sécurité', margin, 30);
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
-    doc.text('Associative Sportive de Plongée', margin, 38);
+    doc.text('Associative Sportive de Plongée', margin, 35);
     
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.text('DP: ' + dpNom.substring(0, 30), margin, 48);
+    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
     doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
     doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
     
