@@ -504,9 +504,9 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     doc.text('Palanquées JSAS', margin, 25);
 	doc.setFontSize(20);
-	doc.addFont('ArialMS', 'ArialNarrow', 'normal');
-doc.setFont('ArialNarrow');
-doc.setFont('ArialNarrow', 'bold');
+	doc.addFont('ArialMS', 'Arial', 'normal');
+doc.setFont('Arial');
+doc.setFont('Arial', 'bold');
     doc.text('Fiche de Sécurité', margin, 25);
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
