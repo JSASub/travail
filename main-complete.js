@@ -500,10 +500,14 @@ function exportToPDF() {
     doc.rect(0, 0, pageWidth, 60, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.text('PALANQUÉES JSAS', margin, 25);
-    
+    doc.text('Palanquées JSAS', margin, 25);
+	doc.setFontSize(20);
+	doc.addFont('ArialMS', 'ArialNarrow', 'normal');
+doc.setFont('ArialNarrow');
+doc.setFont('ArialNarrow', 'bold');
+    doc.text('Fiche de Sécurité', margin, 25);
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     doc.text('Organisation Associative de Plongée', margin, 35);
