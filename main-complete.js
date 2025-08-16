@@ -481,7 +481,7 @@ function exportToPDF() {
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
         doc.setFontSize(10);
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text'"FICHE de SÉCURITÉ", margin, 15);
         doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
         doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
         yPosition = 25;
