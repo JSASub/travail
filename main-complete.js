@@ -505,9 +505,8 @@ function exportToPDF() {
     doc.text('Palanquées JSAS', margin, 25);
 	doc.setFontSize(20);
 	doc.addFont('ArialMS', 'Arial', 'normal');
-doc.setFont('Arial');
-doc.setFont('Arial', 'bold');
-    doc.text('Fiche de Sécurité', margin, 25);
+	doc.setFont('Arial', 'bold');
+    doc.text('Fiche de Sécurité', margin, 30);
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     doc.text('Organisation Associative de Plongée', margin, 35);
