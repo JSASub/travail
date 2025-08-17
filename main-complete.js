@@ -705,11 +705,11 @@ function exportToPDF() {
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
-          doc.text(pal.profondeurPrevue + 'm', margin + 25, yPosition);
+          doc.text(pal.profondeurPrevue + ' m', margin + 25, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
-          doc.text('Corr: ', margin + 35, yPosition);
+          doc.text('Corr:', margin + 35, yPosition);
           doc.line(margin + 43, yPosition + 1, margin + 53, yPosition + 1);
         } else {
           doc.line(margin + 25, yPosition + 1, margin + 45, yPosition + 1);
@@ -720,7 +720,7 @@ function exportToPDF() {
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('Durée prévue: ', margin + 60, yPosition);
+        doc.text('Durée prévue:', margin + 60, yPosition);
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
@@ -728,7 +728,7 @@ function exportToPDF() {
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
-          doc.text('Corr: ', margin + 95, yPosition);
+          doc.text('Corr:', margin + 95, yPosition);
           doc.line(margin + 103, yPosition + 1, margin + 113, yPosition + 1);
         } else {
           doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
@@ -742,7 +742,7 @@ function exportToPDF() {
         doc.setFont(undefined, 'bold');
         
         // Profondeur réalisée
-        doc.text('Prof. réalisée: ', margin + 5, yPosition);
+        doc.text('Prof. réalisée:', margin + 5, yPosition);
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
@@ -750,7 +750,7 @@ function exportToPDF() {
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
-          doc.text('Corr: ', margin + 38, yPosition);
+          doc.text('Corr:', margin + 38, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 46, yPosition + 1, margin + 56, yPosition + 1);
         } else {
@@ -763,7 +763,7 @@ function exportToPDF() {
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('Durée réalisée: ', margin + 60, yPosition);
+        doc.text('Durée réalisée:', margin + 60, yPosition);
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
@@ -771,7 +771,7 @@ function exportToPDF() {
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
-          doc.text('Corr: ', margin + 98, yPosition);
+          doc.text('Corr:', margin + 98, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 106, yPosition + 1, margin + 116, yPosition + 1);
         } else {
@@ -798,7 +798,7 @@ function exportToPDF() {
           // Zone de correction en dessous
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.text('Correction paliers: ', margin + 5, yPosition);
+          doc.text('Correction paliers:', margin + 5, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 35, yPosition + 1, margin + 120, yPosition + 1);
         } else {
@@ -839,7 +839,7 @@ function exportToPDF() {
         const p = plongeurs[i];
         const nomClean = p.nom.replace(/'/g, "'");
         const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-        const textLine = '• ' + nomClean + ' (' + p.niveau + ')' + (preClean ? ' - ' + preClean : '');
+        const textLine = '• ' + nomClean + '   (' + p.niveau + ')' + (preClean ? '   - ' + preClean : '');
         doc.text(textLine, margin + 5, yPosition + (i * 6));
       }
       
