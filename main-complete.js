@@ -399,19 +399,246 @@ function generatePDFPreview() {
 }
 
 function exportToPDF() {
-  if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
-    console.log("🚫 Export PDF bloqué - page en cours de chargement");
-    return;
-  }
+  console.log("📄 Export PDF lancé...");
   
   try {
-    // Version simplifiée pour éviter les erreurs
-    alert("Fonction PDF en cours de développement. Utilisez l'aperçu PDF pour le moment.");
+    // Vérifier si jsPDF est disponible
+    if (typeof window.jsPDF === 'undefined') {
+      console.warn("⚠️ jsPDF non trouvé, utilisation de l'aperçu HTML");
+      
+      // Alternative : générer l'aperçu et suggérer l'impression
+      generatePDFPreview();
+      
+      setTimeout(() => {
+        if (confirm("jsPDF n'est pas disponible.\n\nVoulez-vous imprimer la page d'aperçu ?\n(Utilisez Ctrl+P ou Cmd+P)")) {
+          window.print();
+        }
+      }, 1000);
+      
+      return;
+    }
+
+    // S'assurer que les variables existent
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+    
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
+    
+    // Créer le document PDF
+    const doc = new window.jsPDF();
+    
+    // Configuration
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    let yPosition = margin;
+    
+    // Fonction utilitaire pour ajouter du texte avec retour à la ligne
+    function addText(text, fontSize = 12, isBold = false) {
+      if (isBold) {
+        doc.setFont("helvetica", "bold");
+      } else {
+        doc.setFont("helvetica", "normal");
+      }
+      doc.setFontSize(fontSize);
+      
+      const lines = doc.splitTextToSize(text, contentWidth);
+      
+      // Vérifier si on dépasse la page
+      if (yPosition + (lines.length * fontSize * 0.5) > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      doc.text(lines, margin, yPosition);
+      yPosition += lines.length * fontSize * 0.5 + 5;
+      
+      return yPosition;
+    }
+    
+    // Fonction pour formater la date
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+    
+    // EN-TÊTE
+    doc.setFillColor(0, 64, 128);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("PALANQUÉES JSAS", margin, 25);
+    
+    doc.setFontSize(12);
+    doc.text(`Directeur de Plongée: ${dpNom}`, margin, 35);
+    doc.text(`Date: ${formatDateFrench(dpDate)} - ${dpPlongee.charAt(0).toUpperCase() + dpPlongee.slice(1)}`, margin, 42);
+    doc.text(`Lieu: ${dpLieu}`, margin, 49);
+    
+    // Remettre la couleur de texte normale
+    doc.setTextColor(0, 0, 0);
+    yPosition = 60;
+    
+    // RÉSUMÉ
+    addText("RÉSUMÉ", 16, true);
+    addText(`Total plongeurs: ${totalPlongeurs}`, 12);
+    addText(`Nombre de palanquées: ${palanqueesLocal.length}`, 12);
+    addText(`Plongeurs non assignés: ${plongeursLocal.length}`, 12);
+    addText(`Alertes: ${alertesTotal.length}`, 12);
+    
+    yPosition += 10;
+    
+    // ALERTES (si présentes)
+    if (alertesTotal.length > 0) {
+      addText("⚠️ ALERTES", 16, true);
+      alertesTotal.forEach(alerte => {
+        addText(`• ${alerte}`, 11);
+      });
+      yPosition += 10;
+    }
+    
+    // PALANQUÉES
+    addText("🏊‍♂️ PALANQUÉES", 16, true);
+    
+    if (palanqueesLocal.length === 0) {
+      addText("Aucune palanquée créée.", 12);
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          addText(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, 14, true);
+          
+          if (pal.length === 0) {
+            addText("  Aucun plongeur assigné", 11);
+          } else {
+            pal.forEach(p => {
+              if (p && p.nom) {
+                const preText = p.pre ? ` - ${p.pre}` : '';
+                addText(`  • ${p.nom} (${p.niveau || 'N?'})${preText}`, 11);
+              }
+            });
+          }
+          
+          // Ajouter les détails de plongée si disponibles
+          const details = [];
+          if (pal.horaire) details.push(`Horaire: ${pal.horaire}`);
+          if (pal.profondeurPrevue) details.push(`Prof. prévue: ${pal.profondeurPrevue}m`);
+          if (pal.dureePrevue) details.push(`Durée prévue: ${pal.dureePrevue}min`);
+          if (pal.profondeurRealisee) details.push(`Prof. réalisée: ${pal.profondeurRealisee}m`);
+          if (pal.dureeRealisee) details.push(`Durée réalisée: ${pal.dureeRealisee}min`);
+          if (pal.paliers) details.push(`Paliers: ${pal.paliers}`);
+          
+          if (details.length > 0) {
+            addText(`  Détails: ${details.join(' | ')}`, 10);
+          }
+          
+          yPosition += 5;
+        }
+      });
+    }
+    
+    // PLONGEURS EN ATTENTE
+    if (plongeursLocal.length > 0) {
+      yPosition += 10;
+      addText("⏳ PLONGEURS EN ATTENTE", 16, true);
+      plongeursLocal.forEach(p => {
+        if (p && p.nom) {
+          const preText = p.pre ? ` - ${p.pre}` : '';
+          addText(`• ${p.nom} (${p.niveau || 'N?'})${preText}`, 11);
+        }
+      });
+    }
+    
+    // PIED DE PAGE
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`Page ${i}/${pageCount} - Généré le ${new Date().toLocaleString('fr-FR')} - JSAS v2.5.0`, 
+                margin, pageHeight - 10);
+    }
+    
+    // Sauvegarder le PDF
+    const fileName = `palanquees-${dpDate || 'export'}-${dpPlongee}.pdf`;
+    doc.save(fileName);
+    
+    console.log("✅ PDF exporté avec succès:", fileName);
+    
+    // Notification
+    if (typeof showNotification === 'function') {
+      showNotification("📄 PDF téléchargé avec succès !", "success");
+    }
+    
   } catch (error) {
-    console.error("⌫ Erreur PDF:", error);
-    alert("Erreur lors de la génération du PDF : " + error.message);
+    console.error("⌫ Erreur export PDF:", error);
+    
+    // Mode fallback : utiliser l'aperçu et l'impression
+    alert("Erreur lors de la génération du PDF.\n\nUtilisation du mode d'impression alternatif...");
+    
+    try {
+      generatePDFPreview();
+      setTimeout(() => {
+        if (confirm("Voulez-vous imprimer la page d'aperçu ?\n\n(Vous pouvez ensuite 'Enregistrer au format PDF' dans les options d'impression)")) {
+          window.print();
+        }
+      }, 1000);
+    } catch (fallbackError) {
+      console.error("⌫ Erreur mode fallback:", fallbackError);
+      alert("Impossible de générer le PDF. Vérifiez que la bibliothèque jsPDF est chargée.");
+    }
   }
 }
+
+// Version alternative simple pour l'impression
+function exportToPDFSimple() {
+  console.log("📄 Export PDF simple (impression)...");
+  
+  try {
+    // Générer l'aperçu
+    generatePDFPreview();
+    
+    // Attendre que l'aperçu se charge, puis proposer l'impression
+    setTimeout(() => {
+      if (confirm("📄 Export PDF\n\nLe document va s'ouvrir pour impression.\n\nChoisissez 'Enregistrer au format PDF' dans les options d'impression.\n\nContinuer ?")) {
+        
+        // Ouvrir l'aperçu dans une nouvelle fenêtre pour l'impression
+        const previewContainer = document.getElementById("previewContainer");
+        const pdfPreview = document.getElementById("pdfPreview");
+        
+        if (pdfPreview && pdfPreview.src) {
+          const printWindow = window.open(pdfPreview.src, '_blank');
+          if (printWindow) {
+            printWindow.onload = () => {
+              setTimeout(() => {
+                printWindow.print();
+              }, 500);
+            };
+          } else {
+            // Si popup bloqué, utiliser la fenêtre actuelle
+            window.print();
+          }
+        } else {
+          window.print();
+        }
+      }
+    }, 1000);
+    
+  } catch (error) {
+    console.error("⌫ Erreur export PDF simple:", error);
+    alert("Erreur lors de l'export PDF : " + error.message);
+  }
+}
+
+console.log("📄 Fonctions PDF exportées chargées");
 
 // ===== DRAG & DROP SÉCURISÉ =====
 
