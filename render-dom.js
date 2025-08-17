@@ -211,6 +211,12 @@ function renderPalanquees() {
       e.preventDefault();
       div.classList.remove('drag-over');
       
+      // VÉRIFICATION CRITIQUE : S'assurer que dataTransfer existe
+      if (!e.dataTransfer) {
+        console.warn("⚠️ dataTransfer non disponible");
+        return;
+      }
+      
       // Vérifier le verrou avant d'autoriser la modification
       if (typeof acquirePalanqueeLock === 'function') {
         const hasLock = await acquirePalanqueeLock(idx);
@@ -223,6 +229,11 @@ function renderPalanquees() {
       }
       
       const data = e.dataTransfer.getData("text/plain");
+      
+      if (!data) {
+        console.warn("⚠️ Aucune donnée de drag disponible");
+        return;
+      }
       
       try {
         const dragData = JSON.parse(data);
