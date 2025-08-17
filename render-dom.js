@@ -25,24 +25,7 @@ function renderPlongeurs() {
         </div>
       `;
       
-      // Event listeners pour drag & drop
-      li.addEventListener("dragstart", e => {
-        li.classList.add('dragging');
-        
-        const plongeurData = {
-          type: "fromMainList",
-          plongeur: { ...p },
-          originalIndex: i
-        };
-        
-        e.dataTransfer.setData("text/plain", JSON.stringify(plongeurData));
-        e.dataTransfer.effectAllowed = "move";
-      });
-      
-      li.addEventListener("dragend", e => {
-        li.classList.remove('dragging');
-      });
-      
+      // Event listener pour suppression
       li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
         e.stopPropagation();
         if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
@@ -56,7 +39,9 @@ function renderPlongeurs() {
     });
   }
   
-  updateCompteurs();
+  if (typeof updateCompteurs === 'function') {
+    updateCompteurs();
+  }
 }
 
 function renderPalanquees() {
@@ -110,7 +95,7 @@ function renderPalanquees() {
     const div = document.createElement("div");
     div.className = "palanquee";
     div.dataset.index = idx;
-    div.dataset.alert = checkAlert(palanquee) ? "true" : "false";
+    div.dataset.alert = (typeof checkAlert === 'function' ? checkAlert(palanquee) : false) ? "true" : "false";
     
     div.innerHTML = `
       <div class="palanquee-title">
@@ -127,7 +112,7 @@ function renderPalanquees() {
       const indicator = document.createElement('div');
       indicator.className = 'lock-indicator';
       
-      if (lock.userId === currentUser.uid) {
+      if (lock.userId === currentUser?.uid) {
         indicator.className += ' editing-self';
         indicator.textContent = '🔧 En modification par vous';
         div.classList.add('editing-self');
@@ -173,22 +158,6 @@ function renderPalanquees() {
                   title="Remettre dans la liste">⬅️</span>
           </div>
         `;
-        
-        // Event listener pour drag & drop
-        li.addEventListener("dragstart", e => {
-          li.classList.add('dragging');
-          e.dataTransfer.setData("text/plain", JSON.stringify({
-            type: "fromPalanquee",
-            palanqueeIndex: idx,
-            plongeurIndex: plongeurIndex,
-            plongeur: plg
-          }));
-          e.dataTransfer.effectAllowed = "move";
-        });
-        
-        li.addEventListener("dragend", e => {
-          li.classList.remove('dragging');
-        });
         
         plongeursList.appendChild(li);
       });
@@ -243,10 +212,14 @@ function renderPalanquees() {
       div.classList.remove('drag-over');
       
       // Vérifier le verrou avant d'autoriser la modification
-      const hasLock = await acquirePalanqueeLock(idx);
-      if (!hasLock) {
-        showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
-        return;
+      if (typeof acquirePalanqueeLock === 'function') {
+        const hasLock = await acquirePalanqueeLock(idx);
+        if (!hasLock) {
+          if (typeof showLockNotification === 'function') {
+            showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
+          }
+          return;
+        }
       }
       
       const data = e.dataTransfer.getData("text/plain");
@@ -300,12 +273,16 @@ function renderPalanquees() {
             e.target.classList.contains('palanquee-paliers') ||
             e.target.classList.contains('plongeur-prerogatives-editable')) {
           
-          const hasLock = await acquirePalanqueeLock(idx);
-          if (!hasLock) {
-            e.preventDefault();
-            e.target.blur();
-            showLockNotification(`Modification bloquée - palanquée en cours d'édition`, "warning");
-            return;
+          if (typeof acquirePalanqueeLock === 'function') {
+            const hasLock = await acquirePalanqueeLock(idx);
+            if (!hasLock) {
+              e.preventDefault();
+              e.target.blur();
+              if (typeof showLockNotification === 'function') {
+                showLockNotification(`Modification bloquée - palanquée en cours d'édition`, "warning");
+              }
+              return;
+            }
           }
         }
       }
@@ -328,10 +305,14 @@ function renderPalanquees() {
   });
   
   setupPalanqueesEventListeners();
-  updateCompteurs();
+  if (typeof updateCompteurs === 'function') {
+    updateCompteurs();
+  }
   
   // NOUVEAU : Mettre à jour l'UI des verrous après le rendu
-  updatePalanqueeLockUI();
+  if (typeof updatePalanqueeLockUI === 'function') {
+    updatePalanqueeLockUI();
+  }
 }
 
 function setupPalanqueesEventListeners() {
@@ -342,10 +323,14 @@ function setupPalanqueesEventListeners() {
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       
       // NOUVEAU : Vérifier le verrou avant de permettre le retour
-      const hasLock = await acquirePalanqueeLock(palanqueeIdx);
-      if (!hasLock) {
-        showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
-        return;
+      if (typeof acquirePalanqueeLock === 'function') {
+        const hasLock = await acquirePalanqueeLock(palanqueeIdx);
+        if (!hasLock) {
+          if (typeof showLockNotification === 'function') {
+            showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
+          }
+          return;
+        }
       }
       
       if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
@@ -442,6 +427,11 @@ function chargerHistoriqueDP() {
 
   if (!dpDatesSelect || !historiqueInfo) {
     console.error("❌ Éléments DOM pour historique DP non trouvés");
+    return;
+  }
+
+  if (!db) {
+    console.error("❌ Base de données non disponible pour historique DP");
     return;
   }
 
