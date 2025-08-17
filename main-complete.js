@@ -524,7 +524,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
-    doc.text('               Palanquées: ' + palanqueesLocal.length, margin + 50, yPosition);
+    doc.text('                          Palanquées: ' + palanqueesLocal.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
