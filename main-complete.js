@@ -1382,7 +1382,9 @@ function setupEventListeners() {
   // Contrôles de tri
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      sortPlongeurs(btn.dataset.sort);
+      if (typeof sortPlongeurs === 'function') {
+        sortPlongeurs(btn.dataset.sort);
+      }
     });
   });
 
@@ -1413,10 +1415,14 @@ function setupEventListeners() {
         
         if (dragData.type === "fromPalanquee") {
           // NOUVEAU : Vérifier le verrou avant de permettre le déplacement
-          const hasLock = await acquirePalanqueeLock(dragData.palanqueeIndex);
-          if (!hasLock) {
-            showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
-            return;
+          if (typeof acquirePalanqueeLock === 'function') {
+            const hasLock = await acquirePalanqueeLock(dragData.palanqueeIndex);
+            if (!hasLock) {
+              if (typeof showLockNotification === 'function') {
+                showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
+              }
+              return;
+            }
           }
           
           if (palanquees[dragData.palanqueeIndex] && 
@@ -1433,6 +1439,57 @@ function setupEventListeners() {
       }
     });
   }
+
+  // Event delegation pour les éléments dynamiques (important pour le drag & drop)
+  document.addEventListener('dragstart', (e) => {
+    if (e.target.classList.contains('plongeur-item')) {
+      e.target.classList.add('dragging');
+      
+      // Récupérer les données du plongeur depuis l'élément
+      const index = parseInt(e.target.dataset.index);
+      const isFromPalanquee = e.target.closest('.palanquee') !== null;
+      
+      let dragData;
+      
+      if (isFromPalanquee) {
+        // Plongeur dans une palanquée
+        const palanqueeElement = e.target.closest('.palanquee');
+        const palanqueeIndex = parseInt(palanqueeElement.dataset.index);
+        const plongeurIndex = Array.from(palanqueeElement.querySelectorAll('.plongeur-item')).indexOf(e.target);
+        const plongeur = palanquees[palanqueeIndex] ? palanquees[palanqueeIndex][plongeurIndex] : null;
+        
+        if (plongeur) {
+          dragData = {
+            type: "fromPalanquee",
+            palanqueeIndex: palanqueeIndex,
+            plongeurIndex: plongeurIndex,
+            plongeur: plongeur
+          };
+        }
+      } else {
+        // Plongeur dans la liste principale
+        const plongeur = plongeurs[index];
+        if (plongeur) {
+          dragData = {
+            type: "fromMainList",
+            plongeur: plongeur,
+            originalIndex: index
+          };
+        }
+      }
+      
+      if (dragData) {
+        e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+        e.dataTransfer.effectAllowed = "move";
+      }
+    }
+  });
+  
+  document.addEventListener('dragend', (e) => {
+    if (e.target.classList.contains('plongeur-item')) {
+      e.target.classList.remove('dragging');
+    }
+  });
 
   // Gestionnaire de validation DP
   addSafeEventListener("valider-dp", "click", () => {
