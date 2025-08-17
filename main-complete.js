@@ -827,7 +827,7 @@ function exportToPDF() {
       doc.setTextColor(133, 100, 4);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS en ATTENTE (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      doc.text('PLONGEURS en attente/disponibles (' + plongeurs.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
