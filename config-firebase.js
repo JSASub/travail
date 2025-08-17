@@ -25,7 +25,7 @@ let app, db, auth;
 // État d'authentification
 let currentUser = null;
 
-// NOUVEAU : Variables pour le système de verrous
+// NOUVEAU : Variables pour le système de verrous - INITIALISÉES
 let palanqueeLocks = {};
 let currentlyEditingPalanquee = null;
 let lockTimers = {};
@@ -34,6 +34,9 @@ let dpInfo = {
   niveau: 'DP', // N5, E3, E4 tous considérés comme DP
   nom: ''
 };
+
+// Variable pour éviter les doubles initialisations
+let lockSystemInitialized = false;
 
 // DOM helpers
 function $(id) {
@@ -68,10 +71,12 @@ function initializeFirebase() {
         showMainApp();
         updateUserInfo(user);
         
-        // NOUVEAU : Initialiser le système de verrous
-        setTimeout(() => {
-          initializeLockSystem();
-        }, 2000);
+        // NOUVEAU : Initialiser le système de verrous SEULEMENT si pas déjà fait
+        if (!lockSystemInitialized) {
+          setTimeout(() => {
+            initializeLockSystem();
+          }, 3000); // Délai plus long pour s'assurer que tout est chargé
+        }
         
         // Charger les données uniquement si on vient de se connecter (pas au démarrage)
         if (document.readyState === 'complete') {
@@ -81,6 +86,7 @@ function initializeFirebase() {
       } else {
         console.log("❌ Utilisateur non connecté");
         currentUser = null;
+        lockSystemInitialized = false; // Reset pour la prochaine connexion
         showAuthContainer();
       }
     });
@@ -92,20 +98,35 @@ function initializeFirebase() {
   }
 }
 
-// ===== NOUVEAU : SYSTÈME DE VERROUILLAGE =====
+// ===== NOUVEAU : SYSTÈME DE VERROUILLAGE (VERSION SÉCURISÉE) =====
 
 // Déterminer le niveau de l'utilisateur
 function determinerNiveauUtilisateur() {
-  const dpNomField = $("dp-nom");
-  if (dpNomField && dpNomField.value) {
-    dpInfo.nom = dpNomField.value;
-    dpInfo.niveau = 'DP'; // N5, E3 ou E4 - tous considérés comme DP
+  try {
+    const dpNomField = $("dp-nom");
+    if (dpNomField && dpNomField.value) {
+      dpInfo.nom = dpNomField.value;
+      dpInfo.niveau = 'DP'; // N5, E3 ou E4 - tous considérés comme DP
+    }
+    return dpInfo.niveau;
+  } catch (error) {
+    console.warn("⚠️ Erreur détermination niveau utilisateur:", error);
+    return 'DP';
   }
-  return dpInfo.niveau;
 }
 
-// Initialiser le système de verrouillage
+// Initialiser le système de verrouillage (VERSION SÉCURISÉE)
 function initializeLockSystem() {
+  if (lockSystemInitialized) {
+    console.log("🔒 Système de verrous déjà initialisé");
+    return;
+  }
+  
+  if (!currentUser || !db) {
+    console.warn("⚠️ Impossible d'initialiser les verrous - utilisateur ou DB manquant");
+    return;
+  }
+  
   console.log("🔒 Initialisation du système de verrouillage DP...");
   
   try {
@@ -124,88 +145,122 @@ function initializeLockSystem() {
     // Nettoyer à la fermeture
     window.addEventListener('beforeunload', cleanupOnExit);
     
+    lockSystemInitialized = true;
     console.log("✅ Système de verrouillage initialisé pour:", dpInfo);
     
   } catch (error) {
     console.error("❌ Erreur initialisation système de verrouillage:", error);
+    lockSystemInitialized = false;
   }
 }
 
-// Marquer le DP comme en ligne
+// Marquer le DP comme en ligne (VERSION SÉCURISÉE)
 function markDPOnline() {
-  if (!currentUser || !db) return;
-  
-  const dpNom = $("dp-nom")?.value || currentUser.email;
-  const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
-  
-  dpOnlineRef.set({
-    nom: dpNom,
-    email: currentUser.email,
-    niveau: dpInfo.niveau,
-    timestamp: firebase.database.ServerValue.TIMESTAMP,
-    sessionActive: true
-  });
-  
-  // Nettoyer à la déconnexion
-  dpOnlineRef.onDisconnect().remove();
-}
-
-// Écouter les verrous actifs
-function listenToLocks() {
-  if (!db) return;
-  
-  const locksRef = db.ref('palanquee_locks');
-  locksRef.on('value', (snapshot) => {
-    const locks = snapshot.val() || {};
-    palanqueeLocks = locks;
-    updatePalanqueeLockUI();
-  });
-}
-
-// Écouter les DPs en ligne
-function listenToOnlineDPs() {
-  if (!db) return;
-  
-  const dpOnlineRef = db.ref('dp_online');
-  dpOnlineRef.on('value', (snapshot) => {
-    const onlineDPs = snapshot.val() || {};
-    dpOnline = onlineDPs;
-    updateDPStatusIndicator(onlineDPs);
-  });
-}
-
-// Mettre à jour l'indicateur de statut des DPs
-function updateDPStatusIndicator(onlineDPs) {
-  let statusIndicator = $("dp-status-indicator");
-  
-  if (!statusIndicator) {
-    statusIndicator = document.createElement("div");
-    statusIndicator.id = "dp-status-indicator";
-    statusIndicator.className = "dp-status-indicator";
-    
-    const metaInfo = $("meta-info");
-    if (metaInfo) {
-      metaInfo.insertAdjacentElement('afterend', statusIndicator);
-    }
+  if (!currentUser || !db) {
+    console.warn("⚠️ Impossible de marquer DP en ligne - utilisateur ou DB manquant");
+    return;
   }
   
-  const dpCount = Object.keys(onlineDPs).length;
-  const dpNames = Object.values(onlineDPs).map(dp => dp.nom).join(', ');
-  const lockCount = Object.keys(palanqueeLocks).length;
-  
-  statusIndicator.innerHTML = `
-    <div class="dp-status-content">
-      <span class="dp-status-icon">👨‍💼</span>
-      <span class="dp-status-text">${dpCount} DP connecté(s): ${dpNames}</span>
-      <span class="dp-lock-count">${lockCount} palanquée(s) en modification</span>
-    </div>
-  `;
+  try {
+    const dpNom = $("dp-nom")?.value || currentUser.email;
+    const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
+    
+    dpOnlineRef.set({
+      nom: dpNom,
+      email: currentUser.email,
+      niveau: dpInfo.niveau,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      sessionActive: true
+    });
+    
+    // Nettoyer à la déconnexion
+    dpOnlineRef.onDisconnect().remove();
+  } catch (error) {
+    console.error("❌ Erreur marquage DP en ligne:", error);
+  }
 }
 
-// Prendre le verrou d'une palanquée
+// Écouter les verrous actifs (VERSION SÉCURISÉE)
+function listenToLocks() {
+  if (!db) {
+    console.warn("⚠️ Impossible d'écouter les verrous - DB manquant");
+    return;
+  }
+  
+  try {
+    const locksRef = db.ref('palanquee_locks');
+    locksRef.on('value', (snapshot) => {
+      const locks = snapshot.val() || {};
+      palanqueeLocks = locks;
+      
+      // Appeler updatePalanqueeLockUI seulement si elle existe
+      if (typeof updatePalanqueeLockUI === 'function') {
+        updatePalanqueeLockUI();
+      }
+    });
+  } catch (error) {
+    console.error("❌ Erreur écoute verrous:", error);
+  }
+}
+
+// Écouter les DPs en ligne (VERSION SÉCURISÉE)
+function listenToOnlineDPs() {
+  if (!db) {
+    console.warn("⚠️ Impossible d'écouter les DPs - DB manquant");
+    return;
+  }
+  
+  try {
+    const dpOnlineRef = db.ref('dp_online');
+    dpOnlineRef.on('value', (snapshot) => {
+      const onlineDPs = snapshot.val() || {};
+      dpOnline = onlineDPs;
+      updateDPStatusIndicator(onlineDPs);
+    });
+  } catch (error) {
+    console.error("❌ Erreur écoute DPs en ligne:", error);
+  }
+}
+
+// Mettre à jour l'indicateur de statut des DPs (VERSION SÉCURISÉE)
+function updateDPStatusIndicator(onlineDPs) {
+  try {
+    let statusIndicator = $("dp-status-indicator");
+    
+    if (!statusIndicator) {
+      statusIndicator = document.createElement("div");
+      statusIndicator.id = "dp-status-indicator";
+      statusIndicator.className = "dp-status-indicator";
+      
+      const metaInfo = $("meta-info");
+      if (metaInfo) {
+        metaInfo.insertAdjacentElement('afterend', statusIndicator);
+      } else {
+        // Si meta-info n'existe pas encore, ne pas ajouter
+        return;
+      }
+    }
+    
+    const dpCount = Object.keys(onlineDPs).length;
+    const dpNames = Object.values(onlineDPs).map(dp => dp.nom).join(', ');
+    const lockCount = Object.keys(palanqueeLocks).length;
+    
+    statusIndicator.innerHTML = `
+      <div class="dp-status-content">
+        <span class="dp-status-icon">👨‍💼</span>
+        <span class="dp-status-text">${dpCount} DP connecté(s): ${dpNames}</span>
+        <span class="dp-lock-count">${lockCount} palanquée(s) en modification</span>
+      </div>
+    `;
+  } catch (error) {
+    console.error("❌ Erreur mise à jour indicateur DP:", error);
+  }
+}
+
+// Prendre le verrou d'une palanquée (VERSION SÉCURISÉE)
 async function acquirePalanqueeLock(palanqueeIndex) {
   if (!db || !currentUser) {
-    console.warn("❌ Firebase ou utilisateur non disponible");
+    console.warn("❌ Firebase ou utilisateur non disponible pour verrou");
     return false;
   }
   
@@ -239,7 +294,9 @@ async function acquirePalanqueeLock(palanqueeIndex) {
       // Auto-libération après 3 minutes d'inactivité
       lockTimers[palanqueeId] = setTimeout(() => {
         releasePalanqueeLock(palanqueeIndex);
-        showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
+        if (typeof showLockNotification === 'function') {
+          showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
+        }
       }, 3 * 60 * 1000);
       
       return true;
@@ -248,32 +305,46 @@ async function acquirePalanqueeLock(palanqueeIndex) {
   } catch (error) {
     if (error.message.startsWith('LOCK_EXISTS:')) {
       const otherDPName = error.message.split(':')[1];
-      if (confirm(`${otherDPName} modifie cette palanquée.\n\nEn tant que DP, voulez-vous prendre le contrôle ?`)) {
-        // Forcer la prise de verrou
-        await lockRef.set({
-          userId: currentUser.uid,
-          userName: dpInfo.nom || currentUser.email,
-          niveau: dpInfo.niveau,
-          timestamp: firebase.database.ServerValue.TIMESTAMP,
-          palanqueeIndex: palanqueeIndex,
-          forced: true
-        });
-        
-        currentlyEditingPalanquee = palanqueeIndex;
-        showLockNotification("🔧 Contrôle pris. L'autre DP a été notifié.", "success");
-        
-        // Auto-libération après 3 minutes
-        lockTimers[palanqueeId] = setTimeout(() => {
-          releasePalanqueeLock(palanqueeIndex);
-          showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
-        }, 3 * 60 * 1000);
-        
-        return true;
+      const userConfirm = confirm(`${otherDPName} modifie cette palanquée.\n\nEn tant que DP, voulez-vous prendre le contrôle ?`);
+      
+      if (userConfirm) {
+        try {
+          // Forcer la prise de verrou
+          await lockRef.set({
+            userId: currentUser.uid,
+            userName: dpInfo.nom || currentUser.email,
+            niveau: dpInfo.niveau,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            palanqueeIndex: palanqueeIndex,
+            forced: true
+          });
+          
+          currentlyEditingPalanquee = palanqueeIndex;
+          
+          if (typeof showLockNotification === 'function') {
+            showLockNotification("🔧 Contrôle pris. L'autre DP a été notifié.", "success");
+          }
+          
+          // Auto-libération après 3 minutes
+          lockTimers[palanqueeId] = setTimeout(() => {
+            releasePalanqueeLock(palanqueeIndex);
+            if (typeof showLockNotification === 'function') {
+              showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
+            }
+          }, 3 * 60 * 1000);
+          
+          return true;
+        } catch (forceError) {
+          console.error("❌ Erreur forçage verrou:", forceError);
+          return false;
+        }
       }
       return false;
     } else {
       console.error("❌ Erreur lors de la prise de verrou:", error);
-      showLockNotification("Erreur lors de la prise de verrou: " + error.message, "error");
+      if (typeof showLockNotification === 'function') {
+        showLockNotification("Erreur lors de la prise de verrou: " + error.message, "error");
+      }
       return false;
     }
   }
@@ -281,9 +352,12 @@ async function acquirePalanqueeLock(palanqueeIndex) {
   return false;
 }
 
-// Libérer le verrou d'une palanquée
+// Libérer le verrou d'une palanquée (VERSION SÉCURISÉE)
 async function releasePalanqueeLock(palanqueeIndex) {
-  if (!db) return;
+  if (!db) {
+    console.warn("⚠️ DB non disponible pour libérer verrou");
+    return;
+  }
   
   const palanqueeId = `palanquee-${palanqueeIndex}`;
   const lockRef = db.ref(`palanquee_locks/${palanqueeId}`);
@@ -305,18 +379,24 @@ async function releasePalanqueeLock(palanqueeIndex) {
   }
 }
 
-// Nettoyer à la sortie
+// Nettoyer à la sortie (VERSION SÉCURISÉE)
 function cleanupOnExit() {
-  if (currentlyEditingPalanquee !== null) {
-    releasePalanqueeLock(currentlyEditingPalanquee);
-  }
-  
-  // Nettoyer tous les timers
-  Object.values(lockTimers).forEach(timer => clearTimeout(timer));
-  
-  // Marquer comme hors ligne
-  if (currentUser && db) {
-    db.ref(`dp_online/${currentUser.uid}`).remove();
+  try {
+    if (currentlyEditingPalanquee !== null) {
+      releasePalanqueeLock(currentlyEditingPalanquee);
+    }
+    
+    // Nettoyer tous les timers
+    Object.values(lockTimers).forEach(timer => {
+      if (timer) clearTimeout(timer);
+    });
+    
+    // Marquer comme hors ligne
+    if (currentUser && db) {
+      db.ref(`dp_online/${currentUser.uid}`).remove();
+    }
+  } catch (error) {
+    console.error("❌ Erreur nettoyage sortie:", error);
   }
 }
 
@@ -426,6 +506,79 @@ async function loadFromFirebase() {
           
           console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
           return nouveauTableau;
+        }
+        
+        // Cas par défaut : palanquée vide
+        console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
+        const nouveauTableau = [];
+        nouveauTableau.horaire = '';
+        nouveauTableau.profondeurPrevue = '';
+        nouveauTableau.dureePrevue = '';
+        nouveauTableau.profondeurRealisee = '';
+        nouveauTableau.dureeRealisee = '';
+        nouveauTableau.paliers = '';
+        return nouveauTableau;
+      });
+    } else {
+      palanquees = [];
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
+    // Charger les métadonnées (VERSION SÉCURISÉE)
+    if (sessionData.meta) {
+      if ($("dp-nom")) $("dp-nom").value = sessionData.meta.dp || "";
+      if ($("dp-date")) $("dp-date").value = sessionData.meta.date || "";
+      if ($("dp-lieu")) $("dp-lieu").value = sessionData.meta.lieu || "";
+      if ($("dp-plongee")) $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    } else {
+      // Format ancien
+      if ($("dp-nom")) $("dp-nom").value = sessionData.dp || "";
+      if ($("dp-date")) $("dp-date").value = sessionData.date || "";
+      if ($("dp-lieu")) $("dp-lieu").value = sessionData.lieu || "";
+      if ($("dp-plongee")) $("dp-plongee").value = sessionData.plongee || "matin";
+    }
+    
+    // Rendu avec gestion d'erreur (VERSION SÉCURISÉE)
+    try {
+      if (typeof renderPalanquees === 'function') {
+        renderPalanquees();
+      }
+    } catch (renderError) {
+      console.error("❌ Erreur renderPalanquees:", renderError);
+      // Essayer de nettoyer et re-rendre
+      palanquees = palanquees.map(pal => Array.isArray(pal) ? pal : []);
+      if (typeof renderPalanquees === 'function') {
+        renderPalanquees();
+      }
+    }
+    
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+    const dpMessage = $("dp-message");
+    if (dpMessage) {
+      const dpName = sessionData.meta ? sessionData.meta.dp : sessionData.dp || "Session";
+      const dpDate = sessionData.meta ? sessionData.meta.date : sessionData.date || "";
+      const dpPlongee = sessionData.meta ? sessionData.meta.plongee : sessionData.plongee || "matin";
+      
+      dpMessage.innerHTML = `✓ Session "${dpName}" du ${dpDate} (${dpPlongee}) chargée`;
+      dpMessage.style.color = "green";
+    }
+    
+    console.log("✅ Session chargée avec succès:", sessionKey);
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement session:", error);
+    alert("Erreur lors du chargement de la session : " + error.message);
+    return false;
+  }
+} pal.paliers || '';
+          
+          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          return nouveauTableau;
         } else {
           // Cas inattendu, créer une palanquée vide
           console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
@@ -445,26 +598,28 @@ async function loadFromFirebase() {
     
     plongeursOriginaux = [...plongeurs];
     
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
+    // Appeler les fonctions de rendu seulement si elles existent
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
     
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
   }
 }
 
-// Sauvegarde Firebase - MODIFIÉE pour intégrer les verrous
+// Sauvegarde Firebase - MODIFIÉE pour intégrer les verrous (VERSION SÉCURISÉE)
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase avec gestion des verrous...");
   
   plongeursOriginaux = [...plongeurs];
   
-  renderPalanquees();
-  renderPlongeurs();
-  updateAlertes();
+  // Appeler les fonctions de rendu seulement si elles existent
+  if (typeof renderPalanquees === 'function') renderPalanquees();
+  if (typeof renderPlongeurs === 'function') renderPlongeurs();
+  if (typeof updateAlertes === 'function') updateAlertes();
   
-  if (firebaseConnected) {
+  if (firebaseConnected && db) {
     try {
       await Promise.all([
         db.ref('plongeurs').set(plongeurs),
@@ -475,8 +630,8 @@ async function syncToDatabase() {
       
       console.log("✅ Sauvegarde Firebase réussie");
       
-      // NOUVEAU : Libérer le verrou après sync réussie
-      if (currentlyEditingPalanquee !== null) {
+      // NOUVEAU : Libérer le verrou après sync réussie (seulement si système initialisé)
+      if (lockSystemInitialized && currentlyEditingPalanquee !== null) {
         setTimeout(() => {
           releasePalanqueeLock(currentlyEditingPalanquee);
         }, 1000);
@@ -492,9 +647,9 @@ async function syncToDatabase() {
 
 // Sauvegarde par session
 async function saveSessionData() {
-  const dpNom = $("dp-nom").value.trim();
-  const dpDate = $("dp-date").value;
-  const dpPlongee = $("dp-plongee").value;
+  const dpNom = $("dp-nom")?.value?.trim();
+  const dpDate = $("dp-date")?.value;
+  const dpPlongee = $("dp-plongee")?.value;
   
   if (!dpNom || !dpDate || !dpPlongee) {
     console.log("❌ Pas de sauvegarde session : DP, date ou plongée manquant");
@@ -508,7 +663,7 @@ async function saveSessionData() {
     meta: {
       dp: dpNom,
       date: dpDate,
-      lieu: $("dp-lieu").value.trim() || "Non défini",
+      lieu: $("dp-lieu")?.value?.trim() || "Non défini",
       plongee: dpPlongee,
       timestamp: Date.now(),
       sessionKey: sessionKey
@@ -519,7 +674,7 @@ async function saveSessionData() {
       totalPlongeurs: plongeurs.length + palanquees.flat().length,
       nombrePalanquees: palanquees.length,
       plongeursNonAssignes: plongeurs.length,
-      alertes: checkAllAlerts()
+      alertes: typeof checkAllAlerts === 'function' ? checkAllAlerts() : []
     }
   };
   
@@ -650,73 +805,4 @@ async function loadSession(sessionKey) {
           nouveauTableau.dureePrevue = pal.dureePrevue || '';
           nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
           nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
-          nouveauTableau.paliers = pal.paliers || '';
-          
-          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
-          return nouveauTableau;
-        }
-        
-        // Cas par défaut : palanquée vide
-        console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
-        const nouveauTableau = [];
-        nouveauTableau.horaire = '';
-        nouveauTableau.profondeurPrevue = '';
-        nouveauTableau.dureePrevue = '';
-        nouveauTableau.profondeurRealisee = '';
-        nouveauTableau.dureeRealisee = '';
-        nouveauTableau.paliers = '';
-        return nouveauTableau;
-      });
-    } else {
-      palanquees = [];
-    }
-    
-    plongeursOriginaux = [...plongeurs];
-    
-    // Charger les métadonnées
-    if (sessionData.meta) {
-      $("dp-nom").value = sessionData.meta.dp || "";
-      $("dp-date").value = sessionData.meta.date || "";
-      $("dp-lieu").value = sessionData.meta.lieu || "";
-      $("dp-plongee").value = sessionData.meta.plongee || "matin";
-    } else {
-      // Format ancien
-      $("dp-nom").value = sessionData.dp || "";
-      $("dp-date").value = sessionData.date || "";
-      $("dp-lieu").value = sessionData.lieu || "";
-      $("dp-plongee").value = sessionData.plongee || "matin";
-    }
-    
-    // Rendu avec gestion d'erreur
-    try {
-      renderPalanquees();
-    } catch (renderError) {
-      console.error("❌ Erreur renderPalanquees:", renderError);
-      // Essayer de nettoyer et re-rendre
-      palanquees = palanquees.map(pal => Array.isArray(pal) ? pal : []);
-      renderPalanquees();
-    }
-    
-    renderPlongeurs();
-    updateAlertes();
-    
-    const dpMessage = $("dp-message");
-    if (dpMessage) {
-      const dpName = sessionData.meta ? sessionData.meta.dp : sessionData.dp || "Session";
-      const dpDate = sessionData.meta ? sessionData.meta.date : sessionData.date || "";
-      const dpPlongee = sessionData.meta ? sessionData.meta.plongee : sessionData.plongee || "matin";
-      
-      dpMessage.innerHTML = `✓ Session "${dpName}" du ${dpDate} (${dpPlongee}) chargée`;
-      dpMessage.style.color = "green";
-    }
-    
-    console.log("✅ Session chargée avec succès:", sessionKey);
-    
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
-    alert("Erreur lors du chargement de la session : " + error.message);
-    return false;
-  }
-}
+          nouveauTableau.paliers =
