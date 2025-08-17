@@ -44,6 +44,106 @@ h1, h2 {
   font-size: 0.9em;
 }
 
+/* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
+.dp-status-indicator {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.dp-status-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-status-icon {
+  font-size: 18px;
+}
+
+.lock-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.lock-indicator.editing-self {
+  background: #ffc107;
+  color: #856404;
+}
+
+.lock-indicator.editing-other {
+  background: #dc3545;
+  color: white;
+}
+
+.palanquee.editing-other {
+  background-color: #f8d7da !important;
+  border-color: #dc3545 !important;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.palanquee.editing-self {
+  background-color: #fff8e1 !important;
+  border-color: #ffc107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+}
+
+.locked-field {
+  background-color: #f5f5f5 !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+}
+
+.lock-notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1500;
+  max-width: 400px;
+}
+
+.lock-notification {
+  background: white;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 10px 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lock-notification.success {
+  border-left-color: #28a745;
+}
+
+.lock-notification.warning {
+  border-left-color: #ffc107;
+}
+
+.lock-notification.error {
+  border-left-color: #dc3545;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
 label {
   display: block;
   margin-top: 10px;
@@ -55,7 +155,7 @@ input, select {
 }
 
 .success-icon::before {
-  content: "✔ ";
+  content: "✓ ";
   color: green;
   font-weight: bold;
 }
@@ -132,6 +232,7 @@ button:hover {
   background-color: #f8f9fa;
   border-radius: 5px;
   transition: all 0.3s ease;
+  position: relative; /* IMPORTANT pour les indicateurs de verrous */
 }
 
 .palanquee-title {
@@ -143,6 +244,7 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative; /* Pour positionner les indicateurs de verrous */
 }
 
 .palanquee[data-alert="true"] {
@@ -427,7 +529,7 @@ background: #28a745 !important;
 }
 
 .palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 0 0 50px !important;    /* ← Nouvelle valeur */
+  flex: 0 0 50px !important;
   order: 2 !important;
 }
 
@@ -526,6 +628,31 @@ background: #28a745 !important;
   box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
 }
 
+/* NOUVEAU : États verrouillés pour les champs de détails */
+.palanquee.editing-other .palanquee-horaire,
+.palanquee.editing-other .palanquee-prof-prevue,
+.palanquee.editing-other .palanquee-duree-prevue,
+.palanquee.editing-other .palanquee-prof-realisee,
+.palanquee.editing-other .palanquee-duree-realisee,
+.palanquee.editing-other .palanquee-paliers,
+.palanquee.editing-other .plongeur-prerogatives-editable {
+  background-color: #f5f5f5 !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #dee2e6 !important;
+}
+
+/* Animation pour les palanquées en cours d'édition par soi-même */
+.palanquee.editing-self {
+  animation: pulse-yellow 3s infinite;
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
 /* Responsive pour les détails */
 @media (max-width: 768px) {
   .detail-row {
@@ -549,5 +676,26 @@ background: #28a745 !important;
   
   .palanquee-paliers {
     width: 100%;
+  }
+  
+  /* Adaptation mobile pour les indicateurs de verrous */
+  .lock-indicator {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 5px 0;
+    display: block;
+    text-align: center;
+  }
+  
+  .dp-status-indicator {
+    font-size: 12px;
+    padding: 8px;
+  }
+  
+  .dp-status-content {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
   }
 }
