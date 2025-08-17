@@ -1,5 +1,235 @@
 // main-complete.js - Application principale, PDF et event handlers avec système de verrous
 
+// ===== FONCTIONS UTILITAIRES (DÉCLARÉES EN PREMIER) =====
+
+// Fonction helper pour afficher les erreurs d'authentification
+function showAuthError(message) {
+  const errorDiv = $("auth-error");
+  if (errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = "block";
+  }
+}
+
+// Fonction helper pour gérer les erreurs de façon plus robuste
+function handleError(error, context = "Application") {
+  console.error(`❌ Erreur ${context}:`, error);
+  
+  if (error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
+  
+  // Log des informations de debug
+  console.log("Debug info:", {
+    firebaseConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined',
+    currentUser: typeof currentUser !== 'undefined' ? (currentUser ? currentUser.email : 'null') : 'undefined',
+    plongeursLength: Array.isArray(plongeurs) ? plongeurs.length : 'not array',
+    palanqueesLength: Array.isArray(palanquees) ? palanquees.length : 'not array',
+    locksActive: Object.keys(palanqueeLocks).length
+  });
+  
+  return false;
+}
+
+// Correction de testFirebaseConnection pour être plus robuste
+async function testFirebaseConnection() {
+  try {
+    console.log("🧪 Test de connexion Firebase...");
+    
+    // Vérifier que les instances existent
+    if (!db) {
+      throw new Error("Instance Firebase Database non initialisée");
+    }
+    
+    if (!auth) {
+      throw new Error("Instance Firebase Auth non initialisée");
+    }
+    
+    // Test de connexion réseau
+    const testRef = db.ref('.info/connected');
+    const connectedPromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        testRef.off('value');
+        reject(new Error("Timeout test connexion Firebase"));
+      }, 5000);
+      
+      testRef.on('value', (snapshot) => {
+        clearTimeout(timeout);
+        testRef.off('value');
+        
+        firebaseConnected = snapshot.val() === true;
+        console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
+        resolve(firebaseConnected);
+      });
+    });
+    
+    await connectedPromise;
+    
+    // Test d'écriture simple
+    if (firebaseConnected) {
+      await db.ref('test').set({ 
+        timestamp: Date.now(),
+        testType: "connection-check"
+      });
+      console.log("✅ Test d'écriture Firebase réussi");
+      
+      // Nettoyer le test
+      await db.ref('test').remove();
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Test Firebase échoué:", error.message);
+    firebaseConnected = false;
+    return false;
+  }
+}
+
+// Fonction séparée pour initialiser les données de l'application
+async function initializeAppData() {
+  try {
+    console.log("🔄 Initialisation des données de l'application...");
+    
+    // Test de connexion Firebase
+    await testFirebaseConnection();
+    
+    // Définir la date du jour
+    const today = new Date().toISOString().split("T")[0];
+    const dpDateInput = $("dp-date");
+    if (dpDateInput) {
+      dpDateInput.value = today;
+    }
+    
+    // Chargement des infos DP du jour
+    try {
+      const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
+      if (snapshot.exists()) {
+        const dpData = snapshot.val();
+        const dpNomInput = $("dp-nom");
+        const dpLieuInput = $("dp-lieu");
+        const dpPlongeeInput = $("dp-plongee");
+        const dpMessage = $("dp-message");
+        
+        if (dpNomInput) dpNomInput.value = dpData.nom || "";
+        if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+        if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+        if (dpMessage) {
+          dpMessage.textContent = "Informations du jour chargées.";
+          dpMessage.style.color = "blue";
+        }
+        
+        // NOUVEAU : Mettre à jour les infos DP pour le système de verrous
+        dpInfo.nom = dpData.nom || "";
+        
+        console.log("✅ Informations DP du jour chargées");
+      } else {
+        console.log("ℹ️ Aucune information DP pour aujourd'hui");
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement DP:", error);
+    }
+
+    // Chargement historique et données
+    console.log("📜 Chargement des données...");
+    
+    // Chargement de l'historique DP
+    try {
+      if (typeof chargerHistoriqueDP === 'function') {
+        chargerHistoriqueDP();
+        console.log("✅ Historique DP chargé");
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement historique DP:", error);
+    }
+    
+    // Chargement des données Firebase (plongeurs et palanquées)
+    try {
+      await loadFromFirebase();
+      console.log("✅ Données Firebase chargées");
+    } catch (error) {
+      console.error("❌ Erreur chargement Firebase:", error);
+      // Mode dégradé
+      plongeurs = [];
+      palanquees = [];
+      plongeursOriginaux = [];
+    }
+    
+    // Chargement des sessions
+    try {
+      if (typeof populateSessionSelector === 'function') {
+        await populateSessionSelector();
+        console.log("✅ Sessions chargées");
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement sessions:", error);
+    }
+    
+    try {
+      if (typeof populateSessionsCleanupList === 'function') {
+        await populateSessionsCleanupList();
+        console.log("✅ Liste nettoyage sessions chargée");
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+    }
+    
+    try {
+      if (typeof populateDPCleanupList === 'function') {
+        await populateDPCleanupList();
+        console.log("✅ Liste nettoyage DP chargée");
+      }
+    } catch (error) {
+      console.error("❌ Erreur chargement liste nettoyage DP:", error);
+    }
+    
+    // Vérification du bouton test Firebase
+    const testButton = $("test-firebase");
+    if (testButton) {
+      console.log("✅ Bouton test Firebase trouvé");
+    } else {
+      console.warn("⚠️ Bouton test Firebase non trouvé dans le DOM");
+    }
+    
+    // Rendu initial
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    if (typeof updateCompteurs === 'function') updateCompteurs();
+    
+    console.log("✅ Application initialisée avec système de verrous!");
+    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
+    
+  } catch (error) {
+    console.error("❌ Erreur initialisation données:", error);
+    console.error("Stack trace:", error.stack);
+    
+    // Mode dégradé - s'assurer que les variables sont initialisées
+    if (!Array.isArray(plongeurs)) plongeurs = [];
+    if (!Array.isArray(palanquees)) palanquees = [];
+    if (!Array.isArray(plongeursOriginaux)) plongeursOriginaux = [];
+    
+    // Rendu en mode dégradé
+    try {
+      if (typeof renderPalanquees === 'function') renderPalanquees();
+      if (typeof renderPlongeurs === 'function') renderPlongeurs();
+      if (typeof updateAlertes === 'function') updateAlertes();
+      if (typeof updateCompteurs === 'function') updateCompteurs();
+    } catch (renderError) {
+      console.error("❌ Erreur rendu en mode dégradé:", renderError);
+    }
+    
+    // Afficher l'erreur à l'utilisateur si possible
+    const authError = $("auth-error");
+    if (authError) {
+      authError.textContent = "Erreur de chargement des données. Mode local activé.";
+      authError.style.display = "block";
+    }
+    
+    alert("Erreur de chargement. L'application fonctionne en mode dégradé.\\n\\nVeuillez actualiser la page ou contacter l'administrateur.");
+  }
+}
+
 // ===== GÉNÉRATION PDF =====
 function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
@@ -1263,7 +1493,7 @@ function showAuthError(message) {
   }
 }
 
-// ===== INITIALISATION =====
+// ===== INITIALISATION (À LA FIN) =====
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Application Palanquées JSAS v2.5.0 avec système de verrous - Chargement...");
   
@@ -1328,214 +1558,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
-
-// Fonction helper pour gérer les erreurs de façon plus robuste
-function handleError(error, context = "Application") {
-  console.error(`❌ Erreur ${context}:`, error);
-  
-  if (error.stack) {
-    console.error("Stack trace:", error.stack);
-  }
-  
-  // Log des informations de debug
-  console.log("Debug info:", {
-    firebaseConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined',
-    currentUser: typeof currentUser !== 'undefined' ? (currentUser ? currentUser.email : 'null') : 'undefined',
-    plongeursLength: Array.isArray(plongeurs) ? plongeurs.length : 'not array',
-    palanqueesLength: Array.isArray(palanquees) ? palanquees.length : 'not array',
-    locksActive: Object.keys(palanqueeLocks).length
-  });
-  
-  return false;
-}
-
-// Correction de testFirebaseConnection pour être plus robuste
-async function testFirebaseConnection() {
-  try {
-    console.log("🧪 Test de connexion Firebase...");
-    
-    // Vérifier que les instances existent
-    if (!db) {
-      throw new Error("Instance Firebase Database non initialisée");
-    }
-    
-    if (!auth) {
-      throw new Error("Instance Firebase Auth non initialisée");
-    }
-    
-    // Test de connexion réseau
-    const testRef = db.ref('.info/connected');
-    const connectedPromise = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        testRef.off('value');
-        reject(new Error("Timeout test connexion Firebase"));
-      }, 5000);
-      
-      testRef.on('value', (snapshot) => {
-        clearTimeout(timeout);
-        testRef.off('value');
-        
-        firebaseConnected = snapshot.val() === true;
-        console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
-        resolve(firebaseConnected);
-      });
-    });
-    
-    await connectedPromise;
-    
-    // Test d'écriture simple
-    if (firebaseConnected) {
-      await db.ref('test').set({ 
-        timestamp: Date.now(),
-        testType: "connection-check"
-      });
-      console.log("✅ Test d'écriture Firebase réussi");
-      
-      // Nettoyer le test
-      await db.ref('test').remove();
-    }
-    
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
-    firebaseConnected = false;
-    return false;
-  }
-}
-
-// Fonction séparée pour initialiser les données de l'application
-async function initializeAppData() {
-  try {
-    console.log("🔄 Initialisation des données de l'application...");
-    
-    // Test de connexion Firebase
-    await testFirebaseConnection();
-    
-    // Définir la date du jour
-    const today = new Date().toISOString().split("T")[0];
-    const dpDateInput = $("dp-date");
-    if (dpDateInput) {
-      dpDateInput.value = today;
-    }
-    
-    // Chargement des infos DP du jour
-    try {
-      const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
-      if (snapshot.exists()) {
-        const dpData = snapshot.val();
-        const dpNomInput = $("dp-nom");
-        const dpLieuInput = $("dp-lieu");
-        const dpPlongeeInput = $("dp-plongee");
-        const dpMessage = $("dp-message");
-        
-        if (dpNomInput) dpNomInput.value = dpData.nom || "";
-        if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
-        if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
-        if (dpMessage) {
-          dpMessage.textContent = "Informations du jour chargées.";
-          dpMessage.style.color = "blue";
-        }
-        
-        // NOUVEAU : Mettre à jour les infos DP pour le système de verrous
-        dpInfo.nom = dpData.nom || "";
-        
-        console.log("✅ Informations DP du jour chargées");
-      } else {
-        console.log("ℹ️ Aucune information DP pour aujourd'hui");
-      }
-    } catch (error) {
-      console.error("❌ Erreur chargement DP:", error);
-    }
-
-    // Chargement historique et données
-    console.log("📜 Chargement des données...");
-    
-    // Chargement de l'historique DP
-    try {
-      chargerHistoriqueDP();
-      console.log("✅ Historique DP chargé");
-    } catch (error) {
-      console.error("❌ Erreur chargement historique DP:", error);
-    }
-    
-    // Chargement des données Firebase (plongeurs et palanquées)
-    try {
-      await loadFromFirebase();
-      console.log("✅ Données Firebase chargées");
-    } catch (error) {
-      console.error("❌ Erreur chargement Firebase:", error);
-      // Mode dégradé
-      plongeurs = [];
-      palanquees = [];
-      plongeursOriginaux = [];
-    }
-    
-    // Chargement des sessions
-    try {
-      await populateSessionSelector();
-      console.log("✅ Sessions chargées");
-    } catch (error) {
-      console.error("❌ Erreur chargement sessions:", error);
-    }
-    
-    try {
-      await populateSessionsCleanupList();
-      console.log("✅ Liste nettoyage sessions chargée");
-    } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage sessions:", error);
-    }
-    
-    try {
-      await populateDPCleanupList();
-      console.log("✅ Liste nettoyage DP chargée");
-    } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage DP:", error);
-    }
-    
-    // Vérification du bouton test Firebase
-    const testButton = $("test-firebase");
-    if (testButton) {
-      console.log("✅ Bouton test Firebase trouvé");
-    } else {
-      console.warn("⚠️ Bouton test Firebase non trouvé dans le DOM");
-    }
-    
-    // Rendu initial
-    renderPalanquees();
-    renderPlongeurs();
-    updateAlertes();
-    updateCompteurs();
-    
-    console.log("✅ Application initialisée avec système de verrous!");
-    console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
-    
-  } catch (error) {
-    console.error("❌ Erreur initialisation données:", error);
-    console.error("Stack trace:", error.stack);
-    
-    // Mode dégradé - s'assurer que les variables sont initialisées
-    if (!Array.isArray(plongeurs)) plongeurs = [];
-    if (!Array.isArray(palanquees)) palanquees = [];
-    if (!Array.isArray(plongeursOriginaux)) plongeursOriginaux = [];
-    
-    // Rendu en mode dégradé
-    try {
-      renderPalanquees();
-      renderPlongeurs();
-      updateAlertes();
-      updateCompteurs();
-    } catch (renderError) {
-      console.error("❌ Erreur rendu en mode dégradé:", renderError);
-    }
-    
-    // Afficher l'erreur à l'utilisateur si possible
-    const authError = $("auth-error");
-    if (authError) {
-      authError.textContent = "Erreur de chargement des données. Mode local activé.";
-      authError.style.display = "block";
-    }
-    
-    alert("Erreur de chargement. L'application fonctionne en mode dégradé.\n\nVeuillez actualiser la page ou contacter l'administrateur.");
-  }
-}
