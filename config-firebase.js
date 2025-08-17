@@ -807,3 +807,4 @@ async function loadAvailableSessions() {
     console.error("❌ Erreur chargement sessions:", error);
     return [];
   }
+}
