@@ -60,22 +60,29 @@
 
   <!-- APPLICATION PRINCIPALE -->
   <div id="main-app" style="display: none;">
-  <header>
-    <br>
-	<div style="display: flex; justify-content: space-between; align-items: center;">
- 	  <strong>Palanquées JSAS</strong>
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <span id="user-info" style="color: #666; font-size: 14px;"></span>
-        <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
-          Déconnexion
-        </button>
-      </div>
+<header>
+  <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 0;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span id="user-info" style="color: #666; font-size: 14px;"></span>
+      <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
+        🔐 Mot de passe
+      </button>
+      <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
+        Déconnexion
+      </button>
     </div>
+  </div>
+  
+  <div style="margin: 20px 0;">
+    <h1 style="text-align: left; margin: 0; color: #004080; font-size: 28px;">🤿 Palanquées JSAS</h1>
+  </div>
+  
   <hr>
-  <div style="text-align: center;">
-  <center><h1>Création des<br>FICHES de SÉCURITÉ</h1></center>
+  <div style="text-align: center; margin: 15px 0;">
+    <h2 style="margin: 0; color: #004080;">Création des<br>FICHES de SÉCURITÉ</h2>
   </div>
   <hr>
+  
   <div id="meta-info">
     <label><strong>Directeur de Plongée</strong>
       <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />
