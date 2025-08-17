@@ -1,4 +1,4 @@
-// render-dom.js - Rendu DOM et interactions
+// render-dom.js - Rendu DOM et interactions avec système de verrous
 
 // ===== RENDER FUNCTIONS =====
 function renderPlongeurs() {
@@ -105,6 +105,7 @@ function renderPalanquees() {
     }
     return palanquee;
   });
+  
   palanquees.forEach((palanquee, idx) => {
     const div = document.createElement("div");
     div.className = "palanquee";
@@ -117,6 +118,30 @@ function renderPalanquees() {
         <span class="remove-palanquee" style="color: red; cursor: pointer;">❌</span>
       </div>
     `;
+    
+    // NOUVEAU : Gestion des verrous
+    const palanqueeId = `palanquee-${idx}`;
+    const lock = palanqueeLocks[palanqueeId];
+    
+    if (lock) {
+      const indicator = document.createElement('div');
+      indicator.className = 'lock-indicator';
+      
+      if (lock.userId === currentUser.uid) {
+        indicator.className += ' editing-self';
+        indicator.textContent = '🔧 En modification par vous';
+        div.classList.add('editing-self');
+      } else {
+        indicator.className += ' editing-other';
+        indicator.textContent = `🔒 ${lock.userName} modifie`;
+        div.classList.add('editing-other');
+      }
+      
+      const title = div.querySelector('.palanquee-title');
+      if (title) {
+        title.appendChild(indicator);
+      }
+    }
     
     if (palanquee.length === 0) {
       const emptyMsg = document.createElement("div");
@@ -212,9 +237,17 @@ function renderPalanquees() {
       }
     });
 
-    div.addEventListener("drop", e => {
+    // NOUVEAU : Gestion des verrous pour le drop
+    div.addEventListener("drop", async (e) => {
       e.preventDefault();
       div.classList.remove('drag-over');
+      
+      // Vérifier le verrou avant d'autoriser la modification
+      const hasLock = await acquirePalanqueeLock(idx);
+      if (!hasLock) {
+        showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
+        return;
+      }
       
       const data = e.dataTransfer.getData("text/plain");
       
@@ -255,6 +288,29 @@ function renderPalanquees() {
       }
     });
 
+    // NOUVEAU : Intercepter les clics sur les champs éditables pour vérifier les verrous
+    div.addEventListener("click", async (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        // Vérifier si c'est un champ de palanquée
+        if (e.target.classList.contains('palanquee-horaire') ||
+            e.target.classList.contains('palanquee-prof-prevue') ||
+            e.target.classList.contains('palanquee-duree-prevue') ||
+            e.target.classList.contains('palanquee-prof-realisee') ||
+            e.target.classList.contains('palanquee-duree-realisee') ||
+            e.target.classList.contains('palanquee-paliers') ||
+            e.target.classList.contains('plongeur-prerogatives-editable')) {
+          
+          const hasLock = await acquirePalanqueeLock(idx);
+          if (!hasLock) {
+            e.preventDefault();
+            e.target.blur();
+            showLockNotification(`Modification bloquée - palanquée en cours d'édition`, "warning");
+            return;
+          }
+        }
+      }
+    });
+
     // Drag & drop amélioré
     div.addEventListener("dragover", e => {
       e.preventDefault();
@@ -273,14 +329,24 @@ function renderPalanquees() {
   
   setupPalanqueesEventListeners();
   updateCompteurs();
+  
+  // NOUVEAU : Mettre à jour l'UI des verrous après le rendu
+  updatePalanqueeLockUI();
 }
 
 function setupPalanqueesEventListeners() {
   // Event delegation pour les boutons de retour
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     if (e.target.classList.contains("return-plongeur")) {
       const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
+      
+      // NOUVEAU : Vérifier le verrou avant de permettre le retour
+      const hasLock = await acquirePalanqueeLock(palanqueeIdx);
+      if (!hasLock) {
+        showLockNotification("Impossible de modifier - palanquée en cours d'édition par un autre DP", "warning");
+        return;
+      }
       
       if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
         const plongeur = palanquees[palanqueeIdx].splice(plongeurIdx, 1)[0];
@@ -292,12 +358,13 @@ function setupPalanqueesEventListeners() {
   });
   
   // Event delegation pour la modification des prérogatives
-  document.addEventListener("change", (e) => {
+  document.addEventListener("change", async (e) => {
     if (e.target.classList.contains("plongeur-prerogatives-editable")) {
       const palanqueeIdx = parseInt(e.target.dataset.palanqueeIdx);
       const plongeurIdx = parseInt(e.target.dataset.plongeurIdx);
       const newPrerogatives = e.target.value.trim();
       
+      // Le verrou a déjà été vérifié lors du clic, procéder à la modification
       if (palanquees[palanqueeIdx] && palanquees[palanqueeIdx][plongeurIdx]) {
         palanquees[palanqueeIdx][plongeurIdx].pre = newPrerogatives;
         syncToDatabase();
