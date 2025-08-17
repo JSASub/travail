@@ -1,4 +1,4 @@
-// render-dom.js - Rendu DOM ultra-sécurisé
+// render-dom.js - Rendu DOM ultra-sécurisé (VERSION CORRIGÉE)
 
 // ===== RENDER FUNCTIONS =====
 function renderPlongeurs() {
@@ -67,6 +67,7 @@ function renderPalanquees() {
           }
         });
         
+        // Ajouter les propriétés spéciales
         nouveauTableau.horaire = palanquee.horaire || '';
         nouveauTableau.profondeurPrevue = palanquee.profondeurPrevue || '';
         nouveauTableau.dureePrevue = palanquee.dureePrevue || '';
@@ -76,6 +77,7 @@ function renderPalanquees() {
         
         return nouveauTableau;
       } else {
+        // Palanquée vide
         const nouveauTableau = [];
         nouveauTableau.horaire = '';
         nouveauTableau.profondeurPrevue = '';
@@ -87,7 +89,7 @@ function renderPalanquees() {
       }
     }
     
-    // S'assurer que les propriétés existent
+    // S'assurer que les propriétés existent même pour les tableaux existants
     if (!palanquee.hasOwnProperty('horaire')) palanquee.horaire = '';
     if (!palanquee.hasOwnProperty('profondeurPrevue')) palanquee.profondeurPrevue = '';
     if (!palanquee.hasOwnProperty('dureePrevue')) palanquee.dureePrevue = '';
@@ -98,6 +100,7 @@ function renderPalanquees() {
     return palanquee;
   });
 
+  // Rendu des palanquées
   palanquees.forEach((palanquee, index) => {
     const palanqueeDiv = document.createElement("div");
     palanqueeDiv.className = "palanquee";
@@ -109,6 +112,32 @@ function renderPalanquees() {
       palanqueeDiv.dataset.alert = "true";
     }
     
+    // Générer le contenu HTML
+    let plongeursHTML = '';
+    if (palanquee.length === 0) {
+      plongeursHTML = '<li class="palanquee-empty">Aucun plongeur assigné - Glissez des plongeurs ici</li>';
+    } else {
+      plongeursHTML = palanquee.map((plongeur, plongeurIndex) => `
+        <li class="plongeur-item palanquee-plongeur-item" draggable="true" 
+            data-type="palanquee" 
+            data-palanquee-index="${index}" 
+            data-plongeur-index="${plongeurIndex}">
+          <div class="plongeur-content">
+            <span class="plongeur-nom">${plongeur.nom}</span>
+            <input type="text" 
+                   class="plongeur-prerogatives-editable" 
+                   value="${plongeur.pre || ''}" 
+                   placeholder="PE40..."
+                   title="Prérogatives du plongeur"
+                   onchange="updatePlongeurPrerogatives(${index}, ${plongeurIndex}, this.value)"
+                   onclick="handlePalanqueeEdit(${index})" />
+            <span class="plongeur-niveau">${plongeur.niveau}</span>
+            <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${plongeurIndex})" title="Remettre dans la liste principale">↩️</span>
+          </div>
+        </li>
+      `).join('');
+    }
+    
     palanqueeDiv.innerHTML = `
       <div class="palanquee-title">
         <span>Palanquée ${index + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
@@ -116,28 +145,7 @@ function renderPalanquees() {
       </div>
       
       <ul class="palanquee-plongeurs-list" style="list-style: none; padding: 0; margin: 10px 0;">
-        ${palanquee.length === 0 ? 
-          '<li class="palanquee-empty">Aucun plongeur assigné - Glissez des plongeurs ici</li>' :
-          palanquee.map((plongeur, plongeurIndex) => `
-            <li class="plongeur-item palanquee-plongeur-item" draggable="true" 
-                data-type="palanquee" 
-                data-palanquee-index="${index}" 
-                data-plongeur-index="${plongeurIndex}">
-              <div class="plongeur-content">
-                <span class="plongeur-nom">${plongeur.nom}</span>
-                <input type="text" 
-                       class="plongeur-prerogatives-editable" 
-                       value="${plongeur.pre || ''}" 
-                       placeholder="PE40..."
-                       title="Prérogatives du plongeur"
-                       onchange="updatePlongeurPrerogatives(${index}, ${plongeurIndex}, this.value)"
-                       onclick="handlePalanqueeEdit(${index})" />
-                <span class="plongeur-niveau">${plongeur.niveau}</span>
-                <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${plongeurIndex})" title="Remettre dans la liste principale">↩️</span>
-              </div>
-            </li>
-          `).join('')
-        }
+        ${plongeursHTML}
       </ul>
       
       <div class="palanquee-details">
@@ -187,6 +195,7 @@ function renderPalanquees() {
     container.appendChild(palanqueeDiv);
   });
   
+  // Mettre à jour les compteurs et alertes
   if (typeof updateCompteurs === 'function') {
     updateCompteurs();
   }
@@ -241,7 +250,6 @@ function updatePalanqueeDetail(palanqueeIndex, property, newValue) {
 function handlePalanqueeEdit(palanqueeIndex) {
   if (typeof interceptPalanqueeEdit === 'function') {
     interceptPalanqueeEdit(palanqueeIndex, () => {
-      // L'action d'édition est autorisée
       console.log(`Édition autorisée pour palanquée ${palanqueeIndex}`);
     });
   }
