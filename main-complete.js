@@ -399,12 +399,19 @@ function generatePDFPreview() {
 }
 
 function exportToPDF() {
-  if (Date.now() - pageLoadTime < 3000) {
+  // Vérifier que pageLoadTime existe
+  if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
     console.log("🚫 Export PDF bloqué - page en cours de chargement");
     return;
   }
     
   console.log("📄 Génération du PDF professionnel...");
+  
+  // Fonction helper sécurisée pour getElementById
+  function $(id) {
+    const element = document.getElementById(id);
+    return element || { value: "" }; // Retourne un objet avec value vide si élément non trouvé
+  }
   
   const dpNom = $("dp-nom").value || "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -412,6 +419,11 @@ function exportToPDF() {
   const dpPlongee = $("dp-plongee").value || "matin";
   
   try {
+    // Vérifier que jsPDF est disponible
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      throw new Error("jsPDF non disponible. Assurez-vous que la bibliothèque est chargée.");
+    }
+    
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -455,11 +467,19 @@ function exportToPDF() {
     }
     
     function formatDateFrench(dateString) {
-      if (!dateString) return "Non definie";
-      const date = new Date(dateString);
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
+      if (!dateString) return "Non définie";
+      try {
+        const date = new Date(dateString);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
+      } catch (error) {
+        return dateString;
+      }
     }
+    
+    // Vérifier que les variables globales existent
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     // === EN-TÊTE PRINCIPAL ===
     doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
@@ -469,11 +489,11 @@ function exportToPDF() {
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text('Palanquées JSAS', margin, 20);
-	doc.setFontSize(20);
+    doc.setFontSize(20);
     doc.text('Fiche de Sécurité', margin, 30);
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
-    doc.text('Associative Sportive de Plongée', margin, 35);
+    doc.text('Association Sportive de Plongée', margin, 35);
     
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
@@ -484,9 +504,9 @@ function exportToPDF() {
     yPosition = 75;
     
     // === STATISTIQUES ===
-    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-    const alertesTotal = checkAllAlerts();
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
+    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
     doc.setFontSize(14);
@@ -504,7 +524,7 @@ function exportToPDF() {
     doc.setFont(undefined, 'bold');
     
     doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
-    doc.text('                        Palanquées: ' + palanquees.length, margin + 50, yPosition);
+    doc.text('Palanquées: ' + palanqueesLocal.length, margin + 50, yPosition);
     yPosition += 8;
     
     doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
@@ -548,7 +568,7 @@ function exportToPDF() {
     doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
     yPosition += 15;
     
-    if (palanquees.length === 0) {
+    if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
       doc.setLineWidth(1);
       doc.rect(margin, yPosition, contentWidth, 15, 'S');
@@ -558,14 +578,12 @@ function exportToPDF() {
       doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 10);
       yPosition += 25;
     } else {
-      for (let i = 0; i < palanquees.length; i++) {
-        const pal = palanquees[i];
+      for (let i = 0; i < palanqueesLocal.length; i++) {
+        const pal = palanqueesLocal[i];
+        if (!pal || !Array.isArray(pal)) continue;
         
-        // Calculer la hauteur nécessaire en tenant compte des détails
-        // Hauteur de base : 5 (espace) + 8 (horaire) + 8 (prévues) + 8 (réalisées) + 10 (paliers) = 39
+        // Calculer la hauteur nécessaire
         let extraHeight = 39;
-        
-        // Ajouter 6 points si les paliers ont une valeur (ligne correction supplémentaire)
         if (pal.paliers && pal.paliers.trim()) {
           extraHeight += 6;
         }
@@ -573,7 +591,7 @@ function exportToPDF() {
         const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
         checkPageBreak(palanqueeHeight + 5);
         
-        const isAlert = checkAlert(pal);
+        const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
@@ -587,9 +605,9 @@ function exportToPDF() {
         doc.setFont(undefined, 'bold');
         doc.text('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
         
-        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-        const n1s = pal.filter(p => p.niveau === "N1");
-        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+        const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+        const n1s = pal.filter(p => p && p.niveau === "N1");
+        const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
         doc.setFontSize(9);
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
@@ -602,11 +620,13 @@ function exportToPDF() {
         
         if (pal.length === 0) {
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.text('Aucun plongeur assigne', margin + 10, yPosition);
+          doc.text('Aucun plongeur assigné', margin + 10, yPosition);
           yPosition += 8;
         } else {
           for (let j = 0; j < pal.length; j++) {
             const p = pal[j];
+            if (!p || !p.nom) continue;
+            
             const nomClean = p.nom.replace(/'/g, "'");
             const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
             
@@ -627,18 +647,17 @@ function exportToPDF() {
           }
         }
         
-        // AJOUTER LES PARAMÈTRES APRÈS LA LISTE DES PLONGEURS avec zones à remplir
-        yPosition += 5; // Petit espace avant les paramètres
+        // AJOUTER LES PARAMÈTRES APRÈS LA LISTE DES PLONGEURS
+        yPosition += 5;
         
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         
-        // Ligne 1: Horaire de mise à l'eau
+        // Horaire de mise à l'eau
         doc.text('Horaire mise à l\'eau:', margin + 5, yPosition);
         
         if (pal.horaire && pal.horaire.trim()) {
-          // Afficher la valeur saisie + zone de correction
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
           doc.text(pal.horaire, margin + 45, yPosition);
@@ -650,7 +669,6 @@ function exportToPDF() {
           doc.setLineWidth(0.3);
           doc.line(margin + 105, yPosition + 1, margin + 140, yPosition + 1);
         } else {
-          // Zone vide à remplir
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1);
@@ -661,7 +679,7 @@ function exportToPDF() {
         }
         yPosition += 8;
         
-        // Ligne 2: Profondeurs et durées prévues
+        // Profondeurs et durées prévues
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
@@ -676,8 +694,10 @@ function exportToPDF() {
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
           doc.text('Corr:', margin + 35, yPosition);
+          doc.setDrawColor(180, 180, 180);
           doc.line(margin + 43, yPosition + 1, margin + 53, yPosition + 1);
         } else {
+          doc.setDrawColor(180, 180, 180);
           doc.line(margin + 25, yPosition + 1, margin + 45, yPosition + 1);
           doc.text(' m', margin + 47, yPosition);
         }
@@ -695,14 +715,16 @@ function exportToPDF() {
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.setFontSize(8);
           doc.text('Corr:', margin + 95, yPosition);
+          doc.setDrawColor(180, 180, 180);
           doc.line(margin + 103, yPosition + 1, margin + 113, yPosition + 1);
         } else {
+          doc.setDrawColor(180, 180, 180);
           doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
           doc.text(' min', margin + 104, yPosition);
         }
         yPosition += 8;
         
-        // Ligne 3: Profondeurs et durées réalisées
+        // Profondeurs et durées réalisées
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
@@ -747,28 +769,25 @@ function exportToPDF() {
         }
         yPosition += 8;
         
-        // Ligne 4: Paliers
+        // Paliers
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         doc.text('Paliers:', margin + 5, yPosition);
         
         if (pal.paliers && pal.paliers.trim()) {
-          // Afficher la valeur saisie
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
           doc.setFontSize(8);
           doc.text(pal.paliers, margin + 20, yPosition);
           yPosition += 6;
           
-          // Zone de correction en dessous
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.text('Correction paliers:', margin + 5, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 35, yPosition + 1, margin + 120, yPosition + 1);
         } else {
-          // Zone vide à remplir
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1);
           doc.setFont(undefined, 'normal');
@@ -776,24 +795,24 @@ function exportToPDF() {
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.text('(ex: 3 min à 3 m)', margin + 122, yPosition);
         }
-        yPosition += 10; // Plus d'espace après les paliers
+        yPosition += 10;
         
         yPosition += 10;
       }
     }
     
     // === PLONGEURS NON ASSIGNÉS ===
-    if (plongeurs.length > 0) {
-      checkPageBreak(25 + (plongeurs.length * 6));
+    if (plongeursLocal.length > 0) {
+      checkPageBreak(25 + (plongeursLocal.length * 6));
       
       doc.setDrawColor(255, 193, 7);
       doc.setLineWidth(2);
-      doc.rect(margin, yPosition, contentWidth, 15 + (plongeurs.length * 6), 'S');
+      doc.rect(margin, yPosition, contentWidth, 15 + (plongeursLocal.length * 6), 'S');
       
       doc.setTextColor(133, 100, 4);
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('PLONGEURS en attente/disponibles (' + plongeurs.length + ')', margin + 5, yPosition + 10);
+      doc.text('PLONGEURS en attente/disponibles (' + plongeursLocal.length + ')', margin + 5, yPosition + 10);
       
       yPosition += 18;
       
@@ -801,15 +820,17 @@ function exportToPDF() {
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       
-      for (let i = 0; i < plongeurs.length; i++) {
-        const p = plongeurs[i];
+      for (let i = 0; i < plongeursLocal.length; i++) {
+        const p = plongeursLocal[i];
+        if (!p || !p.nom) continue;
+        
         const nomClean = p.nom.replace(/'/g, "'");
         const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
         const textLine = '• ' + nomClean + '   (' + p.niveau + ')' + (preClean ? '   - ' + preClean : '');
         doc.text(textLine, margin + 5, yPosition + (i * 6));
       }
       
-      yPosition += (plongeurs.length * 6) + 10;
+      yPosition += (plongeursLocal.length * 6) + 10;
     }
     
     // === FOOTER ===
@@ -842,15 +863,13 @@ function exportToPDF() {
     console.log("✅ PDF généré:", fileName);
     
     const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
-    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanquees.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
+    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
     
   } catch (error) {
     console.error("❌ Erreur PDF:", error);
-    alert("Erreur lors de la génération du PDF : " + error.message);
+    alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
-
-
 // ===== DRAG & DROP SÉCURISÉ =====
 
 // Variables globales pour le drag & drop
