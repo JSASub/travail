@@ -90,6 +90,7 @@ const SimpleLockSystem = {
         window.currentlyEditingPalanquee = palanqueeIndex;
         
         // Auto-libération après 2 minutes
+        if (!window.lockTimers) window.lockTimers = {};
         window.lockTimers[lockId] = setTimeout(() => {
           this.releaseLock(palanqueeIndex);
           this.showNotification("⏰ Verrou libéré automatiquement", "warning");
@@ -134,7 +135,7 @@ const SimpleLockSystem = {
       db.ref(`palanquee_locks/${lockId}`).remove();
       window.currentlyEditingPalanquee = null;
       
-      if (window.lockTimers[lockId]) {
+      if (window.lockTimers && window.lockTimers[lockId]) {
         clearTimeout(window.lockTimers[lockId]);
         delete window.lockTimers[lockId];
       }
@@ -230,9 +231,11 @@ const SimpleLockSystem = {
         this.releaseLock(window.currentlyEditingPalanquee);
       }
       
-      Object.values(window.lockTimers).forEach(timer => {
-        if (timer) clearTimeout(timer);
-      });
+      if (window.lockTimers) {
+        Object.values(window.lockTimers).forEach(timer => {
+          if (timer) clearTimeout(timer);
+        });
+      }
       
       if (currentUser && db) {
         db.ref(`dp_online/${currentUser.uid}`).remove();
@@ -271,8 +274,10 @@ if (originalSyncToDatabase) {
   window.syncToDatabase = async function() {
     await originalSyncToDatabase();
     
-    // Libérer le verrou après sync
-    if (SimpleLockSystem.initialized && window.currentlyEditingPalanquee !== null) {
+    // Libérer le verrou après sync SEULEMENT si lockTimers existe
+    if (SimpleLockSystem.initialized && 
+        window.currentlyEditingPalanquee !== null && 
+        window.lockTimers) {
       setTimeout(() => {
         SimpleLockSystem.releaseLock(window.currentlyEditingPalanquee);
       }, 1000);
