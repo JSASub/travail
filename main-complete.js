@@ -1117,6 +1117,205 @@ function setupEventListeners() {
     });
   }
 
+// === FONCTIONNALITÉ BOUTON "VALIDER DP" ===
+// Event listener pour le bouton Valider DP
+const validerDPBtn = document.getElementById("valider-dp");
+if (validerDPBtn) {
+  validerDPBtn.addEventListener("click", async (e) => {
+    e.preventDefault(); // Empêcher le comportement par défaut du formulaire
+    
+    try {
+      // Récupérer les valeurs des champs
+      const dpNom = document.getElementById("dp-nom")?.value?.trim();
+      const dpDate = document.getElementById("dp-date")?.value;
+      const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+      const dpPlongee = document.getElementById("dp-plongee")?.value;
+      const dpMessage = document.getElementById("dp-message");
+      
+      // Validation des champs obligatoires
+      if (!dpNom) {
+        alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
+        document.getElementById("dp-nom")?.focus();
+        return;
+      }
+      
+      if (!dpDate) {
+        alert("⚠️ Veuillez sélectionner une date");
+        document.getElementById("dp-date")?.focus();
+        return;
+      }
+      
+      if (!dpLieu) {
+        alert("⚠️ Veuillez saisir le lieu de plongée");
+        document.getElementById("dp-lieu")?.focus();
+        return;
+      }
+      
+      // Vérifier le format du nom DP (au moins nom et prénom)
+      if (dpNom.split(' ').length < 2) {
+        const confirm = window.confirm("⚠️ Le nom semble incomplet (nom ET prénom recommandés).\n\nContinuer quand même ?");
+        if (!confirm) {
+          document.getElementById("dp-nom")?.focus();
+          return;
+        }
+      }
+      
+      // Vérifier que la date n'est pas trop ancienne
+      const selectedDate = new Date(dpDate);
+      const today = new Date();
+      const diffDays = Math.ceil((today - selectedDate) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 7) {
+        const confirm = window.confirm(`⚠️ La date sélectionnée remonte à ${diffDays} jours.\n\nÊtes-vous sûr de cette date ?`);
+        if (!confirm) {
+          document.getElementById("dp-date")?.focus();
+          return;
+        }
+      }
+      
+      // Créer l'objet informations DP
+      const dpInfo = {
+        nom: dpNom,
+        date: dpDate,
+        lieu: dpLieu,
+        plongee: dpPlongee,
+        timestamp: Date.now(),
+        validated: true
+      };
+      
+      // Mettre à jour la variable globale si elle existe
+      if (typeof window.dpInfo !== 'undefined') {
+        window.dpInfo.nom = dpNom;
+        window.dpInfo.niveau = 'DP'; // Par défaut
+      }
+      
+      // Sauvegarder dans Firebase si disponible
+      if (typeof db !== 'undefined' && db) {
+        try {
+          const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+          await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
+          console.log("✅ Informations DP sauvegardées dans Firebase");
+        } catch (firebaseError) {
+          console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
+          // Continue sans bloquer l'application
+        }
+      }
+      
+      // Afficher le message de confirmation
+      if (dpMessage) {
+        dpMessage.innerHTML = `
+          <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+            ✅ Informations DP validées
+            <br><small style="font-weight: normal;">
+              ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
+            </small>
+          </div>
+        `;
+        dpMessage.classList.add("dp-valide");
+      }
+      
+      // Désactiver temporairement le bouton pour éviter les doublons
+      validerDPBtn.disabled = true;
+      validerDPBtn.textContent = "✅ Validé";
+      validerDPBtn.style.backgroundColor = "#28a745";
+      
+      // Réactiver le bouton après 3 secondes
+      setTimeout(() => {
+        validerDPBtn.disabled = false;
+        validerDPBtn.textContent = "Valider DP";
+        validerDPBtn.style.backgroundColor = "#007bff";
+      }, 3000);
+      
+      // Notification système si disponible
+      if (typeof showNotification === 'function') {
+        showNotification("✅ Informations DP validées et sauvegardées", "success");
+      }
+      
+      // Log pour debug
+      console.log("✅ Validation DP réussie:", dpInfo);
+      
+      // Optionnel : déclencher une synchronisation
+      if (typeof syncToDatabase === 'function') {
+        setTimeout(syncToDatabase, 1000);
+      }
+      
+    } catch (error) {
+      console.error("❌ Erreur validation DP:", error);
+      
+      // Afficher l'erreur à l'utilisateur
+      const dpMessage = document.getElementById("dp-message");
+      if (dpMessage) {
+        dpMessage.innerHTML = `
+          <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
+            ❌ Erreur lors de la validation : ${error.message}
+          </div>
+        `;
+      } else {
+        alert("❌ Erreur lors de la validation : " + error.message);
+      }
+    }
+  });
+}
+
+// === FONCTION UTILITAIRE POUR CHARGER LES INFOS DP EXISTANTES ===
+async function chargerInfoDPExistantes() {
+  try {
+    if (typeof db === 'undefined' || !db) return;
+    
+    const dpDate = document.getElementById("dp-date")?.value;
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+    
+    if (!dpDate) return;
+    
+    // Chercher les informations DP pour cette date
+    const snapshot = await db.ref('dpInfo').orderByChild('date').equalTo(dpDate).once('value');
+    
+    if (snapshot.exists()) {
+      const dpInfos = snapshot.val();
+      const dpKeys = Object.keys(dpInfos);
+      
+      // Prendre la première correspondance
+      const dpData = dpInfos[dpKeys[0]];
+      
+      // Pré-remplir les champs si ils sont vides
+      const dpNomInput = document.getElementById("dp-nom");
+      const dpLieuInput = document.getElementById("dp-lieu");
+      const dpPlongeeInput = document.getElementById("dp-plongee");
+      
+      if (dpNomInput && !dpNomInput.value && dpData.nom) {
+        dpNomInput.value = dpData.nom;
+      }
+      
+      if (dpLieuInput && !dpLieuInput.value && dpData.lieu) {
+        dpLieuInput.value = dpData.lieu;
+      }
+      
+      if (dpPlongeeInput && dpData.plongee) {
+        dpPlongeeInput.value = dpData.plongee;
+      }
+      
+      console.log("📋 Informations DP pré-chargées pour", dpDate);
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement infos DP:", error);
+  }
+}
+
+// === EVENT LISTENERS ADDITIONNELS ===
+// Auto-charger les infos quand la date change
+const dpDateInput = document.getElementById("dp-date");
+if (dpDateInput) {
+  dpDateInput.addEventListener("change", chargerInfoDPExistantes);
+}
+
+// Auto-charger au démarrage si une date est déjà définie
+if (dpDateInput && dpDateInput.value) {
+  setTimeout(chargerInfoDPExistantes, 1000);
+}
+
+console.log("✅ Fonctionnalité bouton 'Valider DP' configurée");
+
   // === AJOUT DE PLONGEUR ===
   const addForm = document.getElementById("addForm");
   if (addForm) {
