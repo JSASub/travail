@@ -525,6 +525,88 @@ async function loadFromFirebase() {
     
     plongeursOriginaux = [...plongeurs];
     
+    // Appeler les fonctions de rendu seulement si elles existent
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement Firebase:", error);
+  }
+}
+
+// Chargement d'une session spécifique depuis Firebase
+async function loadSession(sessionKey) {
+  try {
+    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!sessionSnapshot.exists()) {
+      alert("Session non trouvée dans Firebase");
+      return false;
+    }
+    
+    const sessionData = sessionSnapshot.val();
+    
+    plongeurs = sessionData.plongeurs || [];
+    
+    // CORRECTION PRINCIPALE : Conversion des palanquées objet→tableau
+    if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+      palanquees = sessionData.palanquees.map((pal, index) => {
+        // Si c'est déjà un tableau, on le garde
+        if (Array.isArray(pal)) {
+          // Ajouter les propriétés manquantes
+          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
+          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
+          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
+          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
+          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
+          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
+          return pal;
+        }
+        
+        // Si c'est un objet (le cas de votre erreur), on le convertit
+        if (pal && typeof pal === 'object') {
+          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+          
+          const nouveauTableau = [];
+          
+          // Extraire les plongeurs (propriétés avec clés numériques)
+          Object.keys(pal).forEach(key => {
+            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
+              nouveauTableau.push(pal[key]);
+            }
+          });
+          
+          // Conserver les propriétés de palanquée
+          nouveauTableau.horaire = pal.horaire || '';
+          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
+          nouveauTableau.dureePrevue = pal.dureePrevue || '';
+          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
+          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
+          nouveauTableau.paliers = pal.paliers || '';
+          
+          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          return nouveauTableau;
+        } else {
+          // Cas inattendu, créer une palanquée vide
+          console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
+          const nouveauTableau = [];
+          nouveauTableau.horaire = '';
+          nouveauTableau.profondeurPrevue = '';
+          nouveauTableau.dureePrevue = '';
+          nouveauTableau.profondeurRealisee = '';
+          nouveauTableau.dureeRealisee = '';
+          nouveauTableau.paliers = '';
+          return nouveauTableau;
+        }
+      });
+      
+      console.log("✅ Palanquées chargées:", palanquees.length);
+    } else {
+      palanquees = [];
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
     // Charger les métadonnées (VERSION SÉCURISÉE)
     if (sessionData.meta) {
       if ($("dp-nom")) $("dp-nom").value = sessionData.meta.dp || "";
@@ -574,37 +656,6 @@ async function loadFromFirebase() {
     console.error("❌ Erreur chargement session:", error);
     alert("Erreur lors du chargement de la session : " + error.message);
     return false;
-  }
-} pal.paliers || '';
-          
-          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
-          return nouveauTableau;
-        } else {
-          // Cas inattendu, créer une palanquée vide
-          console.warn(`⚠️ Palanquée ${index + 1} corrompue, création d'une palanquée vide`);
-          const nouveauTableau = [];
-          nouveauTableau.horaire = '';
-          nouveauTableau.profondeurPrevue = '';
-          nouveauTableau.dureePrevue = '';
-          nouveauTableau.profondeurRealisee = '';
-          nouveauTableau.dureeRealisee = '';
-          nouveauTableau.paliers = '';
-          return nouveauTableau;
-        }
-      });
-      
-      console.log("✅ Palanquées chargées:", palanquees.length);
-    }
-    
-    plongeursOriginaux = [...plongeurs];
-    
-    // Appeler les fonctions de rendu seulement si elles existent
-    if (typeof renderPalanquees === 'function') renderPalanquees();
-    if (typeof renderPlongeurs === 'function') renderPlongeurs();
-    if (typeof updateAlertes === 'function') updateAlertes();
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement Firebase:", error);
   }
 }
 
@@ -756,53 +807,3 @@ async function loadAvailableSessions() {
     console.error("❌ Erreur chargement sessions:", error);
     return [];
   }
-}
-
-// Charger une session spécifique
-async function loadSession(sessionKey) {
-  try {
-    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
-    if (!sessionSnapshot.exists()) {
-      alert("Session non trouvée dans Firebase");
-      return false;
-    }
-    
-    const sessionData = sessionSnapshot.val();
-    
-    plongeurs = sessionData.plongeurs || [];
-    
-    // CORRECTION PRINCIPALE : Conversion des palanquées objet→tableau
-    if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
-      palanquees = sessionData.palanquees.map((pal, index) => {
-        // Si c'est déjà un tableau, on le garde
-        if (Array.isArray(pal)) {
-          // Ajouter les propriétés manquantes
-          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
-          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
-          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
-          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
-          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
-          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
-          return pal;
-        }
-        
-        // Si c'est un objet (le cas de votre erreur), on le convertit
-        if (pal && typeof pal === 'object') {
-          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
-          
-          const nouveauTableau = [];
-          
-          // Extraire les plongeurs (propriétés avec clés numériques)
-          Object.keys(pal).forEach(key => {
-            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
-              nouveauTableau.push(pal[key]);
-            }
-          });
-          
-          // Conserver les propriétés de palanquée
-          nouveauTableau.horaire = pal.horaire || '';
-          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
-          nouveauTableau.dureePrevue = pal.dureePrevue || '';
-          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
-          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
-          nouveauTableau.paliers =
