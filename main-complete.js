@@ -870,6 +870,7 @@ function exportToPDF() {
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
+
 // ===== DRAG & DROP SÉCURISÉ =====
 
 // Variables globales pour le drag & drop
