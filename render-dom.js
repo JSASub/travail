@@ -185,7 +185,7 @@ function renderPalanquees() {
         <div class="detail-row paliers-row">
           <label>Paliers :</label>
           <input type="text" class="palanquee-paliers" value="${palanquee.paliers || ''}" 
-                 placeholder="3min à 3m, 5min à 6m..."
+                 placeholder="3 min à 3 m, 5 min à 6 m ..."
                  onchange="updatePalanqueeDetail(${index}, 'paliers', this.value)"
                  onclick="handlePalanqueeEdit(${index})" />
         </div>
