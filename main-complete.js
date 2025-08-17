@@ -3,7 +3,7 @@
 // ===== FONCTIONS UTILITAIRES (DÉCLARÉES EN PREMIER) =====
 
 function showAuthError(message) {
-  const errorDiv = $("auth-error");
+  const errorDiv = document.getElementById("auth-error");
   if (errorDiv) {
     errorDiv.textContent = message;
     errorDiv.style.display = "block";
@@ -11,7 +11,7 @@ function showAuthError(message) {
 }
 
 function handleError(error, context = "Application") {
-  console.error(`❌ Erreur ${context}:`, error);
+  console.error(`⌫ Erreur ${context}:`, error);
   
   if (error.stack) {
     console.error("Stack trace:", error.stack);
@@ -80,7 +80,7 @@ async function testFirebaseConnection() {
     return true;
     
   } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
+    console.error("⌫ Test Firebase échoué:", error.message);
     firebaseConnected = false;
     return true;
   }
@@ -88,12 +88,12 @@ async function testFirebaseConnection() {
 
 async function initializeAppData() {
   try {
-    console.log("🔄 Initialisation des données de l'application...");
+    console.log("📄 Initialisation des données de l'application...");
     
     await testFirebaseConnection();
     
     const today = new Date().toISOString().split("T")[0];
-    const dpDateInput = $("dp-date");
+    const dpDateInput = document.getElementById("dp-date");
     if (dpDateInput) {
       dpDateInput.value = today;
     }
@@ -102,10 +102,10 @@ async function initializeAppData() {
       const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
       if (snapshot.exists()) {
         const dpData = snapshot.val();
-        const dpNomInput = $("dp-nom");
-        const dpLieuInput = $("dp-lieu");
-        const dpPlongeeInput = $("dp-plongee");
-        const dpMessage = $("dp-message");
+        const dpNomInput = document.getElementById("dp-nom");
+        const dpLieuInput = document.getElementById("dp-lieu");
+        const dpPlongeeInput = document.getElementById("dp-plongee");
+        const dpMessage = document.getElementById("dp-message");
         
         if (dpNomInput) dpNomInput.value = dpData.nom || "";
         if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
@@ -122,7 +122,7 @@ async function initializeAppData() {
         console.log("ℹ️ Aucune information DP pour aujourd'hui");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement DP:", error);
+      console.error("⌫ Erreur chargement DP:", error);
     }
 
     console.log("📜 Chargement des données...");
@@ -133,14 +133,14 @@ async function initializeAppData() {
         console.log("✅ Historique DP chargé");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement historique DP:", error);
+      console.error("⌫ Erreur chargement historique DP:", error);
     }
     
     try {
       await loadFromFirebase();
       console.log("✅ Données Firebase chargées");
     } catch (error) {
-      console.error("❌ Erreur chargement Firebase:", error);
+      console.error("⌫ Erreur chargement Firebase:", error);
       plongeurs = [];
       palanquees = [];
       plongeursOriginaux = [];
@@ -152,7 +152,7 @@ async function initializeAppData() {
         console.log("✅ Sessions chargées");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement sessions:", error);
+      console.error("⌫ Erreur chargement sessions:", error);
     }
     
     try {
@@ -161,7 +161,7 @@ async function initializeAppData() {
         console.log("✅ Liste nettoyage sessions chargée");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+      console.error("⌫ Erreur chargement liste nettoyage sessions:", error);
     }
     
     try {
@@ -170,10 +170,10 @@ async function initializeAppData() {
         console.log("✅ Liste nettoyage DP chargée");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage DP:", error);
+      console.error("⌫ Erreur chargement liste nettoyage DP:", error);
     }
     
-    const testButton = $("test-firebase");
+    const testButton = document.getElementById("test-firebase");
     if (testButton) {
       console.log("✅ Bouton test Firebase trouvé");
     } else {
@@ -189,7 +189,7 @@ async function initializeAppData() {
     console.log(`📊 ${plongeurs.length} plongeurs et ${palanquees.length} palanquées`);
     
   } catch (error) {
-    console.error("❌ Erreur initialisation données:", error);
+    console.error("⌫ Erreur initialisation données:", error);
     console.error("Stack trace:", error.stack);
     
     if (!Array.isArray(plongeurs)) plongeurs = [];
@@ -202,10 +202,10 @@ async function initializeAppData() {
       if (typeof updateAlertes === 'function') updateAlertes();
       if (typeof updateCompteurs === 'function') updateCompteurs();
     } catch (renderError) {
-      console.error("❌ Erreur rendu en mode dégradé:", renderError);
+      console.error("⌫ Erreur rendu en mode dégradé:", renderError);
     }
     
-    const authError = $("auth-error");
+    const authError = document.getElementById("auth-error");
     if (authError) {
       authError.textContent = "Erreur de chargement des données. Mode local activé.";
       authError.style.display = "block";
@@ -220,10 +220,10 @@ function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
   try {
-    const dpNom = $("dp-nom").value || "Non défini";
-    const dpDate = $("dp-date").value || "Non définie";
-    const dpLieu = $("dp-lieu").value || "Non défini";
-    const dpPlongee = $("dp-plongee").value || "matin";
+    const dpNom = document.getElementById("dp-nom").value || "Non défini";
+    const dpDate = document.getElementById("dp-date").value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu").value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee").value || "matin";
     
     const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
     const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
@@ -351,8 +351,8 @@ function generatePDFPreview() {
     const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     
-    const previewContainer = $("previewContainer");
-    const pdfPreview = $("pdfPreview");
+    const previewContainer = document.getElementById("previewContainer");
+    const pdfPreview = document.getElementById("pdfPreview");
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
@@ -367,12 +367,12 @@ function generatePDFPreview() {
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
+      console.error("⌫ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
+    console.error("⌫ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
@@ -387,7 +387,7 @@ function exportToPDF() {
     // Version simplifiée pour éviter les erreurs
     alert("Fonction PDF en cours de développement. Utilisez l'aperçu PDF pour le moment.");
   } catch (error) {
-    console.error("❌ Erreur PDF:", error);
+    console.error("⌫ Erreur PDF:", error);
     alert("Erreur lors de la génération du PDF : " + error.message);
   }
 }
@@ -402,349 +402,4 @@ function setupDragAndDrop() {
   document.addEventListener('dragstart', (e) => {
     if (!e.target.classList.contains('plongeur-item')) return;
     
-    console.log("🎯 Drag started");
-    e.target.classList.add('dragging');
-    e.target.style.opacity = '0.5';
-    
-    // Récupérer les données selon le type d'élément
-    const isFromPalanquee = e.target.dataset.type === 'palanquee';
-    
-    if (isFromPalanquee) {
-      const palanqueeIndex = parseInt(e.target.dataset.palanqueeIndex);
-      const plongeurIndex = parseInt(e.target.dataset.plongeurIndex);
-      
-      if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
-        dragData = {
-          type: "fromPalanquee",
-          palanqueeIndex: palanqueeIndex,
-          plongeurIndex: plongeurIndex,
-          plongeur: palanquees[palanqueeIndex][plongeurIndex]
-        };
-      }
-    } else {
-      const index = parseInt(e.target.dataset.index);
-      if (plongeurs[index]) {
-        dragData = {
-          type: "fromMainList",
-          plongeur: plongeurs[index],
-          originalIndex: index
-        };
-      }
-    }
-    
-    // Stocker dans dataTransfer si disponible
-    if (e.dataTransfer && dragData) {
-      e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
-      e.dataTransfer.effectAllowed = "move";
-    }
-  });
-  
-  // Event delegation pour dragend
-  document.addEventListener('dragend', (e) => {
-    if (e.target.classList.contains('plongeur-item')) {
-      e.target.classList.remove('dragging');
-      e.target.style.opacity = '1';
-    }
-    dragData = null;
-  });
-  
-  // Event delegation pour dragover
-  document.addEventListener('dragover', (e) => {
-    const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-    if (dropZone) {
-      e.preventDefault();
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = "move";
-      }
-      dropZone.classList.add('drag-over');
-    }
-  });
-  
-  // Event delegation pour dragleave
-  document.addEventListener('dragleave', (e) => {
-    const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-    if (dropZone && !dropZone.contains(e.relatedTarget)) {
-      dropZone.classList.remove('drag-over');
-    }
-  });
-  
-  // Event delegation pour drop
-  document.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    
-    const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-    if (!dropZone) return;
-    
-    dropZone.classList.remove('drag-over');
-    
-    // Récupérer les données de drag
-    let data = dragData;
-    
-    // Fallback vers dataTransfer si dragData n'est pas disponible
-    if (!data && e.dataTransfer) {
-      try {
-        const dataStr = e.dataTransfer.getData("text/plain");
-        if (dataStr) {
-          data = JSON.parse(dataStr);
-        }
-      } catch (error) {
-        console.warn("⚠️ Erreur parsing dataTransfer:", error);
-      }
-    }
-    
-    if (!data) {
-      console.warn("⚠️ Aucune donnée de drag disponible");
-      return;
-    }
-    
-    // Gestion du drop vers la liste principale
-    if (dropZone.id === 'listePlongeurs') {
-      if (data.type === "fromPalanquee") {
-        // Vérifier le verrou
-        if (typeof window.acquirePalanqueeLock === 'function') {
-          const hasLock = await window.acquirePalanqueeLock(data.palanqueeIndex);
-          if (!hasLock) {
-            console.warn("⚠️ Verrou non acquis pour retour vers liste");
-            return;
-          }
-        }
-        
-        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-          plongeurs.push(plongeur);
-          plongeursOriginaux.push(plongeur);
-          syncToDatabase();
-        }
-      }
-      return;
-    }
-    
-    // Gestion du drop vers une palanquée
-    const palanqueeIndex = parseInt(dropZone.dataset.index);
-    if (isNaN(palanqueeIndex)) return;
-    
-    // Vérifier le verrou
-    if (typeof window.acquirePalanqueeLock === 'function') {
-      const hasLock = await window.acquirePalanqueeLock(palanqueeIndex);
-      if (!hasLock) {
-        console.warn("⚠️ Verrou non acquis pour ajout à palanquée");
-        return;
-      }
-    }
-    
-    const targetPalanquee = palanquees[palanqueeIndex];
-    
-    if (data.type === "fromMainList") {
-      const indexToRemove = plongeurs.findIndex(p => 
-        p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-      );
-      
-      if (indexToRemove !== -1) {
-        plongeurs.splice(indexToRemove, 1);
-        targetPalanquee.push(data.plongeur);
-        syncToDatabase();
-      }
-    } else if (data.type === "fromPalanquee") {
-      if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-        const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-        targetPalanquee.push(plongeur);
-        syncToDatabase();
-      }
-    }
-  });
-}
-
-// ===== EVENT HANDLERS =====
-function setupEventListeners() {
-  // === AUTHENTIFICATION ===
-  addSafeEventListener("login-form", "submit", async (e) => {
-    e.preventDefault();
-    
-    const email = $("login-email").value.trim();
-    const password = $("login-password").value;
-    const errorDiv = $("auth-error");
-    const loadingDiv = $("auth-loading");
-    
-    if (!email || !password) {
-      showAuthError("Veuillez remplir tous les champs");
-      return;
-    }
-    
-    try {
-      if (loadingDiv) loadingDiv.style.display = "block";
-      if (errorDiv) errorDiv.style.display = "none";
-      
-      await signIn(email, password);
-      console.log("✅ Connexion réussie");
-      
-    } catch (error) {
-      console.error("❌ Erreur connexion:", error);
-      
-      let message = "Erreur de connexion";
-      if (error.code === 'auth/user-not-found') {
-        message = "Utilisateur non trouvé";
-      } else if (error.code === 'auth/wrong-password') {
-        message = "Mot de passe incorrect";
-      } else if (error.code === 'auth/invalid-email') {
-        message = "Email invalide";
-      } else if (error.code === 'auth/too-many-requests') {
-        message = "Trop de tentatives. Réessayez plus tard.";
-      }
-      
-      showAuthError(message);
-    } finally {
-      if (loadingDiv) loadingDiv.style.display = "none";
-    }
-  });
-  
-  addSafeEventListener("logout-btn", "click", async () => {
-    try {
-      await signOut();
-      console.log("✅ Déconnexion réussie");
-    } catch (error) {
-      console.error("❌ Erreur déconnexion:", error);
-    }
-  });
-
-  // === AJOUT DE PLONGEUR ===
-  addSafeEventListener("addForm", "submit", e => {
-    e.preventDefault();
-    const nom = $("nom").value.trim();
-    const niveau = $("niveau").value;
-    const pre = $("pre").value.trim();
-    if (!nom || !niveau) {
-      alert("Veuillez remplir le nom et le niveau du plongeur.");
-      return;
-    }
-    
-    const nouveauPlongeur = { nom, niveau, pre };
-    plongeurs.push(nouveauPlongeur);
-    plongeursOriginaux.push(nouveauPlongeur);
-    
-    $("nom").value = "";
-    $("niveau").value = "";
-    $("pre").value = "";
-    
-    syncToDatabase();
-  });
-
-  // === AJOUT DE PALANQUÉE ===
-  addSafeEventListener("addPalanquee", "click", () => {
-    const nouvellePalanquee = [];
-    nouvellePalanquee.horaire = '';
-    nouvellePalanquee.profondeurPrevue = '';
-    nouvellePalanquee.dureePrevue = '';
-    nouvellePalanquee.profondeurRealisee = '';
-    nouvellePalanquee.dureeRealisee = '';
-    nouvellePalanquee.paliers = '';
-    
-    palanquees.push(nouvellePalanquee);
-    syncToDatabase();
-  });
-
-  // === EXPORT/IMPORT JSON ===
-  addSafeEventListener("exportJSON", "click", () => {
-    if (typeof exportToJSON === 'function') {
-      exportToJSON();
-    }
-  });
-
-  addSafeEventListener("importJSON", "change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e2 => {
-      try {
-        const data = JSON.parse(e2.target.result);
-        
-        if (data.plongeurs && Array.isArray(data.plongeurs)) {
-          plongeurs = data.plongeurs.map(p => ({
-            nom: p.nom,
-            niveau: p.niveau,
-            pre: p.prerogatives || p.pre || ""
-          }));
-        } else if (Array.isArray(data)) {
-          plongeurs = data;
-        }
-        
-        plongeursOriginaux = [...plongeurs];
-        syncToDatabase();
-        alert("Import réussi !");
-      } catch (error) {
-        console.error("Erreur import:", error);
-        alert("Erreur lors de l'import du fichier JSON");
-      }
-    };
-    reader.readAsText(file);
-  });
-
-  // === PDF ===
-  addSafeEventListener("generatePDF", "click", generatePDFPreview);
-  addSafeEventListener("exportPDF", "click", exportToPDF);
-
-  // === SESSIONS ===
-  addSafeEventListener("load-session", "click", async () => {
-    const sessionKey = $("session-selector").value;
-    if (!sessionKey) {
-      alert("Veuillez sélectionner une session à charger.");
-      return;
-    }
-    
-    if (typeof loadSession === 'function') {
-      const success = await loadSession(sessionKey);
-      if (!success) {
-        alert("Erreur lors du chargement de la session.");
-      }
-    }
-  });
-  
-  addSafeEventListener("refresh-sessions", "click", async () => {
-    if (typeof populateSessionSelector === 'function') {
-      await populateSessionSelector();
-    }
-    if (typeof populateSessionsCleanupList === 'function') {
-      await populateSessionsCleanupList();
-    }
-  });
-
-  addSafeEventListener("save-session", "click", async () => {
-    if (typeof saveSessionData === 'function') {
-      await saveSessionData();
-      alert("Session sauvegardée !");
-      if (typeof populateSessionSelector === 'function') {
-        await populateSessionSelector();
-      }
-      if (typeof populateSessionsCleanupList === 'function') {
-        await populateSessionsCleanupList();
-      }
-    }
-  });
-
-  // === TEST FIREBASE ===
-  addSafeEventListener("test-firebase", "click", async () => {
-    console.log("🧪 === TEST FIREBASE COMPLET ===");
-    
-    try {
-      console.log("📡 Test 1: Vérification connexion Firebase");
-      console.log("Firebase connecté:", firebaseConnected);
-      console.log("Instance db:", db ? "✅ OK" : "❌ MANQUANTE");
-      
-      if (db) {
-        console.log("📖 Test 2: Lecture /sessions");
-        const sessionsRead = await db.ref('sessions').once('value');
-        console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
-        
-        if (sessionsRead.exists()) {
-          const sessions = sessionsRead.val();
-          console.log("Nombre de sessions:", Object.keys(sessions).length);
-        }
-      }
-      
-      console.log("📊 Test 3: Données actuelles");
-      console.log("Plongeurs en mémoire:", plongeurs.length);
-      console.log("Palanquées en mémoire:", palanquees.length);
-      
-      console.log("🎉 === TESTS TERMINÉS ===");
-      alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
-      
-    } catch
+    console.log("
