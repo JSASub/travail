@@ -467,3 +467,99 @@ async function loadSession(sessionKey) {
     return false;
   }
 }
+// ===== GESTION DES VERROUS PALANQUÉES =====
+let palanqueeLocks = {};
+let currentlyEditingPalanquee = null;
+let lockTimers = {};
+
+// Marquer comme DP en ligne
+function markDPOnline() {
+  if (!currentUser || !db) return;
+  
+  const dpNom = $("dp-nom")?.value || currentUser.email;
+  const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
+  
+  dpOnlineRef.set({
+    nom: dpNom,
+    email: currentUser.email,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  });
+  
+  dpOnlineRef.onDisconnect().remove();
+}
+
+// Écouter les verrous
+function listenToLocks() {
+  if (!db) return;
+  
+  const locksRef = db.ref('palanquee_locks');
+  locksRef.on('value', (snapshot) => {
+    palanqueeLocks = snapshot.val() || {};
+    updatePalanqueeLockUI();
+  });
+}
+
+// Prendre un verrou
+async function acquirePalanqueeLock(palanqueeIndex) {
+  if (!db || !currentUser) return false;
+  
+  const palanqueeId = `palanquee-${palanqueeIndex}`;
+  const lockRef = db.ref(`palanquee_locks/${palanqueeId}`);
+  
+  try {
+    const result = await lockRef.transaction((currentLock) => {
+      if (currentLock === null) {
+        return {
+          userId: currentUser.uid,
+          userName: $("dp-nom")?.value || currentUser.email,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+      } else if (currentLock.userId === currentUser.uid) {
+        return currentLock;
+      } else {
+        throw new Error(`LOCK_EXISTS:${currentLock.userName}`);
+      }
+    });
+    
+    if (result.committed) {
+      currentlyEditingPalanquee = palanqueeIndex;
+      
+      // Auto-libération après 3 minutes
+      lockTimers[palanqueeId] = setTimeout(() => {
+        releasePalanqueeLock(palanqueeIndex);
+      }, 3 * 60 * 1000);
+      
+      return true;
+    }
+  } catch (error) {
+    if (error.message.startsWith('LOCK_EXISTS:')) {
+      const otherDP = error.message.split(':')[1];
+      if (confirm(`${otherDP} modifie cette palanquée.\nVoulez-vous prendre le contrôle ?`)) {
+        await lockRef.set({
+          userId: currentUser.uid,
+          userName: $("dp-nom")?.value || currentUser.email,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          forced: true
+        });
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+// Libérer un verrou
+async function releasePalanqueeLock(palanqueeIndex) {
+  if (!db) return;
+  
+  const palanqueeId = `palanquee-${palanqueeIndex}`;
+  await db.ref(`palanquee_locks/${palanqueeId}`).remove();
+  
+  currentlyEditingPalanquee = null;
+  
+  if (lockTimers[palanqueeId]) {
+    clearTimeout(lockTimers[palanqueeId]);
+    delete lockTimers[palanqueeId];
+  }
+}
