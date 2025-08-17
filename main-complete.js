@@ -1,4 +1,542 @@
-doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+// main-complete.js - Application principale, PDF et event handlers avec système de verrous
+
+// ===== GÉNÉRATION PDF =====
+function generatePDFPreview() {
+  console.log("🎨 Génération de l'aperçu PDF professionnel...");
+  
+  try {
+    const dpNom = $("dp-nom").value || "Non défini";
+    const dpDate = $("dp-date").value || "Non définie";
+    const dpLieu = $("dp-lieu").value || "Non défini";
+    const dpPlongee = $("dp-plongee").value || "matin";
+    
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+    
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    // CSS styles pour le PDF
+    const cssStyles = `
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          min-height: 100vh;
+        }
+        .container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          min-height: 297mm;
+        }
+        .header {
+          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
+          color: white;
+          padding: 30px;
+        }
+        .logo-title {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+        .logo {
+          width: 60px;
+          height: 60px;
+          background: rgba(255,255,255,0.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .main-title {
+          font-size: 28px;
+          font-weight: 300;
+          letter-spacing: 2px;
+        }
+        .subtitle {
+          font-size: 16px;
+          opacity: 0.9;
+          font-weight: 300;
+        }
+        .meta-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-top: 25px;
+        }
+        .meta-item {
+          background: rgba(255,255,255,0.1);
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .meta-label {
+          font-size: 12px;
+          opacity: 0.8;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 5px;
+        }
+        .meta-value {
+          font-size: 16px;
+          font-weight: 500;
+        }
+        .content { padding: 40px; }
+        .section { margin-bottom: 40px; }
+        .section-title {
+          font-size: 20px;
+          color: #004080;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 3px solid #007bff;
+        }
+        .stats-dashboard {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        .stat-card {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          border-radius: 12px;
+          padding: 25px;
+          text-align: center;
+          border-left: 5px solid #007bff;
+        }
+        .stat-number {
+          font-size: 36px;
+          font-weight: bold;
+          color: #004080;
+          margin-bottom: 5px;
+        }
+        .stat-label {
+          font-size: 14px;
+          color: #6c757d;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .alerts-section {
+          background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+          border-radius: 12px;
+          padding: 25px;
+          margin: 30px 0;
+          border-left: 5px solid #dc3545;
+        }
+        .alerts-title {
+          color: #dc3545;
+          font-size: 18px;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+        .alert-item {
+          background: white;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          border-left: 4px solid #dc3545;
+        }
+        .palanquees-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 25px;
+        }
+        .palanquee-card {
+          background: white;
+          border-radius: 15px;
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          border: 2px solid #e9ecef;
+        }
+        .palanquee-card.has-alert {
+          border-color: #dc3545;
+        }
+        .palanquee-header {
+          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+          color: white;
+          padding: 20px;
+        }
+        .palanquee-card.has-alert .palanquee-header {
+          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        .palanquee-number {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .palanquee-stats {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        .palanquee-body { padding: 25px; }
+        .plongeur-card {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 15px;
+          margin: 10px 0;
+          border-left: 4px solid #28a745;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        .plongeur-avatar {
+          width: 40px;
+          height: 40px;
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 16px;
+        }
+        .plongeur-info { flex: 1; }
+        .plongeur-nom {
+          font-weight: 600;
+          color: #004080;
+          margin-bottom: 2px;
+        }
+        .plongeur-details {
+          font-size: 12px;
+          color: #6c757d;
+        }
+        .niveau-badge {
+          color: white;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: bold;
+        }
+        .unassigned-section {
+          background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+          border-radius: 12px;
+          padding: 25px;
+          border-left: 5px solid #ffc107;
+        }
+        .unassigned-title {
+          color: #856404;
+          font-size: 18px;
+          margin-bottom: 20px;
+          font-weight: 600;
+        }
+        .footer {
+          background: #343a40;
+          color: white;
+          padding: 30px;
+          text-align: center;
+          margin-top: 50px;
+        }
+        @media print {
+          body { background: white !important; }
+          .container { box-shadow: none !important; max-width: none !important; }
+        }
+      </style>
+    `;
+
+    // Construction du HTML
+    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
+    htmlContent += '<meta charset="UTF-8">';
+    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
+    htmlContent += cssStyles;
+    htmlContent += '</head><body>';
+    
+    htmlContent += '<div class="container">';
+    
+    // En-tête
+    htmlContent += '<header class="header">';
+    htmlContent += '<div class="logo-title">';
+    htmlContent += '<div class="logo">🤿</div>';
+    htmlContent += '<div>';
+    htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
+    htmlContent += '<p class="subtitle">Organisation Associative de Plongée</p>';
+    htmlContent += '</div></div>';
+    
+    htmlContent += '<div class="meta-grid">';
+    htmlContent += '<div class="meta-item"><div class="meta-label">Directeur de Plongée</div><div class="meta-value">' + dpNom + '</div></div>';
+    htmlContent += '<div class="meta-item"><div class="meta-label">Date de Plongée</div><div class="meta-value">' + formatDateFrench(dpDate) + '</div></div>';
+    htmlContent += '<div class="meta-item"><div class="meta-label">Lieu</div><div class="meta-value">' + dpLieu + '</div></div>';
+    htmlContent += '<div class="meta-item"><div class="meta-label">Session</div><div class="meta-value">' + capitalize(dpPlongee) + '</div></div>';
+    htmlContent += '</div>';
+    htmlContent += '</header>';
+    
+    // Contenu principal
+    htmlContent += '<main class="content">';
+    
+    // Section statistiques
+    htmlContent += '<section class="section">';
+    htmlContent += '<h2 class="section-title">📊 Tableau de Bord</h2>';
+    htmlContent += '<div class="stats-dashboard">';
+    htmlContent += '<div class="stat-card"><div class="stat-number">' + totalPlongeurs + '</div><div class="stat-label">Total Plongeurs</div></div>';
+    htmlContent += '<div class="stat-card"><div class="stat-number">' + palanquees.length + '</div><div class="stat-label">Palanquées</div></div>';
+    htmlContent += '<div class="stat-card"><div class="stat-number">' + plongeursEnPalanquees + '</div><div class="stat-label">Assignés</div></div>';
+    htmlContent += '<div class="stat-card"><div class="stat-number">' + alertesTotal.length + '</div><div class="stat-label">Alertes</div></div>';
+    htmlContent += '</div></section>';
+    
+    // Section alertes
+    if (alertesTotal.length > 0) {
+      htmlContent += '<section class="section">';
+      htmlContent += '<div class="alerts-section">';
+      htmlContent += '<h3 class="alerts-title">⚠️ Alertes de Sécurité (' + alertesTotal.length + ')</h3>';
+      
+      alertesTotal.forEach(alerte => {
+        htmlContent += '<div class="alert-item">' + alerte + '</div>';
+      });
+      
+      htmlContent += '</div></section>';
+    }
+    
+    // Section palanquées
+    htmlContent += '<section class="section">';
+    htmlContent += '<h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>';
+    
+    if (palanquees.length === 0) {
+      htmlContent += '<div class="unassigned-section">';
+      htmlContent += '<div class="unassigned-title">Aucune palanquée créée</div>';
+      htmlContent += '<p>Tous les plongeurs sont en attente d\'assignation.</p>';
+      htmlContent += '</div>';
+    } else {
+      htmlContent += '<div class="palanquees-grid">';
+      
+      palanquees.forEach((pal, i) => {
+        const isAlert = checkAlert(pal);
+        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+        const n1s = pal.filter(p => p.niveau === "N1");
+        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
+        
+        htmlContent += '<div class="palanquee-card' + (isAlert ? ' has-alert' : '') + '">';
+        htmlContent += '<div class="palanquee-header">';
+        htmlContent += '<div class="palanquee-number">Palanquée ' + (i + 1) + '</div>';
+        htmlContent += '<div class="palanquee-stats">' + pal.length + ' plongeur' + (pal.length > 1 ? 's' : '') + ' • ' + gps.length + ' GP • ' + n1s.length + ' N1 • ' + autonomes.length + ' Autonomes</div>';
+        htmlContent += '</div><div class="palanquee-body">';
+        
+        if (pal.length === 0) {
+          htmlContent += '<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>';
+        } else {
+          pal.forEach(p => {
+            const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+            
+            let niveauColor = '#6c757d';
+            if (p.niveau === 'N1') niveauColor = '#17a2b8';
+            else if (p.niveau === 'N2') niveauColor = '#28a745';
+            else if (p.niveau === 'N3') niveauColor = '#ffc107';
+            else if (p.niveau === 'N4/GP') niveauColor = '#fd7e14';
+            else if (p.niveau === 'E1') niveauColor = '#6f42c1';
+            else if (p.niveau === 'E2') niveauColor = '#e83e8c';
+            else if (p.niveau === 'E3') niveauColor = '#dc3545';
+            else if (p.niveau === 'E4') niveauColor = '#343a40';
+            
+            htmlContent += '<div class="plongeur-card">';
+            htmlContent += '<div class="plongeur-avatar">' + initiales + '</div>';
+            htmlContent += '<div class="plongeur-info">';
+            htmlContent += '<div class="plongeur-nom">' + p.nom + '</div>';
+            htmlContent += '<div class="plongeur-details">' + (p.pre || 'Aucune prérogative') + '</div>';
+            htmlContent += '</div>';
+            htmlContent += '<div class="niveau-badge" style="background: ' + niveauColor + '">' + p.niveau + '</div>';
+            htmlContent += '</div>';
+          });
+        }
+        
+        htmlContent += '</div></div>';
+      });
+      
+      htmlContent += '</div>';
+    }
+    
+    htmlContent += '</section>';
+    
+    // Section plongeurs non assignés
+    if (plongeurs.length > 0) {
+      htmlContent += '<section class="section">';
+      htmlContent += '<div class="unassigned-section">';
+      htmlContent += '<h3 class="unassigned-title">⏳ Plongeurs en Attente (' + plongeurs.length + ')</h3>';
+      htmlContent += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">';
+      
+      plongeurs.forEach(p => {
+        const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+        
+        let niveauColor = '#6c757d';
+        if (p.niveau === 'N1') niveauColor = '#17a2b8';
+        else if (p.niveau === 'N2') niveauColor = '#28a745';
+        else if (p.niveau === 'N3') niveauColor = '#ffc107';
+        else if (p.niveau === 'N4/GP') niveauColor = '#fd7e14';
+        else if (p.niveau === 'E1') niveauColor = '#6f42c1';
+        else if (p.niveau === 'E2') niveauColor = '#e83e8c';
+        else if (p.niveau === 'E3') niveauColor = '#dc3545';
+        else if (p.niveau === 'E4') niveauColor = '#343a40';
+        
+        htmlContent += '<div class="plongeur-card">';
+        htmlContent += '<div class="plongeur-avatar">' + initiales + '</div>';
+        htmlContent += '<div class="plongeur-info">';
+        htmlContent += '<div class="plongeur-nom">' + p.nom + '</div>';
+        htmlContent += '<div class="plongeur-details">' + (p.pre || 'Aucune prérogative') + '</div>';
+        htmlContent += '</div>';
+        htmlContent += '<div class="niveau-badge" style="background: ' + niveauColor + '">' + p.niveau + '</div>';
+        htmlContent += '</div>';
+      });
+      
+      htmlContent += '</div></div></section>';
+    }
+    
+    htmlContent += '</main>';
+    
+    // Footer
+    htmlContent += '<footer class="footer">';
+    htmlContent += '<p>Document officiel JSAS - Version 2.5.0 - Généré le ' + new Date().toLocaleDateString('fr-FR') + '</p>';
+    htmlContent += '</footer>';
+    
+    htmlContent += '</div></body></html>';
+
+    // Créer et afficher l'aperçu
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const previewContainer = $("previewContainer");
+    const pdfPreview = $("pdfPreview");
+    
+    if (previewContainer && pdfPreview) {
+      previewContainer.style.display = "block";
+      pdfPreview.src = url;
+      
+      previewContainer.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      console.log("✅ Aperçu PDF généré");
+      
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      
+    } else {
+      console.error("❌ Éléments d'aperçu non trouvés");
+      alert("Erreur: impossible d'afficher l'aperçu PDF");
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur génération aperçu PDF:", error);
+    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+  }
+}
+
+function exportToPDF() {
+  if (Date.now() - pageLoadTime < 3000) {
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
+    return;
+  }
+    
+  console.log("📄 Génération du PDF professionnel...");
+  
+  const dpNom = $("dp-nom").value || "Non défini";
+  const dpDate = $("dp-date").value || "Non définie";
+  const dpLieu = $("dp-lieu").value || "Non défini";
+  const dpPlongee = $("dp-plongee").value || "matin";
+  
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const colors = {
+      primaryR: 0, primaryG: 64, primaryB: 128,
+      secondaryR: 0, secondaryG: 123, secondaryB: 255,
+      successR: 40, successG: 167, successB: 69,
+      dangerR: 220, dangerG: 53, dangerB: 69,
+      darkR: 52, darkG: 58, darkB: 64,
+      grayR: 108, grayG: 117, grayB: 125
+    };
+    
+    let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    
+    function checkPageBreak(heightNeeded, forceNewPage) {
+      if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
+        doc.addPage();
+        yPosition = 20;
+        addPageHeader();
+        return true;
+      }
+      return false;
+    }
+    
+    function addPageHeader() {
+      if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
+        doc.setFontSize(10);
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
+        yPosition = 25;
+      }
+    }
+    
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non definie";
+      const date = new Date(dateString);
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
+    }
+    
+    // === EN-TÊTE PRINCIPAL ===
+    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.rect(0, 0, pageWidth, 60, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Palanquées JSAS', margin, 20);
+	doc.setFontSize(20);
+    doc.text('Fiche de Sécurité', margin, 30);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text('Associative Sportive de Plongée', margin, 35);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
+    doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
+    doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
+    
+    yPosition = 75;
+    
+    // === STATISTIQUES ===
+    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
+    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
+    const alertesTotal = checkAllAlerts();
+    
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('TABLEAU DE BORD', margin, yPosition);
+    
+    doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+    doc.setLineWidth(2);
+    doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
+    
+    yPosition += 15;
+    
+    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
     doc.text('                        Palanquées: ' + palanquees.length, margin + 50, yPosition);
     yPosition += 8;
     
@@ -1000,541 +1538,4 @@ async function initializeAppData() {
     
     alert("Erreur de chargement. L'application fonctionne en mode dégradé.\n\nVeuillez actualiser la page ou contacter l'administrateur.");
   }
-}// main-complete.js - Application principale, PDF et event handlers avec système de verrous
-
-// ===== GÉNÉRATION PDF =====
-function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel...");
-  
-  try {
-    const dpNom = $("dp-nom").value || "Non défini";
-    const dpDate = $("dp-date").value || "Non définie";
-    const dpLieu = $("dp-lieu").value || "Non défini";
-    const dpPlongee = $("dp-plongee").value || "matin";
-    
-    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-    const alertesTotal = checkAllAlerts();
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
-    }
-    
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    // CSS styles pour le PDF
-    const cssStyles = `
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: 'Segoe UI', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-          min-height: 100vh;
-        }
-        .container {
-          max-width: 210mm;
-          margin: 0 auto;
-          background: white;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          min-height: 297mm;
-        }
-        .header {
-          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
-          color: white;
-          padding: 30px;
-        }
-        .logo-title {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          margin-bottom: 20px;
-        }
-        .logo {
-          width: 60px;
-          height: 60px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-          font-weight: bold;
-        }
-        .main-title {
-          font-size: 28px;
-          font-weight: 300;
-          letter-spacing: 2px;
-        }
-        .subtitle {
-          font-size: 16px;
-          opacity: 0.9;
-          font-weight: 300;
-        }
-        .meta-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-top: 25px;
-        }
-        .meta-item {
-          background: rgba(255,255,255,0.1);
-          padding: 15px;
-          border-radius: 8px;
-        }
-        .meta-label {
-          font-size: 12px;
-          opacity: 0.8;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 5px;
-        }
-        .meta-value {
-          font-size: 16px;
-          font-weight: 500;
-        }
-        .content { padding: 40px; }
-        .section { margin-bottom: 40px; }
-        .section-title {
-          font-size: 20px;
-          color: #004080;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 3px solid #007bff;
-        }
-        .stats-dashboard {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 20px;
-          margin-bottom: 30px;
-        }
-        .stat-card {
-          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-          border-radius: 12px;
-          padding: 25px;
-          text-align: center;
-          border-left: 5px solid #007bff;
-        }
-        .stat-number {
-          font-size: 36px;
-          font-weight: bold;
-          color: #004080;
-          margin-bottom: 5px;
-        }
-        .stat-label {
-          font-size: 14px;
-          color: #6c757d;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .alerts-section {
-          background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
-          border-radius: 12px;
-          padding: 25px;
-          margin: 30px 0;
-          border-left: 5px solid #dc3545;
-        }
-        .alerts-title {
-          color: #dc3545;
-          font-size: 18px;
-          margin-bottom: 15px;
-          font-weight: 600;
-        }
-        .alert-item {
-          background: white;
-          border-radius: 8px;
-          padding: 15px;
-          margin: 10px 0;
-          border-left: 4px solid #dc3545;
-        }
-        .palanquees-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-          gap: 25px;
-        }
-        .palanquee-card {
-          background: white;
-          border-radius: 15px;
-          overflow: hidden;
-          box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-          border: 2px solid #e9ecef;
-        }
-        .palanquee-card.has-alert {
-          border-color: #dc3545;
-        }
-        .palanquee-header {
-          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-          color: white;
-          padding: 20px;
-        }
-        .palanquee-card.has-alert .palanquee-header {
-          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-        .palanquee-number {
-          font-size: 24px;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .palanquee-stats {
-          font-size: 14px;
-          opacity: 0.9;
-        }
-        .palanquee-body { padding: 25px; }
-        .plongeur-card {
-          background: #f8f9fa;
-          border-radius: 10px;
-          padding: 15px;
-          margin: 10px 0;
-          border-left: 4px solid #28a745;
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-        .plongeur-avatar {
-          width: 40px;
-          height: 40px;
-          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 16px;
-        }
-        .plongeur-info { flex: 1; }
-        .plongeur-nom {
-          font-weight: 600;
-          color: #004080;
-          margin-bottom: 2px;
-        }
-        .plongeur-details {
-          font-size: 12px;
-          color: #6c757d;
-        }
-        .niveau-badge {
-          color: white;
-          padding: 5px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: bold;
-        }
-        .unassigned-section {
-          background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-          border-radius: 12px;
-          padding: 25px;
-          border-left: 5px solid #ffc107;
-        }
-        .unassigned-title {
-          color: #856404;
-          font-size: 18px;
-          margin-bottom: 20px;
-          font-weight: 600;
-        }
-        .footer {
-          background: #343a40;
-          color: white;
-          padding: 30px;
-          text-align: center;
-          margin-top: 50px;
-        }
-        @media print {
-          body { background: white !important; }
-          .container { box-shadow: none !important; max-width: none !important; }
-        }
-      </style>
-    `;
-
-    // Construction du HTML
-    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
-    htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
-    htmlContent += cssStyles;
-    htmlContent += '</head><body>';
-    
-    htmlContent += '<div class="container">';
-    
-    // En-tête
-    htmlContent += '<header class="header">';
-    htmlContent += '<div class="logo-title">';
-    htmlContent += '<div class="logo">🤿</div>';
-    htmlContent += '<div>';
-    htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
-    htmlContent += '<p class="subtitle">Organisation Associative de Plongée</p>';
-    htmlContent += '</div></div>';
-    
-    htmlContent += '<div class="meta-grid">';
-    htmlContent += '<div class="meta-item"><div class="meta-label">Directeur de Plongée</div><div class="meta-value">' + dpNom + '</div></div>';
-    htmlContent += '<div class="meta-item"><div class="meta-label">Date de Plongée</div><div class="meta-value">' + formatDateFrench(dpDate) + '</div></div>';
-    htmlContent += '<div class="meta-item"><div class="meta-label">Lieu</div><div class="meta-value">' + dpLieu + '</div></div>';
-    htmlContent += '<div class="meta-item"><div class="meta-label">Session</div><div class="meta-value">' + capitalize(dpPlongee) + '</div></div>';
-    htmlContent += '</div>';
-    htmlContent += '</header>';
-    
-    // Contenu principal
-    htmlContent += '<main class="content">';
-    
-    // Section statistiques
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">📊 Tableau de Bord</h2>';
-    htmlContent += '<div class="stats-dashboard">';
-    htmlContent += '<div class="stat-card"><div class="stat-number">' + totalPlongeurs + '</div><div class="stat-label">Total Plongeurs</div></div>';
-    htmlContent += '<div class="stat-card"><div class="stat-number">' + palanquees.length + '</div><div class="stat-label">Palanquées</div></div>';
-    htmlContent += '<div class="stat-card"><div class="stat-number">' + plongeursEnPalanquees + '</div><div class="stat-label">Assignés</div></div>';
-    htmlContent += '<div class="stat-card"><div class="stat-number">' + alertesTotal.length + '</div><div class="stat-label">Alertes</div></div>';
-    htmlContent += '</div></section>';
-    
-    // Section alertes
-    if (alertesTotal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<div class="alerts-section">';
-      htmlContent += '<h3 class="alerts-title">⚠️ Alertes de Sécurité (' + alertesTotal.length + ')</h3>';
-      
-      alertesTotal.forEach(alerte => {
-        htmlContent += '<div class="alert-item">' + alerte + '</div>';
-      });
-      
-      htmlContent += '</div></section>';
-    }
-    
-    // Section palanquées
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">🏊‍♂️ Organisation des Palanquées</h2>';
-    
-    if (palanquees.length === 0) {
-      htmlContent += '<div class="unassigned-section">';
-      htmlContent += '<div class="unassigned-title">Aucune palanquée créée</div>';
-      htmlContent += '<p>Tous les plongeurs sont en attente d\'assignation.</p>';
-      htmlContent += '</div>';
-    } else {
-      htmlContent += '<div class="palanquees-grid">';
-      
-      palanquees.forEach((pal, i) => {
-        const isAlert = checkAlert(pal);
-        const gps = pal.filter(p => ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-        const n1s = pal.filter(p => p.niveau === "N1");
-        const autonomes = pal.filter(p => ["N2", "N3"].includes(p.niveau));
-        
-        htmlContent += '<div class="palanquee-card' + (isAlert ? ' has-alert' : '') + '">';
-        htmlContent += '<div class="palanquee-header">';
-        htmlContent += '<div class="palanquee-number">Palanquée ' + (i + 1) + '</div>';
-        htmlContent += '<div class="palanquee-stats">' + pal.length + ' plongeur' + (pal.length > 1 ? 's' : '') + ' • ' + gps.length + ' GP • ' + n1s.length + ' N1 • ' + autonomes.length + ' Autonomes</div>';
-        htmlContent += '</div><div class="palanquee-body">';
-        
-        if (pal.length === 0) {
-          htmlContent += '<p style="text-align: center; color: #6c757d; font-style: italic;">Aucun plongeur assigné</p>';
-        } else {
-          pal.forEach(p => {
-            const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-            
-            let niveauColor = '#6c757d';
-            if (p.niveau === 'N1') niveauColor = '#17a2b8';
-            else if (p.niveau === 'N2') niveauColor = '#28a745';
-            else if (p.niveau === 'N3') niveauColor = '#ffc107';
-            else if (p.niveau === 'N4/GP') niveauColor = '#fd7e14';
-            else if (p.niveau === 'E1') niveauColor = '#6f42c1';
-            else if (p.niveau === 'E2') niveauColor = '#e83e8c';
-            else if (p.niveau === 'E3') niveauColor = '#dc3545';
-            else if (p.niveau === 'E4') niveauColor = '#343a40';
-            
-            htmlContent += '<div class="plongeur-card">';
-            htmlContent += '<div class="plongeur-avatar">' + initiales + '</div>';
-            htmlContent += '<div class="plongeur-info">';
-            htmlContent += '<div class="plongeur-nom">' + p.nom + '</div>';
-            htmlContent += '<div class="plongeur-details">' + (p.pre || 'Aucune prérogative') + '</div>';
-            htmlContent += '</div>';
-            htmlContent += '<div class="niveau-badge" style="background: ' + niveauColor + '">' + p.niveau + '</div>';
-            htmlContent += '</div>';
-          });
-        }
-        
-        htmlContent += '</div></div>';
-      });
-      
-      htmlContent += '</div>';
-    }
-    
-    htmlContent += '</section>';
-    
-    // Section plongeurs non assignés
-    if (plongeurs.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<div class="unassigned-section">';
-      htmlContent += '<h3 class="unassigned-title">⏳ Plongeurs en Attente (' + plongeurs.length + ')</h3>';
-      htmlContent += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">';
-      
-      plongeurs.forEach(p => {
-        const initiales = p.nom.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-        
-        let niveauColor = '#6c757d';
-        if (p.niveau === 'N1') niveauColor = '#17a2b8';
-        else if (p.niveau === 'N2') niveauColor = '#28a745';
-        else if (p.niveau === 'N3') niveauColor = '#ffc107';
-        else if (p.niveau === 'N4/GP') niveauColor = '#fd7e14';
-        else if (p.niveau === 'E1') niveauColor = '#6f42c1';
-        else if (p.niveau === 'E2') niveauColor = '#e83e8c';
-        else if (p.niveau === 'E3') niveauColor = '#dc3545';
-        else if (p.niveau === 'E4') niveauColor = '#343a40';
-        
-        htmlContent += '<div class="plongeur-card">';
-        htmlContent += '<div class="plongeur-avatar">' + initiales + '</div>';
-        htmlContent += '<div class="plongeur-info">';
-        htmlContent += '<div class="plongeur-nom">' + p.nom + '</div>';
-        htmlContent += '<div class="plongeur-details">' + (p.pre || 'Aucune prérogative') + '</div>';
-        htmlContent += '</div>';
-        htmlContent += '<div class="niveau-badge" style="background: ' + niveauColor + '">' + p.niveau + '</div>';
-        htmlContent += '</div>';
-      });
-      
-      htmlContent += '</div></div></section>';
-    }
-    
-    htmlContent += '</main>';
-    
-    // Footer
-    htmlContent += '<footer class="footer">';
-    htmlContent += '<p>Document officiel JSAS - Version 2.5.0 - Généré le ' + new Date().toLocaleDateString('fr-FR') + '</p>';
-    htmlContent += '</footer>';
-    
-    htmlContent += '</div></body></html>';
-
-    // Créer et afficher l'aperçu
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    
-    const previewContainer = $("previewContainer");
-    const pdfPreview = $("pdfPreview");
-    
-    if (previewContainer && pdfPreview) {
-      previewContainer.style.display = "block";
-      pdfPreview.src = url;
-      
-      previewContainer.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-      
-      console.log("✅ Aperçu PDF généré");
-      
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-      
-    } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
-      alert("Erreur: impossible d'afficher l'aperçu PDF");
-    }
-    
-  } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
-    alert("Erreur lors de la génération de l'aperçu: " + error.message);
-  }
 }
-
-function exportToPDF() {
-  if (Date.now() - pageLoadTime < 3000) {
-    console.log("🚫 Export PDF bloqué - page en cours de chargement");
-    return;
-  }
-    
-  console.log("📄 Génération du PDF professionnel...");
-  
-  const dpNom = $("dp-nom").value || "Non défini";
-  const dpDate = $("dp-date").value || "Non définie";
-  const dpLieu = $("dp-lieu").value || "Non défini";
-  const dpPlongee = $("dp-plongee").value || "matin";
-  
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    const colors = {
-      primaryR: 0, primaryG: 64, primaryB: 128,
-      secondaryR: 0, secondaryG: 123, secondaryB: 255,
-      successR: 40, successG: 167, successB: 69,
-      dangerR: 220, dangerG: 53, dangerB: 69,
-      darkR: 52, darkG: 58, darkB: 64,
-      grayR: 108, grayG: 117, grayB: 125
-    };
-    
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - (2 * margin);
-    
-    function checkPageBreak(heightNeeded, forceNewPage) {
-      if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
-        doc.addPage();
-        yPosition = 20;
-        addPageHeader();
-        return true;
-      }
-      return false;
-    }
-    
-    function addPageHeader() {
-      if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(10);
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
-        yPosition = 25;
-      }
-    }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non definie";
-      const date = new Date(dateString);
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
-    }
-    
-    // === EN-TÊTE PRINCIPAL ===
-    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.rect(0, 0, pageWidth, 60, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text('Palanquées JSAS', margin, 20);
-	doc.setFontSize(20);
-    doc.text('Fiche de Sécurité', margin, 30);
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'normal');
-    doc.text('Associative Sportive de Plongée', margin, 35);
-    
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
-    doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
-    doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
-    
-    yPosition = 75;
-    
-    // === STATISTIQUES ===
-    const totalPlongeurs = plongeurs.length + palanquees.reduce((total, pal) => total + pal.length, 0);
-    const plongeursEnPalanquees = palanquees.reduce((total, pal) => total + pal.length, 0);
-    const alertesTotal = checkAllAlerts();
-    
-    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('TABLEAU DE BORD', margin, yPosition);
-    
-    doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-    doc.setLineWidth(2);
-    doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
-    
-    yPosition += 15;
-    
-    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
