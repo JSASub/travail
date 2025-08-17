@@ -1675,3 +1675,291 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
+
+// === CORRECTION ET DIAGNOSTIC LISTE DP ===
+
+// 1. FONCTION POUR CHARGER L'HISTORIQUE DP (manquante ou corrompue)
+async function chargerHistoriqueDP() {
+  console.log("📋 Chargement de l'historique DP...");
+  
+  const dpDatesSelect = document.getElementById("dp-dates");
+  if (!dpDatesSelect) {
+    console.error("❌ Élément dp-dates non trouvé");
+    return;
+  }
+  
+  // Vider la liste actuelle
+  dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
+  
+  try {
+    // Vérifier si Firebase est disponible
+    if (typeof db === 'undefined' || !db) {
+      console.warn("⚠️ Firebase non disponible pour charger l'historique DP");
+      dpDatesSelect.innerHTML += '<option disabled>Firebase non connecté</option>';
+      return;
+    }
+    
+    // Charger les données depuis Firebase
+    const snapshot = await db.ref('dpInfo').once('value');
+    
+    if (!snapshot.exists()) {
+      console.log("ℹ️ Aucune donnée DP trouvée dans Firebase");
+      dpDatesSelect.innerHTML += '<option disabled>Aucun DP enregistré</option>';
+      return;
+    }
+    
+    const dpInfos = snapshot.val();
+    const dpList = [];
+    
+    // Convertir en tableau et trier
+    Object.entries(dpInfos).forEach(([key, dpData]) => {
+      if (dpData && dpData.date) {
+        dpList.push({
+          key: key,
+          date: dpData.date,
+          nom: dpData.nom || "DP non défini",
+          lieu: dpData.lieu || "Lieu non défini",
+          plongee: dpData.plongee || "matin",
+          timestamp: dpData.timestamp || 0
+        });
+      }
+    });
+    
+    // Trier par date décroissante (plus récent en premier)
+    dpList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB - dateA;
+    });
+    
+    // Ajouter les options
+    dpList.forEach(dp => {
+      const option = document.createElement("option");
+      option.value = dp.key;
+      option.textContent = `${dp.date} - ${dp.nom} - ${dp.lieu} (${dp.plongee})`;
+      dpDatesSelect.appendChild(option);
+    });
+    
+    console.log(`✅ ${dpList.length} DP chargés dans l'historique`);
+    
+    // Ajouter l'event listener pour la sélection
+    dpDatesSelect.addEventListener('change', afficherInfoDP);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement historique DP:", error);
+    dpDatesSelect.innerHTML += '<option disabled>Erreur de chargement</option>';
+  }
+}
+
+// 2. FONCTION POUR AFFICHER LES INFOS D'UN DP SÉLECTIONNÉ
+function afficherInfoDP() {
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+  
+  if (!dpDatesSelect || !historiqueInfo) {
+    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
+    return;
+  }
+  
+  const selectedKey = dpDatesSelect.value;
+  
+  if (!selectedKey) {
+    historiqueInfo.innerHTML = '';
+    return;
+  }
+  
+  // Afficher un loader
+  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
+  
+  if (typeof db === 'undefined' || !db) {
+    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
+    return;
+  }
+  
+  // Charger les détails du DP sélectionné
+  db.ref(`dpInfo/${selectedKey}`).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
+        return;
+      }
+      
+      const dpData = snapshot.val();
+      const formatDate = (dateStr) => {
+        try {
+          return new Date(dateStr).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch {
+          return dateStr;
+        }
+      };
+      
+      historiqueInfo.innerHTML = `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
+          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
+          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
+          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
+          <p><strong>🕐 Session :</strong> ${dpData.plongee || 'matin'}</p>
+          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
+          
+          <div style="margin-top: 15px;">
+            <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
+                    style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+              📥 Charger dans l'interface
+            </button>
+            <button onclick="supprimerDPSelectionne('${selectedKey}')" 
+                    style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+              🗑️ Supprimer
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .catch(error => {
+      console.error("❌ Erreur chargement DP:", error);
+      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
+    });
+}
+
+// 3. FONCTION POUR CHARGER UN DP DANS L'INTERFACE ACTUELLE
+async function chargerDonneesDPSelectionne(dpKey) {
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
+    if (!snapshot.exists()) {
+      alert("❌ DP non trouvé");
+      return;
+    }
+    
+    const dpData = snapshot.val();
+    
+    // Charger les données dans l'interface
+    const dpNomInput = document.getElementById("dp-nom");
+    const dpDateInput = document.getElementById("dp-date");
+    const dpLieuInput = document.getElementById("dp-lieu");
+    const dpPlongeeInput = document.getElementById("dp-plongee");
+    
+    if (dpNomInput) dpNomInput.value = dpData.nom || "";
+    if (dpDateInput) dpDateInput.value = dpData.date || "";
+    if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+    if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+    
+    // Mettre à jour le message DP
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = `
+        <div style="color: #007bff; font-weight: bold; padding: 10px; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 4px;">
+          📥 DP chargé depuis l'historique
+        </div>
+      `;
+    }
+    
+    alert("✅ Données DP chargées avec succès !");
+    console.log("✅ DP chargé:", dpData);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement DP:", error);
+    alert("❌ Erreur lors du chargement : " + error.message);
+  }
+}
+
+// 4. FONCTION POUR SUPPRIMER UN DP
+async function supprimerDPSelectionne(dpKey) {
+  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    await db.ref(`dpInfo/${dpKey}`).remove();
+    
+    alert("✅ DP supprimé avec succès !");
+    
+    // Recharger l'historique
+    await chargerHistoriqueDP();
+    
+    // Vider l'affichage des infos
+    const historiqueInfo = document.getElementById("historique-info");
+    if (historiqueInfo) {
+      historiqueInfo.innerHTML = '';
+    }
+    
+    console.log("✅ DP supprimé:", dpKey);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// 5. FONCTION DE DIAGNOSTIC
+async function diagnosticListeDP() {
+  console.log("🔍 === DIAGNOSTIC LISTE DP ===");
+  
+  // Vérifier les éléments DOM
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+  
+  console.log("DOM Elements:", {
+    dpDatesSelect: !!dpDatesSelect,
+    historiqueInfo: !!historiqueInfo
+  });
+  
+  // Vérifier Firebase
+  console.log("Firebase:", {
+    dbDefined: typeof db !== 'undefined',
+    dbConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'unknown'
+  });
+  
+  // Tester la connexion à Firebase
+  if (typeof db !== 'undefined' && db) {
+    try {
+      const snapshot = await db.ref('dpInfo').limitToFirst(1).once('value');
+      console.log("Test Firebase:", snapshot.exists() ? "✅ Données trouvées" : "⚠️ Aucune donnée");
+      
+      if (snapshot.exists()) {
+        const allSnapshot = await db.ref('dpInfo').once('value');
+        const allData = allSnapshot.val();
+        console.log("Nombre total de DP:", Object.keys(allData).length);
+        console.log("Exemple de données:", Object.values(allData)[0]);
+      }
+    } catch (error) {
+      console.error("❌ Erreur test Firebase:", error);
+    }
+  }
+  
+  console.log("=== FIN DIAGNOSTIC ===");
+}
+
+// 6. INITIALISATION ET EXPORT DES FONCTIONS GLOBALES
+window.chargerHistoriqueDP = chargerHistoriqueDP;
+window.afficherInfoDP = afficherInfoDP;
+window.chargerDonneesDPSelectionne = chargerDonneesDPSelectionne;
+window.supprimerDPSelectionne = supprimerDPSelectionne;
+window.diagnosticListeDP = diagnosticListeDP;
+
+// 7. AUTO-CHARGEMENT SI LES ÉLÉMENTS SONT PRÉSENTS
+document.addEventListener('DOMContentLoaded', () => {
+  // Attendre un peu que tout soit initialisé
+  setTimeout(() => {
+    if (document.getElementById("dp-dates")) {
+      console.log("🔄 Auto-chargement historique DP...");
+      chargerHistoriqueDP();
+    }
+  }, 2000);
+});
+
+console.log("✅ Fonctions DP corrigées et chargées");
