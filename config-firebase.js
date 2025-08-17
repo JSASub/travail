@@ -1,4 +1,4 @@
-// config-firebase.js - Configuration Firebase et services de base
+// config-firebase.js - Configuration Firebase et services de base avec système de verrous
 
 // Configuration Firebase
 const firebaseConfig = {
@@ -24,6 +24,16 @@ let app, db, auth;
 
 // État d'authentification
 let currentUser = null;
+
+// NOUVEAU : Variables pour le système de verrous
+let palanqueeLocks = {};
+let currentlyEditingPalanquee = null;
+let lockTimers = {};
+let dpOnline = {};
+let dpInfo = {
+  niveau: 'DP', // N5, E3, E4 tous considérés comme DP
+  nom: ''
+};
 
 // DOM helpers
 function $(id) {
@@ -58,6 +68,11 @@ function initializeFirebase() {
         showMainApp();
         updateUserInfo(user);
         
+        // NOUVEAU : Initialiser le système de verrous
+        setTimeout(() => {
+          initializeLockSystem();
+        }, 2000);
+        
         // Charger les données uniquement si on vient de se connecter (pas au démarrage)
         if (document.readyState === 'complete') {
           console.log("🔄 Chargement des données après connexion...");
@@ -76,6 +91,236 @@ function initializeFirebase() {
     return false;
   }
 }
+
+// ===== NOUVEAU : SYSTÈME DE VERROUILLAGE =====
+
+// Déterminer le niveau de l'utilisateur
+function determinerNiveauUtilisateur() {
+  const dpNomField = $("dp-nom");
+  if (dpNomField && dpNomField.value) {
+    dpInfo.nom = dpNomField.value;
+    dpInfo.niveau = 'DP'; // N5, E3 ou E4 - tous considérés comme DP
+  }
+  return dpInfo.niveau;
+}
+
+// Initialiser le système de verrouillage
+function initializeLockSystem() {
+  console.log("🔒 Initialisation du système de verrouillage DP...");
+  
+  try {
+    // Déterminer le niveau de l'utilisateur
+    determinerNiveauUtilisateur();
+    
+    // Marquer le DP comme en ligne
+    markDPOnline();
+    
+    // Écouter les verrous actifs
+    listenToLocks();
+    
+    // Écouter les DPs en ligne
+    listenToOnlineDPs();
+    
+    // Nettoyer à la fermeture
+    window.addEventListener('beforeunload', cleanupOnExit);
+    
+    console.log("✅ Système de verrouillage initialisé pour:", dpInfo);
+    
+  } catch (error) {
+    console.error("❌ Erreur initialisation système de verrouillage:", error);
+  }
+}
+
+// Marquer le DP comme en ligne
+function markDPOnline() {
+  if (!currentUser || !db) return;
+  
+  const dpNom = $("dp-nom")?.value || currentUser.email;
+  const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
+  
+  dpOnlineRef.set({
+    nom: dpNom,
+    email: currentUser.email,
+    niveau: dpInfo.niveau,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
+    sessionActive: true
+  });
+  
+  // Nettoyer à la déconnexion
+  dpOnlineRef.onDisconnect().remove();
+}
+
+// Écouter les verrous actifs
+function listenToLocks() {
+  if (!db) return;
+  
+  const locksRef = db.ref('palanquee_locks');
+  locksRef.on('value', (snapshot) => {
+    const locks = snapshot.val() || {};
+    palanqueeLocks = locks;
+    updatePalanqueeLockUI();
+  });
+}
+
+// Écouter les DPs en ligne
+function listenToOnlineDPs() {
+  if (!db) return;
+  
+  const dpOnlineRef = db.ref('dp_online');
+  dpOnlineRef.on('value', (snapshot) => {
+    const onlineDPs = snapshot.val() || {};
+    dpOnline = onlineDPs;
+    updateDPStatusIndicator(onlineDPs);
+  });
+}
+
+// Mettre à jour l'indicateur de statut des DPs
+function updateDPStatusIndicator(onlineDPs) {
+  let statusIndicator = $("dp-status-indicator");
+  
+  if (!statusIndicator) {
+    statusIndicator = document.createElement("div");
+    statusIndicator.id = "dp-status-indicator";
+    statusIndicator.className = "dp-status-indicator";
+    
+    const metaInfo = $("meta-info");
+    if (metaInfo) {
+      metaInfo.insertAdjacentElement('afterend', statusIndicator);
+    }
+  }
+  
+  const dpCount = Object.keys(onlineDPs).length;
+  const dpNames = Object.values(onlineDPs).map(dp => dp.nom).join(', ');
+  const lockCount = Object.keys(palanqueeLocks).length;
+  
+  statusIndicator.innerHTML = `
+    <div class="dp-status-content">
+      <span class="dp-status-icon">👨‍💼</span>
+      <span class="dp-status-text">${dpCount} DP connecté(s): ${dpNames}</span>
+      <span class="dp-lock-count">${lockCount} palanquée(s) en modification</span>
+    </div>
+  `;
+}
+
+// Prendre le verrou d'une palanquée
+async function acquirePalanqueeLock(palanqueeIndex) {
+  if (!db || !currentUser) {
+    console.warn("❌ Firebase ou utilisateur non disponible");
+    return false;
+  }
+  
+  const palanqueeId = `palanquee-${palanqueeIndex}`;
+  const lockRef = db.ref(`palanquee_locks/${palanqueeId}`);
+  
+  try {
+    const result = await lockRef.transaction((currentLock) => {
+      if (currentLock === null) {
+        // Pas de verrou, on peut prendre
+        return {
+          userId: currentUser.uid,
+          userName: dpInfo.nom || currentUser.email,
+          niveau: dpInfo.niveau,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          palanqueeIndex: palanqueeIndex
+        };
+      } else if (currentLock.userId === currentUser.uid) {
+        // C'est déjà notre verrou, on le garde
+        return currentLock;
+      } else {
+        // Quelqu'un d'autre a le verrou
+        throw new Error(`LOCK_EXISTS:${currentLock.userName}`);
+      }
+    });
+    
+    if (result.committed) {
+      console.log(`🔒 Verrou acquis pour palanquée ${palanqueeIndex}`);
+      currentlyEditingPalanquee = palanqueeIndex;
+      
+      // Auto-libération après 3 minutes d'inactivité
+      lockTimers[palanqueeId] = setTimeout(() => {
+        releasePalanqueeLock(palanqueeIndex);
+        showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
+      }, 3 * 60 * 1000);
+      
+      return true;
+    }
+    
+  } catch (error) {
+    if (error.message.startsWith('LOCK_EXISTS:')) {
+      const otherDPName = error.message.split(':')[1];
+      if (confirm(`${otherDPName} modifie cette palanquée.\n\nEn tant que DP, voulez-vous prendre le contrôle ?`)) {
+        // Forcer la prise de verrou
+        await lockRef.set({
+          userId: currentUser.uid,
+          userName: dpInfo.nom || currentUser.email,
+          niveau: dpInfo.niveau,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          palanqueeIndex: palanqueeIndex,
+          forced: true
+        });
+        
+        currentlyEditingPalanquee = palanqueeIndex;
+        showLockNotification("🔧 Contrôle pris. L'autre DP a été notifié.", "success");
+        
+        // Auto-libération après 3 minutes
+        lockTimers[palanqueeId] = setTimeout(() => {
+          releasePalanqueeLock(palanqueeIndex);
+          showLockNotification("⏰ Modification annulée automatiquement après 3 minutes d'inactivité", "warning");
+        }, 3 * 60 * 1000);
+        
+        return true;
+      }
+      return false;
+    } else {
+      console.error("❌ Erreur lors de la prise de verrou:", error);
+      showLockNotification("Erreur lors de la prise de verrou: " + error.message, "error");
+      return false;
+    }
+  }
+  
+  return false;
+}
+
+// Libérer le verrou d'une palanquée
+async function releasePalanqueeLock(palanqueeIndex) {
+  if (!db) return;
+  
+  const palanqueeId = `palanquee-${palanqueeIndex}`;
+  const lockRef = db.ref(`palanquee_locks/${palanqueeId}`);
+  
+  try {
+    await lockRef.remove();
+    console.log(`🔓 Verrou libéré pour palanquée ${palanqueeIndex}`);
+    
+    currentlyEditingPalanquee = null;
+    
+    // Annuler le timer
+    if (lockTimers[palanqueeId]) {
+      clearTimeout(lockTimers[palanqueeId]);
+      delete lockTimers[palanqueeId];
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur lors de la libération du verrou:", error);
+  }
+}
+
+// Nettoyer à la sortie
+function cleanupOnExit() {
+  if (currentlyEditingPalanquee !== null) {
+    releasePalanqueeLock(currentlyEditingPalanquee);
+  }
+  
+  // Nettoyer tous les timers
+  Object.values(lockTimers).forEach(timer => clearTimeout(timer));
+  
+  // Marquer comme hors ligne
+  if (currentUser && db) {
+    db.ref(`dp_online/${currentUser.uid}`).remove();
+  }
+}
+
+// ===== FIN SYSTÈME DE VERROUILLAGE =====
 
 // Fonctions d'authentification
 function signIn(email, password) {
@@ -134,7 +379,7 @@ async function testFirebaseConnection() {
 // Chargement des données depuis Firebase
 async function loadFromFirebase() {
   try {
-    console.log("📥 Chargement des données depuis Firebase...");
+    console.log("🔥 Chargement des données depuis Firebase...");
     
     const plongeursSnapshot = await db.ref('plongeurs').once('value');
     if (plongeursSnapshot.exists()) {
@@ -209,9 +454,9 @@ async function loadFromFirebase() {
   }
 }
 
-// Sauvegarde Firebase
+// Sauvegarde Firebase - MODIFIÉE pour intégrer les verrous
 async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
+  console.log("💾 Synchronisation Firebase avec gestion des verrous...");
   
   plongeursOriginaux = [...plongeurs];
   
@@ -229,6 +474,14 @@ async function syncToDatabase() {
       await saveSessionData();
       
       console.log("✅ Sauvegarde Firebase réussie");
+      
+      // NOUVEAU : Libérer le verrou après sync réussie
+      if (currentlyEditingPalanquee !== null) {
+        setTimeout(() => {
+          releasePalanqueeLock(currentlyEditingPalanquee);
+        }, 1000);
+      }
+      
     } catch (error) {
       console.error("❌ Erreur sync Firebase:", error.message);
     }
@@ -465,101 +718,5 @@ async function loadSession(sessionKey) {
     console.error("❌ Erreur chargement session:", error);
     alert("Erreur lors du chargement de la session : " + error.message);
     return false;
-  }
-}
-// ===== GESTION DES VERROUS PALANQUÉES =====
-let palanqueeLocks = {};
-let currentlyEditingPalanquee = null;
-let lockTimers = {};
-
-// Marquer comme DP en ligne
-function markDPOnline() {
-  if (!currentUser || !db) return;
-  
-  const dpNom = $("dp-nom")?.value || currentUser.email;
-  const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
-  
-  dpOnlineRef.set({
-    nom: dpNom,
-    email: currentUser.email,
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  });
-  
-  dpOnlineRef.onDisconnect().remove();
-}
-
-// Écouter les verrous
-function listenToLocks() {
-  if (!db) return;
-  
-  const locksRef = db.ref('palanquee_locks');
-  locksRef.on('value', (snapshot) => {
-    palanqueeLocks = snapshot.val() || {};
-    updatePalanqueeLockUI();
-  });
-}
-
-// Prendre un verrou
-async function acquirePalanqueeLock(palanqueeIndex) {
-  if (!db || !currentUser) return false;
-  
-  const palanqueeId = `palanquee-${palanqueeIndex}`;
-  const lockRef = db.ref(`palanquee_locks/${palanqueeId}`);
-  
-  try {
-    const result = await lockRef.transaction((currentLock) => {
-      if (currentLock === null) {
-        return {
-          userId: currentUser.uid,
-          userName: $("dp-nom")?.value || currentUser.email,
-          timestamp: firebase.database.ServerValue.TIMESTAMP
-        };
-      } else if (currentLock.userId === currentUser.uid) {
-        return currentLock;
-      } else {
-        throw new Error(`LOCK_EXISTS:${currentLock.userName}`);
-      }
-    });
-    
-    if (result.committed) {
-      currentlyEditingPalanquee = palanqueeIndex;
-      
-      // Auto-libération après 3 minutes
-      lockTimers[palanqueeId] = setTimeout(() => {
-        releasePalanqueeLock(palanqueeIndex);
-      }, 3 * 60 * 1000);
-      
-      return true;
-    }
-  } catch (error) {
-    if (error.message.startsWith('LOCK_EXISTS:')) {
-      const otherDP = error.message.split(':')[1];
-      if (confirm(`${otherDP} modifie cette palanquée.\nVoulez-vous prendre le contrôle ?`)) {
-        await lockRef.set({
-          userId: currentUser.uid,
-          userName: $("dp-nom")?.value || currentUser.email,
-          timestamp: firebase.database.ServerValue.TIMESTAMP,
-          forced: true
-        });
-        return true;
-      }
-    }
-  }
-  
-  return false;
-}
-
-// Libérer un verrou
-async function releasePalanqueeLock(palanqueeIndex) {
-  if (!db) return;
-  
-  const palanqueeId = `palanquee-${palanqueeIndex}`;
-  await db.ref(`palanquee_locks/${palanqueeId}`).remove();
-  
-  currentlyEditingPalanquee = null;
-  
-  if (lockTimers[palanqueeId]) {
-    clearTimeout(lockTimers[palanqueeId]);
-    delete lockTimers[palanqueeId];
   }
 }
