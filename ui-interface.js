@@ -1,4 +1,4 @@
-// ui-interface.js - Interface utilisateur et utilitaires
+// ui-interface.js - Interface utilisateur et utilitaires avec système de verrous
 
 // ===== COMPTEURS D'AFFICHAGE =====
 function updateCompteurs() {
@@ -23,6 +23,129 @@ function updateCompteurs() {
       compteurPalanquees.style.color = "#28a745";
     }
   }
+}
+
+// ===== NOUVEAU : GESTION DES VERROUS UI =====
+function updatePalanqueeLockUI() {
+  // Créer ou mettre à jour l'indicateur de statut DP
+  let statusIndicator = $("dp-status-indicator");
+  
+  if (!statusIndicator) {
+    statusIndicator = document.createElement("div");
+    statusIndicator.id = "dp-status-indicator";
+    statusIndicator.className = "dp-status-indicator";
+    
+    const metaInfo = $("meta-info");
+    if (metaInfo) {
+      metaInfo.insertAdjacentElement('afterend', statusIndicator);
+    }
+  }
+  
+  const lockCount = Object.keys(palanqueeLocks).length;
+  const activeLocks = Object.values(palanqueeLocks).map(lock => lock.userName).join(', ');
+  
+  statusIndicator.innerHTML = `
+    <span class="dp-status-icon">👨‍💼</span>
+    <span>Système DP actif - ${lockCount} palanquée(s) en modification</span>
+    ${lockCount > 0 ? `<span style="font-size: 12px; color: #666;"> (${activeLocks})</span>` : ''}
+  `;
+  
+  // Mettre à jour les palanquées existantes
+  document.querySelectorAll('.palanquee').forEach((element, index) => {
+    const palanqueeId = `palanquee-${index}`;
+    const lock = palanqueeLocks[palanqueeId];
+    
+    // Supprimer les anciens indicateurs
+    const oldIndicator = element.querySelector('.lock-indicator');
+    if (oldIndicator) {
+      oldIndicator.remove();
+    }
+    
+    // Réinitialiser les classes
+    element.classList.remove('editing-self', 'editing-other');
+    element.style.pointerEvents = 'auto';
+    element.style.opacity = '1';
+    
+    // Réactiver tous les champs
+    const fields = element.querySelectorAll('input, select, textarea');
+    fields.forEach(field => {
+      field.disabled = false;
+      field.classList.remove('locked-field');
+    });
+    
+    if (lock) {
+      const indicator = document.createElement('div');
+      indicator.className = 'lock-indicator';
+      
+      if (lock.userId === currentUser.uid) {
+        indicator.className += ' editing-self';
+        indicator.textContent = '🔧 En modification par vous';
+        element.classList.add('editing-self');
+      } else {
+        indicator.className += ' editing-other';
+        indicator.textContent = `🔒 ${lock.userName} modifie`;
+        element.classList.add('editing-other');
+        element.style.pointerEvents = 'none';
+        element.style.opacity = '0.7';
+        
+        // Désactiver tous les champs
+        fields.forEach(field => {
+          field.disabled = true;
+          field.classList.add('locked-field');
+        });
+      }
+      
+      const title = element.querySelector('.palanquee-title');
+      if (title) {
+        title.appendChild(indicator);
+      }
+    }
+  });
+}
+
+// Notifications de verrous
+function showLockNotification(message, type = "info") {
+  let container = $("lock-notifications");
+  
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "lock-notifications";
+    container.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1500;
+      max-width: 400px;
+    `;
+    document.body.appendChild(container);
+  }
+  
+  const notification = document.createElement("div");
+  notification.style.cssText = `
+    background: white;
+    border-left: 4px solid ${type === 'warning' ? '#ffc107' : type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff'};
+    border-radius: 4px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  `;
+  
+  notification.innerHTML = `
+    <span>${message}</span>
+    <button onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
+  `;
+  
+  container.appendChild(notification);
+  
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 4000);
 }
 
 // ===== SYSTÈME D'ALERTES =====
