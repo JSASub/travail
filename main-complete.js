@@ -45,44 +45,54 @@ async function testFirebaseConnection() {
       throw new Error("Instance Firebase Auth non initialisée");
     }
     
-    // Test de connexion réseau
+    // Test de connexion réseau avec timeout plus long
     const testRef = db.ref('.info/connected');
     const connectedPromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         testRef.off('value');
         reject(new Error("Timeout test connexion Firebase"));
-      }, 5000);
+      }, 10000); // Augmenté à 10 secondes
       
+      let resolved = false;
       testRef.on('value', (snapshot) => {
-        clearTimeout(timeout);
-        testRef.off('value');
-        
-        firebaseConnected = snapshot.val() === true;
-        console.log(firebaseConnected ? "✅ Firebase connecté" : "❌ Firebase déconnecté");
-        resolve(firebaseConnected);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          testRef.off('value');
+          
+          firebaseConnected = snapshot.val() === true;
+          console.log(firebaseConnected ? "✅ Firebase connecté" : "⚠️ Firebase déconnecté");
+          resolve(firebaseConnected);
+        }
       });
     });
     
     await connectedPromise;
     
-    // Test d'écriture simple
+    // Test d'écriture simple seulement si connecté
     if (firebaseConnected) {
-      await db.ref('test').set({ 
-        timestamp: Date.now(),
-        testType: "connection-check"
-      });
-      console.log("✅ Test d'écriture Firebase réussi");
-      
-      // Nettoyer le test
-      await db.ref('test').remove();
+      try {
+        await db.ref('test').set({ 
+          timestamp: Date.now(),
+          testType: "connection-check"
+        });
+        console.log("✅ Test d'écriture Firebase réussi");
+        
+        // Nettoyer le test
+        await db.ref('test').remove();
+      } catch (writeError) {
+        console.warn("⚠️ Écriture Firebase échouée mais lecture OK:", writeError.message);
+      }
+    } else {
+      console.warn("⚠️ Firebase déconnecté, fonctionnement en mode lecture seule");
     }
     
-    return true;
+    return true; // On continue même si déconnecté
     
   } catch (error) {
     console.error("❌ Test Firebase échoué:", error.message);
     firebaseConnected = false;
-    return false;
+    return true; // On continue en mode dégradé
   }
 }
 
@@ -1455,7 +1465,8 @@ function setupEventListeners() {
         // Plongeur dans une palanquée
         const palanqueeElement = e.target.closest('.palanquee');
         const palanqueeIndex = parseInt(palanqueeElement.dataset.index);
-        const plongeurIndex = Array.from(palanqueeElement.querySelectorAll('.plongeur-item')).indexOf(e.target);
+        const plongeurElements = palanqueeElement.querySelectorAll('.plongeur-item');
+        const plongeurIndex = Array.from(plongeurElements).indexOf(e.target);
         const plongeur = palanquees[palanqueeIndex] ? palanquees[palanqueeIndex][plongeurIndex] : null;
         
         if (plongeur) {
@@ -1481,6 +1492,7 @@ function setupEventListeners() {
       if (dragData) {
         e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
         e.dataTransfer.effectAllowed = "move";
+        console.log("🎯 Drag started:", dragData.type);
       }
     }
   });
@@ -1488,6 +1500,15 @@ function setupEventListeners() {
   document.addEventListener('dragend', (e) => {
     if (e.target.classList.contains('plongeur-item')) {
       e.target.classList.remove('dragging');
+      e.target.style.opacity = '1'; // Restaurer l'opacité
+    }
+  });
+
+  // Amélioration des zones de drop
+  document.addEventListener('dragover', (e) => {
+    if (e.target.closest('.palanquee') || e.target.closest('#listePlongeurs')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
     }
   });
 
