@@ -1476,5 +1476,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
-
-console.log("📱 Module principal chargé");
