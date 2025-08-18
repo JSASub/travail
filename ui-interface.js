@@ -167,7 +167,7 @@ function showLockNotification(message, type = "info") {
   }
 }
 
-// ===== SYSTÈME D'ALERTES =====
+// ===== SYSTÈME D'ALERTES AVEC NOUVELLES RÈGLES =====
 function checkAllAlerts() {
   try {
     const alertes = [];
@@ -183,10 +183,16 @@ function checkAllAlerts() {
         return;
       }
       
+      // Classification des plongeurs selon les nouvelles règles
       const n1s = palanquee.filter(p => p && p.niveau === "N1");
-      const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
+      const plgOr = palanquee.filter(p => p && p.niveau === "Plg.Or");
+      const plgAr = palanquee.filter(p => p && p.niveau === "Plg.Ar");
+      const plgBr = palanquee.filter(p => p && p.niveau === "Plg.Br");
+      const debutants = palanquee.filter(p => p && ["Déb.", "débutant", "Déb"].includes(p.niveau));
+      const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
       const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
       
+      // RÈGLES GÉNÉRALES
       if (palanquee.length > 5) {
         alertes.push(`Palanquée ${idx + 1}: Plus de 5 plongeurs (${palanquee.length})`);
       }
@@ -195,16 +201,66 @@ function checkAllAlerts() {
         alertes.push(`Palanquée ${idx + 1}: Palanquée de ${palanquee.length} plongeur(s)`);
       }
       
-      if (n1s.length > 0 && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: N1 sans Guide de Palanquée`);
+      // NOUVELLES RÈGLES POUR LES PLONGEURS BRONZE
+      if (plgBr.length > 0) {
+        if (gps.length === 0) {
+          alertes.push(`Palanquée ${idx + 1}: Plongeur(s) Bronze sans Guide de Palanquée (GP/E2/E3/E4)`);
+        }
+        if (plgBr.length > 2) {
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 plongeurs Bronze autorisés (${plgBr.length})`);
+        }
       }
       
+      // NOUVELLES RÈGLES POUR LES PLONGEURS ARGENT
+      if (plgAr.length > 0) {
+        if (gps.length === 0) {
+          alertes.push(`Palanquée ${idx + 1}: Plongeur(s) Argent sans Guide de Palanquée (GP/E2/E3/E4)`);
+        }
+        if (plgAr.length > 2) {
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 plongeurs Argent autorisés (${plgAr.length})`);
+        }
+      }
+      
+      // NOUVELLES RÈGLES POUR LES PLONGEURS OR (considérés comme N1)
+      const totalN1etOr = n1s.length + plgOr.length;
+      if (totalN1etOr > 0 && gps.length === 0) {
+        alertes.push(`Palanquée ${idx + 1}: N1/Plongeur Or sans Guide de Palanquée`);
+      }
+      
+      // RÈGLES POUR LES DÉBUTANTS
+      if (debutants.length > 0 && gps.length === 0) {
+        alertes.push(`Palanquée ${idx + 1}: Débutant(s) sans Guide de Palanquée`);
+      }
+      
+      // RÈGLES POUR LES AUTONOMES
       if (autonomes.length > 3) {
         alertes.push(`Palanquée ${idx + 1}: Plus de 3 plongeurs autonomes (${autonomes.length})`);
       }
       
+      // RÈGLE EFFECTIF AVEC GP
       if ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0) {
         alertes.push(`Palanquée ${idx + 1}: ${palanquee.length} plongeurs sans Guide de Palanquée`);
+      }
+      
+      // RÈGLES SPÉCIFIQUES JEUNES PLONGEURS (mélange avec adultes)
+      const jeunesPlongeurs = plgBr.length + plgAr.length + plgOr.length;
+      const plongeursAdultes = n1s.length + autonomes.length + debutants.length;
+      
+      if (jeunesPlongeurs > 0 && plongeursAdultes > 0) {
+        // Effectif maximal palanquée avec enfants : 3 plongeurs dont 2 enfants max
+        if (palanquee.length > 3) {
+          alertes.push(`Palanquée ${idx + 1}: Effectif trop important avec jeunes plongeurs (max 3, actuel ${palanquee.length})`);
+        }
+        if (jeunesPlongeurs > 2) {
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 jeunes plongeurs autorisés avec adultes (${jeunesPlongeurs})`);
+        }
+      }
+      
+      // RÈGLES POUR PALANQUÉE UNIQUEMENT JEUNES PLONGEURS
+      if (jeunesPlongeurs > 0 && plongeursAdultes === 0 && gps.length > 0) {
+        if (palanquee.length > 3) { // 2 enfants + 1 GP
+          alertes.push(`Palanquée ${idx + 1}: Effectif trop important pour palanquée jeunes (max 3 avec GP, actuel ${palanquee.length})`);
+        }
       }
     });
     
@@ -252,40 +308,170 @@ function checkAlert(palanquee) {
         });
         
         // Utiliser le tableau converti pour la vérification
-        const n1s = plongeursArray.filter(p => p && p.niveau === "N1");
-        const gps = plongeursArray.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-        const autonomes = plongeursArray.filter(p => p && ["N2", "N3"].includes(p.niveau));
-        
-        return (
-          plongeursArray.length > 5 ||
-          plongeursArray.length <= 1 ||
-          (n1s.length > 0 && gps.length === 0) ||
-          autonomes.length > 3 ||
-          ((plongeursArray.length === 4 || plongeursArray.length === 5) && gps.length === 0)
-        );
+        return checkAlertForArray(plongeursArray);
       }
       
       return false;
     }
     
-    const n1s = palanquee.filter(p => p && p.niveau === "N1");
-    const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-    const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
-    
-    return (
-      palanquee.length > 5 ||
-      palanquee.length <= 1 ||
-      (n1s.length > 0 && gps.length === 0) ||
-      autonomes.length > 3 ||
-      ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0)
-    );
+    return checkAlertForArray(palanquee);
   } catch (error) {
     console.error("❌ Erreur checkAlert:", error);
     return false;
   }
 }
 
-// ===== TRI DES PLONGEURS =====
+function checkAlertForArray(palanquee) {
+  // Classification des plongeurs selon les nouvelles règles
+  const n1s = palanquee.filter(p => p && p.niveau === "N1");
+  const plgOr = palanquee.filter(p => p && p.niveau === "Plg.Or");
+  const plgAr = palanquee.filter(p => p && p.niveau === "Plg.Ar");
+  const plgBr = palanquee.filter(p => p && p.niveau === "Plg.Br");
+  const debutants = palanquee.filter(p => p && ["Déb.", "débutant", "Déb"].includes(p.niveau));
+  const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
+  const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
+  
+  // Calculs pour les vérifications
+  const totalN1etOr = n1s.length + plgOr.length;
+  const jeunesPlongeurs = plgBr.length + plgAr.length + plgOr.length;
+  const plongeursAdultes = n1s.length + autonomes.length + debutants.length;
+  
+  // Vérifications des alertes selon les nouvelles règles
+  const alertes = [
+    // Effectif général
+    palanquee.length > 5,
+    palanquee.length <= 1,
+    
+    // Nouvelles règles Plongeurs Bronze
+    (plgBr.length > 0 && gps.length === 0),
+    (plgBr.length > 2),
+    
+    // Nouvelles règles Plongeurs Argent
+    (plgAr.length > 0 && gps.length === 0),
+    (plgAr.length > 2),
+    
+    // N1 et Plongeurs Or (Or considéré comme N1)
+    (totalN1etOr > 0 && gps.length === 0),
+    
+    // Débutants
+    (debutants.length > 0 && gps.length === 0),
+    
+    // Autonomes
+    (autonomes.length > 3),
+    
+    // Effectif sans GP
+    ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0),
+    
+    // Nouvelles règles mélange jeunes/adultes
+    (jeunesPlongeurs > 0 && plongeursAdultes > 0 && palanquee.length > 3),
+    (jeunesPlongeurs > 0 && plongeursAdultes > 0 && jeunesPlongeurs > 2),
+    
+    // Palanquée uniquement jeunes
+    (jeunesPlongeurs > 0 && plongeursAdultes === 0 && gps.length > 0 && palanquee.length > 3)
+  ];
+  
+  return alertes.some(alerte => alerte);
+}
+
+// ===== FONCTION DE VALIDATION AVANT AJOUT À UNE PALANQUÉE =====
+function validatePalanqueeAddition(palanqueeIndex, newPlongeur) {
+  if (!Array.isArray(palanquees[palanqueeIndex])) return { valid: false, messages: ["Erreur: palanquée invalide"] };
+  
+  // Simuler l'ajout pour tester
+  const testPalanquee = [...palanquees[palanqueeIndex], newPlongeur];
+  
+  // Vérifier si cela créerait une alerte
+  const wouldCreateAlert = checkAlertForArray(testPalanquee);
+  
+  if (wouldCreateAlert) {
+    // Déterminer le type d'alerte spécifique
+    const alertMessages = [];
+    
+    const plgBr = testPalanquee.filter(p => p && p.niveau === "Plg.Br");
+    const plgAr = testPalanquee.filter(p => p && p.niveau === "Plg.Ar");
+    const gps = testPalanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
+    const jeunesPlongeurs = testPalanquee.filter(p => p && ["Plg.Br", "Plg.Ar", "Plg.Or"].includes(p.niveau)).length;
+    const plongeursAdultes = testPalanquee.filter(p => p && ["N1", "N2", "N3", "Déb.", "débutant", "Déb"].includes(p.niveau)).length;
+    
+    // Vérifications spécifiques selon les nouvelles règles
+    if (newPlongeur.niveau === "Plg.Br" && plgBr.length > 2) {
+      alertMessages.push("🚫 Maximum 2 plongeurs Bronze par palanquée");
+    }
+    
+    if (newPlongeur.niveau === "Plg.Ar" && plgAr.length > 2) {
+      alertMessages.push("🚫 Maximum 2 plongeurs Argent par palanquée");
+    }
+    
+    if (["Plg.Br", "Plg.Ar"].includes(newPlongeur.niveau) && gps.length === 0) {
+      alertMessages.push("🚫 Les plongeurs Bronze/Argent nécessitent un Guide de Palanquée (GP/E2/E3/E4)");
+    }
+    
+    if (["N1", "Plg.Or", "Déb.", "débutant", "Déb"].includes(newPlongeur.niveau) && gps.length === 0) {
+      alertMessages.push("🚫 Ce plongeur nécessite un Guide de Palanquée");
+    }
+    
+    if (testPalanquee.length > 5) {
+      alertMessages.push("🚫 Maximum 5 plongeurs par palanquée");
+    }
+    
+    if (jeunesPlongeurs > 0 && plongeursAdultes > 0) {
+      if (testPalanquee.length > 3) {
+        alertMessages.push("🚫 Maximum 3 plongeurs quand il y a des jeunes et des adultes");
+      }
+      if (jeunesPlongeurs > 2) {
+        alertMessages.push("🚫 Maximum 2 jeunes plongeurs avec des adultes");
+      }
+    }
+    
+    return {
+      valid: false,
+      messages: alertMessages.length > 0 ? alertMessages : ["🚫 Configuration de palanquée non conforme"]
+    };
+  }
+  
+  return { valid: true, messages: ["✅ Ajout autorisé"] };
+}
+
+// ===== FONCTION POUR AFFICHER LES STATISTIQUES DÉTAILLÉES =====
+function getDetailedStats(palanquee) {
+  if (!Array.isArray(palanquee)) return "Stats indisponibles";
+  
+  const stats = {
+    gps: palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau)).length,
+    n1s: palanquee.filter(p => p && p.niveau === "N1").length,
+    autonomes: palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau)).length,
+    plgOr: palanquee.filter(p => p && p.niveau === "Plg.Or").length,
+    plgAr: palanquee.filter(p => p && p.niveau === "Plg.Ar").length,
+    plgBr: palanquee.filter(p => p && p.niveau === "Plg.Br").length,
+    debutants: palanquee.filter(p => p && ["Déb.", "débutant", "Déb"].includes(p.niveau)).length
+  };
+  
+  let display = `GP: ${stats.gps}`;
+  
+  if (stats.n1s > 0 || stats.plgOr > 0) {
+    display += ` | N1/Or: ${stats.n1s + stats.plgOr}`;
+  }
+  
+  if (stats.autonomes > 0) {
+    display += ` | Auto: ${stats.autonomes}`;
+  }
+  
+  if (stats.plgAr > 0) {
+    display += ` | Argent: ${stats.plgAr}`;
+  }
+  
+  if (stats.plgBr > 0) {
+    display += ` | Bronze: ${stats.plgBr}`;
+  }
+  
+  if (stats.debutants > 0) {
+    display += ` | Déb: ${stats.debutants}`;
+  }
+  
+  return display;
+}
+
+// ===== TRI DES PLONGEURS AVEC NOUVEAUX NIVEAUX =====
 function sortPlongeurs(type) {
   try {
     currentSort = type;
@@ -302,13 +488,12 @@ function sortPlongeurs(type) {
         plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
         break;
       case 'niveau':
-        // ORDRE CORRIGÉ avec tous les nouveaux niveaux (du plus capé au moins capé)
+        // Nouvel ordre de tri avec les niveaux jeunes plongeurs
         const niveauOrder = {
           'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
           'N3': 7, 'N2': 8, 'N1': 9,
           'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-          'Déb.': 13, 'débutant': 14, 'Déb': 15,
-          'E1': 16 // E1 en dernier car niveau obsolète
+          'Déb.': 13, 'débutant': 14, 'Déb': 15
         };
         plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
         break;
@@ -325,6 +510,7 @@ function sortPlongeurs(type) {
     console.error("❌ Erreur sortPlongeurs:", error);
   }
 }
+
 // ===== EXPORT JSON =====
 function exportToJSON() {
   try {
@@ -339,7 +525,7 @@ function exportToJSON() {
         date: dpDate,
         lieu: dpLieu,
         plongee: dpPlongee,
-        version: "2.5.0",
+        version: "2.5.1",
         exportDate: new Date().toISOString()
       },
       plongeurs: plongeurs.map(p => ({
@@ -377,258 +563,5 @@ function exportToJSON() {
   } catch (error) {
     console.error("❌ Erreur exportToJSON:", error);
     alert("Erreur lors de l'export : " + error.message);
-  }
-}
-
-// ===== SESSION MANAGEMENT =====
-async function populateSessionSelector() {
-  try {
-    if (typeof loadAvailableSessions !== 'function') {
-      console.warn("⚠️ loadAvailableSessions non disponible");
-      return;
-    }
-    
-    const sessions = await loadAvailableSessions();
-    const selector = $("session-selector");
-    
-    if (!selector) return;
-    
-    selector.innerHTML = '<option value="">-- Charger une session --</option>';
-    
-    if (sessions.length === 0) {
-      const option = document.createElement("option");
-      option.textContent = "Aucune session disponible";
-      option.disabled = true;
-      selector.appendChild(option);
-      return;
-    }
-    
-    sessions.forEach(session => {
-      const option = document.createElement("option");
-      option.value = session.key;
-      
-      const plongeeType = session.plongee ? ` (${session.plongee})` : '';
-      option.textContent = `${session.date}${plongeeType} - ${session.dp} - ${session.stats.nombrePalanquees} palanquées`;
-      
-      selector.appendChild(option);
-    });
-    
-    console.log("✅ Sélecteur de sessions mis à jour:", sessions.length, "sessions");
-  } catch (error) {
-    console.error("❌ Erreur lors du peuplement du sélecteur:", error);
-  }
-}
-
-// ===== NETTOYAGE =====
-async function populateSessionsCleanupList() {
-  const container = $("sessions-cleanup-list");
-  if (!container) return;
-
-  try {
-    if (typeof loadAvailableSessions !== 'function') {
-      container.innerHTML = '<em style="color: #dc3545;">Fonction de chargement non disponible</em>';
-      return;
-    }
-    
-    const sessions = await loadAvailableSessions();
-    
-    if (sessions.length === 0) {
-      container.innerHTML = '<em style="color: #666;">Aucune session à nettoyer</em>';
-      return;
-    }
-    
-    container.innerHTML = '';
-    
-    sessions.forEach(session => {
-      const item = document.createElement('label');
-      item.className = 'cleanup-item';
-      
-      const plongeeType = session.plongee ? ` (${session.plongee})` : '';
-      const dateFormatted = new Date(session.timestamp).toLocaleString('fr-FR');
-      
-      item.innerHTML = `
-        <input type="checkbox" value="${session.key}" class="session-cleanup-checkbox">
-        <div class="item-info">
-          <span class="item-date">${session.date}${plongeeType}</span>
-          <span class="item-details">${session.dp} - ${session.stats.nombrePalanquees} palanquées</span>
-          <span class="item-meta">Créé le ${dateFormatted}</span>
-        </div>
-      `;
-      
-      container.appendChild(item);
-    });
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement liste sessions nettoyage:", error);
-    if (container) {
-      container.innerHTML = '<em style="color: #dc3545;">Erreur de chargement</em>';
-    }
-  }
-}
-
-async function populateDPCleanupList() {
-  const container = $("dp-cleanup-list");
-  if (!container) return;
-
-  try {
-    if (!db) {
-      container.innerHTML = '<em style="color: #dc3545;">Base de données non disponible</em>';
-      return;
-    }
-    
-    const snapshot = await db.ref("dpInfo").once('value');
-    
-    if (!snapshot.exists()) {
-      container.innerHTML = '<em style="color: #666;">Aucun DP à nettoyer</em>';
-      return;
-    }
-    
-    const dpInfos = snapshot.val();
-    container.innerHTML = '';
-    
-    const dpList = Object.entries(dpInfos).sort((a, b) => 
-      new Date(b[1].date) - new Date(a[1].date)
-    );
-    
-    dpList.forEach(([key, dpData]) => {
-      const item = document.createElement('label');
-      item.className = 'cleanup-item';
-      
-      const dateFormatted = new Date(dpData.timestamp).toLocaleString('fr-FR');
-      const plongeeType = dpData.plongee ? ` (${dpData.plongee})` : '';
-      
-      item.innerHTML = `
-        <input type="checkbox" value="${key}" class="dp-cleanup-checkbox">
-        <div class="item-info">
-          <span class="item-date">${dpData.date}${plongeeType}</span>
-          <span class="item-details">${dpData.nom} - ${dpData.lieu}</span>
-          <span class="item-meta">Créé le ${dateFormatted}</span>
-        </div>
-      `;
-      
-      container.appendChild(item);
-    });
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement liste DP nettoyage:", error);
-    if (container) {
-      container.innerHTML = '<em style="color: #dc3545;">Erreur de chargement</em>';
-    }
-  }
-}
-
-async function deleteSelectedSessions() {
-  try {
-    const checkboxes = document.querySelectorAll('.session-cleanup-checkbox:checked');
-    
-    if (checkboxes.length === 0) {
-      alert("Aucune session sélectionnée pour suppression.");
-      return;
-    }
-    
-    const sessionKeys = Array.from(checkboxes).map(cb => cb.value);
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${sessionKeys.length} session(s) ?\n\nCette action est irréversible !`)) {
-      return;
-    }
-    
-    if (!db) {
-      alert("Base de données non disponible");
-      return;
-    }
-    
-    for (const sessionKey of sessionKeys) {
-      await db.ref(`sessions/${sessionKey}`).remove();
-    }
-    
-    alert(`${sessionKeys.length} session(s) supprimée(s) avec succès !`);
-    await populateSessionsCleanupList();
-    await populateSessionSelector();
-    
-  } catch (error) {
-    console.error("❌ Erreur suppression sessions:", error);
-    alert("Erreur lors de la suppression : " + error.message);
-  }
-}
-
-async function deleteSelectedDPs() {
-  try {
-    const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox:checked');
-    
-    if (checkboxes.length === 0) {
-      alert("Aucun DP sélectionné pour suppression.");
-      return;
-    }
-    
-    const dpKeys = Array.from(checkboxes).map(cb => cb.value);
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${dpKeys.length} DP ?\n\nCette action est irréversible !`)) {
-      return;
-    }
-    
-    if (!db) {
-      alert("Base de données non disponible");
-      return;
-    }
-    
-    for (const dpKey of dpKeys) {
-      await db.ref(`dpInfo/${dpKey}`).remove();
-    }
-    
-    alert(`${dpKeys.length} DP supprimé(s) avec succès !`);
-    await populateDPCleanupList();
-    if (typeof chargerHistoriqueDP === 'function') {
-      chargerHistoriqueDP();
-    }
-    
-  } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
-    alert("Erreur lors de la suppression : " + error.message);
-  }
-}
-
-function selectAllSessions(select = true) {
-  try {
-    const checkboxes = document.querySelectorAll('.session-cleanup-checkbox');
-    checkboxes.forEach(cb => cb.checked = select);
-    updateCleanupSelection();
-  } catch (error) {
-    console.error("❌ Erreur selectAllSessions:", error);
-  }
-}
-
-function selectAllDPs(select = true) {
-  try {
-    const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox');
-    checkboxes.forEach(cb => cb.checked = select);
-    updateCleanupSelection();
-  } catch (error) {
-    console.error("❌ Erreur selectAllDPs:", error);
-  }
-}
-
-function updateCleanupSelection() {
-  try {
-    document.querySelectorAll('.session-cleanup-checkbox').forEach(cb => {
-      const item = cb.closest('.cleanup-item');
-      if (item) {
-        if (cb.checked) {
-          item.classList.add('selected');
-        } else {
-          item.classList.remove('selected');
-        }
-      }
-    });
-    
-    document.querySelectorAll('.dp-cleanup-checkbox').forEach(cb => {
-      const item = cb.closest('.cleanup-item');
-      if (item) {
-        if (cb.checked) {
-          item.classList.add('selected');
-        } else {
-          item.classList.remove('selected');
-        }
-      }
-    });
-  } catch (error) {
-    console.error("❌ Erreur updateCleanupSelection:", error);
   }
 }
