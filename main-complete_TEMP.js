@@ -446,17 +446,8 @@ function exportToPDF() {
     const margin = 20;
     const contentWidth = pageWidth - (2 * margin);
     
-    // Constantes pour l'espacement
-    const spacing = {
-      lineHeight: 6,
-      sectionGap: 12,
-      subsectionGap: 8,
-      headerHeight: 60,
-      footerHeight: 25
-    };
-    
-    function checkPageBreak(heightNeeded, forceNewPage = false) {
-      if (forceNewPage || yPosition + heightNeeded > pageHeight - spacing.footerHeight) {
+    function checkPageBreak(heightNeeded, forceNewPage) {
+      if (forceNewPage || yPosition + heightNeeded > pageHeight - 30) {
         doc.addPage();
         yPosition = 20;
         addPageHeader();
@@ -486,151 +477,151 @@ function exportToPDF() {
       }
     }
     
-    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
-      
-      switch(color) {
-        case 'primary':
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          break;
-        case 'secondary':
-          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          break;
-        case 'success':
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          break;
-        case 'danger':
-          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          break;
-        case 'gray':
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          break;
-        case 'white':
-          doc.setTextColor(255, 255, 255);
-          break;
-        default:
-          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      }
-      
-      doc.text(text, x, y);
-    }
-    
     // Vérifier que les variables globales existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     // === EN-TÊTE PRINCIPAL ===
     doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.rect(0, 0, pageWidth, spacing.headerHeight, 'F');
+    doc.rect(0, 0, pageWidth, 60, 'F');
     
-    addText('Palanquées JSAS', margin, 20, 10, 'bold', 'white');
-    addText('Fiche de Sécurité', margin, 32, 20, 'bold', 'white');
-    addText('Association Sportive de Plongée', margin, 40, 8, 'normal', 'white');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Palanquées JSAS', margin, 20);
+    doc.setFontSize(20);
+    doc.text('Fiche de Sécurité', margin, 30);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text('Association Sportive de Plongée', margin, 35);
     
-    addText('DP: ' + dpNom.substring(0, 30), margin, 48, 10, 'bold', 'white');
-    addText('Date: ' + formatDateFrench(dpDate), margin, 55, 10, 'bold', 'white');
-    addText('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 55, 10, 'bold', 'white');
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DP: ' + dpNom.substring(0, 30), margin, 45);
+    doc.text('Date: ' + formatDateFrench(dpDate), margin, 52);
+    doc.text('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 52);
     
-    yPosition = spacing.headerHeight + spacing.sectionGap;
+    yPosition = 75;
     
     // === STATISTIQUES ===
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
     const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    addText('TABLEAU DE BORD', margin, yPosition, 12, 'bold', 'primary');
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('TABLEAU DE BORD', margin, yPosition);
     
     doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
     doc.setLineWidth(2);
     doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
     
-    yPosition += spacing.sectionGap + 3;
+    yPosition += 15;
     
-    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition, 10, 'bold');
-    addText('Palanquées: ' + palanqueesLocal.length, margin + 80, yPosition, 10, 'bold');
-    yPosition += spacing.lineHeight + 2;
+    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
     
-    addText('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition, 10, 'bold');
-    addText('Alertes: ' + alertesTotal.length, margin + 80, yPosition, 10, 'bold');
+    doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+    doc.text('                              Palanquées: ' + palanqueesLocal.length, margin + 50, yPosition);
+    yPosition += 8;
     
-    yPosition += spacing.sectionGap + 3;
+    doc.text('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition);
+    doc.text('Alertes: ' + alertesTotal.length, margin + 80, yPosition);
+    
+    yPosition += 15;
     
     // === ALERTES DE SÉCURITÉ ===
     if (alertesTotal.length > 0) {
-      const alerteBoxHeight = 20 + (alertesTotal.length * spacing.lineHeight);
-      checkPageBreak(alerteBoxHeight);
+      checkPageBreak(20 + (alertesTotal.length * 8));
       
       doc.setDrawColor(colors.dangerR, colors.dangerG, colors.dangerB);
       doc.setLineWidth(2);
-      doc.rect(margin, yPosition, contentWidth, alerteBoxHeight, 'S');
+      doc.rect(margin, yPosition, contentWidth, 15 + (alertesTotal.length * 6), 'S');
       
-      addText('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 12, 12, 'bold', 'danger');
+      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
       
-      yPosition += 20;
+      yPosition += 18;
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
       
       for (let i = 0; i < alertesTotal.length; i++) {
         const alerteClean = alertesTotal[i].replace(/'/g, "'");
-        addText("• " + alerteClean, margin + 5, yPosition, 10, 'normal');
-        yPosition += spacing.lineHeight;
+        doc.text("• " + alerteClean, margin + 5, yPosition + (i * 6));
       }
       
-      yPosition += spacing.subsectionGap;
+      yPosition += (alertesTotal.length * 6) + 10;
     }
     
     // === PALANQUÉES DÉTAILLÉES ===
-    checkPageBreak(40, true);
+    checkPageBreak(30, true);
     
-    addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += spacing.sectionGap + 3;
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Organisation des Palanquées', margin, yPosition);
+    yPosition += 15;
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
       doc.setLineWidth(1);
-      doc.rect(margin, yPosition, contentWidth, 20, 'S');
+      doc.rect(margin, yPosition, contentWidth, 15, 'S');
       
-      addText('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 12, 12);
-      yPosition += 30;
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(12);
+      doc.text('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 10);
+      yPosition += 25;
     } else {
       for (let i = 0; i < palanqueesLocal.length; i++) {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // Calculer la hauteur nécessaire pour cette palanquée
-        let palanqueeHeight = 25; // Header
-        palanqueeHeight += (pal.length * spacing.lineHeight) + spacing.subsectionGap; // Plongeurs
-        palanqueeHeight += 50; // Paramètres (horaire, profondeurs, durées, paliers)
+        // Calculer la hauteur nécessaire
+        let extraHeight = 39;
         if (pal.paliers && pal.paliers.trim()) {
-          palanqueeHeight += spacing.lineHeight;
+          extraHeight += 6;
         }
-        palanqueeHeight += spacing.sectionGap; // Espacement final
         
-        checkPageBreak(palanqueeHeight + 10);
+        const palanqueeHeight = 20 + (pal.length * 6) + extraHeight;
+        checkPageBreak(palanqueeHeight + 5);
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 15, 'F');
+        doc.rect(margin, yPosition, contentWidth, 12, 'F');
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 10, 12, 'bold', 'white');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8);
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 10, 10, 'normal', 'white');
+        doc.setFontSize(10);
+        doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
-        yPosition += 20;
+        yPosition += 18;
         
-        // Liste des plongeurs
+        doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        
         if (pal.length === 0) {
-          addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + spacing.subsectionGap;
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('Aucun plongeur assigné', margin + 10, yPosition);
+          yPosition += 8;
         } else {
           for (let j = 0; j < pal.length; j++) {
             const p = pal[j];
@@ -639,109 +630,195 @@ function exportToPDF() {
             const nomClean = p.nom.replace(/'/g, "'");
             const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
             
-            addText('• ' + nomClean, margin + 5, yPosition, 11, 'bold');
+            doc.setFont(undefined, 'bold');
+            doc.text('• ' + nomClean, margin + 5, yPosition);
+            
+            doc.setFont(undefined, 'normal');
             
             if (preClean) {
-              addText('Prérogative: ' + preClean, margin + 80, yPosition, 10, 'normal');
+              doc.text('Prérogative: ' + preClean, 100, yPosition);
             }
             
-            addText('Niveau: ' + p.niveau, margin + 140, yPosition, 10, 'normal', 'gray');
+            doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+            doc.text('Niveau: ' + p.niveau, 135, yPosition);
+            doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             
-            yPosition += spacing.lineHeight;
+            yPosition += 6;
           }
-          yPosition += spacing.subsectionGap;
         }
         
-        // Paramètres de plongée
+        // AJOUTER LES PARAMÈTRES APRÈS LA LISTE DES PLONGEURS
+        yPosition += 5;
         
-        // Ligne 1: Horaire de mise à l'eau
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 11, 'bold', 'primary');
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        
+        // Horaire de mise à l'eau
+        doc.text('Horaire mise à l\'eau:', margin + 5, yPosition);
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 10, 'normal');
-          addText('Correction: ', margin + 80, yPosition, 9, 'bold', 'gray');
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.horaire, margin + 45, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(10);
+          doc.text('Correction: ', margin + 85, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 105, yPosition + 1, margin + 130, yPosition + 1);
+          doc.line(margin + 105, yPosition + 1, margin + 140, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 50, yPosition + 1, margin + 75, yPosition + 1);
-          addText('(HH:MM)', margin + 78, yPosition, 9, 'normal', 'gray');
+          doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('(HH:MM)', margin + 82, yPosition);
         }
-        yPosition += spacing.lineHeight + 2;
+        yPosition += 8;
         
-        // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 11, 'bold', 'primary');
+        // Profondeurs et durées prévues
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        
+        // Profondeur prévue
+        doc.text('Prof. prévue: ', margin + 5, yPosition);
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 10, 'normal');
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.profondeurPrevue + ' m', margin + 35, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(10);
+          doc.text('Corr:', margin + 50, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 43, yPosition + 1, margin + 53, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 35, yPosition + 1, margin + 50, yPosition + 1);
-          addText('m', margin + 52, yPosition, 10, 'normal', 'gray');
+          doc.line(margin + 35, yPosition + 1, margin + 45, yPosition + 1);
+          doc.text(' m', margin + 47, yPosition);
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 11, 'bold', 'primary');
+        // Durée prévue
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Durée prévue:', margin + 80, yPosition);
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 110, yPosition, 10, 'normal');
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.dureePrevue + ' min', margin + 110, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(10);
+          doc.text('Corr:', margin + 125, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 103, yPosition + 1, margin + 113, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 110, yPosition + 1, margin + 125, yPosition + 1);
-          addText('min', margin + 127, yPosition, 10, 'normal', 'gray');
+          doc.line(margin + 82, yPosition + 1, margin + 102, yPosition + 1);
+          doc.text(' min', margin + 104, yPosition);
         }
-        yPosition += spacing.lineHeight + 2;
+        yPosition += 8;
         
-        // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 11, 'bold', 'success');
+        // Profondeurs et durées réalisées
+        doc.setTextColor(colors.successR, colors.successG, colors.successB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        
+        // Profondeur réalisée
+        doc.text('Prof. réalisée:', margin + 5, yPosition);
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 38, yPosition, 10, 'normal');
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.profondeurRealisee + ' m', margin + 38, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(10);
+          doc.text('Corr:', margin + 53, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 46, yPosition + 1, margin + 56, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 38, yPosition + 1, margin + 53, yPosition + 1);
-          addText('m', margin + 55, yPosition, 10, 'normal', 'gray');
+          doc.line(margin + 28, yPosition + 1, margin + 48, yPosition + 1);
+          doc.text(' m', margin + 50, yPosition);
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 11, 'bold', 'success');
+        // Durée réalisée
+        doc.setTextColor(colors.successR, colors.successG, colors.successB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Durée réalisée:', margin + 80, yPosition);
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 115, yPosition, 10, 'normal');
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.text(pal.dureeRealisee + ' min', margin + 115, yPosition);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.setFontSize(10);
+          doc.text('Corr:', margin + 130, yPosition);
+          doc.setDrawColor(180, 180, 180);
+          doc.line(margin + 106, yPosition + 1, margin + 116, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 115, yPosition + 1, margin + 130, yPosition + 1);
-          addText('min', margin + 132, yPosition, 10, 'normal', 'gray');
+          doc.line(margin + 85, yPosition + 1, margin + 105, yPosition + 1);
+          doc.text(' min', margin + 107, yPosition);
         }
-        yPosition += spacing.lineHeight + 2;
+        yPosition += 8;
         
-        // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 11, 'bold', 'primary');
+        // Paliers
+        doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Paliers:', margin + 5, yPosition);
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 10, 'normal');
-          yPosition += spacing.lineHeight;
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(10);
+          doc.text(pal.paliers, margin + 20, yPosition);
+          yPosition += 6;
           
-          addText('Correction paliers:', margin + 5, yPosition, 10, 'bold', 'gray');
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('Correction paliers:', margin + 5, yPosition);
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 40, yPosition + 1, margin + 120, yPosition + 1);
+          doc.line(margin + 35, yPosition + 1, margin + 120, yPosition + 1);
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 25, yPosition + 1, margin + 100, yPosition + 1);
-          addText('(ex: 3 min à 3 m)', margin + 105, yPosition, 9, 'normal', 'gray');
+          doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1);
+          doc.setFont(undefined, 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          doc.text('(ex: 3 min à 3 m)', margin + 122, yPosition);
         }
-        yPosition += spacing.lineHeight + spacing.sectionGap;
+        yPosition += 10;
+        
+        yPosition += 10;
       }
     }
     
     // === PLONGEURS NON ASSIGNÉS ===
     if (plongeursLocal.length > 0) {
-      const plongeursBoxHeight = 25 + (plongeursLocal.length * spacing.lineHeight);
-      checkPageBreak(plongeursBoxHeight);
+      checkPageBreak(25 + (plongeursLocal.length * 6));
       
       doc.setDrawColor(255, 193, 7);
       doc.setLineWidth(2);
-      doc.rect(margin, yPosition, contentWidth, plongeursBoxHeight, 'S');
+      doc.rect(margin, yPosition, contentWidth, 15 + (plongeursLocal.length * 6), 'S');
       
-      addText('PLONGEURS en attente/disponibles (' + plongeursLocal.length + ')', margin + 5, yPosition + 12, 14, 'bold', 'primary');
+      doc.setTextColor(133, 100, 4);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('PLONGEURS en attente/disponibles (' + plongeursLocal.length + ')', margin + 5, yPosition + 10);
       
-      yPosition += 20;
+      yPosition += 18;
+      
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
       
       for (let i = 0; i < plongeursLocal.length; i++) {
         const p = plongeursLocal[i];
@@ -750,11 +827,10 @@ function exportToPDF() {
         const nomClean = p.nom.replace(/'/g, "'");
         const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
         const textLine = '• ' + nomClean + '   (' + p.niveau + ')' + (preClean ? '   - ' + preClean : '');
-        addText(textLine, margin + 5, yPosition, 10, 'normal');
-        yPosition += spacing.lineHeight;
+        doc.text(textLine, margin + 5, yPosition + (i * 6));
       }
       
-      yPosition += spacing.subsectionGap;
+      yPosition += (plongeursLocal.length * 6) + 10;
     }
     
     // === FOOTER ===
@@ -767,13 +843,17 @@ function exportToPDF() {
       doc.setLineWidth(0.5);
       doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
       
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      
       if (pageNum === totalPages) {
-        addText('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15, 8, 'normal', 'gray');
-        addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10, 8, 'normal', 'gray');
+        doc.text('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15);
+        doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10);
       }
       
-      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8, 'normal', 'gray');
-      addText(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5, 8, 'normal', 'gray');
+      doc.text('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      doc.text(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5);
     }
     
     // === TÉLÉCHARGEMENT ===
@@ -790,6 +870,7 @@ function exportToPDF() {
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
+
 // ===== DRAG & DROP SÉCURISÉ =====
 
 // Variables globales pour le drag & drop
