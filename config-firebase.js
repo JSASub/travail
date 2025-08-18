@@ -1,4 +1,4 @@
-// config-firebase.js - Configuration Firebase ULTRA-SÉCURISÉE (VERSION CORRIGÉE)
+// config-firebase.js - Configuration Firebase ULTRA-SÉCURISÉE (VERSION SANS ERREUR SYNTAXE)
 
 // Configuration Firebase
 const firebaseConfig = {
@@ -220,7 +220,9 @@ function initializeFirebase() {
           // Charger les données
           if (document.readyState === 'complete') {
             console.log("📄 Chargement des données après connexion...");
-            await initializeAppData();
+            if (typeof initializeAppData === 'function') {
+              await initializeAppData();
+            }
           }
         } else {
           console.log("❌ Utilisateur non connecté");
@@ -750,21 +752,6 @@ async function loadAvailableSessions() {
             plongeursNonAssignes: (data.plongeurs || []).length
           }
         };
-      } else {
-        const keyParts = key.split('_');
-        sessionInfo = {
-          key: key,
-          dp: data.dp || "DP non défini",
-          date: data.date || keyParts[0] || "Date inconnue",
-          lieu: data.lieu || "Lieu non défini",
-          plongee: data.plongee || keyParts[keyParts.length - 1] || "Non défini",
-          timestamp: data.timestamp || Date.now(),
-          stats: {
-            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
-            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
-            plongeursNonAssignes: (data.plongeurs || []).length
-          }
-        };
       }
       
       sessionsList.push(sessionInfo);
@@ -883,3 +870,20 @@ async function loadSession(sessionKey) {
     return false;
   }
 }
+
+console.log("✅ Configuration Firebase sécurisée chargée - Version 2.5.3");length : 0,
+            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
+            plongeursNonAssignes: (data.plongeurs || []).length
+          }
+        };
+      } else {
+        const keyParts = key.split('_');
+        sessionInfo = {
+          key: key,
+          dp: data.dp || "DP non défini",
+          date: data.date || keyParts[0] || "Date inconnue",
+          lieu: data.lieu || "Lieu non défini",
+          plongee: data.plongee || keyParts[keyParts.length - 1] || "Non défini",
+          timestamp: data.timestamp || Date.now(),
+          stats: {
+            nombrePalanquees: data.palanquees ? data.palanquees.
