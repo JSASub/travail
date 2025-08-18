@@ -1,1092 +1,4 @@
-// Récupérer les données
-    let data = dragData;
-    console.log("📦 dragData disponible:", !!data);
-    
-    // Fallback vers dataTransfer
-    if (!data && e.dataTransfer) {
-      try {
-        const dataStr = e.dataTransfer.getData("text/plain");
-        if (dataStr) {
-          data = JSON.parse(dataStr);
-          console.log("📦 Données récupérées depuis dataTransfer");
-        }
-      } catch (error) {
-        console.warn("⚠️ Erreur parsing dataTransfer:", error);
-      }
-    }
-    
-    if (!data) {
-      console.error("❌ AUCUNE DONNÉE DE DRAG DISPONIBLE");
-      dragData = null;
-      return;
-    }
-    
-    console.log("✅ Données de drop récupérées:", data);
-    
-    // S'assurer que les variables globales existent
-    if (typeof plongeurs === 'undefined') {
-      console.warn("⚠️ Variable plongeurs non définie");
-      window.plongeurs = [];
-    }
-    if (typeof palanquees === 'undefined') {
-      console.warn("⚠️ Variable palanquees non définie");
-      window.palanquees = [];
-    }
-    if (typeof plongeursOriginaux === 'undefined') {
-      window.plongeursOriginaux = [];
-    }
-    
-    // Drop vers la liste principale
-    if (dropZone.id === 'listePlongeurs') {
-      console.log("🎯 Drop vers liste principale");
-      
-      if (data.type === "fromPalanquee") {
-        console.log("🔄 Retour vers liste depuis palanquée", data.palanqueeIndex);
-        
-        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-          plongeurs.push(plongeur);
-          plongeursOriginaux.push(plongeur);
-          console.log("✅ Plongeur remis dans liste:", plongeur.nom);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-        } else {
-          console.error("❌ Plongeur non trouvé pour retour en liste");
-        }
-      }
-    } else {
-      // Drop vers une palanquée
-      const palanqueeIndex = parseInt(dropZone.dataset.index);
-      if (isNaN(palanqueeIndex)) {
-        console.error("❌ Index palanquée invalide:", dropZone.dataset.index);
-        dragData = null;
-        return;
-      }
-      
-      console.log("🎯 Drop vers palanquée", palanqueeIndex);
-      
-      const targetPalanquee = palanquees[palanqueeIndex];
-      if (!targetPalanquee) {
-        console.error("❌ Palanquée cible non trouvée:", palanqueeIndex);
-        dragData = null;
-        return;
-      }
-      
-      // Vérifier les règles de validation avant d'ajouter
-      if (typeof validatePalanqueeAddition === 'function') {
-        const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
-        if (!validation.valid) {
-          const messageText = validation.messages.join('\n');
-          alert(`❌ Ajout impossible :\n\n${messageText}`);
-          dragData = null;
-          return;
-        }
-      }
-      
-      if (data.type === "fromMainList") {
-        console.log("🔄 Ajout depuis liste principale");
-        
-        const indexToRemove = plongeurs.findIndex(p => 
-          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-        );
-        
-        if (indexToRemove !== -1) {
-          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
-          targetPalanquee.push(plongeur);
-          console.log("✅ Plongeur ajouté à palanquée:", plongeur.nom);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-        } else {
-          console.error("❌ Plongeur non trouvé dans liste principale");
-        }
-        
-      } else if (data.type === "fromPalanquee") {
-        console.log("🔄 Déplacement entre palanquées");
-        
-        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-          targetPalanquee.push(plongeur);
-          console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-        } else {
-          console.error("❌ Plongeur source non trouvé pour déplacement");
-        }
-      }
-    }
-  } catch (error) {
-    console.error("❌ Erreur lors du drop:", error);
-    handleError(error, "Handle drop");
-  } finally {
-    // Nettoyer les données de drag
-    dragData = null;
-    console.log("🧹 Données de drag nettoyées");
-  }
-}
-
-// ===== EVENT HANDLERS SÉCURISÉS =====
-function setupEventListeners() {
-  console.log("🎛️ Configuration des event listeners sécurisés...");
-  
-  try {
-    // === AUTHENTIFICATION ===
-    const loginForm = document.getElementById("login-form");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        
-        const emailInput = document.getElementById("login-email");
-        const passwordInput = document.getElementById("login-password");
-        const errorDiv = document.getElementById("auth-error");
-        const loadingDiv = document.getElementById("auth-loading");
-        
-        if (!emailInput || !passwordInput) {
-          showAuthError("Éléments de formulaire manquants");
-          return;
-        }
-        
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        
-        if (!email || !password) {
-          showAuthError("Veuillez remplir tous les champs");
-          return;
-        }
-        
-        try {
-          if (loadingDiv) loadingDiv.style.display = "block";
-          if (errorDiv) errorDiv.style.display = "none";
-          
-          if (typeof signIn === 'function') {
-            await signIn(email, password);
-            console.log("✅ Connexion réussie");
-          } else {
-            throw new Error("Fonction signIn non disponible");
-          }
-          
-        } catch (error) {
-          console.error("❌ Erreur connexion:", error);
-          
-          let message = "Erreur de connexion";
-          if (error.code === 'auth/user-not-found') {
-            message = "Utilisateur non trouvé";
-          } else if (error.code === 'auth/wrong-password') {
-            message = "Mot de passe incorrect";
-          } else if (error.code === 'auth/invalid-email') {
-            message = "Email invalide";
-          } else if (error.code === 'auth/too-many-requests') {
-            message = "Trop de tentatives. Réessayez plus tard.";
-          }
-          
-          showAuthError(message);
-          
-          if (typeof FirebaseErrorHandler !== 'undefined') {
-            FirebaseErrorHandler.handleError(error, 'Connexion');
-          }
-        } finally {
-          if (loadingDiv) loadingDiv.style.display = "none";
-        }
-      });
-    }
-    
-    const logoutBtn = document.getElementById("logout-btn");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", async () => {
-        try {
-          if (typeof signOut === 'function') {
-            await signOut();
-            console.log("✅ Déconnexion réussie");
-          }
-        } catch (error) {
-          console.error("❌ Erreur déconnexion:", error);
-          if (typeof FirebaseErrorHandler !== 'undefined') {
-            FirebaseErrorHandler.handleError(error, 'Déconnexion');
-          }
-        }
-      });
-    }
-
-    // === FONCTIONNALITÉ BOUTON "VALIDER DP" SÉCURISÉE ===
-    const validerDPBtn = document.getElementById("valider-dp");
-    if (validerDPBtn) {
-      validerDPBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        
-        try {
-          const dpNom = document.getElementById("dp-nom")?.value?.trim();
-          const dpDate = document.getElementById("dp-date")?.value;
-          const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
-          const dpPlongee = document.getElementById("dp-plongee")?.value;
-          const dpMessage = document.getElementById("dp-message");
-          
-          // Validation des champs obligatoires
-          if (!dpNom) {
-            alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
-            document.getElementById("dp-nom")?.focus();
-            return;
-          }
-          
-          if (!dpDate) {
-            alert("⚠️ Veuillez sélectionner une date");
-            document.getElementById("dp-date")?.focus();
-            return;
-          }
-          
-          if (!dpLieu) {
-            alert("⚠️ Veuillez saisir le lieu de plongée");
-            document.getElementById("dp-lieu")?.focus();
-            return;
-          }
-          
-          // Vérifier le format du nom DP
-          if (dpNom.split(' ').length < 2) {
-            const confirm = window.confirm("⚠️ Le nom semble incomplet (nom ET prénom recommandés).\n\nContinuer quand même ?");
-            if (!confirm) {
-              document.getElementById("dp-nom")?.focus();
-              return;
-            }
-          }
-          
-          // Vérifier que la date n'est pas trop ancienne
-          const selectedDate = new Date(dpDate);
-          const today = new Date();
-          const diffDays = Math.ceil((today - selectedDate) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays > 7) {
-            const confirm = window.confirm(`⚠️ La date sélectionnée remonte à ${diffDays} jours.\n\nÊtes-vous sûr de cette date ?`);
-            if (!confirm) {
-              document.getElementById("dp-date")?.focus();
-              return;
-            }
-          }
-          
-          // Créer l'objet informations DP
-          const dpInfo = {
-            nom: dpNom,
-            date: dpDate,
-            lieu: dpLieu,
-            plongee: dpPlongee,
-            timestamp: Date.now(),
-            validated: true
-          };
-          
-          // Mettre à jour la variable globale si elle existe
-          if (typeof window.dpInfo !== 'undefined') {
-            window.dpInfo.nom = dpNom;
-            window.dpInfo.niveau = 'DP';
-          }
-          
-          // Sauvegarder dans Firebase si disponible
-          if (typeof db !== 'undefined' && db) {
-            try {
-              const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
-              await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
-              console.log("✅ Informations DP sauvegardées dans Firebase");
-            } catch (firebaseError) {
-              console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
-              if (typeof FirebaseErrorHandler !== 'undefined') {
-                FirebaseErrorHandler.handleError(firebaseError, 'Sauvegarde DP');
-              }
-            }
-          }
-          
-          // Afficher le message de confirmation
-          if (dpMessage) {
-            dpMessage.innerHTML = `
-              <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-                ✅ Informations DP validées
-                <br><small style="font-weight: normal;">
-                  ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
-                </small>
-              </div>
-            `;
-            dpMessage.classList.add("dp-valide");
-          }
-          
-          // Désactiver temporairement le bouton
-          validerDPBtn.disabled = true;
-          validerDPBtn.textContent = "✅ Validé";
-          validerDPBtn.style.backgroundColor = "#28a745";
-          
-          setTimeout(() => {
-            validerDPBtn.disabled = false;
-            validerDPBtn.textContent = "Valider DP";
-            validerDPBtn.style.backgroundColor = "#007bff";
-          }, 3000);
-          
-          // Notification système si disponible
-          if (typeof showNotification === 'function') {
-            showNotification("✅ Informations DP validées et sauvegardées", "success");
-          }
-          
-          console.log("✅ Validation DP réussie:", dpInfo);
-          
-          // Synchronisation optionnelle
-          if (typeof syncToDatabase === 'function') {
-            setTimeout(syncToDatabase, 1000);
-          }
-          
-        } catch (error) {
-          console.error("❌ Erreur validation DP:", error);
-          handleError(error, "Validation DP");
-          
-          const dpMessage = document.getElementById("dp-message");
-          if (dpMessage) {
-            dpMessage.innerHTML = `
-              <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
-                ❌ Erreur lors de la validation : ${error.message}
-              </div>
-            `;
-          } else {
-            alert("❌ Erreur lors de la validation : " + error.message);
-          }
-        }
-      });
-    }
-
-    // === AJOUT DE PLONGEUR SÉCURISÉ ===
-    const addForm = document.getElementById("addForm");
-    if (addForm) {
-      addForm.addEventListener("submit", e => {
-        e.preventDefault();
-        
-        try {
-          const nomInput = document.getElementById("nom");
-          const niveauInput = document.getElementById("niveau");
-          const preInput = document.getElementById("pre");
-          
-          if (!nomInput || !niveauInput || !preInput) {
-            alert("Éléments de formulaire manquants");
-            return;
-          }
-          
-          const nom = nomInput.value.trim();
-          const niveau = niveauInput.value;
-          const pre = preInput.value.trim();
-          
-          if (!nom || !niveau) {
-            alert("Veuillez remplir le nom et le niveau du plongeur.");
-            return;
-          }
-          
-          // S'assurer que les variables globales existent
-          if (typeof plongeurs === 'undefined') window.plongeurs = [];
-          if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
-          
-          const nouveauPlongeur = { nom, niveau, pre };
-          plongeurs.push(nouveauPlongeur);
-          plongeursOriginaux.push(nouveauPlongeur);
-          
-          nomInput.value = "";
-          niveauInput.value = "";
-          preInput.value = "";
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-          
-          console.log("✅ Plongeur ajouté:", nouveauPlongeur);
-        } catch (error) {
-          console.error("❌ Erreur ajout plongeur:", error);
-          handleError(error, "Ajout plongeur");
-        }
-      });
-    }
-
-    // === AJOUT DE PALANQUÉE SÉCURISÉ ===
-    const addPalanqueeBtn = document.getElementById("addPalanquee");
-    if (addPalanqueeBtn) {
-      addPalanqueeBtn.addEventListener("click", () => {
-        try {
-          // S'assurer que la variable globale existe
-          if (typeof palanquees === 'undefined') window.palanquees = [];
-          
-          const nouvellePalanquee = [];
-          nouvellePalanquee.horaire = '';
-          nouvellePalanquee.profondeurPrevue = '';
-          nouvellePalanquee.dureePrevue = '';
-          nouvellePalanquee.profondeurRealisee = '';
-          nouvellePalanquee.dureeRealisee = '';
-          nouvellePalanquee.paliers = '';
-          
-          palanquees.push(nouvellePalanquee);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-          
-          console.log("✅ Nouvelle palanquée créée");
-        } catch (error) {
-          console.error("❌ Erreur création palanquée:", error);
-          handleError(error, "Création palanquée");
-        }
-      });
-    }
-
-    // === EXPORT/IMPORT JSON SÉCURISÉ ===
-    const exportJSONBtn = document.getElementById("exportJSON");
-    if (exportJSONBtn) {
-      exportJSONBtn.addEventListener("click", () => {
-        try {
-          if (typeof exportToJSON === 'function') {
-            exportToJSON();
-          }
-        } catch (error) {
-          console.error("❌ Erreur export JSON:", error);
-          handleError(error, "Export JSON");
-        }
-      });
-    }
-
-    const importJSONInput = document.getElementById("importJSON");
-    if (importJSONInput) {
-      importJSONInput.addEventListener("change", e => {
-        try {
-          const file = e.target.files[0];
-          if (!file) return;
-          
-          const reader = new FileReader();
-          reader.onload = e2 => {
-            try {
-              const data = JSON.parse(e2.target.result);
-              
-              // S'assurer que les variables globales existent
-              if (typeof plongeurs === 'undefined') window.plongeurs = [];
-              if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
-              
-              if (data.plongeurs && Array.isArray(data.plongeurs)) {
-                plongeurs = data.plongeurs.map(p => ({
-                  nom: p.nom,
-                  niveau: p.niveau,
-                  pre: p.prerogatives || p.pre || ""
-                }));
-              } else if (Array.isArray(data)) {
-                plongeurs = data;
-              }
-              
-              plongeursOriginaux = [...plongeurs];
-              
-              if (typeof syncToDatabase === 'function') {
-                syncToDatabase();
-              }
-              alert("Import réussi !");
-              console.log("✅ Import JSON réussi");
-            } catch (error) {
-              console.error("❌ Erreur import:", error);
-              handleError(error, "Import JSON");
-              alert("Erreur lors de l'import du fichier JSON");
-            }
-          };
-          reader.readAsText(file);
-        } catch (error) {
-          console.error("❌ Erreur lecture fichier:", error);
-          handleError(error, "Lecture fichier");
-        }
-      });
-    }
-
-    // === PDF SÉCURISÉ ===
-    const generatePDFBtn = document.getElementById("generatePDF");
-    if (generatePDFBtn) {
-      generatePDFBtn.addEventListener("click", () => {
-        try {
-          generatePDFPreview();
-        } catch (error) {
-          console.error("❌ Erreur génération aperçu PDF:", error);
-          handleError(error, "Génération aperçu PDF");
-        }
-      });
-    }
-    
-    const exportPDFBtn = document.getElementById("exportPDF");
-    if (exportPDFBtn) {
-      exportPDFBtn.addEventListener("click", () => {
-        try {
-          exportToPDF();
-        } catch (error) {
-          console.error("❌ Erreur export PDF:", error);
-          handleError(error, "Export PDF");
-        }
-      });
-    }
-
-    // === SESSIONS SÉCURISÉES ===
-    const loadSessionBtn = document.getElementById("load-session");
-    if (loadSessionBtn) {
-      loadSessionBtn.addEventListener("click", async () => {
-        try {
-          const sessionSelector = document.getElementById("session-selector");
-          if (!sessionSelector) {
-            alert("Sélecteur de session non trouvé");
-            return;
-          }
-          
-          const sessionKey = sessionSelector.value;
-          if (!sessionKey) {
-            alert("Veuillez sélectionner une session à charger.");
-            return;
-          }
-          
-          if (typeof loadSession === 'function') {
-            const success = await loadSession(sessionKey);
-            if (!success) {
-              alert("Erreur lors du chargement de la session.");
-            } else {
-              console.log("✅ Session chargée:", sessionKey);
-            }
-          }
-        } catch (error) {
-          console.error("❌ Erreur chargement session:", error);
-          handleError(error, "Chargement session");
-        }
-      });
-    }
-    
-    const refreshSessionsBtn = document.getElementById("refresh-sessions");
-    if (refreshSessionsBtn) {
-      refreshSessionsBtn.addEventListener("click", async () => {
-        try {
-          if (typeof populateSessionSelector === 'function') {
-            await populateSessionSelector();
-          }
-          if (typeof populateSessionsCleanupList === 'function') {
-            await populateSessionsCleanupList();
-          }
-          console.log("✅ Sessions actualisées");
-        } catch (error) {
-          console.error("❌ Erreur actualisation sessions:", error);
-          handleError(error, "Actualisation sessions");
-        }
-      });
-    }
-
-    const saveSessionBtn = document.getElementById("save-session");
-    if (saveSessionBtn) {
-      saveSessionBtn.addEventListener("click", async () => {
-        try {
-          if (typeof saveSessionData === 'function') {
-            await saveSessionData();
-            alert("Session sauvegardée !");
-            if (typeof populateSessionSelector === 'function') {
-              await populateSessionSelector();
-            }
-            if (typeof populateSessionsCleanupList === 'function') {
-              await populateSessionsCleanupList();
-            }
-            console.log("✅ Session sauvegardée");
-          }
-        } catch (error) {
-          console.error("❌ Erreur sauvegarde session:", error);
-          handleError(error, "Sauvegarde session");
-        }
-      });
-    }
-
-    // === TEST FIREBASE SÉCURISÉ ===
-    const testFirebaseBtn = document.getElementById("test-firebase");
-    if (testFirebaseBtn) {
-      testFirebaseBtn.addEventListener("click", async () => {
-        console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
-        
-        try {
-          console.log("🔡 Test 1: Vérification connexion Firebase");
-          console.log("Firebase connecté:", typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined');
-          console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "❌ MANQUANTE");
-          
-          if (typeof db !== 'undefined' && db) {
-            console.log("📖 Test 2: Lecture /sessions");
-            const sessionsRead = await db.ref('sessions').once('value');
-            console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
-            
-            if (sessionsRead.exists()) {
-              const sessions = sessionsRead.val();
-              console.log("Nombre de sessions:", Object.keys(sessions).length);
-            }
-          }
-          
-          console.log("📊 Test 3: Données actuelles");
-          console.log("Plongeurs en mémoire:", typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined');
-          console.log("Palanquées en mémoire:", typeof palanquees !== 'undefined' ? palanquees.length : 'undefined');
-          
-          // Test de l'état des listeners
-          if (typeof window.firebaseListeners !== 'undefined') {
-            console.log("📡 Listeners actifs:", window.firebaseListeners.getActiveListeners());
-          }
-          
-          console.log("🎉 === TESTS TERMINÉS ===");
-          alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
-          
-        } catch (error) {
-          console.error("❌ Erreur test Firebase:", error);
-          handleError(error, "Test Firebase");
-          alert("Erreur lors du test Firebase : " + error.message);
-        }
-      });
-    }
-
-    // === TRI DES PLONGEURS SÉCURISÉ ===
-    const sortBtns = document.querySelectorAll('.sort-btn');
-    sortBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        try {
-          const sortType = btn.dataset.sort;
-          if (typeof sortPlongeurs === 'function') {
-            sortPlongeurs(sortType);
-          }
-        } catch (error) {
-          console.error("❌ Erreur tri plongeurs:", error);
-          handleError(error, "Tri plongeurs");
-        }
-      });
-    });
-
-    // === NETTOYAGE SESSIONS ET DP SÉCURISÉ ===
-    const setupCleanupListeners = () => {
-      try {
-        // Sessions
-        const selectAllSessionsBtn = document.getElementById("select-all-sessions");
-        if (selectAllSessionsBtn) {
-          selectAllSessionsBtn.addEventListener("click", () => {
-            if (typeof selectAllSessions === 'function') {
-              selectAllSessions(true);
-            }
-          });
-        }
-
-        const selectNoneSessionsBtn = document.getElementById("select-none-sessions");
-        if (selectNoneSessionsBtn) {
-          selectNoneSessionsBtn.addEventListener("click", () => {
-            if (typeof selectAllSessions === 'function') {
-              selectAllSessions(false);
-            }
-          });
-        }
-
-        const deleteSelectedSessionsBtn = document.getElementById("delete-selected-sessions");
-        if (deleteSelectedSessionsBtn) {
-          deleteSelectedSessionsBtn.addEventListener("click", () => {
-            if (typeof deleteSelectedSessions === 'function') {
-              deleteSelectedSessions();
-            }
-          });
-        }
-
-        const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
-        if (refreshSessionsListBtn) {
-          refreshSessionsListBtn.addEventListener("click", () => {
-            if (typeof populateSessionsCleanupList === 'function') {
-              populateSessionsCleanupList();
-            }
-          });
-        }
-
-        // DP
-        const selectAllDPBtn = document.getElementById("select-all-dp");
-        if (selectAllDPBtn) {
-          selectAllDPBtn.addEventListener("click", () => {
-            if (typeof selectAllDPs === 'function') {
-              selectAllDPs(true);
-            }
-          });
-        }
-
-        const selectNoneDPBtn = document.getElementById("select-none-dp");
-        if (selectNoneDPBtn) {
-          selectNoneDPBtn.addEventListener("click", () => {
-            if (typeof selectAllDPs === 'function') {
-              selectAllDPs(false);
-            }
-          });
-        }
-
-        const deleteSelectedDPBtn = document.getElementById("delete-selected-dp");
-        if (deleteSelectedDPBtn) {
-          deleteSelectedDPBtn.addEventListener("click", () => {
-            if (typeof deleteSelectedDPs === 'function') {
-              deleteSelectedDPs();
-            }
-          });
-        }
-
-        const refreshDPListBtn = document.getElementById("refresh-dp-list");
-        if (refreshDPListBtn) {
-          refreshDPListBtn.addEventListener("click", () => {
-            if (typeof populateDPCleanupList === 'function') {
-              populateDPCleanupList();
-            }
-          });
-        }
-      } catch (error) {
-        console.error("❌ Erreur setup cleanup listeners:", error);
-        handleError(error, "Setup cleanup listeners");
-      }
-    };
-
-    setupCleanupListeners();
-
-    // Event listeners pour les checkboxes de nettoyage
-    document.addEventListener('change', (e) => {
-      try {
-        if (e.target.classList.contains('session-cleanup-checkbox') || 
-            e.target.classList.contains('dp-cleanup-checkbox')) {
-          if (typeof updateCleanupSelection === 'function') {
-            updateCleanupSelection();
-          }
-        }
-      } catch (error) {
-        console.error("❌ Erreur checkbox cleanup:", error);
-        handleError(error, "Checkbox cleanup");
-      }
-    });
-    
-    console.log("✅ Event listeners configurés avec succès");
-    
-  } catch (error) {
-    console.error("❌ Erreur configuration event listeners:", error);
-    handleError(error, "Configuration event listeners");
-  }
-}
-
-// ===== FONCTIONS POUR L'HISTORIQUE DP (CORRIGÉES) =====
-async function chargerHistoriqueDP() {
-  console.log("📋 Chargement de l'historique DP sécurisé...");
-  
-  const dpDatesSelect = document.getElementById("dp-dates");
-  if (!dpDatesSelect) {
-    console.error("❌ Élément dp-dates non trouvé");
-    return;
-  }
-  
-  dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
-  
-  try {
-    if (typeof db === 'undefined' || !db) {
-      console.warn("⚠️ Firebase non disponible pour charger l'historique DP");
-      dpDatesSelect.innerHTML += '<option disabled>Firebase non connecté</option>';
-      return;
-    }
-    
-    const snapshot = await db.ref('dpInfo').once('value');
-    
-    if (!snapshot.exists()) {
-      console.log("ℹ️ Aucune donnée DP trouvée dans Firebase");
-      dpDatesSelect.innerHTML += '<option disabled>Aucun DP enregistré</option>';
-      return;
-    }
-    
-    const dpInfos = snapshot.val();
-    const dpList = [];
-    
-    Object.entries(dpInfos).forEach(([key, dpData]) => {
-      if (dpData && dpData.date) {
-        dpList.push({
-          key: key,
-          date: dpData.date,
-          nom: dpData.nom || "DP non défini",
-          lieu: dpData.lieu || "Lieu non défini",
-          plongee: dpData.plongee || "matin",
-          timestamp: dpData.timestamp || 0
-        });
-      }
-    });
-    
-    dpList.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateB - dateA;
-    });
-    
-    dpList.forEach(dp => {
-      const option = document.createElement("option");
-      option.value = dp.key;
-      option.textContent = `${dp.date} - ${dp.nom} - ${dp.lieu} (${dp.plongee})`;
-      dpDatesSelect.appendChild(option);
-    });
-    
-    console.log(`✅ ${dpList.length} DP chargés dans l'historique`);
-    
-    dpDatesSelect.addEventListener('change', afficherInfoDP);
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement historique DP:", error);
-    handleError(error, "Chargement historique DP");
-    dpDatesSelect.innerHTML += '<option disabled>Erreur de chargement</option>';
-  }
-}
-
-function afficherInfoDP() {
-  const dpDatesSelect = document.getElementById("dp-dates");
-  const historiqueInfo = document.getElementById("historique-info");
-  
-  if (!dpDatesSelect || !historiqueInfo) {
-    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
-    return;
-  }
-  
-  const selectedKey = dpDatesSelect.value;
-  
-  if (!selectedKey) {
-    historiqueInfo.innerHTML = '';
-    return;
-  }
-  
-  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
-  
-  if (typeof db === 'undefined' || !db) {
-    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
-    return;
-  }
-  
-  db.ref(`dpInfo/${selectedKey}`).once('value')
-    .then(snapshot => {
-      if (!snapshot.exists()) {
-        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
-        return;
-      }
-      
-      const dpData = snapshot.val();
-      const formatDate = (dateStr) => {
-        try {
-          return new Date(dateStr).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-        } catch {
-          return dateStr;
-        }
-      };
-      
-      historiqueInfo.innerHTML = `
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
-          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
-          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
-          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
-          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
-          <p><strong>🕐 Session :</strong> ${dpData.plongee || 'matin'}</p>
-          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
-          
-          <div style="margin-top: 15px;">
-            <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
-                    style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-              🔥 Charger dans l'interface
-            </button>
-            <button onclick="supprimerDPSelectionne('${selectedKey}')" 
-                    style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-              🗑️ Supprimer
-            </button>
-          </div>
-        </div>
-      `;
-    })
-    .catch(error => {
-      console.error("❌ Erreur chargement DP:", error);
-      handleError(error, "Chargement DP");
-      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
-    });
-}
-
-async function chargerDonneesDPSelectionne(dpKey) {
-  try {
-    if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
-      return;
-    }
-    
-    const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
-    if (!snapshot.exists()) {
-      alert("❌ DP non trouvé");
-      return;
-    }
-    
-    const dpData = snapshot.val();
-    
-    const dpNomInput = document.getElementById("dp-nom");
-    const dpDateInput = document.getElementById("dp-date");
-    const dpLieuInput = document.getElementById("dp-lieu");
-    const dpPlongeeInput = document.getElementById("dp-plongee");
-    
-    if (dpNomInput) dpNomInput.value = dpData.nom || "";
-    if (dpDateInput) dpDateInput.value = dpData.date || "";
-    if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
-    if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
-    
-    const dpMessage = document.getElementById("dp-message");
-    if (dpMessage) {
-      dpMessage.innerHTML = `
-        <div style="color: #007bff; font-weight: bold; padding: 10px; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 4px;">
-          🔥 DP chargé depuis l'historique
-        </div>
-      `;
-    }
-    
-    alert("✅ Données DP chargées avec succès !");
-    console.log("✅ DP chargé:", dpData);
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement DP:", error);
-    handleError(error, "Chargement DP sélectionné");
-    alert("❌ Erreur lors du chargement : " + error.message);
-  }
-}
-
-async function supprimerDPSelectionne(dpKey) {
-  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
-  
-  if (!confirmation) return;
-  
-  try {
-    if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
-      return;
-    }
-    
-    await db.ref(`dpInfo/${dpKey}`).remove();
-    
-    alert("✅ DP supprimé avec succès !");
-    
-    await chargerHistoriqueDP();
-    
-    const historiqueInfo = document.getElementById("historique-info");
-    if (historiqueInfo) {
-      historiqueInfo.innerHTML = '';
-    }
-    
-    console.log("✅ DP supprimé:", dpKey);
-    
-  } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
-    handleError(error, "Suppression DP");
-    alert("❌ Erreur lors de la suppression : " + error.message);
-  }
-}
-
-// Export des fonctions globales
-window.chargerHistoriqueDP = chargerHistoriqueDP;
-window.afficherInfoDP = afficherInfoDP;
-window.chargerDonneesDPSelectionne = chargerDonneesDPSelectionne;
-window.supprimerDPSelectionne = supprimerDPSelectionne;
-
-// ===== INITIALISATION SÉCURISÉE DE L'APPLICATION =====
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log("🚀 Initialisation sécurisée de l'application JSAS...");
-  
-  try {
-    // 1. Vérifier que les fonctions critiques sont disponibles
-    if (typeof initializeFirebase !== 'function') {
-      throw new Error("Fonction initializeFirebase non disponible - vérifiez le chargement de config-firebase.js");
-    }
-    
-    // 2. Initialiser Firebase en premier
-    const firebaseOK = initializeFirebase();
-    if (!firebaseOK) {
-      throw new Error("Échec initialisation Firebase");
-    }
-    
-    // 3. Configurer les event listeners
-    setupEventListeners();
-    
-    // 4. Configurer le drag & drop
-    setupDragAndDrop();
-    
-    // 5. Ajouter les gestionnaires d'erreurs globaux
-    window.addEventListener('error', (event) => {
-      console.error("❌ Erreur JavaScript globale:", event.error);
-      handleError(event.error, "Erreur JavaScript globale");
-    });
-    
-    console.log("✅ Application JSAS initialisée avec succès !");
-    
-  } catch (error) {
-    console.error("❌ Erreur critique initialisation:", error);
-    handleError(error, "Initialisation critique");
-    
-    // Mode de récupération d'urgence
-    const loadingScreen = document.getElementById("loading-screen");
-    if (loadingScreen) {
-      loadingScreen.style.display = "none";
-    }
-    
-    const authContainer = document.getElementById("auth-container");
-    if (authContainer) {
-      authContainer.style.display = "block";
-      const errorDiv = document.getElementById("auth-error");
-      if (errorDiv) {
-        errorDiv.textContent = "Erreur d'initialisation critique. Veuillez actualiser la page.";
-        errorDiv.style.display = "block";
-      }
-    }
-    
-    // Notification d'urgence
-    alert(
-      "❌ ERREUR CRITIQUE D'INITIALISATION\n\n" +
-      "L'application n'a pas pu s'initialiser correctement.\n\n" +
-      "Actions recommandées :\n" +
-      "1. Actualisez la page (F5)\n" +
-      "2. Vérifiez votre connexion internet\n" +
-      "3. Videz le cache du navigateur\n" +
-      "4. Contactez l'administrateur si le problème persiste\n\n" +
-      "Erreur : " + error.message
-    );
-  }
-});
-
-// ===== DIAGNOSTIC ET MONITORING =====
-// Fonction de diagnostic pour le support technique
-window.diagnosticJSAS = function() {
-  console.log("🔍 === DIAGNOSTIC JSAS ===");
-  
-  const diagnostic = {
-    timestamp: new Date().toISOString(),
-    variables: {
-      plongeurs: typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined',
-      palanquees: typeof palanquees !== 'undefined' ? palanquees.length : 'undefined',
-      currentUser: typeof currentUser !== 'undefined' ? (currentUser ? currentUser.email : 'null') : 'undefined',
-      firebaseConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined'
-    },
-    firebase: {
-      app: typeof app !== 'undefined' ? 'initialized' : 'undefined',
-      db: typeof db !== 'undefined' ? 'initialized' : 'undefined',
-      auth: typeof auth !== 'undefined' ? 'initialized' : 'undefined'
-    },
-    listeners: {
-      active: typeof window.firebaseListeners !== 'undefined' ? 
-        window.firebaseListeners.getActiveListeners() : 'undefined'
-    },
-    locks: {
-      system: typeof lockSystemInitialized !== 'undefined' ? lockSystemInitialized : 'undefined',
-      current: typeof currentlyEditingPalanquee !== 'undefined' ? currentlyEditingPalanquee : 'undefined',
-      active: typeof palanqueeLocks !== 'undefined' ? Object.keys(palanqueeLocks).length : 'undefined'
-    },
-    errors: {
-      lastError: window.lastJSASError || 'none'
-    }
-  };
-  
-  console.log("📊 Diagnostic complet:", diagnostic);
-  console.log("=== FIN DIAGNOSTIC ===");
-  
-  return diagnostic;
-};
-
-// Capturer la dernière erreur pour le diagnostic
-window.addEventListener('error', (event) => {
-  window.lastJSASError = {
-    message: event.error?.message || event.message,
-    timestamp: new Date().toISOString(),
-    filename: event.filename,
-    lineno: event.lineno
-  };
-});
-
-console.log("✅ Main application sécurisée chargée - Version 2.5.2");// main-complete.js - Application principale ultra-sécurisée (VERSION CORRIGÉE AVEC GESTION D'ERREURS)
+// main-complete.js - Application principale ultra-sécurisée (VERSION CORRIGÉE AVEC GESTION D'ERREURS)
 
 // Mode production - logs réduits
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -1678,7 +590,7 @@ function generatePDFPreview() {
     const pdfPreview = document.getElementById("pdfPreview");
     
     if (previewContainer && pdfPreview) {
-      // Ajouter le bouton de fermeture s'il n'existe pas déjà 
+      // Ajouter le bouton de fermeture s'il n'existe pas déjà  
       let closeButton = document.getElementById("close-preview-btn");
       if (!closeButton) {
         closeButton = document.createElement("button");
@@ -2295,4 +1207,1090 @@ async function handleDrop(e) {
     
     // Récupérer les données
     let data = dragData;
-    console.log("📦 dragData disponible:", !!data
+    console.log("📦 dragData disponible:", !!data);
+    
+    // Fallback vers dataTransfer
+    if (!data && e.dataTransfer) {
+      try {
+        const dataStr = e.dataTransfer.getData("text/plain");
+        if (dataStr) {
+          data = JSON.parse(dataStr);
+          console.log("📦 Données récupérées depuis dataTransfer");
+        }
+      } catch (error) {
+        console.warn("⚠️ Erreur parsing dataTransfer:", error);
+      }
+    }
+    
+    if (!data) {
+      console.error("❌ AUCUNE DONNÉE DE DRAG DISPONIBLE");
+      dragData = null;
+      return;
+    }
+    
+    console.log("✅ Données de drop récupérées:", data);
+    
+    // S'assurer que les variables globales existent
+    if (typeof plongeurs === 'undefined') {
+      console.warn("⚠️ Variable plongeurs non définie");
+      window.plongeurs = [];
+    }
+    if (typeof palanquees === 'undefined') {
+      console.warn("⚠️ Variable palanquees non définie");
+      window.palanquees = [];
+    }
+    if (typeof plongeursOriginaux === 'undefined') {
+      window.plongeursOriginaux = [];
+    }
+    
+    // Drop vers la liste principale
+    if (dropZone.id === 'listePlongeurs') {
+      console.log("🎯 Drop vers liste principale");
+      
+      if (data.type === "fromPalanquee") {
+        console.log("🔄 Retour vers liste depuis palanquée", data.palanqueeIndex);
+        
+        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
+          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
+          targetPalanquee.push(plongeur);
+          console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+        } else {
+          console.error("❌ Plongeur source non trouvé pour déplacement");
+        }
+      }
+    }
+  } catch (error) {
+    console.error("❌ Erreur lors du drop:", error);
+    handleError(error, "Handle drop");
+  } finally {
+    // Nettoyer les données de drag
+    dragData = null;
+    console.log("🧹 Données de drag nettoyées");
+  }
+}
+
+// ===== EVENT HANDLERS SÉCURISÉS =====
+function setupEventListeners() {
+  console.log("🎛️ Configuration des event listeners sécurisés...");
+  
+  try {
+    // === AUTHENTIFICATION ===
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const emailInput = document.getElementById("login-email");
+        const passwordInput = document.getElementById("login-password");
+        const errorDiv = document.getElementById("auth-error");
+        const loadingDiv = document.getElementById("auth-loading");
+        
+        if (!emailInput || !passwordInput) {
+          showAuthError("Éléments de formulaire manquants");
+          return;
+        }
+        
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        
+        if (!email || !password) {
+          showAuthError("Veuillez remplir tous les champs");
+          return;
+        }
+        
+        try {
+          if (loadingDiv) loadingDiv.style.display = "block";
+          if (errorDiv) errorDiv.style.display = "none";
+          
+          if (typeof signIn === 'function') {
+            await signIn(email, password);
+            console.log("✅ Connexion réussie");
+          } else {
+            throw new Error("Fonction signIn non disponible");
+          }
+          
+        } catch (error) {
+          console.error("❌ Erreur connexion:", error);
+          
+          let message = "Erreur de connexion";
+          if (error.code === 'auth/user-not-found') {
+            message = "Utilisateur non trouvé";
+          } else if (error.code === 'auth/wrong-password') {
+            message = "Mot de passe incorrect";
+          } else if (error.code === 'auth/invalid-email') {
+            message = "Email invalide";
+          } else if (error.code === 'auth/too-many-requests') {
+            message = "Trop de tentatives. Réessayez plus tard.";
+          }
+          
+          showAuthError(message);
+          
+          if (typeof FirebaseErrorHandler !== 'undefined') {
+            FirebaseErrorHandler.handleError(error, 'Connexion');
+          }
+        } finally {
+          if (loadingDiv) loadingDiv.style.display = "none";
+        }
+      });
+    }
+    
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async () => {
+        try {
+          if (typeof signOut === 'function') {
+            await signOut();
+            console.log("✅ Déconnexion réussie");
+          }
+        } catch (error) {
+          console.error("❌ Erreur déconnexion:", error);
+          if (typeof FirebaseErrorHandler !== 'undefined') {
+            FirebaseErrorHandler.handleError(error, 'Déconnexion');
+          }
+        }
+      });
+    }
+
+    // === FONCTIONNALITÉ BOUTON "VALIDER DP" SÉCURISÉE ===
+    const validerDPBtn = document.getElementById("valider-dp");
+    if (validerDPBtn) {
+      validerDPBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        
+        try {
+          const dpNom = document.getElementById("dp-nom")?.value?.trim();
+          const dpDate = document.getElementById("dp-date")?.value;
+          const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+          const dpPlongee = document.getElementById("dp-plongee")?.value;
+          const dpMessage = document.getElementById("dp-message");
+          
+          // Validation des champs obligatoires
+          if (!dpNom) {
+            alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
+            document.getElementById("dp-nom")?.focus();
+            return;
+          }
+          
+          if (!dpDate) {
+            alert("⚠️ Veuillez sélectionner une date");
+            document.getElementById("dp-date")?.focus();
+            return;
+          }
+          
+          if (!dpLieu) {
+            alert("⚠️ Veuillez saisir le lieu de plongée");
+            document.getElementById("dp-lieu")?.focus();
+            return;
+          }
+          
+          // Vérifier le format du nom DP
+          if (dpNom.split(' ').length < 2) {
+            const confirm = window.confirm("⚠️ Le nom semble incomplet (nom ET prénom recommandés).\n\nContinuer quand même ?");
+            if (!confirm) {
+              document.getElementById("dp-nom")?.focus();
+              return;
+            }
+          }
+          
+          // Vérifier que la date n'est pas trop ancienne
+          const selectedDate = new Date(dpDate);
+          const today = new Date();
+          const diffDays = Math.ceil((today - selectedDate) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 7) {
+            const confirm = window.confirm(`⚠️ La date sélectionnée remonte à ${diffDays} jours.\n\nÊtes-vous sûr de cette date ?`);
+            if (!confirm) {
+              document.getElementById("dp-date")?.focus();
+              return;
+            }
+          }
+          
+          // Créer l'objet informations DP
+          const dpInfo = {
+            nom: dpNom,
+            date: dpDate,
+            lieu: dpLieu,
+            plongee: dpPlongee,
+            timestamp: Date.now(),
+            validated: true
+          };
+          
+          // Mettre à jour la variable globale si elle existe
+          if (typeof window.dpInfo !== 'undefined') {
+            window.dpInfo.nom = dpNom;
+            window.dpInfo.niveau = 'DP';
+          }
+          
+          // Sauvegarder dans Firebase si disponible
+          if (typeof db !== 'undefined' && db) {
+            try {
+              const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+              await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
+              console.log("✅ Informations DP sauvegardées dans Firebase");
+            } catch (firebaseError) {
+              console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
+              if (typeof FirebaseErrorHandler !== 'undefined') {
+                FirebaseErrorHandler.handleError(firebaseError, 'Sauvegarde DP');
+              }
+            }
+          }
+          
+          // Afficher le message de confirmation
+          if (dpMessage) {
+            dpMessage.innerHTML = `
+              <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+                ✅ Informations DP validées
+                <br><small style="font-weight: normal;">
+                  ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
+                </small>
+              </div>
+            `;
+            dpMessage.classList.add("dp-valide");
+          }
+          
+          // Désactiver temporairement le bouton
+          validerDPBtn.disabled = true;
+          validerDPBtn.textContent = "✅ Validé";
+          validerDPBtn.style.backgroundColor = "#28a745";
+          
+          setTimeout(() => {
+            validerDPBtn.disabled = false;
+            validerDPBtn.textContent = "Valider DP";
+            validerDPBtn.style.backgroundColor = "#007bff";
+          }, 3000);
+          
+          // Notification système si disponible
+          if (typeof showNotification === 'function') {
+            showNotification("✅ Informations DP validées et sauvegardées", "success");
+          }
+          
+          console.log("✅ Validation DP réussie:", dpInfo);
+          
+          // Synchronisation optionnelle
+          if (typeof syncToDatabase === 'function') {
+            setTimeout(syncToDatabase, 1000);
+          }
+          
+        } catch (error) {
+          console.error("❌ Erreur validation DP:", error);
+          handleError(error, "Validation DP");
+          
+          const dpMessage = document.getElementById("dp-message");
+          if (dpMessage) {
+            dpMessage.innerHTML = `
+              <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
+                ❌ Erreur lors de la validation : ${error.message}
+              </div>
+            `;
+          } else {
+            alert("❌ Erreur lors de la validation : " + error.message);
+          }
+        }
+      });
+    }
+
+    // === AJOUT DE PLONGEUR SÉCURISÉ ===
+    const addForm = document.getElementById("addForm");
+    if (addForm) {
+      addForm.addEventListener("submit", e => {
+        e.preventDefault();
+        
+        try {
+          const nomInput = document.getElementById("nom");
+          const niveauInput = document.getElementById("niveau");
+          const preInput = document.getElementById("pre");
+          
+          if (!nomInput || !niveauInput || !preInput) {
+            alert("Éléments de formulaire manquants");
+            return;
+          }
+          
+          const nom = nomInput.value.trim();
+          const niveau = niveauInput.value;
+          const pre = preInput.value.trim();
+          
+          if (!nom || !niveau) {
+            alert("Veuillez remplir le nom et le niveau du plongeur.");
+            return;
+          }
+          
+          // S'assurer que les variables globales existent
+          if (typeof plongeurs === 'undefined') window.plongeurs = [];
+          if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
+          
+          const nouveauPlongeur = { nom, niveau, pre };
+          plongeurs.push(nouveauPlongeur);
+          plongeursOriginaux.push(nouveauPlongeur);
+          
+          nomInput.value = "";
+          niveauInput.value = "";
+          preInput.value = "";
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+          
+          console.log("✅ Plongeur ajouté:", nouveauPlongeur);
+        } catch (error) {
+          console.error("❌ Erreur ajout plongeur:", error);
+          handleError(error, "Ajout plongeur");
+        }
+      });
+    }
+
+    // === AJOUT DE PALANQUÉE SÉCURISÉ ===
+    const addPalanqueeBtn = document.getElementById("addPalanquee");
+    if (addPalanqueeBtn) {
+      addPalanqueeBtn.addEventListener("click", () => {
+        try {
+          // S'assurer que la variable globale existe
+          if (typeof palanquees === 'undefined') window.palanquees = [];
+          
+          const nouvellePalanquee = [];
+          nouvellePalanquee.horaire = '';
+          nouvellePalanquee.profondeurPrevue = '';
+          nouvellePalanquee.dureePrevue = '';
+          nouvellePalanquee.profondeurRealisee = '';
+          nouvellePalanquee.dureeRealisee = '';
+          nouvellePalanquee.paliers = '';
+          
+          palanquees.push(nouvellePalanquee);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+          
+          console.log("✅ Nouvelle palanquée créée");
+        } catch (error) {
+          console.error("❌ Erreur création palanquée:", error);
+          handleError(error, "Création palanquée");
+        }
+      });
+    }
+
+    // === EXPORT/IMPORT JSON SÉCURISÉ ===
+    const exportJSONBtn = document.getElementById("exportJSON");
+    if (exportJSONBtn) {
+      exportJSONBtn.addEventListener("click", () => {
+        try {
+          if (typeof exportToJSON === 'function') {
+            exportToJSON();
+          }
+        } catch (error) {
+          console.error("❌ Erreur export JSON:", error);
+          handleError(error, "Export JSON");
+        }
+      });
+    }
+
+    const importJSONInput = document.getElementById("importJSON");
+    if (importJSONInput) {
+      importJSONInput.addEventListener("change", e => {
+        try {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = e2 => {
+            try {
+              const data = JSON.parse(e2.target.result);
+              
+              // S'assurer que les variables globales existent
+              if (typeof plongeurs === 'undefined') window.plongeurs = [];
+              if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
+              
+              if (data.plongeurs && Array.isArray(data.plongeurs)) {
+                plongeurs = data.plongeurs.map(p => ({
+                  nom: p.nom,
+                  niveau: p.niveau,
+                  pre: p.prerogatives || p.pre || ""
+                }));
+              } else if (Array.isArray(data)) {
+                plongeurs = data;
+              }
+              
+              plongeursOriginaux = [...plongeurs];
+              
+              if (typeof syncToDatabase === 'function') {
+                syncToDatabase();
+              }
+              alert("Import réussi !");
+              console.log("✅ Import JSON réussi");
+            } catch (error) {
+              console.error("❌ Erreur import:", error);
+              handleError(error, "Import JSON");
+              alert("Erreur lors de l'import du fichier JSON");
+            }
+          };
+          reader.readAsText(file);
+        } catch (error) {
+          console.error("❌ Erreur lecture fichier:", error);
+          handleError(error, "Lecture fichier");
+        }
+      });
+    }
+
+    // === PDF SÉCURISÉ ===
+    const generatePDFBtn = document.getElementById("generatePDF");
+    if (generatePDFBtn) {
+      generatePDFBtn.addEventListener("click", () => {
+        try {
+          generatePDFPreview();
+        } catch (error) {
+          console.error("❌ Erreur génération aperçu PDF:", error);
+          handleError(error, "Génération aperçu PDF");
+        }
+      });
+    }
+    
+    const exportPDFBtn = document.getElementById("exportPDF");
+    if (exportPDFBtn) {
+      exportPDFBtn.addEventListener("click", () => {
+        try {
+          exportToPDF();
+        } catch (error) {
+          console.error("❌ Erreur export PDF:", error);
+          handleError(error, "Export PDF");
+        }
+      });
+    }
+
+    // === SESSIONS SÉCURISÉES ===
+    const loadSessionBtn = document.getElementById("load-session");
+    if (loadSessionBtn) {
+      loadSessionBtn.addEventListener("click", async () => {
+        try {
+          const sessionSelector = document.getElementById("session-selector");
+          if (!sessionSelector) {
+            alert("Sélecteur de session non trouvé");
+            return;
+          }
+          
+          const sessionKey = sessionSelector.value;
+          if (!sessionKey) {
+            alert("Veuillez sélectionner une session à charger.");
+            return;
+          }
+          
+          if (typeof loadSession === 'function') {
+            const success = await loadSession(sessionKey);
+            if (!success) {
+              alert("Erreur lors du chargement de la session.");
+            } else {
+              console.log("✅ Session chargée:", sessionKey);
+            }
+          }
+        } catch (error) {
+          console.error("❌ Erreur chargement session:", error);
+          handleError(error, "Chargement session");
+        }
+      });
+    }
+    
+    const refreshSessionsBtn = document.getElementById("refresh-sessions");
+    if (refreshSessionsBtn) {
+      refreshSessionsBtn.addEventListener("click", async () => {
+        try {
+          if (typeof populateSessionSelector === 'function') {
+            await populateSessionSelector();
+          }
+          if (typeof populateSessionsCleanupList === 'function') {
+            await populateSessionsCleanupList();
+          }
+          console.log("✅ Sessions actualisées");
+        } catch (error) {
+          console.error("❌ Erreur actualisation sessions:", error);
+          handleError(error, "Actualisation sessions");
+        }
+      });
+    }
+
+    const saveSessionBtn = document.getElementById("save-session");
+    if (saveSessionBtn) {
+      saveSessionBtn.addEventListener("click", async () => {
+        try {
+          if (typeof saveSessionData === 'function') {
+            await saveSessionData();
+            alert("Session sauvegardée !");
+            if (typeof populateSessionSelector === 'function') {
+              await populateSessionSelector();
+            }
+            if (typeof populateSessionsCleanupList === 'function') {
+              await populateSessionsCleanupList();
+            }
+            console.log("✅ Session sauvegardée");
+          }
+        } catch (error) {
+          console.error("❌ Erreur sauvegarde session:", error);
+          handleError(error, "Sauvegarde session");
+        }
+      });
+    }
+
+    // === TEST FIREBASE SÉCURISÉ ===
+    const testFirebaseBtn = document.getElementById("test-firebase");
+    if (testFirebaseBtn) {
+      testFirebaseBtn.addEventListener("click", async () => {
+        console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
+        
+        try {
+          console.log("📡 Test 1: Vérification connexion Firebase");
+          console.log("Firebase connecté:", typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined');
+          console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "❌ MANQUANTE");
+          
+          if (typeof db !== 'undefined' && db) {
+            console.log("📖 Test 2: Lecture /sessions");
+            const sessionsRead = await db.ref('sessions').once('value');
+            console.log("✅ Lecture sessions OK:", sessionsRead.exists() ? "Données trouvées" : "Aucune donnée");
+            
+            if (sessionsRead.exists()) {
+              const sessions = sessionsRead.val();
+              console.log("Nombre de sessions:", Object.keys(sessions).length);
+            }
+          }
+          
+          console.log("📊 Test 3: Données actuelles");
+          console.log("Plongeurs en mémoire:", typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined');
+          console.log("Palanquées en mémoire:", typeof palanquees !== 'undefined' ? palanquees.length : 'undefined');
+          
+          // Test de l'état des listeners
+          if (typeof window.firebaseListeners !== 'undefined') {
+            console.log("📡 Listeners actifs:", window.firebaseListeners.getActiveListeners());
+          }
+          
+          console.log("🎉 === TESTS TERMINÉS ===");
+          alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
+          
+        } catch (error) {
+          console.error("❌ Erreur test Firebase:", error);
+          handleError(error, "Test Firebase");
+          alert("Erreur lors du test Firebase : " + error.message);
+        }
+      });
+    }
+
+    // === TRI DES PLONGEURS SÉCURISÉ ===
+    const sortBtns = document.querySelectorAll('.sort-btn');
+    sortBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const sortType = btn.dataset.sort;
+          if (typeof sortPlongeurs === 'function') {
+            sortPlongeurs(sortType);
+          }
+        } catch (error) {
+          console.error("❌ Erreur tri plongeurs:", error);
+          handleError(error, "Tri plongeurs");
+        }
+      });
+    });
+
+    // === NETTOYAGE SESSIONS ET DP SÉCURISÉ ===
+    const setupCleanupListeners = () => {
+      try {
+        // Sessions
+        const selectAllSessionsBtn = document.getElementById("select-all-sessions");
+        if (selectAllSessionsBtn) {
+          selectAllSessionsBtn.addEventListener("click", () => {
+            if (typeof selectAllSessions === 'function') {
+              selectAllSessions(true);
+            }
+          });
+        }
+
+        const selectNoneSessionsBtn = document.getElementById("select-none-sessions");
+        if (selectNoneSessionsBtn) {
+          selectNoneSessionsBtn.addEventListener("click", () => {
+            if (typeof selectAllSessions === 'function') {
+              selectAllSessions(false);
+            }
+          });
+        }
+
+        const deleteSelectedSessionsBtn = document.getElementById("delete-selected-sessions");
+        if (deleteSelectedSessionsBtn) {
+          deleteSelectedSessionsBtn.addEventListener("click", () => {
+            if (typeof deleteSelectedSessions === 'function') {
+              deleteSelectedSessions();
+            }
+          });
+        }
+
+        const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
+        if (refreshSessionsListBtn) {
+          refreshSessionsListBtn.addEventListener("click", () => {
+            if (typeof populateSessionsCleanupList === 'function') {
+              populateSessionsCleanupList();
+            }
+          });
+        }
+
+        // DP
+        const selectAllDPBtn = document.getElementById("select-all-dp");
+        if (selectAllDPBtn) {
+          selectAllDPBtn.addEventListener("click", () => {
+            if (typeof selectAllDPs === 'function') {
+              selectAllDPs(true);
+            }
+          });
+        }
+
+        const selectNoneDPBtn = document.getElementById("select-none-dp");
+        if (selectNoneDPBtn) {
+          selectNoneDPBtn.addEventListener("click", () => {
+            if (typeof selectAllDPs === 'function') {
+              selectAllDPs(false);
+            }
+          });
+        }
+
+        const deleteSelectedDPBtn = document.getElementById("delete-selected-dp");
+        if (deleteSelectedDPBtn) {
+          deleteSelectedDPBtn.addEventListener("click", () => {
+            if (typeof deleteSelectedDPs === 'function') {
+              deleteSelectedDPs();
+            }
+          });
+        }
+
+        const refreshDPListBtn = document.getElementById("refresh-dp-list");
+        if (refreshDPListBtn) {
+          refreshDPListBtn.addEventListener("click", () => {
+            if (typeof populateDPCleanupList === 'function') {
+              populateDPCleanupList();
+            }
+          });
+        }
+      } catch (error) {
+        console.error("❌ Erreur setup cleanup listeners:", error);
+        handleError(error, "Setup cleanup listeners");
+      }
+    };
+
+    setupCleanupListeners();
+
+    // Event listeners pour les checkboxes de nettoyage
+    document.addEventListener('change', (e) => {
+      try {
+        if (e.target.classList.contains('session-cleanup-checkbox') || 
+            e.target.classList.contains('dp-cleanup-checkbox')) {
+          if (typeof updateCleanupSelection === 'function') {
+            updateCleanupSelection();
+          }
+        }
+      } catch (error) {
+        console.error("❌ Erreur checkbox cleanup:", error);
+        handleError(error, "Checkbox cleanup");
+      }
+    });
+    
+    console.log("✅ Event listeners configurés avec succès");
+    
+  } catch (error) {
+    console.error("❌ Erreur configuration event listeners:", error);
+    handleError(error, "Configuration event listeners");
+  }
+}
+
+// ===== FONCTIONS POUR L'HISTORIQUE DP (CORRIGÉES) =====
+async function chargerHistoriqueDP() {
+  console.log("📋 Chargement de l'historique DP sécurisé...");
+  
+  const dpDatesSelect = document.getElementById("dp-dates");
+  if (!dpDatesSelect) {
+    console.error("❌ Élément dp-dates non trouvé");
+    return;
+  }
+  
+  dpDatesSelect.innerHTML = '<option value="">-- Choisir une date --</option>';
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      console.warn("⚠️ Firebase non disponible pour charger l'historique DP");
+      dpDatesSelect.innerHTML += '<option disabled>Firebase non connecté</option>';
+      return;
+    }
+    
+    const snapshot = await db.ref('dpInfo').once('value');
+    
+    if (!snapshot.exists()) {
+      console.log("ℹ️ Aucune donnée DP trouvée dans Firebase");
+      dpDatesSelect.innerHTML += '<option disabled>Aucun DP enregistré</option>';
+      return;
+    }
+    
+    const dpInfos = snapshot.val();
+    const dpList = [];
+    
+    Object.entries(dpInfos).forEach(([key, dpData]) => {
+      if (dpData && dpData.date) {
+        dpList.push({
+          key: key,
+          date: dpData.date,
+          nom: dpData.nom || "DP non défini",
+          lieu: dpData.lieu || "Lieu non défini",
+          plongee: dpData.plongee || "matin",
+          timestamp: dpData.timestamp || 0
+        });
+      }
+    });
+    
+    dpList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB - dateA;
+    });
+    
+    dpList.forEach(dp => {
+      const option = document.createElement("option");
+      option.value = dp.key;
+      option.textContent = `${dp.date} - ${dp.nom} - ${dp.lieu} (${dp.plongee})`;
+      dpDatesSelect.appendChild(option);
+    });
+    
+    console.log(`✅ ${dpList.length} DP chargés dans l'historique`);
+    
+    dpDatesSelect.addEventListener('change', afficherInfoDP);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement historique DP:", error);
+    handleError(error, "Chargement historique DP");
+    dpDatesSelect.innerHTML += '<option disabled>Erreur de chargement</option>';
+  }
+}
+
+function afficherInfoDP() {
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+  
+  if (!dpDatesSelect || !historiqueInfo) {
+    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
+    return;
+  }
+  
+  const selectedKey = dpDatesSelect.value;
+  
+  if (!selectedKey) {
+    historiqueInfo.innerHTML = '';
+    return;
+  }
+  
+  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
+  
+  if (typeof db === 'undefined' || !db) {
+    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
+    return;
+  }
+  
+  db.ref(`dpInfo/${selectedKey}`).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
+        return;
+      }
+      
+      const dpData = snapshot.val();
+      const formatDate = (dateStr) => {
+        try {
+          return new Date(dateStr).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch {
+          return dateStr;
+        }
+      };
+      
+      historiqueInfo.innerHTML = `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
+          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
+          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
+          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
+          <p><strong>🕕 Session :</strong> ${dpData.plongee || 'matin'}</p>
+          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
+          
+          <div style="margin-top: 15px;">
+            <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
+                    style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+              🔥 Charger dans l'interface
+            </button>
+            <button onclick="supprimerDPSelectionne('${selectedKey}')" 
+                    style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+              🗑️ Supprimer
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .catch(error => {
+      console.error("❌ Erreur chargement DP:", error);
+      handleError(error, "Chargement DP");
+      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
+    });
+}
+
+async function chargerDonneesDPSelectionne(dpKey) {
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
+    if (!snapshot.exists()) {
+      alert("❌ DP non trouvé");
+      return;
+    }
+    
+    const dpData = snapshot.val();
+    
+    const dpNomInput = document.getElementById("dp-nom");
+    const dpDateInput = document.getElementById("dp-date");
+    const dpLieuInput = document.getElementById("dp-lieu");
+    const dpPlongeeInput = document.getElementById("dp-plongee");
+    
+    if (dpNomInput) dpNomInput.value = dpData.nom || "";
+    if (dpDateInput) dpDateInput.value = dpData.date || "";
+    if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+    if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+    
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = `
+        <div style="color: #007bff; font-weight: bold; padding: 10px; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 4px;">
+          🔥 DP chargé depuis l'historique
+        </div>
+      `;
+    }
+    
+    alert("✅ Données DP chargées avec succès !");
+    console.log("✅ DP chargé:", dpData);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement DP:", error);
+    handleError(error, "Chargement DP sélectionné");
+    alert("❌ Erreur lors du chargement : " + error.message);
+  }
+}
+
+async function supprimerDPSelectionne(dpKey) {
+  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    await db.ref(`dpInfo/${dpKey}`).remove();
+    
+    alert("✅ DP supprimé avec succès !");
+    
+    await chargerHistoriqueDP();
+    
+    const historiqueInfo = document.getElementById("historique-info");
+    if (historiqueInfo) {
+      historiqueInfo.innerHTML = '';
+    }
+    
+    console.log("✅ DP supprimé:", dpKey);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    handleError(error, "Suppression DP");
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// Export des fonctions globales
+window.chargerHistoriqueDP = chargerHistoriqueDP;
+window.afficherInfoDP = afficherInfoDP;
+window.chargerDonneesDPSelectionne = chargerDonneesDPSelectionne;
+window.supprimerDPSelectionne = supprimerDPSelectionne;
+
+// ===== INITIALISATION SÉCURISÉE DE L'APPLICATION =====
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log("🚀 Initialisation sécurisée de l'application JSAS...");
+  
+  try {
+    // 1. Vérifier que les fonctions critiques sont disponibles
+    if (typeof initializeFirebase !== 'function') {
+      throw new Error("Fonction initializeFirebase non disponible - vérifiez le chargement de config-firebase.js");
+    }
+    
+    // 2. Initialiser Firebase en premier
+    const firebaseOK = initializeFirebase();
+    if (!firebaseOK) {
+      throw new Error("Échec initialisation Firebase");
+    }
+    
+    // 3. Configurer les event listeners
+    setupEventListeners();
+    
+    // 4. Configurer le drag & drop
+    setupDragAndDrop();
+    
+    // 5. Ajouter les gestionnaires d'erreurs globaux
+    window.addEventListener('error', (event) => {
+      console.error("❌ Erreur JavaScript globale:", event.error);
+      handleError(event.error, "Erreur JavaScript globale");
+    });
+    
+    console.log("✅ Application JSAS initialisée avec succès !");
+    
+  } catch (error) {
+    console.error("❌ Erreur critique initialisation:", error);
+    handleError(error, "Initialisation critique");
+    
+    // Mode de récupération d'urgence
+    const loadingScreen = document.getElementById("loading-screen");
+    if (loadingScreen) {
+      loadingScreen.style.display = "none";
+    }
+    
+    const authContainer = document.getElementById("auth-container");
+    if (authContainer) {
+      authContainer.style.display = "block";
+      const errorDiv = document.getElementById("auth-error");
+      if (errorDiv) {
+        errorDiv.textContent = "Erreur d'initialisation critique. Veuillez actualiser la page.";
+        errorDiv.style.display = "block";
+      }
+    }
+    
+    // Notification d'urgence
+    alert(
+      "❌ ERREUR CRITIQUE D'INITIALISATION\n\n" +
+      "L'application n'a pas pu s'initialiser correctement.\n\n" +
+      "Actions recommandées :\n" +
+      "1. Actualisez la page (F5)\n" +
+      "2. Vérifiez votre connexion internet\n" +
+      "3. Videz le cache du navigateur\n" +
+      "4. Contactez l'administrateur si le problème persiste\n\n" +
+      "Erreur : " + error.message
+    );
+  }
+});
+
+// ===== DIAGNOSTIC ET MONITORING =====
+// Fonction de diagnostic pour le support technique
+window.diagnosticJSAS = function() {
+  console.log("🔍 === DIAGNOSTIC JSAS ===");
+  
+  const diagnostic = {
+    timestamp: new Date().toISOString(),
+    variables: {
+      plongeurs: typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined',
+      palanquees: typeof palanquees !== 'undefined' ? palanquees.length : 'undefined',
+      currentUser: typeof currentUser !== 'undefined' ? (currentUser ? currentUser.email : 'null') : 'undefined',
+      firebaseConnected: typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined'
+    },
+    firebase: {
+      app: typeof app !== 'undefined' ? 'initialized' : 'undefined',
+      db: typeof db !== 'undefined' ? 'initialized' : 'undefined',
+      auth: typeof auth !== 'undefined' ? 'initialized' : 'undefined'
+    },
+    listeners: {
+      active: typeof window.firebaseListeners !== 'undefined' ? 
+        window.firebaseListeners.getActiveListeners() : 'undefined'
+    },
+    locks: {
+      system: typeof lockSystemInitialized !== 'undefined' ? lockSystemInitialized : 'undefined',
+      current: typeof currentlyEditingPalanquee !== 'undefined' ? currentlyEditingPalanquee : 'undefined',
+      active: typeof palanqueeLocks !== 'undefined' ? Object.keys(palanqueeLocks).length : 'undefined'
+    },
+    errors: {
+      lastError: window.lastJSASError || 'none'
+    }
+  };
+  
+  console.log("📊 Diagnostic complet:", diagnostic);
+  console.log("=== FIN DIAGNOSTIC ===");
+  
+  return diagnostic;
+};
+
+// Capturer la dernière erreur pour le diagnostic
+window.addEventListener('error', (event) => {
+  window.lastJSASError = {
+    message: event.error?.message || event.message,
+    timestamp: new Date().toISOString(),
+    filename: event.filename,
+    lineno: event.lineno
+  };
+});
+
+console.log("✅ Main application sécurisée chargée - Version 2.5.2");][data.plongeurIndex]) {
+          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
+          plongeurs.push(plongeur);
+          plongeursOriginaux.push(plongeur);
+          console.log("✅ Plongeur remis dans liste:", plongeur.nom);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+        } else {
+          console.error("❌ Plongeur non trouvé pour retour en liste");
+        }
+      }
+    } else {
+      // Drop vers une palanquée
+      const palanqueeIndex = parseInt(dropZone.dataset.index);
+      if (isNaN(palanqueeIndex)) {
+        console.error("❌ Index palanquée invalide:", dropZone.dataset.index);
+        dragData = null;
+        return;
+      }
+      
+      console.log("🎯 Drop vers palanquée", palanqueeIndex);
+      
+      const targetPalanquee = palanquees[palanqueeIndex];
+      if (!targetPalanquee) {
+        console.error("❌ Palanquée cible non trouvée:", palanqueeIndex);
+        dragData = null;
+        return;
+      }
+      
+      // Vérifier les règles de validation avant d'ajouter
+      if (typeof validatePalanqueeAddition === 'function') {
+        const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
+        if (!validation.valid) {
+          const messageText = validation.messages.join('\n');
+          alert(`❌ Ajout impossible :\n\n${messageText}`);
+          dragData = null;
+          return;
+        }
+      }
+      
+      if (data.type === "fromMainList") {
+        console.log("🔄 Ajout depuis liste principale");
+        
+        const indexToRemove = plongeurs.findIndex(p => 
+          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
+        );
+        
+        if (indexToRemove !== -1) {
+          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
+          targetPalanquee.push(plongeur);
+          console.log("✅ Plongeur ajouté à palanquée:", plongeur.nom);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+        } else {
+          console.error("❌ Plongeur non trouvé dans liste principale");
+        }
+        
+      } else if (data.type === "fromPalanquee") {
+        console.log("🔄 Déplacement entre palanquées");
+        
+        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex
