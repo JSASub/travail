@@ -811,7 +811,7 @@ let dragData = null;
 
 function setupDragAndDrop() {
   // Event delegation pour dragstart
-  document.addEventListener('drop', async (e) => {
+document.addEventListener('drop', async (e) => {
   e.preventDefault();
   
   const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
@@ -868,24 +868,9 @@ function setupDragAndDrop() {
     return;
   }
   
-  // Gestion du drop vers une palanquée avec validation
+  // Gestion du drop vers une palanquée
   const palanqueeIndex = parseInt(dropZone.dataset.index);
   if (isNaN(palanqueeIndex)) return;
-  
-  // NOUVELLE VALIDATION AVANT AJOUT
-  if (data.type === "fromMainList") {
-    // Vérifier si l'ajout est autorisé selon les nouvelles règles
-    if (typeof validatePalanqueeAddition === 'function') {
-      const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
-      
-      if (!validation.valid) {
-        // Afficher l'erreur et empêcher l'ajout
-        const messageText = validation.messages.join('\n');
-        alert(`❌ Ajout impossible à la palanquée ${palanqueeIndex + 1} :\n\n${messageText}\n\n💡 Vérifiez la composition et les règles FFESSM.`);
-        return;
-      }
-    }
-  }
   
   // Vérifier le verrou
   if (typeof window.acquirePalanqueeLock === 'function') {
@@ -907,36 +892,14 @@ function setupDragAndDrop() {
     if (indexToRemove !== -1) {
       plongeurs.splice(indexToRemove, 1);
       targetPalanquee.push(data.plongeur);
-      
-      // Afficher un message de succès avec les nouvelles stats
-      if (typeof getDetailedStats === 'function') {
-        const newStats = getDetailedStats(targetPalanquee);
-        console.log(`✅ ${data.plongeur.nom} (${data.plongeur.niveau}) ajouté à la palanquée ${palanqueeIndex + 1}`);
-        console.log(`📊 Nouvelle composition: ${newStats}`);
-      }
-      
       if (typeof syncToDatabase === 'function') {
         syncToDatabase();
       }
     }
   } else if (data.type === "fromPalanquee") {
-    // Validation pour déplacement entre palanquées
-    if (typeof validatePalanqueeAddition === 'function') {
-      const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
-      
-      if (!validation.valid) {
-        const messageText = validation.messages.join('\n');
-        alert(`❌ Déplacement impossible vers la palanquée ${palanqueeIndex + 1} :\n\n${messageText}`);
-        return;
-      }
-    }
-    
     if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
       const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
       targetPalanquee.push(plongeur);
-      
-      console.log(`✅ ${plongeur.nom} déplacé de la palanquée ${data.palanqueeIndex + 1} vers ${palanqueeIndex + 1}`);
-      
       if (typeof syncToDatabase === 'function') {
         syncToDatabase();
       }
