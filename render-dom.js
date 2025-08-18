@@ -148,7 +148,8 @@ function renderPalanquees() {
             <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
           </div>
         </li>
-      `;}).join('');
+      `;
+      }).join('');
     }
     
     // Calculer les nouvelles statistiques avec les jeunes plongeurs
@@ -260,3 +261,60 @@ function deletePalanquee(index) {
     syncToDatabase();
   }
 }
+
+function returnPlongeurToMainList(palanqueeIndex, plongeurIndex) {
+  if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+    const plongeur = palanquees[palanqueeIndex].splice(plongeurIndex, 1)[0];
+    plongeurs.push(plongeur);
+    plongeursOriginaux.push(plongeur);
+    syncToDatabase();
+  }
+}
+
+function updatePlongeurPrerogatives(palanqueeIndex, plongeurIndex, newValue) {
+  if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+    palanquees[palanqueeIndex][plongeurIndex].pre = newValue.trim();
+    syncToDatabase();
+  }
+}
+
+function updatePalanqueeDetail(palanqueeIndex, property, newValue) {
+  if (palanquees[palanqueeIndex]) {
+    palanquees[palanqueeIndex][property] = newValue;
+    syncToDatabase();
+  }
+}
+
+// Fonction pour gérer l'édition avec système de verrous et validation
+function handlePalanqueeEdit(palanqueeIndex) {
+  if (typeof interceptPalanqueeEdit === 'function') {
+    interceptPalanqueeEdit(palanqueeIndex, () => {
+      console.log(`Édition autorisée pour palanquée ${palanqueeIndex}`);
+    });
+  }
+}
+
+// ===== FONCTION DE VALIDATION LORS DU DROP =====
+function validateDropToPalanquee(palanqueeIndex, plongeur) {
+  if (typeof validatePalanqueeAddition === 'function') {
+    const validation = validatePalanqueeAddition(palanqueeIndex, plongeur);
+    
+    if (!validation.valid) {
+      // Afficher les messages d'erreur
+      const messageText = validation.messages.join('\n');
+      alert(`❌ Ajout impossible :\n\n${messageText}`);
+      return false;
+    } else {
+      // Optionnel : afficher un message de succès
+      if (validation.messages.length > 0) {
+        console.log("✅", validation.messages.join(', '));
+      }
+      return true;
+    }
+  }
+  
+  // Si pas de fonction de validation, autoriser par défaut
+  return true;
+}
+
+console.log("🎨 Module de rendu DOM avec nouvelles règles chargé");
