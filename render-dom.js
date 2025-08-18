@@ -1,4 +1,4 @@
-// render-dom.js - Rendu DOM ultra-sécurisé (VERSION CORRIGÉE)
+// render-dom.js - Rendu DOM ultra-sécurisé avec nouvelles règles (VERSION CORRIGÉE)
 
 // ===== RENDER FUNCTIONS =====
 function renderPlongeurs() {
@@ -106,22 +106,35 @@ function renderPalanquees() {
     palanqueeDiv.className = "palanquee";
     palanqueeDiv.dataset.index = index;
     
-    // Vérifier les alertes
+    // Vérifier les alertes avec les nouvelles règles
     const hasAlert = typeof checkAlert === 'function' ? checkAlert(palanquee) : false;
     if (hasAlert) {
       palanqueeDiv.dataset.alert = "true";
     }
     
-    // Générer le contenu HTML
+    // Générer le contenu HTML avec tri par niveau
     let plongeursHTML = '';
     if (palanquee.length === 0) {
       plongeursHTML = '<li class="palanquee-empty">Aucun plongeur assigné - Glissez des plongeurs ici</li>';
     } else {
-      plongeursHTML = palanquee.map((plongeur, plongeurIndex) => `
+      // Trier les plongeurs par niveau dans l'affichage
+      const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
+      
+      const plongeursTriés = [...palanquee].sort((a, b) => {
+        const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
+        const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
+        return indexA - indexB;
+      });
+      
+      plongeursHTML = plongeursTriés.map((plongeur, sortedIndex) => {
+        // Retrouver l'index original pour les opérations
+        const originalIndex = palanquee.findIndex(p => p === plongeur);
+        
+        return `
         <li class="plongeur-item palanquee-plongeur-item" draggable="true" 
             data-type="palanquee" 
             data-palanquee-index="${index}" 
-            data-plongeur-index="${plongeurIndex}">
+            data-plongeur-index="${originalIndex}">
           <div class="plongeur-content">
             <span class="plongeur-nom">${plongeur.nom}</span>
             <input type="text" 
@@ -129,19 +142,26 @@ function renderPalanquees() {
                    value="${plongeur.pre || ''}" 
                    placeholder="PE40..."
                    title="Prérogatives du plongeur"
-                   onchange="updatePlongeurPrerogatives(${index}, ${plongeurIndex}, this.value)"
+                   onchange="updatePlongeurPrerogatives(${index}, ${originalIndex}, this.value)"
                    onclick="handlePalanqueeEdit(${index})" />
             <span class="plongeur-niveau">${plongeur.niveau}</span>
-            <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${plongeurIndex})" title="Remettre dans la liste principale">↩️</span>
+            <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
           </div>
         </li>
-      `).join('');
+      `;}).join('');
     }
+    
+    // Calculer les nouvelles statistiques avec les jeunes plongeurs
+    const detailedStats = typeof getDetailedStats === 'function' ? getDetailedStats(palanquee) : getBasicStats(palanquee);
     
     palanqueeDiv.innerHTML = `
       <div class="palanquee-title">
         <span>Palanquée ${index + 1} (${palanquee.length} plongeur${palanquee.length > 1 ? 's' : ''})</span>
         <button class="delete-palanquee" onclick="deletePalanquee(${index})" title="Supprimer cette palanquée">🗑️</button>
+      </div>
+      
+      <div class="palanquee-stats" style="font-size: 11px; color: #666; margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+        ${detailedStats}
       </div>
       
       <ul class="palanquee-plongeurs-list" style="list-style: none; padding: 0; margin: 10px 0;">
@@ -204,7 +224,25 @@ function renderPalanquees() {
   }
 }
 
-// ===== FONCTIONS DE MANIPULATION DES PALANQUÉES =====
+// ===== FONCTION DE STATISTIQUES DE BASE (FALLBACK) =====
+function getBasicStats(palanquee) {
+  if (!Array.isArray(palanquee)) return "Stats indisponibles";
+  
+  const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
+  const n1s = palanquee.filter(p => p && p.niveau === "N1");
+  const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
+  const jeunesPlongeurs = palanquee.filter(p => p && ["Plg.Or", "Plg.Ar", "Plg.Br"].includes(p.niveau));
+  
+  let display = `GP: ${gps.length} | N1: ${n1s.length} | Autonomes: ${autonomes.length}`;
+  
+  if (jeunesPlongeurs.length > 0) {
+    display += ` | Jeunes: ${jeunesPlongeurs.length}`;
+  }
+  
+  return display;
+}
+
+// ===== FONCTIONS DE MANIPULATION DES PALANQUÉES AVEC VALIDATION =====
 function deletePalanquee(index) {
   if (confirm(`Supprimer la palanquée ${index + 1} ?\n\nLes plongeurs seront remis dans la liste principale.`)) {
     // Remettre les plongeurs dans la liste principale
@@ -215,44 +253,3 @@ function deletePalanquee(index) {
           plongeursOriginaux.push(plongeur);
         }
       });
-    }
-    
-    // Supprimer la palanquée
-    palanquees.splice(index, 1);
-    syncToDatabase();
-  }
-}
-
-function returnPlongeurToMainList(palanqueeIndex, plongeurIndex) {
-  if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
-    const plongeur = palanquees[palanqueeIndex].splice(plongeurIndex, 1)[0];
-    plongeurs.push(plongeur);
-    plongeursOriginaux.push(plongeur);
-    syncToDatabase();
-  }
-}
-
-function updatePlongeurPrerogatives(palanqueeIndex, plongeurIndex, newValue) {
-  if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
-    palanquees[palanqueeIndex][plongeurIndex].pre = newValue.trim();
-    syncToDatabase();
-  }
-}
-
-function updatePalanqueeDetail(palanqueeIndex, property, newValue) {
-  if (palanquees[palanqueeIndex]) {
-    palanquees[palanqueeIndex][property] = newValue;
-    syncToDatabase();
-  }
-}
-
-// Fonction pour gérer l'édition avec système de verrous
-function handlePalanqueeEdit(palanqueeIndex) {
-  if (typeof interceptPalanqueeEdit === 'function') {
-    interceptPalanqueeEdit(palanqueeIndex, () => {
-      console.log(`Édition autorisée pour palanquée ${palanqueeIndex}`);
-    });
-  }
-}
-
-console.log("🎨 Module de rendu DOM chargé");
