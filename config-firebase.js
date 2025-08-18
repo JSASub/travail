@@ -95,7 +95,7 @@ auth.onAuthStateChanged(async (user) => {
     lockSystemInitialized = false;
     showAuthContainer();
   }
-});
+
 
 // ===== SYSTÈME DE VERROUILLAGE SÉCURISÉ =====
 
