@@ -1096,6 +1096,108 @@ function setupEventListeners() {
       });
     }
 
+    const refreshSessionsBtn = document.getElementById("refresh-sessions");
+    if (refreshSessionsBtn) {
+      refreshSessionsBtn.addEventListener("click", async () => {
+        try {
+          await populateSessionSelector();
+          await populateSessionsCleanupList();
+          console.log("✅ Sessions actualisées");
+        } catch (error) {
+          console.error("❌ Erreur actualisation sessions:", error);
+          handleError(error, "Actualisation sessions");
+        }
+      });
+    }
+
+    const saveSessionBtn = document.getElementById("save-session");
+    if (saveSessionBtn) {
+      saveSessionBtn.addEventListener("click", async () => {
+        try {
+          if (typeof saveSessionData === 'function') {
+            await saveSessionData();
+            alert("Session sauvegardée !");
+            await populateSessionSelector();
+            await populateSessionsCleanupList();
+            console.log("✅ Session sauvegardée");
+          }
+        } catch (error) {
+          console.error("❌ Erreur sauvegarde session:", error);
+          handleError(error, "Sauvegarde session");
+        }
+      });
+    }
+
+    // === NETTOYAGE SESSIONS ET DP ===
+    const selectAllSessionsBtn = document.getElementById("select-all-sessions");
+    if (selectAllSessionsBtn) {
+      selectAllSessionsBtn.addEventListener("click", () => {
+        selectAllSessions(true);
+      });
+    }
+
+    const selectNoneSessionsBtn = document.getElementById("select-none-sessions");
+    if (selectNoneSessionsBtn) {
+      selectNoneSessionsBtn.addEventListener("click", () => {
+        selectAllSessions(false);
+      });
+    }
+
+    const deleteSelectedSessionsBtn = document.getElementById("delete-selected-sessions");
+    if (deleteSelectedSessionsBtn) {
+      deleteSelectedSessionsBtn.addEventListener("click", () => {
+        deleteSelectedSessions();
+      });
+    }
+
+    const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
+    if (refreshSessionsListBtn) {
+      refreshSessionsListBtn.addEventListener("click", async () => {
+        await populateSessionsCleanupList();
+      });
+    }
+
+    const selectAllDPBtn = document.getElementById("select-all-dp");
+    if (selectAllDPBtn) {
+      selectAllDPBtn.addEventListener("click", () => {
+        selectAllDPs(true);
+      });
+    }
+
+    const selectNoneDPBtn = document.getElementById("select-none-dp");
+    if (selectNoneDPBtn) {
+      selectNoneDPBtn.addEventListener("click", () => {
+        selectAllDPs(false);
+      });
+    }
+
+    const deleteSelectedDPBtn = document.getElementById("delete-selected-dp");
+    if (deleteSelectedDPBtn) {
+      deleteSelectedDPBtn.addEventListener("click", () => {
+        deleteSelectedDPs();
+      });
+    }
+
+    const refreshDPListBtn = document.getElementById("refresh-dp-list");
+    if (refreshDPListBtn) {
+      refreshDPListBtn.addEventListener("click", async () => {
+        await populateDPCleanupList();
+      });
+    }
+
+    // Event listeners pour les checkboxes de nettoyage
+    document.addEventListener('change', (e) => {
+      try {
+        if (e.target.classList.contains('session-cleanup-checkbox') || 
+            e.target.classList.contains('dp-cleanup-checkbox')) {
+          updateCleanupSelection();
+        }
+      } catch (error) {
+        console.error("❌ Erreur checkbox cleanup:", error);
+        handleError(error, "Checkbox cleanup");
+      }
+    });
+
     // === TEST FIREBASE SÉCURISÉ ===
     const testFirebaseBtn = document.getElementById("test-firebase");
     if (testFirebaseBtn) {
@@ -1291,11 +1393,381 @@ async function supprimerDPSelectionne(dpKey) {
   }
 }
 
+// ===== GESTION DES SESSIONS =====
+async function populateSessionSelector() {
+  console.log("📋 Chargement des sessions disponibles...");
+  
+  const sessionSelector = document.getElementById("session-selector");
+  if (!sessionSelector) {
+    console.error("❌ Élément session-selector non trouvé");
+    return;
+  }
+  
+  // Vider le sélecteur
+  sessionSelector.innerHTML = '<option value="">-- Charger une session --</option>';
+  
+  try {
+    if (typeof loadAvailableSessions === 'function') {
+      const sessions = await loadAvailableSessions();
+      
+      if (sessions.length === 0) {
+        sessionSelector.innerHTML += '<option disabled>Aucune session disponible</option>';
+        console.log("ℹ️ Aucune session trouvée");
+        return;
+      }
+      
+      sessions.forEach(session => {
+        const option = document.createElement("option");
+        option.value = session.key;
+        option.textContent = `${session.date} - ${session.dp} - ${session.lieu} (${session.plongee})`;
+        sessionSelector.appendChild(option);
+      });
+      
+      console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
+      
+    } else {
+      // Fallback : charger directement depuis Firebase
+      if (typeof db !== 'undefined' && db) {
+        const snapshot = await db.ref('sessions').once('value');
+        
+        if (!snapshot.exists()) {
+          sessionSelector.innerHTML += '<option disabled>Aucune session trouvée</option>';
+          return;
+        }
+        
+        const sessions = snapshot.val();
+        const sessionsList = [];
+        
+        Object.entries(sessions).forEach(([key, sessionData]) => {
+          if (sessionData && sessionData.meta) {
+            sessionsList.push({
+              key: key,
+              dp: sessionData.meta.dp || "DP inconnu",
+              date: sessionData.meta.date || "Date inconnue", 
+              lieu: sessionData.meta.lieu || "Lieu inconnu",
+              plongee: sessionData.meta.plongee || "matin",
+              timestamp: sessionData.meta.timestamp || 0
+            });
+          }
+        });
+        
+        // Trier par date décroissante
+        sessionsList.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateB - dateA;
+        });
+        
+        sessionsList.forEach(session => {
+          const option = document.createElement("option");
+          option.value = session.key;
+          option.textContent = `${session.date} - ${session.dp} - ${session.lieu} (${session.plongee})`;
+          sessionSelector.appendChild(option);
+        });
+        
+        console.log(`✅ ${sessionsList.length} sessions chargées (fallback)`);
+      } else {
+        sessionSelector.innerHTML += '<option disabled>Firebase non disponible</option>';
+        console.warn("⚠️ Firebase non disponible pour charger les sessions");
+      }
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement sessions:", error);
+    handleError(error, "Chargement sessions");
+    sessionSelector.innerHTML += '<option disabled>Erreur de chargement</option>';
+  }
+}
+
+async function populateSessionsCleanupList() {
+  console.log("🧹 Chargement de la liste de nettoyage des sessions...");
+  
+  const cleanupList = document.getElementById("sessions-cleanup-list");
+  if (!cleanupList) {
+    console.error("❌ Élément sessions-cleanup-list non trouvé");
+    return;
+  }
+  
+  cleanupList.innerHTML = '<em>Chargement des sessions...</em>';
+  
+  try {
+    const sessions = typeof loadAvailableSessions === 'function' ? 
+      await loadAvailableSessions() : 
+      await loadSessionsDirectly();
+    
+    if (sessions.length === 0) {
+      cleanupList.innerHTML = '<em>Aucune session trouvée</em>';
+      return;
+    }
+    
+    let html = '';
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.timestamp || Date.now()).toLocaleDateString('fr-FR');
+      html += `
+        <label class="cleanup-item">
+          <input type="checkbox" class="session-cleanup-checkbox" value="${session.key}">
+          <div class="item-info">
+            <span class="item-date">${session.date} - ${session.dp}</span>
+            <span class="item-details">${session.lieu} (${session.plongee})</span>
+            <span class="item-meta">Créé le ${sessionDate} | ${session.stats?.totalPlongeurs || 0} plongeurs</span>
+          </div>
+        </label>
+      `;
+    });
+    
+    cleanupList.innerHTML = html;
+    console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage`);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+    cleanupList.innerHTML = '<em>Erreur de chargement</em>';
+  }
+}
+
+async function loadSessionsDirectly() {
+  if (typeof db === 'undefined' || !db) {
+    return [];
+  }
+  
+  try {
+    const snapshot = await db.ref('sessions').once('value');
+    
+    if (!snapshot.exists()) {
+      return [];
+    }
+    
+    const sessions = snapshot.val();
+    const sessionsList = [];
+    
+    Object.entries(sessions).forEach(([key, sessionData]) => {
+      if (sessionData) {
+        sessionsList.push({
+          key: key,
+          dp: sessionData.meta?.dp || sessionData.dp || "DP inconnu",
+          date: sessionData.meta?.date || sessionData.date || "Date inconnue",
+          lieu: sessionData.meta?.lieu || sessionData.lieu || "Lieu inconnu", 
+          plongee: sessionData.meta?.plongee || sessionData.plongee || "matin",
+          timestamp: sessionData.meta?.timestamp || sessionData.timestamp || 0,
+          stats: sessionData.stats || {
+            totalPlongeurs: (sessionData.plongeurs || []).length + 
+              (sessionData.palanquees || []).reduce((sum, pal) => sum + (pal?.length || 0), 0)
+          }
+        });
+      }
+    });
+    
+    // Trier par date décroissante
+    sessionsList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB - dateA;
+    });
+    
+    return sessionsList;
+    
+  } catch (error) {
+    console.error("❌ Erreur loadSessionsDirectly:", error);
+    return [];
+  }
+}
+
+async function populateDPCleanupList() {
+  console.log("🧹 Chargement de la liste de nettoyage des DP...");
+  
+  const cleanupList = document.getElementById("dp-cleanup-list");
+  if (!cleanupList) {
+    console.error("❌ Élément dp-cleanup-list non trouvé");
+    return;
+  }
+  
+  cleanupList.innerHTML = '<em>Chargement des DP...</em>';
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      cleanupList.innerHTML = '<em>Firebase non disponible</em>';
+      return;
+    }
+    
+    const snapshot = await db.ref('dpInfo').once('value');
+    
+    if (!snapshot.exists()) {
+      cleanupList.innerHTML = '<em>Aucun DP trouvé</em>';
+      return;
+    }
+    
+    const dpInfos = snapshot.val();
+    const dpList = [];
+    
+    Object.entries(dpInfos).forEach(([key, dpData]) => {
+      if (dpData) {
+        dpList.push({
+          key: key,
+          nom: dpData.nom || "DP inconnu",
+          date: dpData.date || "Date inconnue",
+          lieu: dpData.lieu || "Lieu inconnu",
+          plongee: dpData.plongee || "matin",
+          timestamp: dpData.timestamp || 0
+        });
+      }
+    });
+    
+    // Trier par date décroissante
+    dpList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB - dateA;
+    });
+    
+    let html = '';
+    dpList.forEach(dp => {
+      const createdDate = new Date(dp.timestamp).toLocaleDateString('fr-FR');
+      html += `
+        <label class="cleanup-item">
+          <input type="checkbox" class="dp-cleanup-checkbox" value="${dp.key}">
+          <div class="item-info">
+            <span class="item-date">${dp.date} - ${dp.nom}</span>
+            <span class="item-details">${dp.lieu} (${dp.plongee})</span>
+            <span class="item-meta">Créé le ${createdDate}</span>
+          </div>
+        </label>
+      `;
+    });
+    
+    cleanupList.innerHTML = html;
+    console.log(`✅ ${dpList.length} DP dans la liste de nettoyage`);
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement liste nettoyage DP:", error);
+    cleanupList.innerHTML = '<em>Erreur de chargement</em>';
+  }
+}
+
+// Fonctions de nettoyage
+function selectAllSessions(select) {
+  const checkboxes = document.querySelectorAll('.session-cleanup-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = select;
+  });
+  updateCleanupSelection();
+}
+
+function selectAllDPs(select) {
+  const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = select;
+  });
+  updateCleanupSelection();
+}
+
+function updateCleanupSelection() {
+  const sessionCheckboxes = document.querySelectorAll('.session-cleanup-checkbox:checked');
+  const dpCheckboxes = document.querySelectorAll('.dp-cleanup-checkbox:checked');
+  
+  const deleteSessionsBtn = document.getElementById('delete-selected-sessions');
+  const deleteDPBtn = document.getElementById('delete-selected-dp');
+  
+  if (deleteSessionsBtn) {
+    deleteSessionsBtn.disabled = sessionCheckboxes.length === 0;
+    deleteSessionsBtn.textContent = `🗑️ Supprimer sélectionnées (${sessionCheckboxes.length})`;
+  }
+  
+  if (deleteDPBtn) {
+    deleteDPBtn.disabled = dpCheckboxes.length === 0;
+    deleteDPBtn.textContent = `🗑️ Supprimer sélectionnés (${dpCheckboxes.length})`;
+  }
+}
+
+async function deleteSelectedSessions() {
+  const checkboxes = document.querySelectorAll('.session-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucune session sélectionnée");
+    return;
+  }
+  
+  const confirmation = confirm(`⚠️ Supprimer ${checkboxes.length} session(s) ?\n\nCette action est irréversible !`);
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const promises = [];
+    checkboxes.forEach(checkbox => {
+      promises.push(db.ref(`sessions/${checkbox.value}`).remove());
+    });
+    
+    await Promise.all(promises);
+    
+    alert(`✅ ${checkboxes.length} session(s) supprimée(s) avec succès !`);
+    
+    // Recharger les listes
+    await populateSessionSelector();
+    await populateSessionsCleanupList();
+    
+    console.log(`✅ ${checkboxes.length} sessions supprimées`);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression sessions:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+async function deleteSelectedDPs() {
+  const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucun DP sélectionné");
+    return;
+  }
+  
+  const confirmation = confirm(`⚠️ Supprimer ${checkboxes.length} DP ?\n\nCette action est irréversible !`);
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const promises = [];
+    checkboxes.forEach(checkbox => {
+      promises.push(db.ref(`dpInfo/${checkbox.value}`).remove());
+    });
+    
+    await Promise.all(promises);
+    
+    alert(`✅ ${checkboxes.length} DP supprimé(s) avec succès !`);
+    
+    // Recharger les listes
+    await chargerHistoriqueDP();
+    await populateDPCleanupList();
+    
+    console.log(`✅ ${checkboxes.length} DP supprimés`);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
 // Export des fonctions globales
 window.chargerHistoriqueDP = chargerHistoriqueDP;
 window.afficherInfoDP = afficherInfoDP;
 window.chargerDonneesDPSelectionne = chargerDonneesDPSelectionne;
 window.supprimerDPSelectionne = supprimerDPSelectionne;
+window.populateSessionSelector = populateSessionSelector;
+window.populateSessionsCleanupList = populateSessionsCleanupList;
+window.populateDPCleanupList = populateDPCleanupList;
+window.selectAllSessions = selectAllSessions;
+window.selectAllDPs = selectAllDPs;
+window.updateCleanupSelection = updateCleanupSelection;
+window.deleteSelectedSessions = deleteSelectedSessions;
+window.deleteSelectedDPs = deleteSelectedDPs;
 
 // ===== INITIALISATION SÉCURISÉE DE L'APPLICATION =====
 document.addEventListener('DOMContentLoaded', async () => {
