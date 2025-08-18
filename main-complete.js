@@ -243,7 +243,7 @@ function generatePDFPreview() {
     const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // NOUVEAU: Fonction de tri par grade pour l'aperçu
+    // Fonction de tri par grade pour l'aperçu
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -257,7 +257,6 @@ function generatePDFPreview() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
-          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -368,9 +367,53 @@ function generatePDFPreview() {
         .alert-title {
           color: #dc3545 !important;
         }
+        /* NOUVEAU: Styles pour le bouton de fermeture */
+        .preview-controls {
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 1000;
+          display: flex;
+          gap: 10px;
+        }
+        .close-preview-btn {
+          background: #dc3545;
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          transition: all 0.2s ease;
+        }
+        .close-preview-btn:hover {
+          background: #c82333;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .print-preview-btn {
+          background: #28a745;
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          transition: all 0.2s ease;
+        }
+        .print-preview-btn:hover {
+          background: #218838;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
+          .preview-controls { display: none !important; }
         }
       </style>
     `;
@@ -381,9 +424,17 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
+    // NOUVEAU: Ajouter les contrôles de l'aperçu
+    htmlContent += `
+      <div class="preview-controls">
+        <button class="print-preview-btn" onclick="window.print()">🖨️ Imprimer</button>
+        <button class="close-preview-btn" onclick="parent.closePDFPreview()">✕ Fermer</button>
+      </div>
+    `;
+    
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
+    htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
     htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
     htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
@@ -424,7 +475,7 @@ function generatePDFPreview() {
           if (pal.length === 0) {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            // MODIFICATION: Trier les plongeurs par grade avant affichage
+            // Trier les plongeurs par grade avant affichage
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -452,7 +503,7 @@ function generatePDFPreview() {
       htmlContent += '<section class="section">';
       htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
       
-      // MODIFICATION: Trier aussi les plongeurs en attente par grade
+      // Trier aussi les plongeurs en attente par grade
       const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
       plongeursEnAttenteTriés.forEach(p => {
@@ -489,7 +540,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade");
+      console.log("✅ Aperçu PDF généré avec bouton de fermeture");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -502,6 +553,24 @@ function generatePDFPreview() {
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
+
+function closePDFPreview() {
+  const previewContainer = document.getElementById("previewContainer");
+  if (previewContainer) {
+    previewContainer.style.display = "none";
+    
+    // Faire défiler vers le haut de la page
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
+    console.log("✅ Aperçu PDF fermé");
+  }
+}
+
+// Export de la fonction pour usage global
+window.closePDFPreview = closePDFPreview;
 
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
@@ -727,7 +796,7 @@ function exportToPDF() {
         
         addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 6, 10, 'normal', 'white'); // Position Y ajustée
         
-        yPosition += 12; // Espacement encore plus réduit de 15 à 12
+        yPosition += 14; // Espacement entre cadre bleu et premier plongeur
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
