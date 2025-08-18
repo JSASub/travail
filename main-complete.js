@@ -805,186 +805,79 @@ function exportToPDF() {
 }
 
 // ===== DRAG & DROP SÉCURISÉ =====
-
 // Variables globales pour le drag & drop
 let dragData = null;
 
 function setupDragAndDrop() {
+  console.log("🎯 Configuration du drag & drop...");
+  
   // Event delegation pour dragstart
-document.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  
-  const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-  if (!dropZone) return;
-  
-  dropZone.classList.remove('drag-over');
-  
-  // Récupérer les données de drag
-  let data = dragData;
-  
-  // Fallback vers dataTransfer si dragData n'est pas disponible
-  if (!data && e.dataTransfer) {
-    try {
-      const dataStr = e.dataTransfer.getData("text/plain");
-      if (dataStr) {
-        data = JSON.parse(dataStr);
-      }
-    } catch (error) {
-      console.warn("⚠️ Erreur parsing dataTransfer:", error);
-    }
-  }
-  
-  if (!data) {
-    console.warn("⚠️ Aucune donnée de drag disponible");
-    return;
-  }
-  
-  // S'assurer que les variables globales existent
-  if (typeof plongeurs === 'undefined') window.plongeurs = [];
-  if (typeof palanquees === 'undefined') window.palanquees = [];
-  if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
-  
-  // Gestion du drop vers la liste principale
-  if (dropZone.id === 'listePlongeurs') {
-    if (data.type === "fromPalanquee") {
-      // Vérifier le verrou
-      if (typeof window.acquirePalanqueeLock === 'function') {
-        const hasLock = await window.acquirePalanqueeLock(data.palanqueeIndex);
-        if (!hasLock) {
-          console.warn("⚠️ Verrou non acquis pour retour vers liste");
-          return;
-        }
-      }
-      
-      if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-        const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-        plongeurs.push(plongeur);
-        plongeursOriginaux.push(plongeur);
-        if (typeof syncToDatabase === 'function') {
-          syncToDatabase();
-        }
-      }
-    }
-    return;
-  }
-  
-  // Gestion du drop vers une palanquée
-  const palanqueeIndex = parseInt(dropZone.dataset.index);
-  if (isNaN(palanqueeIndex)) return;
-  
-  // Vérifier le verrou
-  if (typeof window.acquirePalanqueeLock === 'function') {
-    const hasLock = await window.acquirePalanqueeLock(palanqueeIndex);
-    if (!hasLock) {
-      console.warn("⚠️ Verrou non acquis pour ajout à palanquée");
-      return;
-    }
-  }
-  
-  const targetPalanquee = palanquees[palanqueeIndex];
-  if (!targetPalanquee) return;
-  
-  if (data.type === "fromMainList") {
-    const indexToRemove = plongeurs.findIndex(p => 
-      p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-    );
+  document.addEventListener('dragstart', (e) => {
+    if (!e.target.classList.contains('plongeur-item')) return;
     
-    if (indexToRemove !== -1) {
-      plongeurs.splice(indexToRemove, 1);
-      targetPalanquee.push(data.plongeur);
-      if (typeof syncToDatabase === 'function') {
-        syncToDatabase();
+    console.log("🎯 Drag started");
+    e.target.classList.add('dragging');
+    e.target.style.opacity = '0.5';
+    
+    // Récupérer les données selon le type d'élément
+    const isFromPalanquee = e.target.dataset.type === 'palanquee';
+    
+    if (isFromPalanquee) {
+      const palanqueeIndex = parseInt(e.target.dataset.palanqueeIndex);
+      const plongeurIndex = parseInt(e.target.dataset.plongeurIndex);
+      
+      if (typeof palanquees !== 'undefined' && palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+        dragData = {
+          type: "fromPalanquee",
+          palanqueeIndex: palanqueeIndex,
+          plongeurIndex: plongeurIndex,
+          plongeur: palanquees[palanqueeIndex][plongeurIndex]
+        };
+        console.log("📦 Drag depuis palanquée:", dragData);
+      }
+    } else {
+      const index = parseInt(e.target.dataset.index);
+      if (typeof plongeurs !== 'undefined' && plongeurs[index]) {
+        dragData = {
+          type: "fromMainList",
+          plongeur: plongeurs[index],
+          originalIndex: index
+        };
+        console.log("📦 Drag depuis liste principale:", dragData);
       }
     }
-  } else if (data.type === "fromPalanquee") {
-    if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
-      const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-      targetPalanquee.push(plongeur);
-      if (typeof syncToDatabase === 'function') {
-        syncToDatabase();
+    
+    // Stocker dans dataTransfer si disponible
+    if (e.dataTransfer && dragData) {
+      try {
+        e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+        e.dataTransfer.effectAllowed = "move";
+      } catch (error) {
+        console.warn("⚠️ Erreur dataTransfer:", error);
       }
     }
-  }
-});
-
-// ===== FONCTION UTILITAIRE POUR AFFICHER UN RÉSUMÉ DES RÈGLES =====
-function showSecurityRulesHelper() {
-  const rulesText = `
-🛡️ RÈGLES DE SÉCURITÉ FFESSM
-
-📋 COMPOSITION DES PALANQUÉES :
-• Maximum 5 plongeurs par palanquée
-• Minimum 2 plongeurs par palanquée
-
-👥 ENCADREMENT OBLIGATOIRE :
-• N1 et Plongeurs Or → Guide de Palanquée (GP/E2/E3/E4)
-• Débutants → Guide de Palanquée
-• Plongeurs Bronze → GP + Max 2 par palanquée
-• Plongeurs Argent → GP + Max 2 par palanquée
-
-🏊 PLONGEURS AUTONOMES :
-• N2 et N3 → Maximum 3 par palanquée
-• Peuvent plonger sans GP (entre eux)
-
-👶 RÈGLES JEUNES PLONGEURS :
-• Mélange jeunes/adultes → Max 3 plongeurs (dont 2 jeunes max)
-• Palanquée uniquement jeunes → 2 jeunes + 1 GP
-
-⚠️ Les alertes rouges indiquent les non-conformités
-✅ Les palanquées vertes respectent toutes les règles
-  `;
-  
-  alert(rulesText);
-}
-
-// Ajouter un bouton d'aide (optionnel)
-function addSecurityHelpButton() {
-  const helpButton = document.createElement('button');
-  helpButton.innerHTML = '🛡️ Règles de sécurité';
-  helpButton.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: #17a2b8;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 12px;
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  `;
-  helpButton.onclick = showSecurityRulesHelper;
-  document.body.appendChild(helpButton);
-}
-
-// Auto-ajouter le bouton d'aide
-setTimeout(() => {
-  if (document.getElementById('main-app')) {
-    addSecurityHelpButton();
-  }
-}, 3000);
-
+  });
   
   // Event delegation pour dragend
   document.addEventListener('dragend', (e) => {
     if (e.target.classList.contains('plongeur-item')) {
       e.target.classList.remove('dragging');
       e.target.style.opacity = '1';
+      console.log("🎯 Drag ended");
     }
     dragData = null;
   });
   
-  // Event delegation pour dragover
+  // Event delegation pour dragover - TRÈS IMPORTANT
   document.addEventListener('dragover', (e) => {
     const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
     if (dropZone) {
-      e.preventDefault();
+      e.preventDefault(); // CRUCIAL pour permettre le drop
       if (e.dataTransfer) {
         e.dataTransfer.dropEffect = "move";
       }
       dropZone.classList.add('drag-over');
+      // console.log("🎯 Dragover sur:", dropZone.id || dropZone.className);
     }
   });
   
@@ -999,11 +892,16 @@ setTimeout(() => {
   // Event delegation pour drop
   document.addEventListener('drop', async (e) => {
     e.preventDefault();
+    console.log("🎯 Drop détecté");
     
     const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-    if (!dropZone) return;
+    if (!dropZone) {
+      console.warn("⚠️ Aucune zone de drop trouvée");
+      return;
+    }
     
     dropZone.classList.remove('drag-over');
+    console.log("🎯 Drop zone:", dropZone.id || dropZone.className);
     
     // Récupérer les données de drag
     let data = dragData;
@@ -1014,6 +912,7 @@ setTimeout(() => {
         const dataStr = e.dataTransfer.getData("text/plain");
         if (dataStr) {
           data = JSON.parse(dataStr);
+          console.log("📦 Données récupérées depuis dataTransfer:", data);
         }
       } catch (error) {
         console.warn("⚠️ Erreur parsing dataTransfer:", error);
@@ -1025,6 +924,8 @@ setTimeout(() => {
       return;
     }
     
+    console.log("📦 Données de drop:", data);
+    
     // S'assurer que les variables globales existent
     if (typeof plongeurs === 'undefined') window.plongeurs = [];
     if (typeof palanquees === 'undefined') window.palanquees = [];
@@ -1032,6 +933,7 @@ setTimeout(() => {
     
     // Gestion du drop vers la liste principale
     if (dropZone.id === 'listePlongeurs') {
+      console.log("🎯 Drop vers liste principale");
       if (data.type === "fromPalanquee") {
         // Vérifier le verrou
         if (typeof window.acquirePalanqueeLock === 'function') {
@@ -1046,6 +948,7 @@ setTimeout(() => {
           const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
           plongeurs.push(plongeur);
           plongeursOriginaux.push(plongeur);
+          console.log("✅ Plongeur remis dans liste principale:", plongeur.nom);
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
@@ -1056,7 +959,12 @@ setTimeout(() => {
     
     // Gestion du drop vers une palanquée
     const palanqueeIndex = parseInt(dropZone.dataset.index);
-    if (isNaN(palanqueeIndex)) return;
+    if (isNaN(palanqueeIndex)) {
+      console.warn("⚠️ Index de palanquée invalide:", dropZone.dataset.index);
+      return;
+    }
+    
+    console.log("🎯 Drop vers palanquée", palanqueeIndex);
     
     // Vérifier le verrou
     if (typeof window.acquirePalanqueeLock === 'function') {
@@ -1068,9 +976,13 @@ setTimeout(() => {
     }
     
     const targetPalanquee = palanquees[palanqueeIndex];
-    if (!targetPalanquee) return;
+    if (!targetPalanquee) {
+      console.warn("⚠️ Palanquée cible non trouvée:", palanqueeIndex);
+      return;
+    }
     
     if (data.type === "fromMainList") {
+      console.log("🎯 Ajout depuis liste principale");
       const indexToRemove = plongeurs.findIndex(p => 
         p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
       );
@@ -1078,20 +990,25 @@ setTimeout(() => {
       if (indexToRemove !== -1) {
         plongeurs.splice(indexToRemove, 1);
         targetPalanquee.push(data.plongeur);
+        console.log("✅ Plongeur ajouté à palanquée:", data.plongeur.nom);
         if (typeof syncToDatabase === 'function') {
           syncToDatabase();
         }
       }
     } else if (data.type === "fromPalanquee") {
+      console.log("🎯 Déplacement entre palanquées");
       if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
         const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
         targetPalanquee.push(plongeur);
+        console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
         if (typeof syncToDatabase === 'function') {
           syncToDatabase();
         }
       }
     }
   });
+  
+  console.log("✅ Drag & drop configuré");
 }
 
 // ===== EVENT HANDLERS =====
