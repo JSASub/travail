@@ -624,13 +624,23 @@ function exportToPDF() {
         
         yPosition += 20;
         
-        // Liste des plongeurs
+        // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
           yPosition += spacing.lineHeight + 4; // Espacement réduit pour cohérence
         } else {
-          for (let j = 0; j < pal.length; j++) {
-            const p = pal[j];
+          // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
+          const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
+          
+          // Fonction de tri par niveau
+          const plongeursTriés = [...pal].sort((a, b) => {
+            const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
+            const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
+            return indexA - indexB;
+          });
+          
+          for (let j = 0; j < plongeursTriés.length; j++) {
+            const p = plongeursTriés[j];
             if (!p || !p.nom) continue;
             
             const nomClean = p.nom.replace(/'/g, "'");
@@ -659,12 +669,12 @@ function exportToPDF() {
           addText('Correction: ', margin + 80, yPosition, 9, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 105, yPosition + 1, margin + 130, yPosition + 1);
+          doc.line(margin + 105, yPosition - 1, margin + 140, yPosition - 1);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 50, yPosition + 1, margin + 75, yPosition + 1);
-          addText('(HH:MM)', margin + 78, yPosition, 9, 'normal', 'gray');
+          doc.line(margin + 50, yPosition - 1, margin + 85, yPosition - 1);
+          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
         }
         yPosition += 5; // Espacement réduit
         
@@ -674,37 +684,41 @@ function exportToPDF() {
           addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 10, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 35, yPosition + 1, margin + 50, yPosition + 1);
-          addText('m', margin + 52, yPosition, 10, 'normal', 'gray');
+          doc.setLineWidth(0.3);
+          doc.line(margin + 35, yPosition - 1, margin + 55, yPosition - 1);
+          addText('m', margin + 57, yPosition, 10, 'normal', 'gray');
         }
         
         addText('Durée prévue:', margin + 80, yPosition, 11, 'bold', 'primary');
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 110, yPosition, 10, 'normal');
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 10, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 110, yPosition + 1, margin + 125, yPosition + 1);
-          addText('min', margin + 127, yPosition, 10, 'normal', 'gray');
+          doc.setLineWidth(0.3);
+          doc.line(margin + 115, yPosition - 1, margin + 140, yPosition - 1);
+          addText('min', margin + 142, yPosition, 10, 'normal', 'gray');
         }
         yPosition += 5; // Espacement réduit
         
         // Ligne 3: Profondeurs et durées réalisées
         addText('Prof. réalisée:', margin + 5, yPosition, 11, 'bold', 'success');
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 38, yPosition, 10, 'normal');
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 10, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 38, yPosition + 1, margin + 53, yPosition + 1);
-          addText('m', margin + 55, yPosition, 10, 'normal', 'gray');
+          doc.setLineWidth(0.3);
+          doc.line(margin + 40, yPosition - 1, margin + 60, yPosition - 1);
+          addText('m', margin + 62, yPosition, 10, 'normal', 'gray');
         }
         
         addText('Durée réalisée:', margin + 80, yPosition, 11, 'bold', 'success');
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 115, yPosition, 10, 'normal');
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 10, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
-          doc.line(margin + 115, yPosition + 1, margin + 130, yPosition + 1);
-          addText('min', margin + 132, yPosition, 10, 'normal', 'gray');
+          doc.setLineWidth(0.3);
+          doc.line(margin + 120, yPosition - 1, margin + 145, yPosition - 1);
+          addText('min', margin + 147, yPosition, 10, 'normal', 'gray');
         }
         yPosition += 5; // Espacement réduit
         
@@ -717,13 +731,13 @@ function exportToPDF() {
           addText('Correction:', margin + 80, yPosition, 10, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 105, yPosition + 1, margin + 160, yPosition + 1);
+          doc.line(margin + 110, yPosition - 1, margin + 160, yPosition - 1);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 25, yPosition + 1, margin + 75, yPosition + 1);
+          doc.line(margin + 25, yPosition - 1, margin + 75, yPosition - 1);
           addText('(ex: 3 min à 3 m) | Correction:', margin + 80, yPosition, 9, 'normal', 'gray');
-          doc.line(margin + 135, yPosition + 1, margin + 165, yPosition + 1);
+          doc.line(margin + 140, yPosition - 1, margin + 170, yPosition - 1);
         }
         yPosition += spacing.lineHeight + spacing.sectionGap;
       }
