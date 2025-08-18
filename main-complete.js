@@ -554,23 +554,7 @@ function generatePDFPreview() {
   }
 }
 
-function closePDFPreview() {
-  const previewContainer = document.getElementById("previewContainer");
-  if (previewContainer) {
-    previewContainer.style.display = "none";
-    
-    // Faire défiler vers le haut de la page
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-    
-    console.log("✅ Aperçu PDF fermé");
-  }
-}
 
-// Export de la fonction pour usage global
-window.closePDFPreview = closePDFPreview;
 
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
