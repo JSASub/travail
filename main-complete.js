@@ -596,8 +596,8 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // Calculer la hauteur nécessaire pour cette palanquée (RÉDUITE)
-        let palanqueeHeight = 18; // Header réduit de 25 à 18
+        // Calculer la hauteur nécessaire pour cette palanquée (TRÈS RÉDUITE)
+        let palanqueeHeight = 14; // Header encore plus réduit de 18 à 14
         palanqueeHeight += (pal.length * spacing.lineHeight) + 4; // Plongeurs + espacement réduit
         palanqueeHeight += 30; // Paramètres (4 lignes au lieu de 5) - encore réduit
         palanqueeHeight += spacing.sectionGap; // Espacement final
@@ -606,23 +606,23 @@ function exportToPDF() {
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée RÉDUIT
+        // En-tête de palanquée TRÈS RÉDUIT
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 12, 'F'); // Hauteur réduite de 15 à 12
+        doc.rect(margin, yPosition, contentWidth, 8, 'F'); // Hauteur drastiquement réduite de 12 à 8
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8, 12, 'bold', 'white'); // Position Y ajustée
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 6, 12, 'bold', 'white'); // Position Y ajustée
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8, 10, 'normal', 'white'); // Position Y ajustée
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 6, 10, 'normal', 'white'); // Position Y ajustée
         
-        yPosition += 15; // Espacement réduit de 20 à 15
+        yPosition += 12; // Espacement encore plus réduit de 15 à 12
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
@@ -676,7 +676,7 @@ function exportToPDF() {
           doc.line(margin + 50, yPosition - 1, margin + 85, yPosition - 1);
           addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 5; // Espacement réduit
+        yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 2: Profondeurs et durées prévues
         addText('Prof. prévue: ', margin + 5, yPosition, 11, 'bold', 'primary');
@@ -698,7 +698,7 @@ function exportToPDF() {
           doc.line(margin + 115, yPosition - 1, margin + 140, yPosition - 1);
           addText('min', margin + 142, yPosition, 10, 'normal', 'gray');
         }
-        yPosition += 5; // Espacement réduit
+        yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 3: Profondeurs et durées réalisées
         addText('Prof. réalisée:', margin + 5, yPosition, 11, 'bold', 'success');
@@ -720,24 +720,24 @@ function exportToPDF() {
           doc.line(margin + 120, yPosition - 1, margin + 145, yPosition - 1);
           addText('min', margin + 147, yPosition, 10, 'normal', 'gray');
         }
-        yPosition += 5; // Espacement réduit
+        yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 4: Paliers
         addText('Paliers:', margin + 5, yPosition, 11, 'bold', 'primary');
         
         if (pal.paliers && pal.paliers.trim()) {
           addText(pal.paliers, margin + 25, yPosition, 10, 'normal');
-          // Correction sur la même ligne
-          addText('Correction:', margin + 80, yPosition, 10, 'bold', 'gray');
+          // Correction rapprochée
+          addText('Correction:', margin + 70, yPosition, 10, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 110, yPosition - 1, margin + 160, yPosition - 1);
+          doc.line(margin + 95, yPosition - 1, margin + 160, yPosition - 1);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 25, yPosition - 1, margin + 75, yPosition - 1);
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 80, yPosition, 9, 'normal', 'gray');
-          doc.line(margin + 140, yPosition - 1, margin + 170, yPosition - 1);
+          doc.line(margin + 25, yPosition - 1, margin + 65, yPosition - 1);
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 9, 'normal', 'gray');
+          doc.line(margin + 130, yPosition - 1, margin + 170, yPosition - 1);
         }
         yPosition += spacing.lineHeight + spacing.sectionGap;
       }
