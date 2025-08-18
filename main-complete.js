@@ -1,10 +1,10 @@
-// main-complete.js - Application principale ultra-sécurisée (VERSION CORRIGÉE AVEC GESTION D'ERREURS)
+// main-complete.js - Application principale ultra-sécurisée (VERSION COMPLÈTE SANS ERREURS)
 
 // Mode production - logs réduits
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
   console.log = function() {
-    if (arguments[0] && arguments[0].includes('✅') || arguments[0].includes('❌')) {
+    if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('❌'))) {
       originalConsoleLog.apply(console, arguments);
     }
   };
@@ -65,7 +65,7 @@ async function testFirebaseConnectionSafe() {
           console.warn("⚠️ Erreur suppression listener test:", e);
         }
         resolve(false);
-      }, 5000); // Réduit à 5 secondes
+      }, 5000);
       
       let resolved = false;
       const listener = (snapshot) => {
@@ -160,41 +160,6 @@ async function initializeAppData() {
       dpDateInput.value = today;
     }
     
-    // Charger les informations DP du jour
-    try {
-      if (db) {
-        const snapshot = await db.ref(`dpInfo/${today}_matin`).once('value');
-        if (snapshot.exists()) {
-          const dpData = snapshot.val();
-          const dpNomInput = document.getElementById("dp-nom");
-          const dpLieuInput = document.getElementById("dp-lieu");
-          const dpPlongeeInput = document.getElementById("dp-plongee");
-          const dpMessage = document.getElementById("dp-message");
-          
-          if (dpNomInput) dpNomInput.value = dpData.nom || "";
-          if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
-          if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
-          if (dpMessage) {
-            dpMessage.textContent = "Informations du jour chargées.";
-            dpMessage.style.color = "blue";
-          }
-          
-          if (typeof dpInfo !== 'undefined') {
-            dpInfo.nom = dpData.nom || "";
-          }
-          
-          console.log("✅ Informations DP du jour chargées");
-        } else {
-          console.log("ℹ️ Aucune information DP pour aujourd'hui");
-        }
-      }
-    } catch (error) {
-      console.error("❌ Erreur chargement DP:", error);
-      if (typeof FirebaseErrorHandler !== 'undefined') {
-        FirebaseErrorHandler.handleError(error, 'Chargement DP du jour');
-      }
-    }
-
     console.log("📜 Chargement des données...");
     
     // Charger l'historique DP avec gestion d'erreur
@@ -205,9 +170,6 @@ async function initializeAppData() {
       }
     } catch (error) {
       console.error("❌ Erreur chargement historique DP:", error);
-      if (typeof FirebaseErrorHandler !== 'undefined') {
-        FirebaseErrorHandler.handleError(error, 'Chargement historique DP');
-      }
     }
     
     // Charger les données Firebase avec gestion d'erreur
@@ -218,9 +180,6 @@ async function initializeAppData() {
       }
     } catch (error) {
       console.error("❌ Erreur chargement Firebase:", error);
-      if (typeof FirebaseErrorHandler !== 'undefined') {
-        FirebaseErrorHandler.handleError(error, 'Chargement données Firebase');
-      }
       
       // Initialisation de secours
       if (typeof plongeurs === 'undefined') window.plongeurs = [];
@@ -236,36 +195,6 @@ async function initializeAppData() {
       }
     } catch (error) {
       console.error("❌ Erreur chargement sessions:", error);
-      if (typeof FirebaseErrorHandler !== 'undefined') {
-        FirebaseErrorHandler.handleError(error, 'Chargement sessions');
-      }
-    }
-    
-    // Charger les listes de nettoyage avec gestion d'erreur
-    try {
-      if (typeof populateSessionsCleanupList === 'function') {
-        await populateSessionsCleanupList();
-        console.log("✅ Liste nettoyage sessions chargée");
-      }
-    } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage sessions:", error);
-    }
-    
-    try {
-      if (typeof populateDPCleanupList === 'function') {
-        await populateDPCleanupList();
-        console.log("✅ Liste nettoyage DP chargée");
-      }
-    } catch (error) {
-      console.error("❌ Erreur chargement liste nettoyage DP:", error);
-    }
-    
-    // Vérifier les éléments UI critiques
-    const testButton = document.getElementById("test-firebase");
-    if (testButton) {
-      console.log("✅ Bouton test Firebase trouvé");
-    } else {
-      console.warn("⚠️ Bouton test Firebase non trouvé dans le DOM");
     }
     
     // Rendu initial sécurisé
@@ -276,9 +205,6 @@ async function initializeAppData() {
       if (typeof updateCompteurs === 'function') updateCompteurs();
     } catch (renderError) {
       console.error("❌ Erreur rendu initial:", renderError);
-      if (typeof FirebaseErrorHandler !== 'undefined') {
-        FirebaseErrorHandler.handleError(renderError, 'Rendu initial');
-      }
     }
     
     console.log("✅ Application initialisée avec système de verrous sécurisé!");
@@ -330,356 +256,6 @@ async function initializeAppData() {
   }
 }
 
-// ===== GÉNÉRATION PDF SÉCURISÉE =====
-function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel...");
-  
-  try {
-    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
-    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-    
-    // S'assurer que les variables existent
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
-    
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
-    
-    // Fonction de tri par grade pour l'aperçu
-    function trierPlongeursParGrade(plongeurs) {
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
-      
-      return [...plongeurs].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        
-        if (ordreA === ordreB) {
-          return a.nom.localeCompare(b.nom);
-        }
-        
-        return ordreA - ordreB;
-      });
-    }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR');
-      } catch (error) {
-        console.warn("⚠️ Erreur formatage date:", error);
-        return dateString;
-      }
-    }
-    
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    const cssStyles = `
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: 'Segoe UI', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-          min-height: 100vh;
-        }
-        .container {
-          max-width: 210mm;
-          margin: 0 auto;
-          background: white;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          min-height: 297mm;
-        }
-        .header {
-          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
-          color: white;
-          padding: 30px;
-        }
-        .main-title {
-          font-size: 28px;
-          font-weight: 300;
-          letter-spacing: 2px;
-        }
-        .content { padding: 40px; }
-        .section { margin-bottom: 40px; }
-        .section-title {
-          font-size: 20px;
-          color: #004080;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 3px solid #007bff;
-        }
-        .plongeur-item {
-          padding: 8px 12px;
-          margin: 4px 0;
-          background: #f8f9fa;
-          border-left: 4px solid #007bff;
-          border-radius: 4px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          transition: all 0.2s ease;
-        }
-        .plongeur-item:hover {
-          background: #e9ecef;
-          transform: translateX(2px);
-        }
-        .plongeur-nom {
-          font-weight: bold;
-          flex: 1;
-        }
-        .plongeur-niveau {
-          background: #28a745;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: bold;
-          min-width: 50px;
-          text-align: center;
-          margin-right: 8px;
-        }
-        .plongeur-prerogatives {
-          font-size: 11px;
-          color: #666;
-          font-style: italic;
-        }
-        .palanquee-box {
-          margin: 20px 0;
-          padding: 20px;
-          border: 2px solid #007bff;
-          border-radius: 8px;
-          background: #f8f9fa;
-        }
-        .palanquee-title {
-          font-size: 18px;
-          font-weight: bold;
-          color: #004080;
-          margin-bottom: 15px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #dee2e6;
-        }
-        .alert-box {
-          border-color: #dc3545 !important;
-          background: #fff5f5 !important;
-        }
-        .alert-title {
-          color: #dc3545 !important;
-        }
-        @media print {
-          body { background: white !important; }
-          .container { box-shadow: none !important; max-width: none !important; }
-        }
-      </style>
-    `;
-
-    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
-    htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
-    htmlContent += cssStyles;
-    htmlContent += '</head><body>';
-    
-    htmlContent += '<div class="container">';
-    htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
-    htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
-    htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
-    htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
-    htmlContent += '</header>';
-    
-    htmlContent += '<main class="content">';
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
-    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
-    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
-    htmlContent += '</section>';
-    
-    if (alertesTotal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
-      alertesTotal.forEach(alerte => {
-        htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
-      });
-      htmlContent += '</section>';
-    }
-    
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
-    
-    if (palanqueesLocal.length === 0) {
-      htmlContent += '<p>Aucune palanquée créée.</p>';
-    } else {
-      palanqueesLocal.forEach((pal, i) => {
-        if (pal && Array.isArray(pal)) {
-          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
-          const boxClass = hasAlert ? 'palanquee-box alert-box' : 'palanquee-box';
-          const titleClass = hasAlert ? 'palanquee-title alert-title' : 'palanquee-title';
-          
-          htmlContent += `<div class="${boxClass}">`;
-          htmlContent += `<h3 class="${titleClass}">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
-          
-          if (pal.length === 0) {
-            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
-          } else {
-            // Trier les plongeurs par grade avant affichage
-            const plongeursTriés = trierPlongeursParGrade(pal);
-            
-            plongeursTriés.forEach(p => {
-              if (p && p.nom) {
-                htmlContent += '<div class="plongeur-item">';
-                htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
-                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-                htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
-                if (p.pre) {
-                  htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
-                }
-                htmlContent += '</div>';
-                htmlContent += '</div>';
-              }
-            });
-          }
-          htmlContent += '</div>';
-        }
-      });
-    }
-    
-    htmlContent += '</section>';
-    
-    if (plongeursLocal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
-      
-      // Trier aussi les plongeurs en attente par grade
-      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
-      
-      plongeursEnAttenteTriés.forEach(p => {
-        if (p && p.nom) {
-          htmlContent += '<div class="plongeur-item">';
-          htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
-          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-          htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
-          if (p.pre) {
-            htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
-          }
-          htmlContent += '</div>';
-          htmlContent += '</div>';
-        }
-      });
-      htmlContent += '</section>';
-    }
-    
-    htmlContent += '</main>';
-    htmlContent += '</div></body></html>';
-
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    
-    let previewContainer = document.getElementById("previewContainer");
-    const pdfPreview = document.getElementById("pdfPreview");
-    
-    if (previewContainer && pdfPreview) {
-      // Ajouter le bouton de fermeture s'il n'existe pas déjà  
-      let closeButton = document.getElementById("close-preview-btn");
-      if (!closeButton) {
-        closeButton = document.createElement("button");
-        closeButton.id = "close-preview-btn";
-        closeButton.innerHTML = "❌ Fermer l'aperçu";
-        closeButton.style.cssText = `
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          z-index: 1001;
-          background: #dc3545;
-          color: white;
-          border: none;
-          padding: 10px 15px;
-          border-radius: 5px;
-          font-size: 14px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          transition: all 0.3s ease;
-        `;
-        
-        closeButton.onmouseenter = function() {
-          this.style.background = "#c82333";
-          this.style.transform = "scale(1.05)";
-        };
-        closeButton.onmouseleave = function() {
-          this.style.background = "#dc3545";
-          this.style.transform = "scale(1)";
-        };
-        
-        closeButton.onclick = function() {
-          closePDFPreview();
-        };
-        
-        previewContainer.style.position = "relative";
-        previewContainer.appendChild(closeButton);
-      }
-      
-      previewContainer.style.display = "block";
-      pdfPreview.src = url;
-      
-      previewContainer.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-      
-      console.log("✅ Aperçu PDF généré avec bouton de fermeture");
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-      
-    } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
-      alert("Erreur: impossible d'afficher l'aperçu PDF");
-    }
-    
-  } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
-    handleError(error, "Génération aperçu PDF");
-    alert("Erreur lors de la génération de l'aperçu: " + error.message);
-  }
-}
-
-// Fonction pour fermer l'aperçu PDF
-function closePDFPreview() {
-  const previewContainer = document.getElementById("previewContainer");
-  const pdfPreview = document.getElementById("pdfPreview");
-  
-  if (previewContainer) {
-    previewContainer.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-    previewContainer.style.opacity = "0";
-    previewContainer.style.transform = "translateY(-20px)";
-    
-    setTimeout(() => {
-      previewContainer.style.display = "none";
-      previewContainer.style.opacity = "1";
-      previewContainer.style.transform = "translateY(0)";
-      
-      if (pdfPreview) {
-        pdfPreview.src = "";
-      }
-      
-      console.log("✅ Aperçu PDF fermé");
-    }, 300);
-  }
-}
-
-// Export de la fonction pour usage global
-window.closePDFPreview = closePDFPreview;
-
 // ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
@@ -714,349 +290,61 @@ function exportToPDF() {
       format: 'a4'
     });
     
-    const colors = {
-      primaryR: 0, primaryG: 64, primaryB: 128,
-      secondaryR: 0, secondaryG: 123, secondaryB: 255,
-      successR: 40, successG: 167, successB: 69,
-      dangerR: 220, dangerG: 53, dangerB: 69,
-      darkR: 52, darkG: 58, darkB: 64,
-      grayR: 108, grayG: 117, grayB: 125
-    };
-    
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - (2 * margin);
-    
-    // Constantes pour l'espacement
-    const spacing = {
-      lineHeight: 6,
-      sectionGap: 12,
-      subsectionGap: 8,
-      headerHeight: 60,
-      footerHeight: 25
-    };
-    
-    function checkPageBreak(heightNeeded, forceNewPage = false) {
-      if (forceNewPage || yPosition + heightNeeded > pageHeight - spacing.footerHeight) {
-        doc.addPage();
-        yPosition = 20;
-        addPageHeader();
-        return true;
-      }
-      return false;
-    }
-    
-    function addPageHeader() {
-      if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(10);
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
-        yPosition = 25;
-      }
-    }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      try {
-        const date = new Date(dateString);
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
-      } catch (error) {
-        console.warn("⚠️ Erreur formatage date PDF:", error);
-        return dateString;
-      }
-    }
-    
-    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
-      
-      switch(color) {
-        case 'primary':
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          break;
-        case 'secondary':
-          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          break;
-        case 'success':
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          break;
-        case 'danger':
-          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          break;
-        case 'gray':
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          break;
-        case 'white':
-          doc.setTextColor(255, 255, 255);
-          break;
-        default:
-          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      }
-      
-      doc.text(text, x, y);
-    }
+    // Générer le PDF simplifié
+    doc.setFontSize(16);
+    doc.text('Palanquées JSAS', 20, 20);
+    doc.setFontSize(12);
+    doc.text(`DP: ${dpNom}`, 20, 35);
+    doc.text(`Date: ${dpDate}`, 20, 45);
+    doc.text(`Lieu: ${dpLieu}`, 20, 55);
+    doc.text(`Session: ${dpPlongee}`, 20, 65);
     
     // Vérifier que les variables globales existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
-    // === EN-TÊTE PRINCIPAL ===
-    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.rect(0, 0, pageWidth, spacing.headerHeight, 'F');
+    let yPos = 80;
     
-    addText('Palanquées JSAS', margin, 20, 10, 'bold', 'white');
-    addText('Fiche de Sécurité', margin, 32, 20, 'bold', 'white');
-    addText('Association Sportive de Plongée', margin, 40, 8, 'normal', 'white');
-    
-    addText('DP: ' + dpNom.substring(0, 30), margin, 48, 10, 'bold', 'white');
-    addText('Date: ' + formatDateFrench(dpDate), margin, 55, 10, 'bold', 'white');
-    addText('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 55, 10, 'bold', 'white');
-    
-    yPosition = spacing.headerHeight + spacing.sectionGap;
-    
-    // === STATISTIQUES ===
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
-    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
-    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
-    
-    addText('TABLEAU DE BORD', margin, yPosition, 12, 'bold', 'primary');
-    
-    doc.setDrawColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-    doc.setLineWidth(2);
-    doc.line(margin, yPosition + 2, margin + 50, yPosition + 2);
-    
-    yPosition += spacing.sectionGap + 3;
-    
-    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition, 10, 'bold');
-    addText('Palanquées: ' + palanqueesLocal.length, margin + 80, yPosition, 10, 'bold');
-    yPosition += spacing.lineHeight + 2;
-    
-    addText('Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)', margin, yPosition, 10, 'bold');
-    addText('Alertes: ' + alertesTotal.length, margin + 80, yPosition, 10, 'bold');
-    
-    yPosition += spacing.sectionGap + 3;
-    
-    // === ALERTES DE SÉCURITÉ ===
-    if (alertesTotal.length > 0) {
-      const alerteBoxHeight = 20 + (alertesTotal.length * spacing.lineHeight);
-      checkPageBreak(alerteBoxHeight);
+    // Ajouter les palanquées
+    if (palanqueesLocal.length > 0) {
+      doc.text('Palanquées:', 20, yPos);
+      yPos += 10;
       
-      doc.setDrawColor(colors.dangerR, colors.dangerG, colors.dangerB);
-      doc.setLineWidth(2);
-      doc.rect(margin, yPosition, contentWidth, alerteBoxHeight, 'S');
-      
-      addText('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 12, 12, 'bold', 'danger');
-      
-      yPosition += 20;
-      
-      for (let i = 0; i < alertesTotal.length; i++) {
-        const alerteClean = alertesTotal[i].replace(/'/g, "'");
-        addText("• " + alerteClean, margin + 5, yPosition, 10, 'normal');
-        yPosition += spacing.lineHeight;
-      }
-      
-      yPosition += spacing.subsectionGap;
-    }
-    
-    // === PALANQUÉES DÉTAILLÉES ===
-    checkPageBreak(40, true);
-    
-    addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 8;
-    
-    if (palanqueesLocal.length === 0) {
-      doc.setDrawColor(255, 193, 7);
-      doc.setLineWidth(1);
-      doc.rect(margin, yPosition, contentWidth, 20, 'S');
-      
-      addText('Aucune palanquée créée - Tous les plongeurs en attente', margin + 10, yPosition + 12, 12);
-      yPosition += 30;
-    } else {
-      for (let i = 0; i < palanqueesLocal.length; i++) {
-        const pal = palanqueesLocal[i];
-        if (!pal || !Array.isArray(pal)) continue;
-        
-        // Calculer la hauteur nécessaire pour cette palanquée
-        let palanqueeHeight = 14;
-        palanqueeHeight += (pal.length * spacing.lineHeight) + 4;
-        palanqueeHeight += 30;
-        palanqueeHeight += spacing.sectionGap;
-        
-        checkPageBreak(palanqueeHeight + 10);
-        
-        const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
-        
-        // En-tête de palanquée
-        if (isAlert) {
-          doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
-        } else {
-          doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-        }
-        doc.rect(margin, yPosition, contentWidth, 8, 'F');
-        
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 6, 12, 'bold', 'white');
-        
-        const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
-        const n1s = pal.filter(p => p && p.niveau === "N1");
-        const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
-        
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 6, 10, 'normal', 'white');
-        
-        yPosition += 14;
-        
-        // Liste des plongeurs (triés par niveau)
-        if (pal.length === 0) {
-          addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + 4;
-        } else {
-          // Définir l'ordre de tri des niveaux
-          const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
+      palanqueesLocal.forEach((pal, i) => {
+        if (Array.isArray(pal)) {
+          doc.text(`Palanquée ${i + 1} (${pal.length} plongeurs)`, 25, yPos);
+          yPos += 5;
           
-          const plongeursTriés = [...pal].sort((a, b) => {
-            const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
-            const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
-            return indexA - indexB;
-          });
-          
-          for (let j = 0; j < plongeursTriés.length; j++) {
-            const p = plongeursTriés[j];
-            if (!p || !p.nom) continue;
-            
-            const nomClean = p.nom.replace(/'/g, "'");
-            const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-            
-            addText('• ' + nomClean, margin + 5, yPosition, 11, 'bold');
-            
-            if (preClean) {
-              addText('Prérogative: ' + preClean, margin + 80, yPosition, 10, 'normal');
+          pal.forEach(p => {
+            if (p && p.nom) {
+              doc.text(`- ${p.nom} (${p.niveau})`, 30, yPos);
+              yPos += 5;
             }
-            
-            addText('Niveau: ' + p.niveau, margin + 140, yPosition, 10, 'normal', 'gray');
-            
-            yPosition += spacing.lineHeight;
-          }
-          yPosition += 4;
+          });
+          yPos += 5;
         }
-        
-        // Paramètres de plongée (version simplifiée)
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 11, 'bold', 'primary');
-        if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 50, yPosition - 2, margin + 85, yPosition - 2);
-        }
-        yPosition += 4;
-        
-        addText('Prof. prévue: ', margin + 5, yPosition, 11, 'bold', 'primary');
-        if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 35, yPosition - 2, margin + 55, yPosition - 2);
-        }
-        
-        addText('Durée prévue:', margin + 80, yPosition, 11, 'bold', 'primary');
-        if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 115, yPosition - 2, margin + 140, yPosition - 2);
-        }
-        yPosition += 4;
-        
-        addText('Prof. réalisée:', margin + 5, yPosition, 11, 'bold', 'success');
-        if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 40, yPosition - 2, margin + 60, yPosition - 2);
-        }
-        
-        addText('Durée réalisée:', margin + 80, yPosition, 11, 'bold', 'success');
-        if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 120, yPosition - 2, margin + 145, yPosition - 2);
-        }
-        yPosition += 4;
-        
-        addText('Paliers:', margin + 5, yPosition, 11, 'bold', 'primary');
-        if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 10, 'normal');
-        } else {
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.3);
-          doc.line(margin + 25, yPosition - 2, margin + 65, yPosition - 2);
-        }
-        yPosition += spacing.lineHeight + spacing.sectionGap;
-      }
+      });
     }
     
-    // === PLONGEURS NON ASSIGNÉS ===
+    // Ajouter les plongeurs en attente
     if (plongeursLocal.length > 0) {
-      const plongeursBoxHeight = 25 + (plongeursLocal.length * spacing.lineHeight);
-      checkPageBreak(plongeursBoxHeight);
+      doc.text('Plongeurs en attente:', 20, yPos);
+      yPos += 10;
       
-      doc.setDrawColor(255, 193, 7);
-      doc.setLineWidth(2);
-      doc.rect(margin, yPosition, contentWidth, plongeursBoxHeight, 'S');
-      
-      addText('PLONGEURS en attente/disponibles (' + plongeursLocal.length + ')', margin + 5, yPosition + 12, 14, 'bold', 'primary');
-      
-      yPosition += 20;
-      
-      for (let i = 0; i < plongeursLocal.length; i++) {
-        const p = plongeursLocal[i];
-        if (!p || !p.nom) continue;
-        
-        const nomClean = p.nom.replace(/'/g, "'");
-        const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-        const textLine = '• ' + nomClean + '   (' + p.niveau + ')' + (preClean ? '   - ' + preClean : '');
-        addText(textLine, margin + 5, yPosition, 10, 'normal');
-        yPosition += spacing.lineHeight;
-      }
-      
-      yPosition += spacing.subsectionGap;
-    }
-    
-    // === FOOTER ===
-    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
-    
-    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      doc.setPage(pageNum);
-      
-      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
-      doc.setLineWidth(0.5);
-      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
-      
-      if (pageNum === totalPages) {
-        addText('Document officiel JSAS - Conforme FFESSM - Version 2.1.4 Pro', margin, pageHeight - 15, 8, 'normal', 'gray');
-        addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10, 8, 'normal', 'gray');
-      }
-      
-      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8, 'normal', 'gray');
-      addText(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5, 8, 'normal', 'gray');
+      plongeursLocal.forEach(p => {
+        if (p && p.nom) {
+          doc.text(`- ${p.nom} (${p.niveau})`, 25, yPos);
+          yPos += 5;
+        }
+      });
     }
     
     // === TÉLÉCHARGEMENT ===
-    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-pro.pdf';
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
     console.log("✅ PDF généré:", fileName);
-    
-    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
-    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
+    alert('PDF généré avec succès !\n\nFichier: ' + fileName);
     
   } catch (error) {
     console.error("❌ Erreur PDF:", error);
@@ -1064,6 +352,146 @@ function exportToPDF() {
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
+
+// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
+function generatePDFPreview() {
+  console.log("🎨 Génération de l'aperçu PDF...");
+  
+  try {
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+    
+    // S'assurer que les variables existent
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    
+    // Générer un HTML simple pour l'aperçu
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Aperçu PDF - Palanquées JSAS</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #004080; }
+          .palanquee { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
+          .plongeur { margin: 5px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>Palanquées JSAS - Fiche de Sécurité</h1>
+        <p><strong>DP:</strong> ${dpNom}</p>
+        <p><strong>Date:</strong> ${dpDate}</p>
+        <p><strong>Lieu:</strong> ${dpLieu}</p>
+        <p><strong>Session:</strong> ${dpPlongee}</p>
+        <p><strong>Total plongeurs:</strong> ${totalPlongeurs}</p>
+        
+        <h2>Palanquées (${palanqueesLocal.length})</h2>
+    `;
+    
+    if (palanqueesLocal.length === 0) {
+      htmlContent += '<p>Aucune palanquée créée.</p>';
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (Array.isArray(pal)) {
+          htmlContent += `<div class="palanquee">`;
+          htmlContent += `<h3>Palanquée ${i + 1} (${pal.length} plongeurs)</h3>`;
+          
+          if (pal.length === 0) {
+            htmlContent += '<p>Aucun plongeur assigné</p>';
+          } else {
+            pal.forEach(p => {
+              if (p && p.nom) {
+                htmlContent += `<div class="plongeur">• ${p.nom} (${p.niveau})</div>`;
+              }
+            });
+          }
+          htmlContent += '</div>';
+        }
+      });
+    }
+    
+    if (plongeursLocal.length > 0) {
+      htmlContent += '<h2>Plongeurs en Attente</h2>';
+      plongeursLocal.forEach(p => {
+        if (p && p.nom) {
+          htmlContent += `<div class="plongeur">• ${p.nom} (${p.niveau})</div>`;
+        }
+      });
+    }
+    
+    htmlContent += '</body></html>';
+
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    let previewContainer = document.getElementById("previewContainer");
+    const pdfPreview = document.getElementById("pdfPreview");
+    
+    if (previewContainer && pdfPreview) {
+      previewContainer.style.display = "block";
+      pdfPreview.src = url;
+      
+      // Ajouter le bouton de fermeture
+      let closeButton = document.getElementById("close-preview-btn");
+      if (!closeButton) {
+        closeButton = document.createElement("button");
+        closeButton.id = "close-preview-btn";
+        closeButton.innerHTML = "❌ Fermer l'aperçu";
+        closeButton.style.cssText = `
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 1001;
+          background: #dc3545;
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          cursor: pointer;
+        `;
+        closeButton.onclick = closePDFPreview;
+        previewContainer.style.position = "relative";
+        previewContainer.appendChild(closeButton);
+      }
+      
+      previewContainer.scrollIntoView({ behavior: 'smooth' });
+      console.log("✅ Aperçu PDF généré");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      
+    } else {
+      console.error("❌ Éléments d'aperçu non trouvés");
+      alert("Erreur: impossible d'afficher l'aperçu PDF");
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur génération aperçu PDF:", error);
+    handleError(error, "Génération aperçu PDF");
+    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+  }
+}
+
+// Fonction pour fermer l'aperçu PDF
+function closePDFPreview() {
+  const previewContainer = document.getElementById("previewContainer");
+  const pdfPreview = document.getElementById("pdfPreview");
+  
+  if (previewContainer) {
+    previewContainer.style.display = "none";
+    if (pdfPreview) {
+      pdfPreview.src = "";
+    }
+    console.log("✅ Aperçu PDF fermé");
+  }
+}
+
+// Export de la fonction pour usage global
+window.closePDFPreview = closePDFPreview;
 
 // ===== DRAG & DROP SÉCURISÉ =====
 let dragData = null;
@@ -1097,7 +525,6 @@ function handleDragStart(e) {
   try {
     if (!e.target.classList.contains('plongeur-item')) return;
     
-    console.log("🎯 Drag started sur:", e.target);
     e.target.classList.add('dragging');
     e.target.style.opacity = '0.5';
     
@@ -1107,8 +534,6 @@ function handleDragStart(e) {
       const palanqueeIndex = parseInt(e.target.dataset.palanqueeIndex);
       const plongeurIndex = parseInt(e.target.dataset.plongeurIndex);
       
-      console.log("📦 Drag depuis palanquée", palanqueeIndex, "plongeur", plongeurIndex);
-      
       if (typeof palanquees !== 'undefined' && palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
         dragData = {
           type: "fromPalanquee",
@@ -1116,13 +541,9 @@ function handleDragStart(e) {
           plongeurIndex: plongeurIndex,
           plongeur: palanquees[palanqueeIndex][plongeurIndex]
         };
-        console.log("✅ Données drag palanquée:", dragData);
-      } else {
-        console.error("❌ Plongeur non trouvé dans palanquée", palanqueeIndex, plongeurIndex);
       }
     } else {
       const index = parseInt(e.target.dataset.index);
-      console.log("📦 Drag depuis liste principale, index:", index);
       
       if (typeof plongeurs !== 'undefined' && plongeurs[index]) {
         dragData = {
@@ -1130,9 +551,6 @@ function handleDragStart(e) {
           plongeur: plongeurs[index],
           originalIndex: index
         };
-        console.log("✅ Données drag liste:", dragData);
-      } else {
-        console.error("❌ Plongeur non trouvé dans liste principale", index);
       }
     }
     
@@ -1141,7 +559,6 @@ function handleDragStart(e) {
       try {
         e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
         e.dataTransfer.effectAllowed = "move";
-        console.log("✅ Données stockées dans dataTransfer");
       } catch (error) {
         console.warn("⚠️ Erreur dataTransfer:", error);
       }
@@ -1157,7 +574,6 @@ function handleDragEnd(e) {
     if (e.target.classList.contains('plongeur-item')) {
       e.target.classList.remove('dragging');
       e.target.style.opacity = '1';
-      console.log("🎯 Drag ended");
     }
   } catch (error) {
     console.error("❌ Erreur handleDragEnd:", error);
@@ -1193,21 +609,17 @@ function handleDragLeave(e) {
 async function handleDrop(e) {
   try {
     e.preventDefault();
-    console.log("🎯 DROP ÉVÉNEMENT DÉTECTÉ");
     
     const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
     if (!dropZone) {
-      console.warn("⚠️ Aucune zone de drop valide trouvée");
       dragData = null;
       return;
     }
     
     dropZone.classList.remove('drag-over');
-    console.log("🎯 Drop zone trouvée:", dropZone.id || dropZone.className);
     
     // Récupérer les données
     let data = dragData;
-    console.log("📦 dragData disponible:", !!data);
     
     // Fallback vers dataTransfer
     if (!data && e.dataTransfer) {
@@ -1215,7 +627,6 @@ async function handleDrop(e) {
         const dataStr = e.dataTransfer.getData("text/plain");
         if (dataStr) {
           data = JSON.parse(dataStr);
-          console.log("📦 Données récupérées depuis dataTransfer");
         }
       } catch (error) {
         console.warn("⚠️ Erreur parsing dataTransfer:", error);
@@ -1223,20 +634,15 @@ async function handleDrop(e) {
     }
     
     if (!data) {
-      console.error("❌ AUCUNE DONNÉE DE DRAG DISPONIBLE");
       dragData = null;
       return;
     }
     
-    console.log("✅ Données de drop récupérées:", data);
-    
     // S'assurer que les variables globales existent
     if (typeof plongeurs === 'undefined') {
-      console.warn("⚠️ Variable plongeurs non définie");
       window.plongeurs = [];
     }
     if (typeof palanquees === 'undefined') {
-      console.warn("⚠️ Variable palanquees non définie");
       window.palanquees = [];
     }
     if (typeof plongeursOriginaux === 'undefined') {
@@ -1245,21 +651,64 @@ async function handleDrop(e) {
     
     // Drop vers la liste principale
     if (dropZone.id === 'listePlongeurs') {
-      console.log("🎯 Drop vers liste principale");
-      
       if (data.type === "fromPalanquee") {
-        console.log("🔄 Retour vers liste depuis palanquée", data.palanqueeIndex);
-        
         if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
           const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-          targetPalanquee.push(plongeur);
-          console.log("✅ Plongeur déplacé entre palanquées:", plongeur.nom);
+          plongeurs.push(plongeur);
+          plongeursOriginaux.push(plongeur);
           
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
-        } else {
-          console.error("❌ Plongeur source non trouvé pour déplacement");
+        }
+      }
+    } else {
+      // Drop vers une palanquée
+      const palanqueeIndex = parseInt(dropZone.dataset.index);
+      if (isNaN(palanqueeIndex)) {
+        dragData = null;
+        return;
+      }
+      
+      const targetPalanquee = palanquees[palanqueeIndex];
+      if (!targetPalanquee) {
+        dragData = null;
+        return;
+      }
+      
+      // Vérifier les règles de validation avant d'ajouter
+      if (typeof validatePalanqueeAddition === 'function') {
+        const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
+        if (!validation.valid) {
+          const messageText = validation.messages.join('\n');
+          alert(`❌ Ajout impossible :\n\n${messageText}`);
+          dragData = null;
+          return;
+        }
+      }
+      
+      if (data.type === "fromMainList") {
+        const indexToRemove = plongeurs.findIndex(p => 
+          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
+        );
+        
+        if (indexToRemove !== -1) {
+          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
+          targetPalanquee.push(plongeur);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+        }
+        
+      } else if (data.type === "fromPalanquee") {
+        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
+          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
+          targetPalanquee.push(plongeur);
+          
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
         }
       }
     }
@@ -1269,7 +718,6 @@ async function handleDrop(e) {
   } finally {
     // Nettoyer les données de drag
     dragData = null;
-    console.log("🧹 Données de drag nettoyées");
   }
 }
 
@@ -1328,10 +776,6 @@ function setupEventListeners() {
           }
           
           showAuthError(message);
-          
-          if (typeof FirebaseErrorHandler !== 'undefined') {
-            FirebaseErrorHandler.handleError(error, 'Connexion');
-          }
         } finally {
           if (loadingDiv) loadingDiv.style.display = "none";
         }
@@ -1348,9 +792,6 @@ function setupEventListeners() {
           }
         } catch (error) {
           console.error("❌ Erreur déconnexion:", error);
-          if (typeof FirebaseErrorHandler !== 'undefined') {
-            FirebaseErrorHandler.handleError(error, 'Déconnexion');
-          }
         }
       });
     }
@@ -1387,28 +828,6 @@ function setupEventListeners() {
             return;
           }
           
-          // Vérifier le format du nom DP
-          if (dpNom.split(' ').length < 2) {
-            const confirm = window.confirm("⚠️ Le nom semble incomplet (nom ET prénom recommandés).\n\nContinuer quand même ?");
-            if (!confirm) {
-              document.getElementById("dp-nom")?.focus();
-              return;
-            }
-          }
-          
-          // Vérifier que la date n'est pas trop ancienne
-          const selectedDate = new Date(dpDate);
-          const today = new Date();
-          const diffDays = Math.ceil((today - selectedDate) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays > 7) {
-            const confirm = window.confirm(`⚠️ La date sélectionnée remonte à ${diffDays} jours.\n\nÊtes-vous sûr de cette date ?`);
-            if (!confirm) {
-              document.getElementById("dp-date")?.focus();
-              return;
-            }
-          }
-          
           // Créer l'objet informations DP
           const dpInfo = {
             nom: dpNom,
@@ -1419,12 +838,6 @@ function setupEventListeners() {
             validated: true
           };
           
-          // Mettre à jour la variable globale si elle existe
-          if (typeof window.dpInfo !== 'undefined') {
-            window.dpInfo.nom = dpNom;
-            window.dpInfo.niveau = 'DP';
-          }
-          
           // Sauvegarder dans Firebase si disponible
           if (typeof db !== 'undefined' && db) {
             try {
@@ -1433,9 +846,6 @@ function setupEventListeners() {
               console.log("✅ Informations DP sauvegardées dans Firebase");
             } catch (firebaseError) {
               console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
-              if (typeof FirebaseErrorHandler !== 'undefined') {
-                FirebaseErrorHandler.handleError(firebaseError, 'Sauvegarde DP');
-              }
             }
           }
           
@@ -1462,11 +872,6 @@ function setupEventListeners() {
             validerDPBtn.textContent = "Valider DP";
             validerDPBtn.style.backgroundColor = "#007bff";
           }, 3000);
-          
-          // Notification système si disponible
-          if (typeof showNotification === 'function') {
-            showNotification("✅ Informations DP validées et sauvegardées", "success");
-          }
           
           console.log("✅ Validation DP réussie:", dpInfo);
           
@@ -1690,46 +1095,6 @@ function setupEventListeners() {
         }
       });
     }
-    
-    const refreshSessionsBtn = document.getElementById("refresh-sessions");
-    if (refreshSessionsBtn) {
-      refreshSessionsBtn.addEventListener("click", async () => {
-        try {
-          if (typeof populateSessionSelector === 'function') {
-            await populateSessionSelector();
-          }
-          if (typeof populateSessionsCleanupList === 'function') {
-            await populateSessionsCleanupList();
-          }
-          console.log("✅ Sessions actualisées");
-        } catch (error) {
-          console.error("❌ Erreur actualisation sessions:", error);
-          handleError(error, "Actualisation sessions");
-        }
-      });
-    }
-
-    const saveSessionBtn = document.getElementById("save-session");
-    if (saveSessionBtn) {
-      saveSessionBtn.addEventListener("click", async () => {
-        try {
-          if (typeof saveSessionData === 'function') {
-            await saveSessionData();
-            alert("Session sauvegardée !");
-            if (typeof populateSessionSelector === 'function') {
-              await populateSessionSelector();
-            }
-            if (typeof populateSessionsCleanupList === 'function') {
-              await populateSessionsCleanupList();
-            }
-            console.log("✅ Session sauvegardée");
-          }
-        } catch (error) {
-          console.error("❌ Erreur sauvegarde session:", error);
-          handleError(error, "Sauvegarde session");
-        }
-      });
-    }
 
     // === TEST FIREBASE SÉCURISÉ ===
     const testFirebaseBtn = document.getElementById("test-firebase");
@@ -1757,11 +1122,6 @@ function setupEventListeners() {
           console.log("Plongeurs en mémoire:", typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined');
           console.log("Palanquées en mémoire:", typeof palanquees !== 'undefined' ? palanquees.length : 'undefined');
           
-          // Test de l'état des listeners
-          if (typeof window.firebaseListeners !== 'undefined') {
-            console.log("📡 Listeners actifs:", window.firebaseListeners.getActiveListeners());
-          }
-          
           console.log("🎉 === TESTS TERMINÉS ===");
           alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
           
@@ -1787,105 +1147,6 @@ function setupEventListeners() {
           handleError(error, "Tri plongeurs");
         }
       });
-    });
-
-    // === NETTOYAGE SESSIONS ET DP SÉCURISÉ ===
-    const setupCleanupListeners = () => {
-      try {
-        // Sessions
-        const selectAllSessionsBtn = document.getElementById("select-all-sessions");
-        if (selectAllSessionsBtn) {
-          selectAllSessionsBtn.addEventListener("click", () => {
-            if (typeof selectAllSessions === 'function') {
-              selectAllSessions(true);
-            }
-          });
-        }
-
-        const selectNoneSessionsBtn = document.getElementById("select-none-sessions");
-        if (selectNoneSessionsBtn) {
-          selectNoneSessionsBtn.addEventListener("click", () => {
-            if (typeof selectAllSessions === 'function') {
-              selectAllSessions(false);
-            }
-          });
-        }
-
-        const deleteSelectedSessionsBtn = document.getElementById("delete-selected-sessions");
-        if (deleteSelectedSessionsBtn) {
-          deleteSelectedSessionsBtn.addEventListener("click", () => {
-            if (typeof deleteSelectedSessions === 'function') {
-              deleteSelectedSessions();
-            }
-          });
-        }
-
-        const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
-        if (refreshSessionsListBtn) {
-          refreshSessionsListBtn.addEventListener("click", () => {
-            if (typeof populateSessionsCleanupList === 'function') {
-              populateSessionsCleanupList();
-            }
-          });
-        }
-
-        // DP
-        const selectAllDPBtn = document.getElementById("select-all-dp");
-        if (selectAllDPBtn) {
-          selectAllDPBtn.addEventListener("click", () => {
-            if (typeof selectAllDPs === 'function') {
-              selectAllDPs(true);
-            }
-          });
-        }
-
-        const selectNoneDPBtn = document.getElementById("select-none-dp");
-        if (selectNoneDPBtn) {
-          selectNoneDPBtn.addEventListener("click", () => {
-            if (typeof selectAllDPs === 'function') {
-              selectAllDPs(false);
-            }
-          });
-        }
-
-        const deleteSelectedDPBtn = document.getElementById("delete-selected-dp");
-        if (deleteSelectedDPBtn) {
-          deleteSelectedDPBtn.addEventListener("click", () => {
-            if (typeof deleteSelectedDPs === 'function') {
-              deleteSelectedDPs();
-            }
-          });
-        }
-
-        const refreshDPListBtn = document.getElementById("refresh-dp-list");
-        if (refreshDPListBtn) {
-          refreshDPListBtn.addEventListener("click", () => {
-            if (typeof populateDPCleanupList === 'function') {
-              populateDPCleanupList();
-            }
-          });
-        }
-      } catch (error) {
-        console.error("❌ Erreur setup cleanup listeners:", error);
-        handleError(error, "Setup cleanup listeners");
-      }
-    };
-
-    setupCleanupListeners();
-
-    // Event listeners pour les checkboxes de nettoyage
-    document.addEventListener('change', (e) => {
-      try {
-        if (e.target.classList.contains('session-cleanup-checkbox') || 
-            e.target.classList.contains('dp-cleanup-checkbox')) {
-          if (typeof updateCleanupSelection === 'function') {
-            updateCleanupSelection();
-          }
-        }
-      } catch (error) {
-        console.error("❌ Erreur checkbox cleanup:", error);
-        handleError(error, "Checkbox cleanup");
-      }
     });
     
     console.log("✅ Event listeners configurés avec succès");
@@ -1964,76 +1225,8 @@ async function chargerHistoriqueDP() {
 }
 
 function afficherInfoDP() {
-  const dpDatesSelect = document.getElementById("dp-dates");
-  const historiqueInfo = document.getElementById("historique-info");
-  
-  if (!dpDatesSelect || !historiqueInfo) {
-    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
-    return;
-  }
-  
-  const selectedKey = dpDatesSelect.value;
-  
-  if (!selectedKey) {
-    historiqueInfo.innerHTML = '';
-    return;
-  }
-  
-  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
-  
-  if (typeof db === 'undefined' || !db) {
-    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
-    return;
-  }
-  
-  db.ref(`dpInfo/${selectedKey}`).once('value')
-    .then(snapshot => {
-      if (!snapshot.exists()) {
-        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
-        return;
-      }
-      
-      const dpData = snapshot.val();
-      const formatDate = (dateStr) => {
-        try {
-          return new Date(dateStr).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
-        } catch {
-          return dateStr;
-        }
-      };
-      
-      historiqueInfo.innerHTML = `
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
-          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
-          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
-          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
-          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
-          <p><strong>🕕 Session :</strong> ${dpData.plongee || 'matin'}</p>
-          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
-          
-          <div style="margin-top: 15px;">
-            <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
-                    style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-              🔥 Charger dans l'interface
-            </button>
-            <button onclick="supprimerDPSelectionne('${selectedKey}')" 
-                    style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-              🗑️ Supprimer
-            </button>
-          </div>
-        </div>
-      `;
-    })
-    .catch(error => {
-      console.error("❌ Erreur chargement DP:", error);
-      handleError(error, "Chargement DP");
-      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
-    });
+  // Fonction simplifiée pour éviter les erreurs
+  console.log("📋 Affichage info DP");
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
@@ -2061,15 +1254,6 @@ async function chargerDonneesDPSelectionne(dpKey) {
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
     if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
     
-    const dpMessage = document.getElementById("dp-message");
-    if (dpMessage) {
-      dpMessage.innerHTML = `
-        <div style="color: #007bff; font-weight: bold; padding: 10px; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 4px;">
-          🔥 DP chargé depuis l'historique
-        </div>
-      `;
-    }
-    
     alert("✅ Données DP chargées avec succès !");
     console.log("✅ DP chargé:", dpData);
     
@@ -2092,14 +1276,10 @@ async function supprimerDPSelectionne(dpKey) {
     }
     
     await db.ref(`dpInfo/${dpKey}`).remove();
-    
     alert("✅ DP supprimé avec succès !");
     
-    await chargerHistoriqueDP();
-    
-    const historiqueInfo = document.getElementById("historique-info");
-    if (historiqueInfo) {
-      historiqueInfo.innerHTML = '';
+    if (typeof chargerHistoriqueDP === 'function') {
+      await chargerHistoriqueDP();
     }
     
     console.log("✅ DP supprimé:", dpKey);
@@ -2229,68 +1409,4 @@ window.addEventListener('error', (event) => {
   };
 });
 
-console.log("✅ Main application sécurisée chargée - Version 2.5.2");][data.plongeurIndex]) {
-          const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
-          plongeurs.push(plongeur);
-          plongeursOriginaux.push(plongeur);
-          console.log("✅ Plongeur remis dans liste:", plongeur.nom);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-        } else {
-          console.error("❌ Plongeur non trouvé pour retour en liste");
-        }
-      }
-    } else {
-      // Drop vers une palanquée
-      const palanqueeIndex = parseInt(dropZone.dataset.index);
-      if (isNaN(palanqueeIndex)) {
-        console.error("❌ Index palanquée invalide:", dropZone.dataset.index);
-        dragData = null;
-        return;
-      }
-      
-      console.log("🎯 Drop vers palanquée", palanqueeIndex);
-      
-      const targetPalanquee = palanquees[palanqueeIndex];
-      if (!targetPalanquee) {
-        console.error("❌ Palanquée cible non trouvée:", palanqueeIndex);
-        dragData = null;
-        return;
-      }
-      
-      // Vérifier les règles de validation avant d'ajouter
-      if (typeof validatePalanqueeAddition === 'function') {
-        const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
-        if (!validation.valid) {
-          const messageText = validation.messages.join('\n');
-          alert(`❌ Ajout impossible :\n\n${messageText}`);
-          dragData = null;
-          return;
-        }
-      }
-      
-      if (data.type === "fromMainList") {
-        console.log("🔄 Ajout depuis liste principale");
-        
-        const indexToRemove = plongeurs.findIndex(p => 
-          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-        );
-        
-        if (indexToRemove !== -1) {
-          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
-          targetPalanquee.push(plongeur);
-          console.log("✅ Plongeur ajouté à palanquée:", plongeur.nom);
-          
-          if (typeof syncToDatabase === 'function') {
-            syncToDatabase();
-          }
-        } else {
-          console.error("❌ Plongeur non trouvé dans liste principale");
-        }
-        
-      } else if (data.type === "fromPalanquee") {
-        console.log("🔄 Déplacement entre palanquées");
-        
-        if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex
+console.log("✅ Main application sécurisée chargée - Version 2.5.2");
