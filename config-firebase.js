@@ -82,6 +82,7 @@ function initializeFirebase() {
         if (document.readyState === 'complete') {
           console.log("🔄 Chargement des données après connexion...");
           await initializeAppData();
+		  initializeAfterAuth();
         }
       } else {
         console.log("❌ Utilisateur non connecté");
