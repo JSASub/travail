@@ -609,182 +609,6 @@ function updateUserInfo(user) {
 async function testFirebaseConnection() {
   try {
     if (!db) {
-      throw new Error("Instance Firebase Database non initialisée");
-    }
-    
-    const testRef = db.ref('.info/connected');
-    const connectedPromise = new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        testRef.off('value');
-        resolve(false);
-      }, 8000);
-      
-      testRef.on('value', (snapshot) => {
-        clearTimeout(timeout);
-        testRef.off('value');
-        firebaseConnected = snapshot.val() === true;
-        resolve(firebaseConnected);
-      });
-    });
-    
-    await connectedPromise;
-    console.log(firebaseConnected ? "✅ Firebase connecté" : "⚠️ Firebase déconnecté");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
-    firebaseConnected = false;
-    return true; // Continue en mode dégradé
-  }
-}
-
-async function loadFromFirebase() {
-  // Redirection vers la version forcée
-  return await loadFromFirebaseForced();
-}
-
-// Sauvegarde sécurisée
-async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
-  
-  window.plongeursOriginaux = [...window.plongeurs];
-  
-  // Rendu sécurisé
-  forceRenderAll();
-  
-  if (firebaseConnected && db) {
-    try {
-      await Promise.all([
-        db.ref('plongeurs').set(window.plongeurs),
-        db.ref('palanquees').set(window.palanquees)
-      ]);
-      
-      await saveSessionData();
-      console.log("✅ Sauvegarde Firebase réussie");
-      
-    } catch (error) {
-      console.error("❌ Erreur sync Firebase:", error.message);
-    }
-  } else {
-    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
-  }
-}
-
-async function saveSessionData() {
-  const dpNom = $("dp-nom")?.value?.trim();
-  const dpDate = $("dp-date")?.value;
-  const dpPlongee = $("dp-plongee")?.value;
-  
-  if (!dpNom || !dpDate || !dpPlongee || !db) {
-    return;
-  }
-  
-  const dpKey = dpNom.split(' ')[0].substring(0, 8);
-  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
-  
-  const sessionData = {
-    meta: {
-      dp: dpNom,
-      date: dpDate,
-      lieu: $("dp-lieu")?.value?.trim() || "Non défini",
-      plongee: dpPlongee,
-      timestamp: Date.now(),
-      sessionKey: sessionKey
-    },
-    plongeurs: window.plongeurs,
-    palanquees: window.palanquees,
-    stats: {
-      totalPlongeurs: window.plongeurs.length + window.palanquees.flat().length,
-      nombrePalanquees: window.palanquees.length,
-      plongeursNonAssignes: window.plongeurs.length
-    }
-  };
-  
-  try {
-    await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée avec succès:", sessionKey);
-  } catch (error) {
-    console.error("❌ Erreur sauvegarde session:", error);
-  }
-}
-
-// Charger les sessions disponibles
-async function loadAvailableSessions() {
-  try {
-    if (!db) return [];
-    
-    const sessionsSnapshot = await db.ref('sessions').once('value');
-    if (!sessionsSnapshot.exists()) {
-      return [];
-    }
-    
-    const sessions = sessionsSnapshot.val();
-    const sessionsList = [];
-    
-    for (const [key, data] of Object.entries(sessions)) {
-      if (!data || typeof data !== 'object') {
-        continue;
-      }
-      
-      let sessionInfo;
-      
-      if (data.meta) {
-        sessionInfo = {
-          key: key,
-          dp: data.meta.dp || "DP non défini",
-          date: data.meta.date || "Date inconnue",
-          lieu: data.meta.lieu || "Lieu non défini",
-          plongee: data.meta.plongee || "Non défini",
-          timestamp: data.meta.timestamp || Date.now(),
-          stats: data.stats || {
-            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
-            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
-            plongeursNonAssignes: (data.plongeurs || []).length
-          }
-        };
-      } else {
-        const keyParts = key.split('_');
-        sessionInfo = {
-          key: key,
-          dp: data.dp || "DP non défini",
-          date: data.date || keyParts[0] || "Date inconnue",
-          lieu: data.lieu || "Lieu non défini",
-          plongee: data.plongee || keyParts[keyParts.length - 1] || "Non défini",
-          timestamp: data.timestamp || Date.now(),
-          stats: {
-            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
-            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
-            plongeursNonAssignes: (data.plongeurs || []).length
-          }
-        };
-      }
-      
-      sessionsList.push(sessionInfo);
-    }
-    
-    sessionsList.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      
-      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-        return dateB - dateA;
-      } else {
-        return (b.timestamp || 0) - (a.timestamp || 0);
-      }
-    });
-    
-    return sessionsList;
-    
-  } catch (error) {
-    console.error("❌ Erreur chargement sessions:", error);
-    return [];
-  }
-}
-
-// Charger une session spécifique
-async function loadSession(sessionKey) {
-  try {
-    if (!db) {
       alert("Base de données non disponible");
       return false;
     }
@@ -1016,5 +840,182 @@ setTimeout(() => {
 window.forceLoadData = forceLoadData;
 window.diagnosticChargementDonnees = diagnosticChargementDonnees;
 window.forceRenderAll = forceRenderAll;
+window.initializeFirebase = initializeFirebase;
 
-console.log("🔧 Config Firebase avec patch de chargement forcé chargé");
+console.log("🔧 Config Firebase avec patch de chargement forcé chargé");db) {
+      throw new Error("Instance Firebase Database non initialisée");
+    }
+    
+    const testRef = db.ref('.info/connected');
+    const connectedPromise = new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        testRef.off('value');
+        resolve(false);
+      }, 8000);
+      
+      testRef.on('value', (snapshot) => {
+        clearTimeout(timeout);
+        testRef.off('value');
+        firebaseConnected = snapshot.val() === true;
+        resolve(firebaseConnected);
+      });
+    });
+    
+    await connectedPromise;
+    console.log(firebaseConnected ? "✅ Firebase connecté" : "⚠️ Firebase déconnecté");
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Test Firebase échoué:", error.message);
+    firebaseConnected = false;
+    return true; // Continue en mode dégradé
+  }
+}
+
+async function loadFromFirebase() {
+  // Redirection vers la version forcée
+  return await loadFromFirebaseForced();
+}
+
+// Sauvegarde sécurisée
+async function syncToDatabase() {
+  console.log("💾 Synchronisation Firebase...");
+  
+  window.plongeursOriginaux = [...window.plongeurs];
+  
+  // Rendu sécurisé
+  forceRenderAll();
+  
+  if (firebaseConnected && db) {
+    try {
+      await Promise.all([
+        db.ref('plongeurs').set(window.plongeurs),
+        db.ref('palanquees').set(window.palanquees)
+      ]);
+      
+      await saveSessionData();
+      console.log("✅ Sauvegarde Firebase réussie");
+      
+    } catch (error) {
+      console.error("❌ Erreur sync Firebase:", error.message);
+    }
+  } else {
+    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+  }
+}
+
+async function saveSessionData() {
+  const dpNom = $("dp-nom")?.value?.trim();
+  const dpDate = $("dp-date")?.value;
+  const dpPlongee = $("dp-plongee")?.value;
+  
+  if (!dpNom || !dpDate || !dpPlongee || !db) {
+    return;
+  }
+  
+  const dpKey = dpNom.split(' ')[0].substring(0, 8);
+  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  const sessionData = {
+    meta: {
+      dp: dpNom,
+      date: dpDate,
+      lieu: $("dp-lieu")?.value?.trim() || "Non défini",
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      sessionKey: sessionKey
+    },
+    plongeurs: window.plongeurs,
+    palanquees: window.palanquees,
+    stats: {
+      totalPlongeurs: window.plongeurs.length + window.palanquees.flat().length,
+      nombrePalanquees: window.palanquees.length,
+      plongeursNonAssignes: window.plongeurs.length
+    }
+  };
+  
+  try {
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée avec succès:", sessionKey);
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde session:", error);
+  }
+}
+
+// Charger les sessions disponibles
+async function loadAvailableSessions() {
+  try {
+    if (!db) return [];
+    
+    const sessionsSnapshot = await db.ref('sessions').once('value');
+    if (!sessionsSnapshot.exists()) {
+      return [];
+    }
+    
+    const sessions = sessionsSnapshot.val();
+    const sessionsList = [];
+    
+    for (const [key, data] of Object.entries(sessions)) {
+      if (!data || typeof data !== 'object') {
+        continue;
+      }
+      
+      let sessionInfo;
+      
+      if (data.meta) {
+        sessionInfo = {
+          key: key,
+          dp: data.meta.dp || "DP non défini",
+          date: data.meta.date || "Date inconnue",
+          lieu: data.meta.lieu || "Lieu non défini",
+          plongee: data.meta.plongee || "Non défini",
+          timestamp: data.meta.timestamp || Date.now(),
+          stats: data.stats || {
+            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
+            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
+            plongeursNonAssignes: (data.plongeurs || []).length
+          }
+        };
+      } else {
+        const keyParts = key.split('_');
+        sessionInfo = {
+          key: key,
+          dp: data.dp || "DP non défini",
+          date: data.date || keyParts[0] || "Date inconnue",
+          lieu: data.lieu || "Lieu non défini",
+          plongee: data.plongee || keyParts[keyParts.length - 1] || "Non défini",
+          timestamp: data.timestamp || Date.now(),
+          stats: {
+            nombrePalanquees: data.palanquees ? data.palanquees.length : 0,
+            totalPlongeurs: (data.plongeurs || []).length + (data.palanquees || []).flat().length,
+            plongeursNonAssignes: (data.plongeurs || []).length
+          }
+        };
+      }
+      
+      sessionsList.push(sessionInfo);
+    }
+    
+    sessionsList.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+        return dateB - dateA;
+      } else {
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      }
+    });
+    
+    return sessionsList;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement sessions:", error);
+    return [];
+  }
+}
+
+// Charger une session spécifique
+async function loadSession(sessionKey) {
+  try {
+    if (!
