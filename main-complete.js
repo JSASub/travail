@@ -596,8 +596,8 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // Calculer la hauteur nécessaire pour cette palanquée (TRÈS RÉDUITE)
-        let palanqueeHeight = 14; // Header encore plus réduit de 18 à 14
+        // Calculer la hauteur nécessaire pour cette palanquée (RÉDUITE)
+        let palanqueeHeight = 18; // Header réduit de 25 à 18
         palanqueeHeight += (pal.length * spacing.lineHeight) + 4; // Plongeurs + espacement réduit
         palanqueeHeight += 30; // Paramètres (4 lignes au lieu de 5) - encore réduit
         palanqueeHeight += spacing.sectionGap; // Espacement final
@@ -606,23 +606,23 @@ function exportToPDF() {
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée TRÈS RÉDUIT
+        // En-tête de palanquée RÉDUIT
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 8, 'F'); // Hauteur drastiquement réduite de 12 à 8
+        doc.rect(margin, yPosition, contentWidth, 12, 'F'); // Hauteur réduite de 15 à 12
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 6, 12, 'bold', 'white'); // Position Y ajustée
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 8, 12, 'bold', 'white'); // Position Y ajustée
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 6, 10, 'normal', 'white'); // Position Y ajustée
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8, 10, 'normal', 'white'); // Position Y ajustée
         
-        yPosition += 12; // Espacement encore plus réduit de 15 à 12
+        yPosition += 15; // Espacement réduit de 20 à 15
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
