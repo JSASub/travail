@@ -439,7 +439,7 @@ async function loadFromFirebase() {
 
 // Sauvegarde sécurisée
 async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
+  //console.log("💾 Synchronisation Firebase...");
   
   plongeursOriginaux = [...plongeurs];
   

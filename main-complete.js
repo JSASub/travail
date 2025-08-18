@@ -1,6 +1,10 @@
 // main-complete.js - Application principale ultra-sécurisée (VERSION CORRIGÉE)
 
 // ===== FONCTIONS UTILITAIRES (DÉCLARÉES EN PREMIER) =====
+// Mode production - logs réduits
+if (window.location.hostname !== 'localhost') {
+  console.log = function() {}; // Désactiver les logs en production
+}
 
 function showAuthError(message) {
   const errorDiv = document.getElementById("auth-error");
