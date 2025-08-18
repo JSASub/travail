@@ -302,8 +302,15 @@ function sortPlongeurs(type) {
         plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
         break;
       case 'niveau':
-        const niveauOrder = { 'N1': 1, 'N2': 2, 'N3': 3, 'N4/GP': 4, 'E1': 5, 'E2': 6, 'E3': 7, 'E4': 8 };
-        plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 9) - (niveauOrder[b.niveau] || 9));
+        // ORDRE CORRIGÉ avec tous les nouveaux niveaux (du plus capé au moins capé)
+        const niveauOrder = {
+          'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+          'N3': 7, 'N2': 8, 'N1': 9,
+          'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+          'Déb.': 13, 'débutant': 14, 'Déb': 15,
+          'E1': 16 // E1 en dernier car niveau obsolète
+        };
+        plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
         break;
       case 'none':
       default:
@@ -318,7 +325,6 @@ function sortPlongeurs(type) {
     console.error("❌ Erreur sortPlongeurs:", error);
   }
 }
-
 // ===== EXPORT JSON =====
 function exportToJSON() {
   try {
