@@ -669,11 +669,11 @@ function exportToPDF() {
           addText('Correction: ', margin + 80, yPosition, 9, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 105, yPosition - 1, margin + 140, yPosition - 1);
+          doc.line(margin + 105, yPosition - 2, margin + 140, yPosition - 2); // Ligne mieux alignée
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 50, yPosition - 1, margin + 85, yPosition - 1);
+          doc.line(margin + 50, yPosition - 2, margin + 85, yPosition - 2); // Ligne mieux alignée
           addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
         }
         yPosition += 4; // Espacement réduit pour lignes vides
@@ -685,7 +685,7 @@ function exportToPDF() {
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 35, yPosition - 1, margin + 55, yPosition - 1);
+          doc.line(margin + 35, yPosition - 2, margin + 55, yPosition - 2); // Ligne mieux alignée
           addText('m', margin + 57, yPosition, 10, 'normal', 'gray');
         }
         
@@ -695,7 +695,7 @@ function exportToPDF() {
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 115, yPosition - 1, margin + 140, yPosition - 1);
+          doc.line(margin + 115, yPosition - 2, margin + 140, yPosition - 2); // Ligne mieux alignée
           addText('min', margin + 142, yPosition, 10, 'normal', 'gray');
         }
         yPosition += 4; // Espacement réduit pour lignes vides
@@ -707,7 +707,7 @@ function exportToPDF() {
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 40, yPosition - 1, margin + 60, yPosition - 1);
+          doc.line(margin + 40, yPosition - 2, margin + 60, yPosition - 2); // Ligne mieux alignée
           addText('m', margin + 62, yPosition, 10, 'normal', 'gray');
         }
         
@@ -717,7 +717,7 @@ function exportToPDF() {
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 120, yPosition - 1, margin + 145, yPosition - 1);
+          doc.line(margin + 120, yPosition - 2, margin + 145, yPosition - 2); // Ligne mieux alignée
           addText('min', margin + 147, yPosition, 10, 'normal', 'gray');
         }
         yPosition += 4; // Espacement réduit pour lignes vides
@@ -731,13 +731,13 @@ function exportToPDF() {
           addText('Correction:', margin + 70, yPosition, 10, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 95, yPosition - 1, margin + 160, yPosition - 1);
+          doc.line(margin + 95, yPosition - 2, margin + 160, yPosition - 2); // Ligne mieux alignée
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 25, yPosition - 1, margin + 65, yPosition - 1);
+          doc.line(margin + 25, yPosition - 2, margin + 65, yPosition - 2); // Ligne mieux alignée
           addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 9, 'normal', 'gray');
-          doc.line(margin + 130, yPosition - 1, margin + 170, yPosition - 1);
+          doc.line(margin + 130, yPosition - 2, margin + 170, yPosition - 2); // Ligne mieux alignée
         }
         yPosition += spacing.lineHeight + spacing.sectionGap;
       }
