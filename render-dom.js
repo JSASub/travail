@@ -253,3 +253,10 @@ function deletePalanquee(index) {
           plongeursOriginaux.push(plongeur);
         }
       });
+    }
+    
+    // Supprimer la palanquée
+    palanquees.splice(index, 1);
+    syncToDatabase();
+  }
+}
