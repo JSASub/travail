@@ -64,39 +64,38 @@ function initializeFirebase() {
     console.log("✅ Firebase initialisé");
     
     // Écouter les changements d'authentification
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log("✅ Utilisateur connecté:", user.email);
-        currentUser = user;
-        showMainApp();
-        updateUserInfo(user);
-        
-        // Initialiser le système de verrous avec délai
-        if (!lockSystemInitialized) {
-          setTimeout(() => {
-            initializeLockSystemSafe();
-          }, 3000);
-        }
-        
-        // Charger les données si ready
-        if (document.readyState === 'complete') {
-          console.log("🔄 Chargement des données après connexion...");
-          await initializeAppData();
-        }
-      } else {
-        console.log("❌ Utilisateur non connecté");
-        currentUser = null;
-        lockSystemInitialized = false;
-        showAuthContainer();
-      }
-    });
+    // Écouter les changements d'authentification
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    console.log("✅ Utilisateur connecté:", user.email);
+    currentUser = user;
+    showMainApp();
+    updateUserInfo(user);
     
-    return true;
-  } catch (error) {
-    console.error("❌ Erreur initialisation Firebase:", error);
-    return false;
+    // Initialiser le système de verrous avec délai
+    if (!lockSystemInitialized) {
+      setTimeout(() => {
+        initializeLockSystemSafe();
+      }, 3000);
+    }
+    
+    // Charger les données si ready
+    if (document.readyState === 'complete') {
+      console.log("🔄 Chargement des données après connexion...");
+      await initializeAppData();
+      
+      // AJOUTER CETTE LIGNE :
+      if (typeof initializeAfterAuth === 'function') {
+        await initializeAfterAuth();
+      }
+    }
+  } else {
+    console.log("❌ Utilisateur non connecté");
+    currentUser = null;
+    lockSystemInitialized = false;
+    showAuthContainer();
   }
-}
+});
 
 // ===== SYSTÈME DE VERROUILLAGE SÉCURISÉ =====
 

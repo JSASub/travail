@@ -164,10 +164,8 @@ async function initializeAppData() {
     
     // Charger l'historique DP avec gestion d'erreur
     try {
-      if (typeof chargerHistoriqueDP === 'function') {
-        await chargerHistoriqueDP();
-        console.log("✅ Historique DP chargé");
-      }
+      await chargerHistoriqueDP();
+      console.log("✅ Historique DP chargé");
     } catch (error) {
       console.error("❌ Erreur chargement historique DP:", error);
     }
@@ -1327,8 +1325,76 @@ async function chargerHistoriqueDP() {
 }
 
 function afficherInfoDP() {
-  // Fonction simplifiée pour éviter les erreurs
-  console.log("📋 Affichage info DP");
+  const dpDatesSelect = document.getElementById("dp-dates");
+  const historiqueInfo = document.getElementById("historique-info");
+  
+  if (!dpDatesSelect || !historiqueInfo) {
+    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
+    return;
+  }
+  
+  const selectedKey = dpDatesSelect.value;
+  
+  if (!selectedKey) {
+    historiqueInfo.innerHTML = '';
+    return;
+  }
+  
+  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
+  
+  if (typeof db === 'undefined' || !db) {
+    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
+    return;
+  }
+  
+  db.ref(`dpInfo/${selectedKey}`).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) {
+        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
+        return;
+      }
+      
+      const dpData = snapshot.val();
+      const formatDate = (dateStr) => {
+        try {
+          return new Date(dateStr).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch {
+          return dateStr;
+        }
+      };
+      
+      historiqueInfo.innerHTML = `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
+          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
+          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
+          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
+          <p><strong>🕕 Session :</strong> ${dpData.plongee || 'matin'}</p>
+          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
+          
+          <div style="margin-top: 15px;">
+            <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
+                    style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+              🔥 Charger dans l'interface
+            </button>
+            <button onclick="supprimerDPSelectionne('${selectedKey}')" 
+                    style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+              🗑️ Supprimer
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .catch(error => {
+      console.error("❌ Erreur chargement DP:", error);
+      handleError(error, "Chargement DP");
+      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
+    });
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
@@ -1755,8 +1821,55 @@ async function deleteSelectedDPs() {
   }
 }
 
-// Export des fonctions globales
-window.chargerHistoriqueDP = chargerHistoriqueDP;
+// ===== INITIALISATION APRÈS CONNEXION =====
+async function initializeAfterAuth() {
+  console.log("🔐 Initialisation après authentification...");
+  
+  try {
+    // Charger toutes les données utilisateur
+    await initializeAppData();
+    
+    // Charger spécifiquement l'historique et les listes de nettoyage
+    console.log("📋 Chargement des interfaces de gestion...");
+    
+    try {
+      await chargerHistoriqueDP();
+      console.log("✅ Historique DP chargé après auth");
+    } catch (error) {
+      console.error("❌ Erreur historique DP après auth:", error);
+    }
+    
+    try {
+      await populateSessionSelector();
+      console.log("✅ Sélecteur sessions chargé après auth");
+    } catch (error) {
+      console.error("❌ Erreur sélecteur sessions après auth:", error);
+    }
+    
+    try {
+      await populateSessionsCleanupList();
+      console.log("✅ Liste nettoyage sessions chargée après auth");
+    } catch (error) {
+      console.error("❌ Erreur liste sessions après auth:", error);
+    }
+    
+    try {
+      await populateDPCleanupList();
+      console.log("✅ Liste nettoyage DP chargée après auth");
+    } catch (error) {
+      console.error("❌ Erreur liste DP après auth:", error);
+    }
+    
+    console.log("✅ Initialisation complète après authentification terminée");
+    
+  } catch (error) {
+    console.error("❌ Erreur initialisation après auth:", error);
+    handleError(error, "Initialisation après authentification");
+  }
+}
+
+// Export de la fonction pour usage externe
+window.initializeAfterAuth = initializeAfterAuth;
 window.afficherInfoDP = afficherInfoDP;
 window.chargerDonneesDPSelectionne = chargerDonneesDPSelectionne;
 window.supprimerDPSelectionne = supprimerDPSelectionne;
