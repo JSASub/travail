@@ -509,7 +509,7 @@ function exportToPDF() {
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text('TABLEAU DE BORD', margin, yPosition);
     
@@ -520,7 +520,7 @@ function exportToPDF() {
     yPosition += 15;
     
     doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     
     doc.text('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
@@ -541,7 +541,7 @@ function exportToPDF() {
       doc.rect(margin, yPosition, contentWidth, 15 + (alertesTotal.length * 6), 'S');
       
       doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('ALERTES DE SÉCURITÉ (' + alertesTotal.length + ')', margin + 5, yPosition + 10);
       
@@ -563,9 +563,9 @@ function exportToPDF() {
     checkPageBreak(30, true);
     
     doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.text('ORGANISATION DES PALANQUÉES', margin, yPosition);
+    doc.text('Organisation des Palanquées', margin, yPosition);
     yPosition += 15;
     
     if (palanqueesLocal.length === 0) {
@@ -609,13 +609,13 @@ function exportToPDF() {
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.text('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 8);
         
         yPosition += 18;
         
         doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'normal');
         
         if (pal.length === 0) {
@@ -651,7 +651,7 @@ function exportToPDF() {
         yPosition += 5;
         
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         
         // Horaire de mise à l'eau
@@ -663,7 +663,7 @@ function exportToPDF() {
           doc.text(pal.horaire, margin + 45, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text('Correction: ', margin + 85, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
@@ -673,7 +673,7 @@ function exportToPDF() {
           doc.setLineWidth(0.3);
           doc.line(margin + 45, yPosition + 1, margin + 80, yPosition + 1);
           doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.text('(HH:MM)', margin + 82, yPosition);
         }
@@ -681,7 +681,7 @@ function exportToPDF() {
         
         // Profondeurs et durées prévues
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         
         // Profondeur prévue
@@ -692,7 +692,7 @@ function exportToPDF() {
           doc.text(pal.profondeurPrevue + ' m', margin + 25, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text('Corr:', margin + 35, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 43, yPosition + 1, margin + 53, yPosition + 1);
@@ -704,7 +704,7 @@ function exportToPDF() {
         
         // Durée prévue
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         doc.text('Durée prévue:', margin + 60, yPosition);
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
@@ -713,7 +713,7 @@ function exportToPDF() {
           doc.text(pal.dureePrevue + ' min', margin + 82, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text('Corr:', margin + 95, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 103, yPosition + 1, margin + 113, yPosition + 1);
@@ -726,7 +726,7 @@ function exportToPDF() {
         
         // Profondeurs et durées réalisées
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         
         // Profondeur réalisée
@@ -737,7 +737,7 @@ function exportToPDF() {
           doc.text(pal.profondeurRealisee + ' m', margin + 28, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text('Corr:', margin + 38, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 46, yPosition + 1, margin + 56, yPosition + 1);
@@ -749,7 +749,7 @@ function exportToPDF() {
         
         // Durée réalisée
         doc.setTextColor(colors.successR, colors.successG, colors.successB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         doc.text('Durée réalisée:', margin + 60, yPosition);
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
@@ -758,7 +758,7 @@ function exportToPDF() {
           doc.text(pal.dureeRealisee + ' min', margin + 85, yPosition);
           doc.setFont(undefined, 'bold');
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text('Corr:', margin + 98, yPosition);
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 106, yPosition + 1, margin + 116, yPosition + 1);
@@ -771,14 +771,14 @@ function exportToPDF() {
         
         // Paliers
         doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-        doc.setFontSize(9);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         doc.text('Paliers:', margin + 5, yPosition);
         
         if (pal.paliers && pal.paliers.trim()) {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
           doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.text(pal.paliers, margin + 20, yPosition);
           yPosition += 6;
           
@@ -791,7 +791,7 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.line(margin + 20, yPosition + 1, margin + 120, yPosition + 1);
           doc.setFont(undefined, 'normal');
-          doc.setFontSize(8);
+          doc.setFontSize(10);
           doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
           doc.text('(ex: 3 min à 3 m)', margin + 122, yPosition);
         }
