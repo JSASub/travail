@@ -598,7 +598,7 @@ function exportToPDF() {
         
         // Calculer la hauteur nécessaire pour cette palanquée
         let palanqueeHeight = 25; // Header
-        palanqueeHeight += (pal.length * spacing.lineHeight) + spacing.subsectionGap; // Plongeurs
+        palanqueeHeight += (pal.length * spacing.lineHeight) + 4; // Plongeurs + espacement réduit
         palanqueeHeight += 30; // Paramètres (4 lignes au lieu de 5) - encore réduit
         palanqueeHeight += spacing.sectionGap; // Espacement final
         
@@ -627,7 +627,7 @@ function exportToPDF() {
         // Liste des plongeurs
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + spacing.subsectionGap;
+          yPosition += spacing.lineHeight + 4; // Espacement réduit pour cohérence
         } else {
           for (let j = 0; j < pal.length; j++) {
             const p = pal[j];
@@ -646,7 +646,7 @@ function exportToPDF() {
             
             yPosition += spacing.lineHeight;
           }
-          yPosition += spacing.subsectionGap;
+          yPosition += 4; // Espacement réduit entre dernier plongeur et paramètres
         }
         
         // Paramètres de plongée
@@ -789,6 +789,7 @@ function exportToPDF() {
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
+
 // ===== DRAG & DROP SÉCURISÉ =====
 
 // Variables globales pour le drag & drop
