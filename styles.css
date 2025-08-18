@@ -526,16 +526,25 @@ background: #28a745 !important;
 .palanquee-plongeur-item .plongeur-nom {
   flex: 1 !important;
   order: 1 !important;
+  font-size: 15px !important;
+  font-weight: bold;
+  color: #003366;
 }
 
 .palanquee-plongeur-item .plongeur-prerogatives-editable {
   flex: 0 0 50px !important;
   order: 2 !important;
+  font-size: 14px !important;
+  font-weight: bold;
+  color: #003366;
 }
 
 .palanquee-plongeur-item .return-plongeur {
   flex: 0 0 10px !important;
   order: 4 !important;
+  font-size: 14px !important;
+  font-weight: bold;
+  color: #003366;
 }
 
 /* STYLES POUR LES DÉTAILS DE PALANQUÉE */
