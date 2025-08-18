@@ -243,6 +243,28 @@ function generatePDFPreview() {
     const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
+    // NOUVEAU: Fonction de tri par grade pour l'aperçu
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          // Si même niveau, trier par nom
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+    
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
       const date = new Date(dateString);
@@ -289,6 +311,63 @@ function generatePDFPreview() {
           padding-bottom: 10px;
           border-bottom: 3px solid #007bff;
         }
+        .plongeur-item {
+          padding: 8px 12px;
+          margin: 4px 0;
+          background: #f8f9fa;
+          border-left: 4px solid #007bff;
+          border-radius: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: all 0.2s ease;
+        }
+        .plongeur-item:hover {
+          background: #e9ecef;
+          transform: translateX(2px);
+        }
+        .plongeur-nom {
+          font-weight: bold;
+          flex: 1;
+        }
+        .plongeur-niveau {
+          background: #28a745;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: bold;
+          min-width: 50px;
+          text-align: center;
+          margin-right: 8px;
+        }
+        .plongeur-prerogatives {
+          font-size: 11px;
+          color: #666;
+          font-style: italic;
+        }
+        .palanquee-box {
+          margin: 20px 0;
+          padding: 20px;
+          border: 2px solid #007bff;
+          border-radius: 8px;
+          background: #f8f9fa;
+        }
+        .palanquee-title {
+          font-size: 18px;
+          font-weight: bold;
+          color: #004080;
+          margin-bottom: 15px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .alert-box {
+          border-color: #dc3545 !important;
+          background: #fff5f5 !important;
+        }
+        .alert-title {
+          color: #dc3545 !important;
+        }
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
@@ -304,7 +383,7 @@ function generatePDFPreview() {
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">PALANQUÉES JSAS</h1>';
+    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
     htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
     htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
@@ -335,15 +414,30 @@ function generatePDFPreview() {
     } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          htmlContent += '<div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">';
-          htmlContent += '<h3>Palanquée ' + (i + 1) + ' (' + pal.length + ' plongeur' + (pal.length > 1 ? 's' : '') + ')</h3>';
+          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
+          const boxClass = hasAlert ? 'palanquee-box alert-box' : 'palanquee-box';
+          const titleClass = hasAlert ? 'palanquee-title alert-title' : 'palanquee-title';
+          
+          htmlContent += `<div class="${boxClass}">`;
+          htmlContent += `<h3 class="${titleClass}">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
           
           if (pal.length === 0) {
-            htmlContent += '<p>Aucun plongeur assigné</p>';
+            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            pal.forEach(p => {
+            // MODIFICATION: Trier les plongeurs par grade avant affichage
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
-                htmlContent += '<p>• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '') + '</p>';
+                htmlContent += '<div class="plongeur-item">';
+                htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+                htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+                if (p.pre) {
+                  htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+                }
+                htmlContent += '</div>';
+                htmlContent += '</div>';
               }
             });
           }
@@ -357,9 +451,21 @@ function generatePDFPreview() {
     if (plongeursLocal.length > 0) {
       htmlContent += '<section class="section">';
       htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
-      plongeursLocal.forEach(p => {
+      
+      // MODIFICATION: Trier aussi les plongeurs en attente par grade
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
         if (p && p.nom) {
-          htmlContent += '<p>• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '') + '</p>';
+          htmlContent += '<div class="plongeur-item">';
+          htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+          htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+          if (p.pre) {
+            htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+          }
+          htmlContent += '</div>';
+          htmlContent += '</div>';
         }
       });
       htmlContent += '</section>';
@@ -383,17 +489,16 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré");
-      console.log("✅ Aperçu PDF généré");
+      console.log("✅ Aperçu PDF généré avec tri par grade");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("⌫ Éléments d'aperçu non trouvés");
+      console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("⌫ Erreur génération aperçu PDF:", error);
+    console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
