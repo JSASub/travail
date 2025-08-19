@@ -436,6 +436,10 @@ async function loadFromFirebase() {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
+    // AUTORISER LA SYNC SEULEMENT MAINTENANT
+    allowSync = true;
+    console.log("✅ Synchronisation autorisée après chargement des données");
+    
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
   }
