@@ -374,25 +374,62 @@ function checkAlertForArray(palanquee) {
 }
 
 // ===== FONCTION DE VALIDATION AVANT AJOUT À UNE PALANQUÉE =====
-// Alternative avec validation basique uniquement sur l'effectif maximum
-function validatePalanqueeAdditionBasic(palanqueeIndex, newPlongeur) {
+function validatePalanqueeAddition(palanqueeIndex, newPlongeur) {
   if (!Array.isArray(palanquees[palanqueeIndex])) return { valid: false, messages: ["Erreur: palanquée invalide"] };
   
   // Simuler l'ajout pour tester
   const testPalanquee = [...palanquees[palanqueeIndex], newPlongeur];
   
-  // Validation basique - seulement l'effectif maximum
-  if (testPalanquee.length > 5) {
+  // Vérifier si cela créerait une alerte
+  const wouldCreateAlert = checkAlertForArray(testPalanquee);
+  
+  if (wouldCreateAlert) {
+    // Déterminer le type d'alerte spécifique
+    const alertMessages = [];
+    
+    const plgBr = testPalanquee.filter(p => p && p.niveau === "Plg.Br");
+    const plgAr = testPalanquee.filter(p => p && p.niveau === "Plg.Ar");
+    const gps = testPalanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
+    const jeunesPlongeurs = testPalanquee.filter(p => p && ["Plg.Br", "Plg.Ar", "Plg.Or"].includes(p.niveau)).length;
+    const plongeursAdultes = testPalanquee.filter(p => p && ["N1", "N2", "N3", "Déb.", "débutant", "Déb"].includes(p.niveau)).length;
+    
+    // Vérifications spécifiques selon les nouvelles règles
+    if (newPlongeur.niveau === "Plg.Br" && plgBr.length > 2) {
+      alertMessages.push("🚫 Maximum 2 plongeurs Bronze par palanquée");
+    }
+    
+    if (newPlongeur.niveau === "Plg.Ar" && plgAr.length > 2) {
+      alertMessages.push("🚫 Maximum 2 plongeurs Argent par palanquée");
+    }
+    
+    if (["Plg.Br", "Plg.Ar"].includes(newPlongeur.niveau) && gps.length === 0) {
+      alertMessages.push("🚫 Les plongeurs Bronze/Argent nécessitent un Guide de Palanquée (GP/E2/E3/E4)");
+    }
+    
+    if (["N1", "Plg.Or", "Déb.", "débutant", "Déb"].includes(newPlongeur.niveau) && gps.length === 0) {
+      alertMessages.push("🚫 Ce plongeur nécessite un Guide de Palanquée");
+    }
+    
+    if (testPalanquee.length > 5) {
+      alertMessages.push("🚫 Maximum 5 plongeurs par palanquée");
+    }
+    
+    if (jeunesPlongeurs > 0 && plongeursAdultes > 0) {
+      if (testPalanquee.length > 3) {
+        alertMessages.push("🚫 Maximum 3 plongeurs quand il y a des jeunes et des adultes");
+      }
+      if (jeunesPlongeurs > 2) {
+        alertMessages.push("🚫 Maximum 2 jeunes plongeurs avec des adultes");
+      }
+    }
+    
     return {
       valid: false,
-      messages: ["🚫 Maximum 5 plongeurs par palanquée"]
+      messages: alertMessages.length > 0 ? alertMessages : ["🚫 Configuration de palanquée non conforme"]
     };
   }
   
-  return { 
-    valid: true, 
-    messages: ["✅ Ajout autorisé"] 
-  };
+  return { valid: true, messages: ["✅ Ajout autorisé"] };
 }
 
 // ===== FONCTION POUR AFFICHER LES STATISTIQUES DÉTAILLÉES =====
