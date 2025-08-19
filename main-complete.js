@@ -325,11 +325,11 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(10);
+        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 15);
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 15);
-        yPosition = 25;
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
+        yPosition = 15; // RÉDUIT de 18 à 15
       }
     }
     
@@ -630,23 +630,21 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === FOOTER ULTRA RÉDUIT ===
+    // === FOOTER REORGANISÉ ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       doc.setPage(pageNum);
       
       doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
-      doc.setLineWidth(0.3); // RÉDUIT de 0.5 à 0.3
-      doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10); // RÉDUIT de -15 à -10
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
       
-      if (pageNum === totalPages) {
-        // Une seule ligne pour l'info officielle (plus compact)
-        addText('JSAS - Conforme FFESSM - ' + new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 7, 6, 'normal', 'gray'); // RÉDUIT à 6pt et -7
-      }
+      // Date et heure à gauche
+      addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 6, 6, 'normal', 'gray');
       
-      // Page et horodatage sur la même ligne
-      addText('Page ' + pageNum + '/' + totalPages + ' - ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), pageWidth - margin - 35, pageHeight - 7, 6, 'normal', 'gray'); // RÉDUIT à 6pt et combiné
+      // Numérotation à droite
+      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 6, 6, 'normal', 'gray');
     }
     
     // === TÉLÉCHARGEMENT ===
