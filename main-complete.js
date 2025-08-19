@@ -2567,3 +2567,35 @@ window.addEventListener('error', (event) => {
 });
 
 console.log("✅ Main application sécurisée chargée - Version 2.5.2");
+
+// ===== OVERRIDE COMPLET DE syncToDatabase =====
+window.originalSyncToDatabase = window.syncToDatabase;
+
+window.syncToDatabase = function() {
+  if (!window.currentUser) {
+    console.log("🚫 Sync bloquée - pas d'utilisateur connecté");
+    return Promise.resolve(false);
+  }
+  
+  if (!window.firebaseConnected) {
+    console.log("🚫 Sync bloquée - Firebase non connecté");
+    return Promise.resolve(false);
+  }
+  
+  if (!window.plongeurs || window.plongeurs.length === 0) {
+    console.log("🚫 Sync bloquée - aucun plongeur à sauvegarder");
+    return Promise.resolve(false);
+  }
+  
+  console.log("✅ Sync autorisée -", window.plongeurs.length, "plongeurs");
+  
+  if (window.originalSyncToDatabase && typeof window.originalSyncToDatabase === 'function') {
+    return window.originalSyncToDatabase();
+  } else {
+    console.warn("⚠️ originalSyncToDatabase non disponible");
+    return Promise.resolve(false);
+  }
+};
+
+console.log("🔒 Override de syncToDatabase installé");
+// ===== FIN OVERRIDE =====
