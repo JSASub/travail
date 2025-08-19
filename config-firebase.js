@@ -441,9 +441,6 @@ async function loadFromFirebase() {
 // Sauvegarde sécurisée avec vérification de connexion
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
-  // Sauvegarde sécurisée avec vérification de connexion
-async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
   
   // Vérifier si l'utilisateur est connecté
   //if (!currentUser) {
