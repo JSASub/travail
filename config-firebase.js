@@ -19,6 +19,7 @@ let currentSort = 'none';
 let firebaseConnected = false;
 let pageLoadTime = Date.now();
 let dataLoadedded = false;
+let allowSync = false;
 
 // Firebase instances
 let app, db, auth;
@@ -441,62 +442,29 @@ async function loadFromFirebase() {
 }
 
 // Sauvegarde sécurisée avec vérification de connexion
+// Sauvegarde ultra-sécurisée - BLOQUE TOUT PENDANT LA CONNEXION
 async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
-  
-  // Vérifier si l'utilisateur est connecté
-  if (!currentUser) {
-    console.log("⚠️ Utilisateur non connecté - sauvegarde ignorée");
+  // ARRÊT IMMÉDIAT si pas autorisé
+  if (!allowSync) {
+    console.log("🚫 Synchronisation bloquée - phase de connexion");
     return false;
   }
   
-  // Vérifier si Firebase est connecté
-  if (!firebaseConnected || !db) {
-    console.log("⚠️ Firebase non connecté - sauvegarde en mode local uniquement");
-    
-    // Sauvegarde d'urgence locale si disponible
-    if (typeof emergencyLocalSave === 'function') {
-      emergencyLocalSave();
-    }
-    
-    // Mettre à jour l'interface sans erreur
-    plongeursOriginaux = [...plongeurs];
-    if (typeof renderPalanquees === 'function') renderPalanquees();
-    if (typeof renderPlongeurs === 'function') renderPlongeurs();
-    if (typeof updateAlertes === 'function') updateAlertes();
-    
+  // ARRÊT IMMÉDIAT si pas connecté
+  if (!currentUser || !firebaseConnected || !db) {
+    console.log("⚠️ Conditions non remplies pour sync");
     return false;
   }
   
-  // NOUVELLE VÉRIFICATION : Éviter de sauvegarder des données vides au démarrage
-  if (!plongeurs || !palanquees) {
-    console.log("⚠️ Variables non initialisées - sauvegarde ignorée");
-    return false;
-  }
-  
-  // Éviter de sauvegarder si les données ne sont pas encore chargées
-  if (!dataLoaded) {
-    console.log("⚠️ Données non encore chargées - sauvegarde ignorée");
-    return false;
-  }
-  
-  // Éviter de sauvegarder si on vient de se connecter et que les données ne sont pas encore chargées
-  const totalData = plongeurs.length + palanquees.length;
-  if (totalData === 0 && Date.now() - pageLoadTime < 10000) {
-    console.log("⚠️ Données probablement non chargées - sauvegarde ignorée");
-    return false;
-  }
+  console.log("💾 Synchronisation Firebase autorisée...");
   
   try {
-    // Synchronisation normale
     plongeursOriginaux = [...plongeurs];
     
-    // Rendu sécurisé
     if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    // Sauvegarde Firebase
     await Promise.all([
       db.ref('plongeurs').set(plongeurs || []),
       db.ref('palanquees').set(palanquees || [])
@@ -508,20 +476,6 @@ async function syncToDatabase() {
     
   } catch (error) {
     console.error("❌ Erreur sync Firebase:", error.message);
-    
-    // Sauvegarde d'urgence en cas d'erreur
-    if (typeof emergencyLocalSave === 'function') {
-      emergencyLocalSave();
-    }
-    
-    // Ne pas afficher d'erreur si l'utilisateur n'est pas connecté
-    if (error.code === 'auth/unauthenticated' || error.code === 'PERMISSION_DENIED') {
-      console.log("⚠️ Session expirée - sauvegarde locale effectuée");
-      return false;
-    }
-    
-    // Pour les autres erreurs, ne pas afficher d'alerte gênante
-    console.warn("⚠️ Synchronisation échouée, données conservées localement");
     return false;
   }
 }
