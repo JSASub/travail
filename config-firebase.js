@@ -1,4 +1,4 @@
-/ config-firebase.js - Configuration Firebase et services de base (VERSION ULTRA-SÉCURISÉE)
+// config-firebase.js - Configuration Firebase et services de base (VERSION ULTRA-SÉCURISÉE)
 
 // Configuration Firebase
 const firebaseConfig = {
