@@ -440,7 +440,7 @@ function exportToPDF() {
     checkPageBreak(40, true);
     
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 6; // RÉDUIT de 8 à 6
+    yPosition += 3; // RÉDUIT de 6 à 3 (descendre de 3mm)
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
