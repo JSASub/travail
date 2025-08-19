@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "dp": "AGUIRRE",
+    "date": "2025-08-06",
+    "lieu": "SS",
+    "plongee": "matin",
+    "version": "2.0.0",
+    "exportDate": "2025-08-06T21:09:43.882Z"
+  },
+  "plongeurs": [
+    {
+      "nom": "AGUIRRE Anne",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "AGUIRRE Raoul",
+      "niveau": "E3",
+      "prerogatives": "DP"
+    },
+    {
+      "nom": "AUBARD Corinne",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BAPPEL Hubert",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BERDEAUX Clara",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "BERDEAUX Cyril",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BERDEAUX Maëlys",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "BERDEAUX Stéphanie",
+      "niveau": "N2",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BERTIN Armand",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BERTIN Élina",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BEST Sébastien",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BEST Stéphanie",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BUCHERIC Nicolas",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CABIROL Joël",
+      "niveau": "E3",
+      "prerogatives": "E3"
+    },
+    {
+      "nom": "CALAU Samuel",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "CATTEROU Raphaël",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CATTEROU Sacha",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "CHARAZAC Bastien",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "DARDER Olivier",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "DELBARRE Mathieu",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "DESGRAUPES Nicolas",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "DORCHIN Olivier",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "DUPIN Ariane",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "FONTANILLAS Romain",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "GAUTHIER Christophe",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "GONTHIER Axel",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "GONTHIER Éric",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "GORY Ethan",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "IDIER Charlène",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "LE MAOUT Jean-François",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "LE MAOUT Laure",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "LEMÉE Jean-Marc",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "MARTY David",
+      "niveau": "E3",
+      "prerogatives": "E3"
+    },
+    {
+      "nom": "MARTY Élina",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "NICOT Damien",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "PETRUCEL Sacha",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "VOLLET Denis",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    }
+  ],
+  "palanquees": [
+    {
+      "numero": 1,
+      "plongeurs": [
+        {
+          "nom": "TROUBADIS Lola",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        },
+        {
+          "nom": "TROUBADIS Guillaume",
+          "niveau": "E2",
+          "prerogatives": "GP"
+        }
+      ],
+      "alertes": []
+    }
+  ],
+  "resume": {
+    "totalPlongeurs": 39,
+    "nombrePalanquees": 1,
+    "plongeursNonAssignes": 37,
+    "alertesTotal": 0
+  }
+}

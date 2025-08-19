@@ -445,44 +445,34 @@ function initializeOfflineManager() {
       loadEmergencyBackup();
     }, 2000);
     
-	// Intercepter les modifications pour déclencher la sauvegarde d'urgence
-	const originalSyncToDatabase = window.syncToDatabase;
-	if (originalSyncToDatabase) {
-	window.syncToDatabase = async function() {
-    // NOUVELLE VÉRIFICATION : sortir silencieusement si pas connecté
-    if (!currentUser || !firebaseConnected) {
-      // Sauvegarde d'urgence immédiate
-      emergencyLocalSave();
-      return false; // Sortir silencieusement
+    // Intercepter les modifications pour déclencher la sauvegarde d'urgence
+    const originalSyncToDatabase = window.syncToDatabase;
+    if (originalSyncToDatabase) {
+      window.syncToDatabase = async function() {
+        // Sauvegarde d'urgence immédiate
+        emergencyLocalSave();
+        
+        try {
+          // Appeler la fonction originale
+          const result = await originalSyncToDatabase.apply(this, arguments);
+          
+          // Si la sync réussit, mettre à jour le statut
+          lastSyncTimestamp = Date.now();
+          offlineDataPending = false;
+          updateConnectionIndicator(isOnline);
+          
+          return result;
+          
+        } catch (error) {
+          console.warn("⚠️ Sync Firebase échouée, données conservées localement:", error.message);
+          offlineDataPending = true;
+          updateConnectionIndicator(false);
+          
+          // Ne pas propager l'erreur pour éviter de casser l'application
+          return false;
+        }
+      };
     }
-    
-    // Sauvegarde d'urgence immédiate
-    emergencyLocalSave();
-    
-    try {
-      // Appeler la fonction originale
-      const result = await originalSyncToDatabase.apply(this, arguments);
-      
-      // Si la sync réussit, mettre à jour le statut
-      if (result) {
-        lastSyncTimestamp = Date.now();
-        offlineDataPending = false;
-        updateConnectionIndicator(isOnline);
-      }
-      
-      return result;
-      
-    } catch (error) {
-      console.warn("⚠️ Sync Firebase échouée, données conservées localement:", error.message);
-      offlineDataPending = true;
-      updateConnectionIndicator(false);
-      
-      // Sauvegarde locale sans erreur
-      emergencyLocalSave();
-      return false;
-    }
-  };
-}
     
     // Nettoyage à la fermeture
     window.addEventListener('beforeunload', () => {
