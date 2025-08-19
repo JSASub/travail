@@ -630,7 +630,7 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === FOOTER ===
+    // === FOOTER RÉDUIT ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
@@ -638,15 +638,15 @@ function exportToPDF() {
       
       doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
       doc.setLineWidth(0.5);
-      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15); // RÉDUIT de 20 à 15
       
       if (pageNum === totalPages) {
-        addText('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 15, 8, 'normal', 'gray');
-        addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 10, 8, 'normal', 'gray');
+        addText('Document officiel JSAS - Conforme FFESSM - Version 2.1.3 Pro', margin, pageHeight - 12, 7, 'normal', 'gray'); // RÉDUIT de 8 à 7pt et position -12
+        addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' - Ne pas modifier', margin, pageHeight - 8, 7, 'normal', 'gray'); // RÉDUIT de 8 à 7pt et position -8
       }
       
-      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8, 'normal', 'gray');
-      addText(new Date().toLocaleString('fr-FR'), margin, pageHeight - 5, 8, 'normal', 'gray');
+      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 20, pageHeight - 8, 7, 'normal', 'gray'); // RÉDUIT de 8 à 7pt et position -8
+      addText(new Date().toLocaleString('fr-FR'), margin, pageHeight - 4, 7, 'normal', 'gray'); // RÉDUIT de 8 à 7pt et position -4
     }
     
     // === TÉLÉCHARGEMENT ===
