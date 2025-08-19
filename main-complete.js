@@ -303,13 +303,14 @@ function exportToPDF() {
     const margin = 20;
     const contentWidth = pageWidth - (2 * margin);
     
-    // Constantes pour l'espacement
+    // MODIFICATION : Constantes pour l'espacement RÉDUIT
     const spacing = {
       lineHeight: 6,
-      sectionGap: 12,
-      subsectionGap: 8,
+      sectionGap: 8, // RÉDUIT de 12 à 8
+      subsectionGap: 6, // RÉDUIT de 8 à 6
       headerHeight: 60,
-      footerHeight: 25
+      footerHeight: 25,
+      palanqueeGap: 6 // NOUVEAU : espacement spécifique entre palanquées
     };
     
     function checkPageBreak(heightNeeded, forceNewPage = false) {
@@ -439,7 +440,7 @@ function exportToPDF() {
     checkPageBreak(40, true);
     
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 8; // Espacement réduit de 15 à 8
+    yPosition += 6; // RÉDUIT de 8 à 6
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
@@ -453,38 +454,38 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // Calculer la hauteur nécessaire pour cette palanquée (TRÈS RÉDUITE)
-        let palanqueeHeight = 14; // Header encore plus réduit de 18 à 14
-        palanqueeHeight += (pal.length * spacing.lineHeight) + 4; // Plongeurs + espacement réduit
-        palanqueeHeight += 30; // Paramètres (4 lignes au lieu de 5) - encore réduit
-        palanqueeHeight += spacing.sectionGap; // Espacement final
+        // MODIFICATION : Calculer la hauteur nécessaire pour cette palanquée (ENCORE PLUS RÉDUITE)
+        let palanqueeHeight = 12; // Header RÉDUIT de 14 à 12
+        palanqueeHeight += (pal.length * spacing.lineHeight) + 3; // Plongeurs + espacement réduit
+        palanqueeHeight += 26; // Paramètres RÉDUIT de 30 à 26
+        palanqueeHeight += spacing.palanqueeGap; // NOUVEAU : espacement spécifique entre palanquées
         
         checkPageBreak(palanqueeHeight + 10);
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée TRÈS RÉDUIT
+        // En-tête de palanquée ULTRA RÉDUIT
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 8, 'F'); // Hauteur drastiquement réduite de 12 à 8
+        doc.rect(margin, yPosition, contentWidth, 7, 'F'); // Hauteur RÉDUITE de 8 à 7
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 6, 12, 'bold', 'white'); // Position Y ajustée
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white'); // Position Y ajustée
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 6, 10, 'normal', 'white'); // Position Y ajustée
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white'); // Position Y ajustée
         
-        yPosition += 14; // Espacement entre cadre bleu et premier plongeur
+        yPosition += 12; // RÉDUIT : Espacement entre cadre bleu et premier plongeur
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + 4; // Espacement réduit pour cohérence
+          yPosition += spacing.lineHeight + 3; // Espacement réduit pour cohérence
         } else {
           // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
           const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
@@ -513,90 +514,92 @@ function exportToPDF() {
             
             yPosition += spacing.lineHeight;
           }
-          yPosition += 4; // Espacement réduit entre dernier plongeur et paramètres
+          yPosition += 3; // RÉDUIT : Espacement entre dernier plongeur et paramètres
         }
         
-        // Paramètres de plongée (TAILLE RÉDUITE de 11 à 9 pour les libellés et de 10 à 8 pour les valeurs)
+        // MODIFICATION : Paramètres de plongée (TAILLE ET ESPACEMENT RÉDUITS)
         
         // Ligne 1: Horaire de mise à l'eau
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit de 11 à 9
+        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT de 10 à 9
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 10, 'normal'); // Réduit à 10
-          addText('Correction: ', margin + 80, yPosition, 9, 'bold', 'gray'); // Réduit à 9
+          addText(pal.horaire, margin + 50, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 105, yPosition, margin + 140, yPosition); // Ligne descendue de 2mm
+          doc.line(margin + 105, yPosition, margin + 140, yPosition);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 50, yPosition, margin + 85, yPosition); // Ligne descendue de 2mm
-          addText('(HH:MM)', margin + 88, yPosition, 10, 'normal', 'gray'); // Réduit à 10
+          doc.line(margin + 50, yPosition, margin + 85, yPosition);
+          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 4; // Espacement réduit pour lignes vides
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit à 10
+        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 10, 'normal'); // Réduit à 10
+          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 35, yPosition, margin + 55, yPosition); // Ligne descendue de 2mm
-          addText('m', margin + 57, yPosition, 10, 'normal', 'gray'); // Réduit à 10
+          doc.line(margin + 35, yPosition, margin + 55, yPosition);
+          addText('m', margin + 57, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 10, 'bold', 'primary'); // Réduit à 10
+        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 10, 'normal'); // Réduit à 10
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 115, yPosition, margin + 140, yPosition); // Ligne descendue de 2mm
-          addText('min', margin + 142, yPosition, 10, 'normal', 'gray'); // Réduit à 10
+          doc.line(margin + 115, yPosition, margin + 140, yPosition);
+          addText('min', margin + 142, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 4; // Espacement réduit pour lignes vides
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 10, 'bold', 'success'); // Réduit à 10
+        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 10, 'normal'); // Réduit à 10
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 40, yPosition, margin + 60, yPosition); // Ligne descendue de 2mm
-          addText('m', margin + 62, yPosition, 10, 'normal', 'gray'); // Réduit à 10
+          doc.line(margin + 40, yPosition, margin + 60, yPosition);
+          addText('m', margin + 62, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 10, 'bold', 'success'); // Réduit à 10
+        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 10, 'normal'); // Réduit à 10
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 120, yPosition, margin + 145, yPosition); // Ligne descendue de 2mm
-          addText('min', margin + 147, yPosition, 10, 'normal', 'gray'); // Réduit à 10
+          doc.line(margin + 120, yPosition, margin + 145, yPosition);
+          addText('min', margin + 147, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 4; // Espacement réduit pour lignes vides
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit à 10
+        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // Réduit à 10
+          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // RÉDUIT à 8
           // Correction rapprochée
-          addText('Correction:', margin + 70, yPosition, 9, 'bold', 'gray'); // Réduit à 9
+          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 95, yPosition, margin + 140, yPosition); // Ligne raccourcie de 20mm et descendue
+          doc.line(margin + 95, yPosition, margin + 140, yPosition);
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
-          doc.line(margin + 25, yPosition, margin + 65, yPosition); // Ligne descendue de 2mm
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 9, 'normal', 'gray'); // Réduit à 9
-          doc.line(margin + 130, yPosition, margin + 150, yPosition); // Ligne raccourcie de 20mm et descendue
+          doc.line(margin + 25, yPosition, margin + 65, yPosition);
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray'); // RÉDUIT à 8
+          doc.line(margin + 130, yPosition, margin + 150, yPosition);
         }
-        yPosition += spacing.lineHeight + spacing.sectionGap;
+        
+        // MODIFICATION MAJEURE : Espacement réduit entre palanquées
+        yPosition += spacing.lineHeight + spacing.palanqueeGap; // Utilise le nouvel espacement spécifique
       }
     }
     
@@ -647,10 +650,10 @@ function exportToPDF() {
     }
     
     // === TÉLÉCHARGEMENT ===
-    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-pro.pdf';
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-compact.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF généré:", fileName);
+    console.log("✅ PDF généré avec espacement réduit:", fileName);
     
     const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
     alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
