@@ -519,11 +519,11 @@ function exportToPDF() {
         // Paramètres de plongée (TAILLE RÉDUITE de 11 à 9 pour les libellés et de 10 à 8 pour les valeurs)
         
         // Ligne 1: Horaire de mise à l'eau
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary'); // Réduit de 11 à 9
+        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit de 11 à 9
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 8, 'normal'); // Réduit de 10 à 8
-          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray'); // Réduit de 9 à 8
+          addText(pal.horaire, margin + 50, yPosition, 10, 'normal'); // Réduit à 10
+          addText('Correction: ', margin + 80, yPosition, 9, 'bold', 'gray'); // Réduit à 9
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 105, yPosition, margin + 140, yPosition); // Ligne descendue de 2mm
@@ -531,61 +531,61 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 50, yPosition, margin + 85, yPosition); // Ligne descendue de 2mm
-          addText('(HH:MM)', margin + 88, yPosition, 8, 'normal', 'gray'); // Réduit de 9 à 8
+          addText('(HH:MM)', margin + 88, yPosition, 10, 'normal', 'gray'); // Réduit à 10
         }
         yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary'); // Réduit de 11 à 9
+        addText('Prof. prévue: ', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit à 10
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 8, 'normal'); // Réduit de 10 à 8
+          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 10, 'normal'); // Réduit à 10
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 35, yPosition, margin + 55, yPosition); // Ligne descendue de 2mm
-          addText('m', margin + 57, yPosition, 8, 'normal', 'gray'); // Réduit de 10 à 8
+          addText('m', margin + 57, yPosition, 10, 'normal', 'gray'); // Réduit à 10
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary'); // Réduit de 11 à 9
+        addText('Durée prévue:', margin + 80, yPosition, 10, 'bold', 'primary'); // Réduit à 10
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 8, 'normal'); // Réduit de 10 à 8
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 10, 'normal'); // Réduit à 10
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 115, yPosition, margin + 140, yPosition); // Ligne descendue de 2mm
-          addText('min', margin + 142, yPosition, 8, 'normal', 'gray'); // Réduit de 10 à 8
+          addText('min', margin + 142, yPosition, 10, 'normal', 'gray'); // Réduit à 10
         }
         yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success'); // Réduit de 11 à 9
+        addText('Prof. réalisée:', margin + 5, yPosition, 10, 'bold', 'success'); // Réduit à 10
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 8, 'normal'); // Réduit de 10 à 8
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 10, 'normal'); // Réduit à 10
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 40, yPosition, margin + 60, yPosition); // Ligne descendue de 2mm
-          addText('m', margin + 62, yPosition, 8, 'normal', 'gray'); // Réduit de 10 à 8
+          addText('m', margin + 62, yPosition, 10, 'normal', 'gray'); // Réduit à 10
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success'); // Réduit de 11 à 9
+        addText('Durée réalisée:', margin + 80, yPosition, 10, 'bold', 'success'); // Réduit à 10
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 8, 'normal'); // Réduit de 10 à 8
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 10, 'normal'); // Réduit à 10
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 120, yPosition, margin + 145, yPosition); // Ligne descendue de 2mm
-          addText('min', margin + 147, yPosition, 8, 'normal', 'gray'); // Réduit de 10 à 8
+          addText('min', margin + 147, yPosition, 10, 'normal', 'gray'); // Réduit à 10
         }
         yPosition += 4; // Espacement réduit pour lignes vides
         
         // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary'); // Réduit de 11 à 9
+        addText('Paliers:', margin + 5, yPosition, 10, 'bold', 'primary'); // Réduit à 10
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // Réduit de 10 à 8
+          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // Réduit à 10
           // Correction rapprochée
-          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray'); // Réduit de 10 à 8
+          addText('Correction:', margin + 70, yPosition, 9, 'bold', 'gray'); // Réduit à 9
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 95, yPosition, margin + 140, yPosition); // Ligne raccourcie de 20mm et descendue
@@ -593,7 +593,7 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 25, yPosition, margin + 65, yPosition); // Ligne descendue de 2mm
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray'); // Réduit de 9 à 8
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 9, 'normal', 'gray'); // Réduit à 9
           doc.line(margin + 130, yPosition, margin + 150, yPosition); // Ligne raccourcie de 20mm et descendue
         }
         yPosition += spacing.lineHeight + spacing.sectionGap;
