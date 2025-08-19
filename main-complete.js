@@ -662,7 +662,7 @@ function exportToPDF() {
 }
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
 function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
   try {
     const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
@@ -675,46 +675,204 @@ function generatePDFPreview() {
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // Générer un HTML simple pour l'aperçu
-    let htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Aperçu PDF - Palanquées JSAS</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #004080; }
-          .palanquee { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
-          .plongeur { margin: 5px 0; }
-        </style>
-      </head>
-      <body>
-        <h1>Palanquées JSAS - Fiche de Sécurité</h1>
-        <p><strong>DP:</strong> ${dpNom}</p>
-        <p><strong>Date:</strong> ${dpDate}</p>
-        <p><strong>Lieu:</strong> ${dpLieu}</p>
-        <p><strong>Session:</strong> ${dpPlongee}</p>
-        <p><strong>Total plongeurs:</strong> ${totalPlongeurs}</p>
+    // NOUVEAU: Fonction de tri par grade pour l'aperçu
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
         
-        <h2>Palanquées (${palanqueesLocal.length})</h2>
+        if (ordreA === ordreB) {
+          // Si même niveau, trier par nom
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+    
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+    
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    const cssStyles = `
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          min-height: 100vh;
+        }
+        .container {
+          max-width: 210mm;
+          margin: 0 auto;
+          background: white;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          min-height: 297mm;
+        }
+        .header {
+          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
+          color: white;
+          padding: 30px;
+        }
+        .main-title {
+          font-size: 28px;
+          font-weight: 300;
+          letter-spacing: 2px;
+        }
+        .content { padding: 40px; }
+        .section { margin-bottom: 40px; }
+        .section-title {
+          font-size: 20px;
+          color: #004080;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 3px solid #007bff;
+        }
+        .plongeur-item {
+          padding: 8px 12px;
+          margin: 4px 0;
+          background: #f8f9fa;
+          border-left: 4px solid #007bff;
+          border-radius: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: all 0.2s ease;
+        }
+        .plongeur-item:hover {
+          background: #e9ecef;
+          transform: translateX(2px);
+        }
+        .plongeur-nom {
+          font-weight: bold;
+          flex: 1;
+        }
+        .plongeur-niveau {
+          background: #28a745;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: bold;
+          min-width: 50px;
+          text-align: center;
+          margin-right: 8px;
+        }
+        .plongeur-prerogatives {
+          font-size: 11px;
+          color: #666;
+          font-style: italic;
+        }
+        .palanquee-box {
+          margin: 20px 0;
+          padding: 20px;
+          border: 2px solid #007bff;
+          border-radius: 8px;
+          background: #f8f9fa;
+        }
+        .palanquee-title {
+          font-size: 18px;
+          font-weight: bold;
+          color: #004080;
+          margin-bottom: 15px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .alert-box {
+          border-color: #dc3545 !important;
+          background: #fff5f5 !important;
+        }
+        .alert-title {
+          color: #dc3545 !important;
+        }
+        @media print {
+          body { background: white !important; }
+          .container { box-shadow: none !important; max-width: none !important; }
+        }
+      </style>
     `;
+
+    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
+    htmlContent += '<meta charset="UTF-8">';
+    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
+    htmlContent += cssStyles;
+    htmlContent += '</head><body>';
+    
+    htmlContent += '<div class="container">';
+    htmlContent += '<header class="header">';
+    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
+    htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
+    htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
+    htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
+    htmlContent += '</header>';
+    
+    htmlContent += '<main class="content">';
+    htmlContent += '<section class="section">';
+    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
+    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
+    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
+    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
+    htmlContent += '</section>';
+    
+    if (alertesTotal.length > 0) {
+      htmlContent += '<section class="section">';
+      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
+      alertesTotal.forEach(alerte => {
+        htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
+      });
+      htmlContent += '</section>';
+    }
+    
+    htmlContent += '<section class="section">';
+    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
       htmlContent += '<p>Aucune palanquée créée.</p>';
     } else {
       palanqueesLocal.forEach((pal, i) => {
-        if (Array.isArray(pal)) {
-          htmlContent += `<div class="palanquee">`;
-          htmlContent += `<h3>Palanquée ${i + 1} (${pal.length} plongeurs)</h3>`;
+        if (pal && Array.isArray(pal)) {
+          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
+          const boxClass = hasAlert ? 'palanquee-box alert-box' : 'palanquee-box';
+          const titleClass = hasAlert ? 'palanquee-title alert-title' : 'palanquee-title';
+          
+          htmlContent += `<div class="${boxClass}">`;
+          htmlContent += `<h3 class="${titleClass}">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
           
           if (pal.length === 0) {
-            htmlContent += '<p>Aucun plongeur assigné</p>';
+            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            pal.forEach(p => {
+            // MODIFICATION: Trier les plongeurs par grade avant affichage
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
-                htmlContent += `<div class="plongeur">• ${p.nom} (${p.niveau})</div>`;
+                htmlContent += '<div class="plongeur-item">';
+                htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+                htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+                if (p.pre) {
+                  htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+                }
+                htmlContent += '</div>';
+                htmlContent += '</div>';
               }
             });
           }
@@ -723,52 +881,50 @@ function generatePDFPreview() {
       });
     }
     
+    htmlContent += '</section>';
+    
     if (plongeursLocal.length > 0) {
-      htmlContent += '<h2>Plongeurs en Attente</h2>';
-      plongeursLocal.forEach(p => {
+      htmlContent += '<section class="section">';
+      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
+      
+      // MODIFICATION: Trier aussi les plongeurs en attente par grade
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
         if (p && p.nom) {
-          htmlContent += `<div class="plongeur">• ${p.nom} (${p.niveau})</div>`;
+          htmlContent += '<div class="plongeur-item">';
+          htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+          htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+          if (p.pre) {
+            htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+          }
+          htmlContent += '</div>';
+          htmlContent += '</div>';
         }
       });
+      htmlContent += '</section>';
     }
     
-    htmlContent += '</body></html>';
+    htmlContent += '</main>';
+    htmlContent += '</div></body></html>';
 
     const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     
-    let previewContainer = document.getElementById("previewContainer");
+    const previewContainer = document.getElementById("previewContainer");
     const pdfPreview = document.getElementById("pdfPreview");
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
       pdfPreview.src = url;
       
-      // Ajouter le bouton de fermeture
-      let closeButton = document.getElementById("close-preview-btn");
-      if (!closeButton) {
-        closeButton = document.createElement("button");
-        closeButton.id = "close-preview-btn";
-        closeButton.innerHTML = "❌ Fermer l'aperçu";
-        closeButton.style.cssText = `
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          z-index: 1001;
-          background: #dc3545;
-          color: white;
-          border: none;
-          padding: 10px 15px;
-          border-radius: 5px;
-          cursor: pointer;
-        `;
-        closeButton.onclick = closePDFPreview;
-        previewContainer.style.position = "relative";
-        previewContainer.appendChild(closeButton);
-      }
+      previewContainer.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
       
-      previewContainer.scrollIntoView({ behavior: 'smooth' });
-      console.log("✅ Aperçu PDF généré");
+      console.log("✅ Aperçu PDF généré avec tri par grade");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -778,7 +934,6 @@ function generatePDFPreview() {
     
   } catch (error) {
     console.error("❌ Erreur génération aperçu PDF:", error);
-    handleError(error, "Génération aperçu PDF");
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
