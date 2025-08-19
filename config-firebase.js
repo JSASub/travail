@@ -18,6 +18,7 @@ let plongeursOriginaux = [];
 let currentSort = 'none';
 let firebaseConnected = false;
 let pageLoadTime = Date.now();
+let dataLoadedded = false;
 
 // Firebase instances
 let app, db, auth;
@@ -427,6 +428,7 @@ async function loadFromFirebase() {
     }
     
     plongeursOriginaux = [...plongeurs];
+    dataLoaded = true; // MARQUER LES DONNÉES COMME CHARGÉES
     
     // Rendu sécurisé
     if (typeof renderPalanquees === 'function') renderPalanquees();
@@ -463,6 +465,25 @@ async function syncToDatabase() {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
+    return false;
+  }
+  
+  // NOUVELLE VÉRIFICATION : Éviter de sauvegarder des données vides au démarrage
+  if (!plongeurs || !palanquees) {
+    console.log("⚠️ Variables non initialisées - sauvegarde ignorée");
+    return false;
+  }
+  
+  // Éviter de sauvegarder si les données ne sont pas encore chargées
+  if (!dataLoaded) {
+    console.log("⚠️ Données non encore chargées - sauvegarde ignorée");
+    return false;
+  }
+  
+  // Éviter de sauvegarder si on vient de se connecter et que les données ne sont pas encore chargées
+  const totalData = plongeurs.length + palanquees.length;
+  if (totalData === 0 && Date.now() - pageLoadTime < 10000) {
+    console.log("⚠️ Données probablement non chargées - sauvegarde ignorée");
     return false;
   }
   
