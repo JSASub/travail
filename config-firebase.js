@@ -68,6 +68,12 @@ function initializeFirebase() {
       if (user) {
         console.log("✅ Utilisateur connecté:", user.email);
         currentUser = user;
+        
+        // NOUVELLE LIGNE : Activer le gestionnaire hors ligne
+        if (typeof setUserAuthenticated === 'function') {
+          setUserAuthenticated(true);
+        }
+        
         showMainApp();
         updateUserInfo(user);
         
@@ -80,7 +86,7 @@ function initializeFirebase() {
         
         // Charger les données si ready
         if (document.readyState === 'complete') {
-          console.log("🔄 Chargement des données après connexion...");
+          console.log("📄 Chargement des données après connexion...");
           await initializeAppData();
 		  initializeAfterAuth();
         }
@@ -88,6 +94,12 @@ function initializeFirebase() {
         console.log("❌ Utilisateur non connecté");
         currentUser = null;
         lockSystemInitialized = false;
+        
+        // NOUVELLE LIGNE : Désactiver le gestionnaire hors ligne
+        if (typeof setUserAuthenticated === 'function') {
+          setUserAuthenticated(false);
+        }
+        
         showAuthContainer();
       }
     });
