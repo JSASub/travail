@@ -439,6 +439,7 @@ function exportToPDF() {
     // === PALANQUÉES DÉTAILLÉES ===
     checkPageBreak(40, true);
     
+    yPosition += 3; // AJOUT de 3mm d'espacement avant le titre
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
     yPosition += 3; // RÉDUIT de 6 à 3 (descendre de 3mm)
     
