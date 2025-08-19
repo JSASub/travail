@@ -439,22 +439,35 @@ async function loadFromFirebase() {
 }
 
 // Sauvegarde sécurisée avec vérification de connexion
-// Sauvegarde sécurisée avec vérification de connexion
 async function syncToDatabase() {
-  // VÉRIFICATION PRÉALABLE - SORTIE SILENCIEUSE
-  if (!currentUser) {
-    console.log("⚠️ Utilisateur non connecté - sauvegarde ignorée");
-    return false;
-  }
-  
-  if (!firebaseConnected || !db) {
-    console.log("⚠️ Firebase non connecté - sauvegarde locale uniquement");
-    return false;
-  }
-  
   console.log("💾 Synchronisation Firebase...");
   
+  // Vérifier si l'utilisateur est connecté
+  //if (!currentUser) {
+  //  console.log("⚠️ Utilisateur non connecté - sauvegarde ignorée");
+  //  return false;
+  //}
+  
+  // Vérifier si Firebase est connecté
+  if (!firebaseConnected || !db) {
+    console.log("⚠️ Firebase non connecté - sauvegarde en mode local uniquement");
+    
+    // Sauvegarde d'urgence locale si disponible
+    if (typeof emergencyLocalSave === 'function') {
+      emergencyLocalSave();
+    }
+    
+    // Mettre à jour l'interface sans erreur
+    plongeursOriginaux = [...plongeurs];
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+    return false;
+  }
+  
   try {
+    // Synchronisation normale
     plongeursOriginaux = [...plongeurs];
     
     // Rendu sécurisé
@@ -462,7 +475,7 @@ async function syncToDatabase() {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    // Sauvegarde Firebase SEULEMENT si connecté
+    // Sauvegarde Firebase
     await Promise.all([
       db.ref('plongeurs').set(plongeurs || []),
       db.ref('palanquees').set(palanquees || [])
@@ -475,8 +488,19 @@ async function syncToDatabase() {
   } catch (error) {
     console.error("❌ Erreur sync Firebase:", error.message);
     
-    // NE PAS afficher d'alert ou d'erreur à l'utilisateur
-    // Juste logger l'erreur et continuer
+    // Sauvegarde d'urgence en cas d'erreur
+    if (typeof emergencyLocalSave === 'function') {
+      emergencyLocalSave();
+    }
+    
+    // Ne pas afficher d'erreur si l'utilisateur n'est pas connecté
+    if (error.code === 'auth/unauthenticated' || error.code === 'PERMISSION_DENIED') {
+      console.log("⚠️ Session expirée - sauvegarde locale effectuée");
+      return false;
+    }
+    
+    // Pour les autres erreurs, ne pas afficher d'alerte gênante
+    console.warn("⚠️ Synchronisation échouée, données conservées localement");
     return false;
   }
 }
