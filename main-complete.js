@@ -726,6 +726,28 @@ function generatePDFPreview() {
           background: white;
           box-shadow: 0 10px 30px rgba(0,0,0,0.1);
           min-height: 297mm;
+          position: relative;
+        }
+        .close-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #dc3545;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+          z-index: 1000;
+          transition: all 0.3s ease;
+        }
+        .close-button:hover {
+          background: #c82333;
+          transform: scale(1.1);
         }
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
@@ -806,6 +828,7 @@ function generatePDFPreview() {
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
@@ -815,6 +838,9 @@ function generatePDFPreview() {
     htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
+    
+    // Ajout du bouton de fermeture intégré dans le HTML
+    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -924,8 +950,8 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade");
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
@@ -951,7 +977,6 @@ function closePDFPreview() {
     console.log("✅ Aperçu PDF fermé");
   }
 }
-
 // Export de la fonction pour usage global
 window.closePDFPreview = closePDFPreview;
 
