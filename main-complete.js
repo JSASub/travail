@@ -825,6 +825,89 @@ function generatePDFPreview() {
         .alert-title {
           color: #dc3545 !important;
         }
+        
+        /* Responsive Design pour Mobile */
+        @media screen and (max-width: 768px) {
+          .container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+          .header {
+            padding: 15px !important;
+          }
+          .main-title {
+            font-size: 20px !important;
+            letter-spacing: 1px !important;
+          }
+          .content {
+            padding: 15px !important;
+          }
+          .section {
+            margin-bottom: 25px !important;
+          }
+          .section-title {
+            font-size: 16px !important;
+            margin-bottom: 15px !important;
+          }
+          .palanquee-box {
+            margin: 15px 0 !important;
+            padding: 15px !important;
+          }
+          .palanquee-title {
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+          .plongeur-item {
+            padding: 10px 8px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .plongeur-nom {
+            font-size: 14px !important;
+          }
+          .plongeur-niveau {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+          }
+          .plongeur-prerogatives {
+            font-size: 10px !important;
+          }
+          .close-button {
+            width: 45px !important;
+            height: 45px !important;
+            font-size: 18px !important;
+            top: 15px !important;
+            right: 15px !important;
+          }
+        }
+        
+        @media screen and (max-width: 480px) {
+          .header {
+            padding: 10px !important;
+          }
+          .main-title {
+            font-size: 18px !important;
+          }
+          .content {
+            padding: 10px !important;
+          }
+          .section-title {
+            font-size: 14px !important;
+          }
+          .palanquee-title {
+            font-size: 14px !important;
+          }
+          .close-button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            top: 10px !important;
+            right: 10px !important;
+          }
+        }
+        
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
