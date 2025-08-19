@@ -1,4 +1,4 @@
-// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence
+// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence (VERSION CORRIGÉE)
 
 // ===== VARIABLES GLOBALES =====
 let isOnline = false;
@@ -7,8 +7,16 @@ let emergencySaveInterval = null;
 let connectionCheckInterval = null;
 let offlineDataPending = false;
 
+// NOUVELLE VARIABLE GLOBALE pour bloquer les propositions tant que pas connecté
+let userAuthenticationCompleted = false;
+
 // ===== INDICATEUR DE STATUT =====
 function createConnectionIndicator() {
+  // Ne pas créer l'indicateur si l'utilisateur n'est pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    return null;
+  }
+
   // Supprimer l'ancien indicateur s'il existe
   const existingIndicator = document.getElementById('connection-indicator');
   if (existingIndicator) {
@@ -65,6 +73,11 @@ function createConnectionIndicator() {
 }
 
 function updateConnectionIndicator(online, details = '') {
+  // Ne pas mettre à jour si l'utilisateur n'est pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    return;
+  }
+
   const indicator = document.getElementById('connection-indicator');
   const statusIcon = document.getElementById('status-icon');
   const statusText = document.getElementById('status-text');
@@ -96,6 +109,11 @@ function updateConnectionIndicator(online, details = '') {
 }
 
 function showConnectionDetails() {
+  // Ne pas afficher les détails si l'utilisateur n'est pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    return;
+  }
+
   const details = `
 📊 État de la connexion :
 • Statut : ${isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}
@@ -115,6 +133,11 @@ function showConnectionDetails() {
 
 // ===== VÉRIFICATION DE CONNEXION =====
 async function checkFirebaseConnection() {
+  // Ne pas vérifier la connexion si l'utilisateur n'est pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    return false;
+  }
+
   try {
     if (!db) {
       console.warn("⚠️ DB non initialisée pour check connexion");
@@ -164,6 +187,11 @@ async function checkFirebaseConnection() {
 
 // ===== SAUVEGARDE D'URGENCE =====
 function emergencyLocalSave() {
+  // NOUVELLE VÉRIFICATION : Ne pas sauvegarder si pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    return false;
+  }
+
   try {
     const emergencyData = {
       timestamp: Date.now(),
@@ -175,7 +203,8 @@ function emergencyLocalSave() {
         lieu: document.getElementById("dp-lieu")?.value || "",
         plongee: document.getElementById("dp-plongee")?.value || "matin"
       },
-      version: "2.5.0-offline"
+      version: "2.5.0-offline",
+      userEmail: currentUser.email // Ajouter l'email de l'utilisateur pour sécurité
     };
     
     // Sauvegarder dans sessionStorage ET localStorage
@@ -199,6 +228,12 @@ function emergencyLocalSave() {
 }
 
 function loadEmergencyBackup() {
+  // NOUVELLE VÉRIFICATION CRITIQUE : Ne pas proposer de restauration si pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    console.log("ℹ️ Utilisateur non authentifié - pas de proposition de restauration");
+    return false;
+  }
+
   try {
     // Essayer sessionStorage en premier, puis localStorage
     let backupData = sessionStorage.getItem('jsas_emergency_backup');
@@ -213,6 +248,15 @@ function loadEmergencyBackup() {
     
     const data = JSON.parse(backupData);
     const backupDate = new Date(data.timestamp).toLocaleString('fr-FR');
+    
+    // NOUVELLE VÉRIFICATION : Vérifier que la sauvegarde appartient au bon utilisateur
+    if (data.userEmail && data.userEmail !== currentUser.email) {
+      console.log("⚠️ Sauvegarde d'un autre utilisateur détectée - ignorée");
+      // Nettoyer les sauvegardes d'autres utilisateurs
+      sessionStorage.removeItem('jsas_emergency_backup');
+      localStorage.removeItem('jsas_last_backup');
+      return false;
+    }
     
     const confirmRestore = confirm(
       `🔄 Sauvegarde d'urgence trouvée du ${backupDate}\n\n` +
@@ -272,6 +316,12 @@ function loadEmergencyBackup() {
 
 // ===== SYNCHRONISATION FORCÉE =====
 async function forceSyncToFirebase() {
+  // Ne pas synchroniser si l'utilisateur n'est pas authentifié
+  if (!userAuthenticationCompleted || !currentUser) {
+    showNotification("⚠️ Synchronisation impossible - utilisateur non connecté", "warning");
+    return false;
+  }
+
   const syncBtn = document.getElementById('manual-sync-btn');
   const statusIcon = document.getElementById('status-icon');
   
@@ -422,6 +472,12 @@ function initializeOfflineManager() {
   console.log("🌐 Initialisation du gestionnaire hors ligne...");
   
   try {
+    // NOUVELLE VÉRIFICATION : Ne s'initialiser que si l'utilisateur est authentifié
+    if (!userAuthenticationCompleted || !currentUser) {
+      console.log("ℹ️ Utilisateur non authentifié - gestionnaire hors ligne en attente");
+      return;
+    }
+
     // Créer l'indicateur de connexion
     createConnectionIndicator();
     
@@ -440,17 +496,21 @@ function initializeOfflineManager() {
     }
     emergencySaveInterval = setInterval(emergencyLocalSave, 30000);
     
-    // Proposer de restaurer une sauvegarde d'urgence si disponible
+    // MODIFICATION : Proposer de restaurer une sauvegarde d'urgence seulement après authentification
     setTimeout(() => {
-      loadEmergencyBackup();
+      if (userAuthenticationCompleted && currentUser) {
+        loadEmergencyBackup();
+      }
     }, 2000);
     
     // Intercepter les modifications pour déclencher la sauvegarde d'urgence
     const originalSyncToDatabase = window.syncToDatabase;
     if (originalSyncToDatabase) {
       window.syncToDatabase = async function() {
-        // Sauvegarde d'urgence immédiate
-        emergencyLocalSave();
+        // Sauvegarde d'urgence immédiate (seulement si authentifié)
+        if (userAuthenticationCompleted && currentUser) {
+          emergencyLocalSave();
+        }
         
         try {
           // Appeler la fonction originale
@@ -479,8 +539,10 @@ function initializeOfflineManager() {
       if (emergencySaveInterval) clearInterval(emergencySaveInterval);
       if (connectionCheckInterval) clearInterval(connectionCheckInterval);
       
-      // Sauvegarde finale
-      emergencyLocalSave();
+      // Sauvegarde finale (seulement si authentifié)
+      if (userAuthenticationCompleted && currentUser) {
+        emergencyLocalSave();
+      }
     });
     
     console.log("✅ Gestionnaire hors ligne initialisé");
@@ -491,8 +553,60 @@ function initializeOfflineManager() {
   }
 }
 
+// ===== NOUVELLE FONCTION : Marquer l'utilisateur comme authentifié =====
+function setUserAuthenticated(authenticated = true) {
+  userAuthenticationCompleted = authenticated;
+  
+  if (authenticated && currentUser) {
+    console.log("✅ Utilisateur authentifié - activation du gestionnaire hors ligne");
+    // Initialiser le gestionnaire hors ligne maintenant que l'utilisateur est connecté
+    initializeOfflineManager();
+  } else {
+    console.log("ℹ️ Utilisateur déconnecté - désactivation du gestionnaire hors ligne");
+    // Nettoyer le gestionnaire hors ligne
+    cleanupOfflineManager();
+  }
+}
+
+// ===== NOUVELLE FONCTION : Nettoyage du gestionnaire =====
+function cleanupOfflineManager() {
+  try {
+    // Arrêter les intervalles
+    if (emergencySaveInterval) {
+      clearInterval(emergencySaveInterval);
+      emergencySaveInterval = null;
+    }
+    
+    if (connectionCheckInterval) {
+      clearInterval(connectionCheckInterval);
+      connectionCheckInterval = null;
+    }
+    
+    // Supprimer l'indicateur de connexion
+    const indicator = document.getElementById('connection-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
+    
+    // Réinitialiser les variables
+    isOnline = false;
+    lastSyncTimestamp = null;
+    offlineDataPending = false;
+    
+    console.log("🧹 Gestionnaire hors ligne nettoyé");
+    
+  } catch (error) {
+    console.error("❌ Erreur nettoyage gestionnaire hors ligne:", error);
+  }
+}
+
 // ===== PANNEAU DE GESTION HORS LIGNE =====
 function showOfflineManagerPanel() {
+  if (!userAuthenticationCompleted || !currentUser) {
+    alert("⚠️ Vous devez être connecté pour accéder au gestionnaire hors ligne");
+    return;
+  }
+
   const stats = getOfflineStats();
   
   if (!stats) {
@@ -592,17 +706,14 @@ function getOfflineStats() {
   }
 }
 
-// ===== INITIALISATION AUTOMATIQUE =====
-// Attendre que le DOM soit prêt et que Firebase soit initialisé
+// ===== INITIALISATION MODIFIÉE =====
+// Ne plus attendre automatiquement - l'initialisation se fera via setUserAuthenticated()
 function waitForInitialization() {
-  if (document.readyState === 'complete' && typeof db !== 'undefined') {
-    initializeOfflineManager();
-  } else {
-    setTimeout(waitForInitialization, 1000);
-  }
+  // Cette fonction est maintenant vide - l'initialisation est contrôlée manuellement
+  console.log("ℹ️ Gestionnaire hors ligne en attente de l'authentification utilisateur");
 }
 
-// Démarrer l'initialisation
+// Commencer l'attente (mais ne rien faire automatiquement)
 waitForInitialization();
 
 // Export des fonctions pour usage global
@@ -611,5 +722,7 @@ window.emergencyLocalSave = emergencyLocalSave;
 window.loadEmergencyBackup = loadEmergencyBackup;
 window.clearOfflineData = clearOfflineData;
 window.getOfflineStats = getOfflineStats;
+window.setUserAuthenticated = setUserAuthenticated; // NOUVELLE EXPORT
+window.showOfflineManagerPanel = showOfflineManagerPanel;
 
-console.log("📱 Module de gestion hors ligne chargé");
+console.log("📱 Module de gestion hors ligne chargé (version sécurisée)");
