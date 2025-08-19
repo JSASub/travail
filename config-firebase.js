@@ -446,10 +446,10 @@ async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
   
   // Vérifier si l'utilisateur est connecté
-  if (!currentUser) {
-    console.log("⚠️ Utilisateur non connecté - sauvegarde ignorée");
-    return false;
-  }
+  //if (!currentUser) {
+  //  console.log("⚠️ Utilisateur non connecté - sauvegarde ignorée");
+  //  return false;
+  //}
   
   // Vérifier si Firebase est connecté
   if (!firebaseConnected || !db) {
