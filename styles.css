@@ -26,12 +26,6 @@ h1, h2 {
 .alert-hidden {
   display: none;
 }
-header h2 {
-  margin-top: 3mm !important;
-}
-header div h2 {
-  margin-top: 3mm !important;
-}
 
 .alert-title {
   font-weight: bold;
@@ -715,5 +709,12 @@ background: #28a745 !important;
   }
 }
 header div[style*="margin-top: 5px"] h2 {
-  margin-top: 8px !important; /* 5px + 3mm ≈ 8px */
+  margin-top: 8px !important; /* 5px + 5mm ≈ 8px */
+}
+
+header h2 {
+  margin-top: 5mm !important;
+}
+header div h2 {
+  margin-top: 5mm !important;
 }
