@@ -708,8 +708,9 @@ background: #28a745 !important;
     text-align: center;
   }
 }
+
 header div[style*="margin-top: 5px"] h2 {
-  margin-top: 8px !important; /* 5px + 5mm ≈ 8px */
+  margin-top: 10px !important; /* 5px + 5mm ≈ 10px */
 }
 
 header h2 {
