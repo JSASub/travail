@@ -2569,3 +2569,319 @@ window.addEventListener('error', (event) => {
 });
 
 console.log("✅ Main application sécurisée chargée - Version 2.5.2");
+
+// CORRECTION AUTO-RAFRAÎCHISSEMENT - À ajouter dans main-complete.js
+
+// ===== FONCTION DE RAFRAÎCHISSEMENT AUTOMATIQUE =====
+async function refreshAllLists() {
+  console.log("🔄 Rafraîchissement automatique des listes...");
+  
+  try {
+    // Rafraîchir l'historique DP
+    if (typeof chargerHistoriqueDP === 'function') {
+      await chargerHistoriqueDP();
+    }
+    
+    // Rafraîchir le sélecteur de sessions
+    if (typeof populateSessionSelector === 'function') {
+      await populateSessionSelector();
+    }
+    
+    // Rafraîchir les listes de nettoyage
+    if (typeof populateSessionsCleanupList === 'function') {
+      await populateSessionsCleanupList();
+    }
+    
+    if (typeof populateDPCleanupList === 'function') {
+      await populateDPCleanupList();
+    }
+    
+    console.log("✅ Toutes les listes rafraîchies");
+    
+  } catch (error) {
+    console.error("❌ Erreur rafraîchissement listes:", error);
+  }
+}
+
+// ===== MODIFICATION DE LA FONCTION saveSessionData =====
+// Remplacer la fonction existante par cette version améliorée
+async function saveSessionData() {
+  const dpNom = $("dp-nom")?.value?.trim();
+  const dpDate = $("dp-date")?.value;
+  const dpPlongee = $("dp-plongee")?.value;
+  
+  if (!dpNom || !dpDate || !dpPlongee || !db) {
+    return;
+  }
+  
+  const dpKey = dpNom.split(' ')[0].substring(0, 8);
+  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  const sessionData = {
+    meta: {
+      dp: dpNom,
+      date: dpDate,
+      lieu: $("dp-lieu")?.value?.trim() || "Non défini",
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      sessionKey: sessionKey
+    },
+    plongeurs: plongeurs,
+    palanquees: palanquees,
+    stats: {
+      totalPlongeurs: plongeurs.length + palanquees.flat().length,
+      nombrePalanquees: palanquees.length,
+      plongeursNonAssignes: plongeurs.length
+    }
+  };
+  
+  try {
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée avec succès:", sessionKey);
+    
+    // NOUVEAU : Rafraîchir automatiquement après sauvegarde
+    setTimeout(refreshAllLists, 500);
+    
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde session:", error);
+  }
+}
+
+// ===== AMÉLIORATION DE LA FONCTION deleteSelectedSessions =====
+async function deleteSelectedSessions() {
+  const checkboxes = document.querySelectorAll('.session-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucune session sélectionnée");
+    return;
+  }
+  
+  const confirmation = confirm(`⚠️ Supprimer ${checkboxes.length} session(s) ?\n\nCette action est irréversible !`);
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const promises = [];
+    checkboxes.forEach(checkbox => {
+      promises.push(db.ref(`sessions/${checkbox.value}`).remove());
+    });
+    
+    await Promise.all(promises);
+    
+    alert(`✅ ${checkboxes.length} session(s) supprimée(s) avec succès !`);
+    
+    // NOUVEAU : Rafraîchir automatiquement après suppression
+    await refreshAllLists();
+    
+    console.log(`✅ ${checkboxes.length} sessions supprimées + listes rafraîchies`);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression sessions:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// ===== AMÉLIORATION DE LA FONCTION deleteSelectedDPs =====
+async function deleteSelectedDPs() {
+  const checkboxes = document.querySelectorAll('.dp-cleanup-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert("Aucun DP sélectionné");
+    return;
+  }
+  
+  const confirmation = confirm(`⚠️ Supprimer ${checkboxes.length} DP ?\n\nCette action est irréversible !`);
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    const promises = [];
+    checkboxes.forEach(checkbox => {
+      promises.push(db.ref(`dpInfo/${checkbox.value}`).remove());
+    });
+    
+    await Promise.all(promises);
+    
+    alert(`✅ ${checkboxes.length} DP supprimé(s) avec succès !`);
+    
+    // NOUVEAU : Rafraîchir automatiquement après suppression
+    await refreshAllLists();
+    
+    console.log(`✅ ${checkboxes.length} DP supprimés + listes rafraîchies`);
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// ===== AMÉLIORATION DE LA FONCTION supprimerDPSelectionne =====
+async function supprimerDPSelectionne(dpKey) {
+  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
+  
+  if (!confirmation) return;
+  
+  try {
+    if (typeof db === 'undefined' || !db) {
+      alert("❌ Firebase non disponible");
+      return;
+    }
+    
+    await db.ref(`dpInfo/${dpKey}`).remove();
+    alert("✅ DP supprimé avec succès !");
+    
+    // NOUVEAU : Rafraîchir automatiquement après suppression
+    await refreshAllLists();
+    
+    console.log("✅ DP supprimé:", dpKey, "+ listes rafraîchies");
+    
+  } catch (error) {
+    console.error("❌ Erreur suppression DP:", error);
+    handleError(error, "Suppression DP");
+    alert("❌ Erreur lors de la suppression : " + error.message);
+  }
+}
+
+// ===== AMÉLIORATION DE LA VALIDATION DP =====
+// Modifier l'event listener du bouton "valider-dp" dans setupEventListeners()
+// Chercher cette section et remplacer par :
+
+const validerDPBtn = document.getElementById("valider-dp");
+if (validerDPBtn) {
+  validerDPBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    try {
+      const dpNom = document.getElementById("dp-nom")?.value?.trim();
+      const dpDate = document.getElementById("dp-date")?.value;
+      const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+      const dpPlongee = document.getElementById("dp-plongee")?.value;
+      const dpMessage = document.getElementById("dp-message");
+      
+      // Validation des champs obligatoires
+      if (!dpNom) {
+        alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
+        document.getElementById("dp-nom")?.focus();
+        return;
+      }
+      
+      if (!dpDate) {
+        alert("⚠️ Veuillez sélectionner une date");
+        document.getElementById("dp-date")?.focus();
+        return;
+      }
+      
+      if (!dpLieu) {
+        alert("⚠️ Veuillez saisir le lieu de plongée");
+        document.getElementById("dp-lieu")?.focus();
+        return;
+      }
+      
+      // Créer l'objet informations DP
+      const dpInfo = {
+        nom: dpNom,
+        date: dpDate,
+        lieu: dpLieu,
+        plongee: dpPlongee,
+        timestamp: Date.now(),
+        validated: true
+      };
+      
+      // Sauvegarder dans Firebase si disponible
+      if (typeof db !== 'undefined' && db) {
+        try {
+          const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+          await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
+          console.log("✅ Informations DP sauvegardées dans Firebase");
+          
+          // NOUVEAU : Rafraîchir automatiquement après validation
+          setTimeout(refreshAllLists, 500);
+          
+        } catch (firebaseError) {
+          console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
+        }
+      }
+      
+      // Afficher le message de confirmation
+      if (dpMessage) {
+        dpMessage.innerHTML = `
+          <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+            ✅ Informations DP validées
+            <br><small style="font-weight: normal;">
+              ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
+            </small>
+          </div>
+        `;
+        dpMessage.classList.add("dp-valide");
+      }
+      
+      // Désactiver temporairement le bouton
+      validerDPBtn.disabled = true;
+      validerDPBtn.textContent = "✅ Validé";
+      validerDPBtn.style.backgroundColor = "#28a745";
+      
+      setTimeout(() => {
+        validerDPBtn.disabled = false;
+        validerDPBtn.textContent = "Valider DP";
+        validerDPBtn.style.backgroundColor = "#007bff";
+      }, 3000);
+      
+      console.log("✅ Validation DP réussie:", dpInfo);
+      
+      // Synchronisation optionnelle
+      if (typeof syncToDatabase === 'function') {
+        setTimeout(syncToDatabase, 1000);
+      }
+      
+    } catch (error) {
+      console.error("❌ Erreur validation DP:", error);
+      handleError(error, "Validation DP");
+      
+      const dpMessage = document.getElementById("dp-message");
+      if (dpMessage) {
+        dpMessage.innerHTML = `
+          <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
+            ❌ Erreur lors de la validation : ${error.message}
+          </div>
+        `;
+      } else {
+        alert("❌ Erreur lors de la validation : " + error.message);
+      }
+    }
+  });
+}
+
+// ===== AMÉLIORATION DES BOUTONS DE RAFRAÎCHISSEMENT MANUEL =====
+const refreshSessionsBtn = document.getElementById("refresh-sessions");
+if (refreshSessionsBtn) {
+  refreshSessionsBtn.addEventListener("click", async () => {
+    refreshSessionsBtn.disabled = true;
+    refreshSessionsBtn.textContent = "🔄 Actualisation...";
+    
+    try {
+      await refreshAllLists();
+      console.log("✅ Actualisation manuelle réussie");
+    } catch (error) {
+      console.error("❌ Erreur actualisation manuelle:", error);
+      handleError(error, "Actualisation manuelle");
+    } finally {
+      refreshSessionsBtn.disabled = false;
+      refreshSessionsBtn.textContent = "Actualiser";
+    }
+  });
+}
+
+// Export de la fonction pour usage global
+window.refreshAllLists = refreshAllLists;
+
+console.log("🔄 Système de rafraîchissement automatique activé");
