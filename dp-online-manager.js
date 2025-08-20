@@ -30,8 +30,8 @@ function initializeOnlineUsersListener() {
       updateOnlineUsersIndicator();
     });
 
-    // Nettoyer à la déconnexion
-    onlineRef.onDisconnect().remove();
+    // IMPORTANT : Stocker la référence pour pouvoir la nettoyer
+    window.onlineUsersRef = onlineRef;
     
     console.log("✅ Écoute des utilisateurs connectés initialisée");
     
@@ -440,27 +440,33 @@ function updateOnlineUsersWindow() {
 // ===== NETTOYAGE À LA DÉCONNEXION =====
 function cleanupOnlineUsersManager() {
   try {
+    console.log("🧹 Nettoyage du gestionnaire des utilisateurs en ligne...");
+    
+    // Nettoyer les écouteurs Firebase
+    if (window.onlineUsersRef) {
+      window.onlineUsersRef.off();
+      window.onlineUsersRef = null;
+      console.log("✅ Écouteur Firebase supprimé");
+    }
+    
     // Fermer la fenêtre
     if (onlineUsersWindow && !onlineUsersWindow.closed) {
       onlineUsersWindow.close();
+      console.log("✅ Fenêtre utilisateurs fermée");
     }
     
     // Supprimer l'indicateur
     const indicator = document.getElementById('online-users-indicator');
     if (indicator) {
       indicator.remove();
-    }
-    
-    // Nettoyer les écouteurs Firebase
-    if (db) {
-      db.ref('dp_online').off();
+      console.log("✅ Indicateur supprimé");
     }
     
     // Réinitialiser les variables
     onlineUsersData = {};
     onlineUsersWindow = null;
     
-    console.log("🧹 Gestionnaire des utilisateurs en ligne nettoyé");
+    console.log("✅ Gestionnaire des utilisateurs en ligne nettoyé");
     
   } catch (error) {
     console.error("❌ Erreur nettoyage gestionnaire utilisateurs:", error);
