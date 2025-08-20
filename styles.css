@@ -26,6 +26,12 @@ h1, h2 {
 .alert-hidden {
   display: none;
 }
+header h2 {
+  margin-top: 3mm !important;
+}
+header div h2 {
+  margin-top: 3mm !important;
+}
 
 .alert-title {
   font-weight: bold;
