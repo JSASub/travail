@@ -68,6 +68,10 @@ function initializeFirebase() {
       if (user) {
         console.log("✅ Utilisateur connecté:", user.email);
         currentUser = user;
+		
+		if (typeof setOnlineUsersManagerActive === 'function') {
+			setOnlineUsersManagerActive(true);
+		}
         
         // NOUVELLE LIGNE : Activer le gestionnaire hors ligne
         if (typeof setUserAuthenticated === 'function') {
@@ -91,21 +95,22 @@ function initializeFirebase() {
 		  initializeAfterAuth();
         }
       } else {
-        console.log("❌ Utilisateur non connecté");
-        currentUser = null;
-        lockSystemInitialized = false;
-        
-        // NOUVELLE LIGNE : Désactiver le gestionnaire hors ligne
-        if (typeof setUserAuthenticated === 'function') {
-          setUserAuthenticated(false);
-        }
-		
-		if (typeof cleanupOnlineUsersManager === 'function') {
-			cleanupOnlineUsersManager();
-		}
-        
-        showAuthContainer();
-      }
+		  console.log("❌ Utilisateur non connecté");
+		  currentUser = null;
+		  lockSystemInitialized = false;
+ 
+	  // NOUVELLE LIGNE : Désactiver le gestionnaire des utilisateurs en ligne EN PREMIER
+	  if (typeof setOnlineUsersManagerActive === 'function') {
+		  setOnlineUsersManagerActive(false);
+	  }
+ 
+	  // NOUVELLE LIGNE : Désactiver le gestionnaire hors ligne
+	  if (typeof setUserAuthenticated === 'function') {
+		  setUserAuthenticated(false);
+		 }
+ 
+	  showAuthContainer();
+	 }
     });
     
     return true;
