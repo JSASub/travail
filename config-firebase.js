@@ -99,6 +99,10 @@ function initializeFirebase() {
         if (typeof setUserAuthenticated === 'function') {
           setUserAuthenticated(false);
         }
+		
+		if (typeof cleanupOnlineUsersManager === 'function') {
+			cleanupOnlineUsersManager();
+		}
         
         showAuthContainer();
       }
