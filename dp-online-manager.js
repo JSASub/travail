@@ -374,11 +374,12 @@ function updateOnlineUsersWindow() {
 
   const users = Object.values(onlineUsersData);
   
+  // CORRECTION : Vérifier si on a des données utilisateurs
   if (users.length === 0) {
     contentDiv.innerHTML = `
       <div class="empty-state">
-        <h3>😴 Personne en ligne</h3>
-        <p>Aucun utilisateur connecté actuellement</p>
+        <h3>🔄 Connexion en cours...</h3>
+        <p>Chargement des utilisateurs connectés...</p>
       </div>
     `;
     return;
@@ -422,6 +423,16 @@ function updateOnlineUsersWindow() {
       </div>
     `;
   });
+  
+  // CORRECTION : Afficher un message spécial si vous êtes seul
+  if (users.length === 1 && users[0].email === currentUser?.email) {
+    html += `
+      <div style="text-align: center; margin-top: 20px; padding: 20px; background: #f0f8ff; border-radius: 10px; border: 1px dashed #007bff;">
+        <h3 style="color: #007bff; margin-bottom: 10px;">🎯 Vous êtes seul connecté</h3>
+        <p style="color: #666; margin: 0;">Les autres utilisateurs apparaîtront ici quand ils se connecteront</p>
+      </div>
+    `;
+  }
   
   contentDiv.innerHTML = html;
 }
