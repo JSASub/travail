@@ -113,6 +113,26 @@ function isUserAdmin() {
 
 // ===== POPUP DE GESTION =====
 function ouvrirGestionDP() {
+  // Stocker une référence globale pour contourner les blocages de window.opener
+  window.currentDPManager = {
+    ajouterDP: function(nouveauDP) {
+      DP_LIST.push(nouveauDP);
+      mettreAJourDropdown();
+      sauvegarderDPVersFirebase();
+      console.log("✅ DP ajouté via référence directe:", nouveauDP);
+    },
+    supprimerDP: function(index) {
+      const dp = DP_LIST[index];
+      DP_LIST.splice(index, 1);
+      mettreAJourDropdown();
+      sauvegarderDPVersFirebase();
+      console.log("✅ DP supprimé via référence directe:", dp);
+    },
+    getDPList: function() {
+      return [...DP_LIST];
+    }
+  };
+  
   const popup = window.open('', 'DPManager', 'width=800,height=600,scrollbars=yes,resizable=yes');
   
   popup.document.write(`
@@ -188,13 +208,20 @@ function ouvrirGestionDP() {
         
         // Charger les données depuis le parent
         function chargerDonnees() {
+            // Essayer plusieurs méthodes pour accéder aux données
             if (window.opener && window.opener.DP_LIST) {
                 dpList = [...window.opener.DP_LIST];
-                afficherDP();
-                mettreAJourStats();
+                console.log("✅ Données chargées via window.opener");
+            } else if (window.opener && window.opener.currentDPManager) {
+                dpList = window.opener.currentDPManager.getDPList();
+                console.log("✅ Données chargées via currentDPManager");
             } else {
-                document.getElementById('dp-container').innerHTML = '❌ Impossible de charger les données';
+                // Fallback : charger les DP de base
+                dpList = ["AGUIRRE Raoul (E3)", "AUBARD Corinne (P5)", "BEST Sébastien (P5)", "CABIROL Joël (E3)", "CATTEROU Sacha (P5)", "DARDER Olivier (P5)", "GAUTHIER Christophe (P5)", "LE MAOUT Jean-François (P5)", "MARTY David (E3)", "TROUBADIS Guillaume (P5)"];
+                console.log("⚠️ Utilisation des DP de base");
             }
+            afficherDP();
+            mettreAJourStats();
         }
         
         // Afficher la liste des DP
@@ -256,11 +283,20 @@ function ouvrirGestionDP() {
             if (confirm('🗑️ Supprimer "' + dp + '" de la liste ?')) {
                 dpList.splice(index, 1);
                 
-                // Mettre à jour le parent
-                if (window.opener && window.opener.DP_LIST) {
+                // Essayer plusieurs méthodes pour mettre à jour le parent
+                if (window.opener && window.opener.currentDPManager) {
+                    // Méthode via currentDPManager
+                    const dpIndex = window.opener.DP_LIST.findIndex(d => d === dp);
+                    if (dpIndex !== -1) {
+                        window.opener.currentDPManager.supprimerDP(dpIndex);
+                    }
+                    console.log("✅ Suppression via currentDPManager");
+                } else if (window.opener && window.opener.DP_LIST) {
+                    // Méthode directe
                     window.opener.DP_LIST = [...dpList];
                     window.opener.mettreAJourDropdown();
                     window.opener.sauvegarderDPVersFirebase();
+                    console.log("✅ Suppression via accès direct");
                 }
                 
                 // Mettre à jour l'affichage
@@ -280,12 +316,15 @@ function ouvrirGestionDP() {
             const prenom = document.getElementById('prenom').value.trim();
             const niveau = document.getElementById('niveau').value;
             
+            console.log("🚀 Tentative d'ajout:", nom, prenom, niveau);
+            
             if (!nom || !prenom || !niveau) {
                 alert('❌ Veuillez remplir tous les champs');
                 return;
             }
             
             const nouveauDP = \`\${nom} \${prenom} (\${niveau})\`;
+            console.log("📝 Nouveau DP:", nouveauDP);
             
             // Vérifier les doublons
             if (dpList.some(dp => dp.toLowerCase().includes(nom.toLowerCase()) && dp.toLowerCase().includes(prenom.toLowerCase()))) {
@@ -293,25 +332,43 @@ function ouvrirGestionDP() {
                 return;
             }
             
-            // Ajouter à la liste
+            // Ajouter à la liste locale
             dpList.push(nouveauDP);
+            console.log("📋 Liste popup mise à jour:", dpList.length);
             
-            // Mettre à jour le parent
-            if (window.opener && window.opener.DP_LIST) {
+            // Essayer plusieurs méthodes pour mettre à jour le parent
+            let misAJour = false;
+            
+            if (window.opener && window.opener.currentDPManager) {
+                // Méthode via currentDPManager (plus robuste)
+                window.opener.currentDPManager.ajouterDP(nouveauDP);
+                console.log("✅ Ajout via currentDPManager");
+                misAJour = true;
+            } else if (window.opener && window.opener.DP_LIST) {
+                // Méthode directe (fallback)
                 window.opener.DP_LIST = [...dpList];
-                window.opener.mettreAJourDropdown();
-                window.opener.sauvegarderDPVersFirebase();
+                if (window.opener.mettreAJourDropdown) {
+                    window.opener.mettreAJourDropdown();
+                }
+                if (window.opener.sauvegarderDPVersFirebase) {
+                    window.opener.sauvegarderDPVersFirebase();
+                }
+                console.log("✅ Ajout via accès direct");
+                misAJour = true;
+            } else {
+                console.warn("⚠️ Impossible d'accéder au parent, DP ajouté seulement en local");
             }
             
-            // Mettre à jour l'affichage
+            // Mettre à jour l'affichage de la popup
             afficherDP();
             mettreAJourStats();
             
             // Reset du formulaire
             document.getElementById('add-form').reset();
             
-            console.log('➕ DP ajouté:', nouveauDP);
-            alert('✅ DP ajouté et sauvegardé !');
+            const message = misAJour ? '✅ DP ajouté et sauvegardé !' : '⚠️ DP ajouté localement (problème de communication)';
+            console.log('➕ DP ajouté:', nouveauDP, '- Status:', message);
+            alert(message);
         }
         
         // Initialisation
