@@ -26,10 +26,22 @@ async function loadAllDPs() {
       return;
     }
     
-    const snapshot = await db.ref('all_dps').once('value');
+    // Utiliser le chemin dp_validated qui existe déjà dans vos règles
+    const snapshot = await db.ref('dp_validated').once('value');
     if (snapshot.exists()) {
-      allDPList = snapshot.val() || [];
-      console.log(`✅ ${allDPList.length} DP chargés depuis Firebase`);
+      const dpData = snapshot.val();
+      
+      // Convertir les DP validés en format de liste
+      if (Array.isArray(dpData)) {
+        allDPList = dpData;
+      } else if (typeof dpData === 'object') {
+        // Si c'est un objet, convertir en tableau
+        allDPList = Object.values(dpData);
+      } else {
+        throw new Error("Format de données DP invalide");
+      }
+      
+      console.log(`✅ ${allDPList.length} DP chargés depuis dp_validated`);
     } else {
       // Première fois : initialiser avec la liste de base
       console.log("🔧 Initialisation de la liste DP avec les DP de base");
@@ -39,6 +51,7 @@ async function loadAllDPs() {
   } catch (error) {
     console.error("❌ Erreur chargement DP:", error);
     // Fallback sur la liste de base
+    console.log("🔄 Utilisation des DP de base comme fallback");
     allDPList = [...DP_INITIAUX];
   }
 }
@@ -51,8 +64,9 @@ async function saveAllDPs() {
       return false;
     }
     
-    await db.ref('all_dps').set(allDPList);
-    console.log("✅ Liste DP sauvegardée");
+    // Utiliser le chemin dp_validated au lieu de all_dps
+    await db.ref('dp_validated').set(allDPList);
+    console.log("✅ Liste DP sauvegardée dans dp_validated");
     return true;
   } catch (error) {
     console.error("❌ Erreur sauvegarde DP:", error);
@@ -764,9 +778,17 @@ function openDPManagerWindow() {
 function setupDPListSynchronization() {
   if (!db) return;
   
-  // Écouter les changements sur la liste complète des DP
-  db.ref('all_dps').on('value', (snapshot) => {
-    const newDPList = snapshot.val() || [];
+  // Écouter les changements sur dp_validated au lieu de all_dps
+  db.ref('dp_validated').on('value', (snapshot) => {
+    const newDPData = snapshot.val() || [];
+    let newDPList = [];
+    
+    // Convertir en tableau si nécessaire
+    if (Array.isArray(newDPData)) {
+      newDPList = newDPData;
+    } else if (typeof newDPData === 'object' && newDPData !== null) {
+      newDPList = Object.values(newDPData);
+    }
     
     // Vérifier si la liste a changé
     if (JSON.stringify(newDPList) !== JSON.stringify(allDPList)) {
@@ -780,9 +802,16 @@ function setupDPListSynchronization() {
       // Mettre à jour l'interface
       refreshAfterDPChange();
     }
+  }, (error) => {
+    console.error("❌ Erreur surveillance DP:", error);
+    // En cas d'erreur, utiliser les DP de base
+    if (allDPList.length === 0) {
+      allDPList = [...DP_INITIAUX];
+      refreshAfterDPChange();
+    }
   });
   
-  console.log("👁️ Surveillance des changements DP activée");
+  console.log("👁️ Surveillance des changements DP activée sur dp_validated");
 }
 
 // ===== FONCTION POUR METTRE À JOUR LE DROPDOWN =====
