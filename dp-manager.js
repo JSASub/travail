@@ -1,54 +1,4 @@
-// ===== VERIFICATION ADMIN =====
-function isUserAdmin() {
-  const ADMIN_EMAILS = [
-    'raoul.aguirre64@gmail.com',
-    'aubard.c@gmail.com',
-    'joelcabirol@gmail.com',
-    'david.marty@sfr.fr'
-  ];
-  
-  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
-}// ===== FONCTION DE MISE A JOUR =====
-function mettreAJourDropdown() {
-  console.log("🔄 Mise à jour dropdown avec", DP_LIST.length, "DP");
-  console.log("Liste actuelle:", DP_LIST);
-  
-  const select = document.getElementById("dp-nom");
-  if (!select) {
-    console.error("❌ Select dp-nom non trouvé");
-    return;
-  }
-  
-  // Sauvegarder la valeur actuelle
-  const currentValue = select.value;
-  console.log("💾 Valeur actuelle:", currentValue);
-  
-  // Vider et reconstruire
-  select.innerHTML = '';
-  
-  // Option par défaut
-  const defaultOption = document.createElement('option');
-  defaultOption.value = '';
-  defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
-  select.appendChild(defaultOption);
-  
-  // Ajouter tous les DP
-  DP_LIST.forEach((dp, index) => {
-    const option = document.createElement('option');
-    option.value = dp.split(' (')[0]; // "AGUIRRE Raoul"
-    option.textContent = dp; // "AGUIRRE Raoul (E3)"
-    select.appendChild(option);
-    console.log(`➕ Ajouté: ${dp}`);
-  });
-  
-  // Restaurer la valeur si possible
-  if (currentValue) {
-    select.value = currentValue;
-    console.log("🔙 Valeur restaurée:", currentValue);
-  }
-  
-  console.log("✅ Dropdown mis à jour avec", DP_LIST.length, "DP");
-}// dp-manager.js - Version avec sauvegarde Firebase
+// dp-manager.js - Version corrigée et simplifiée
 
 // ===== LISTE DES DP DE BASE =====
 const DP_DE_BASE = [
@@ -65,34 +15,33 @@ const DP_DE_BASE = [
 ];
 
 // ===== VARIABLES GLOBALES =====
-let DP_LIST = [...DP_DE_BASE]; // Commencer avec les DP de base
+let DP_LIST = [...DP_DE_BASE];
 
 // ===== CHARGEMENT DEPUIS FIREBASE =====
 async function chargerDPDepuisFirebase() {
   try {
     if (!db) {
-      console.warn("⚠️ Firebase non disponible, utilisation des DP de base");
+      console.warn("⚠️ Firebase non disponible");
       return;
     }
     
-    // Utiliser le chemin sessions/dp_list pour éviter les problèmes de permissions
     const snapshot = await db.ref('sessions/dp_list').once('value');
-    
-    if (snapshot.exists()) {
-      const dpFirebase = snapshot.val();
-      if (Array.isArray(dpFirebase) && dpFirebase.length > 0) {
-        DP_LIST = dpFirebase;
-        console.log(`✅ ${DP_LIST.length} DP chargés depuis Firebase`);
+    if (snapshot.exists() && snapshot.val()) {
+      const data = snapshot.val();
+      if (Array.isArray(data) && data.length > 0) {
+        DP_LIST = [...data];
+        console.log("✅", DP_LIST.length, "DP chargés depuis Firebase");
       } else {
+        DP_LIST = [...DP_DE_BASE];
         console.log("🔧 Données Firebase invalides, utilisation des DP de base");
       }
     } else {
-      console.log("🔧 Aucune donnée Firebase, sauvegarde des DP de base");
-      await sauvegarderDPVersFirebase();
+      DP_LIST = [...DP_DE_BASE];
+      console.log("🔧 Aucune donnée Firebase, utilisation des DP de base");
     }
   } catch (error) {
     console.error("❌ Erreur chargement Firebase:", error);
-    console.log("🔄 Utilisation des DP de base comme fallback");
+    DP_LIST = [...DP_DE_BASE];
   }
 }
 
@@ -100,12 +49,12 @@ async function chargerDPDepuisFirebase() {
 async function sauvegarderDPVersFirebase() {
   try {
     if (!db) {
-      console.warn("⚠️ Firebase non disponible pour la sauvegarde");
+      console.warn("⚠️ Firebase non disponible pour sauvegarder");
       return false;
     }
     
     await db.ref('sessions/dp_list').set(DP_LIST);
-    console.log("💾 DP sauvegardés dans Firebase");
+    console.log("✅ Sauvegarde Firebase réussie -", DP_LIST.length, "DP");
     return true;
   } catch (error) {
     console.error("❌ Erreur sauvegarde Firebase:", error);
@@ -113,26 +62,18 @@ async function sauvegarderDPVersFirebase() {
   }
 }
 
-// ===== REMPLIR LE DROPDOWN =====
-function remplirDropdownDP() {
-  console.log("🏁 Remplissage initial du dropdown");
-  const dpField = document.getElementById("dp-nom");
-  if (!dpField) {
+// ===== MISE A JOUR DU DROPDOWN =====
+function mettreAJourDropdown() {
+  const select = document.getElementById("dp-nom");
+  if (!select) {
     console.error("❌ Champ dp-nom non trouvé");
     return;
   }
   
-  // Transformer en select si c'est un input
-  if (dpField.tagName !== 'SELECT') {
-    console.log("🔄 Transformation input → select");
-    const select = document.createElement('select');
-    select.id = 'dp-nom';
-    select.required = true;
-    select.style.cssText = dpField.style.cssText;
-    dpField.parentNode.replaceChild(select, dpField);
-  }
+  // Sauvegarder la valeur actuelle
+  const currentValue = select.value;
   
-  const select = document.getElementById("dp-nom");
+  // Vider et recréer
   select.innerHTML = '';
   
   // Option par défaut
@@ -144,506 +85,361 @@ function remplirDropdownDP() {
   // Ajouter tous les DP
   DP_LIST.forEach(dp => {
     const option = document.createElement('option');
-    option.value = dp.split(' (')[0]; // "AGUIRRE Raoul"
-    option.textContent = dp; // "AGUIRRE Raoul (E3)"
+    const nomComplet = dp.split(' (')[0]; // "AGUIRRE Raoul" depuis "AGUIRRE Raoul (E3)"
+    option.value = nomComplet;
+    option.textContent = dp;
     select.appendChild(option);
   });
   
-  console.log("✅ Dropdown initial rempli avec", DP_LIST.length, "DP");
-}
-
-// ===== BOUTON DE GESTION =====
-function ajouterBoutonGestion() {
-  const selectElement = document.getElementById("dp-nom");
-  if (!selectElement) return;
-  
-  let manageBtn = document.getElementById("manage-dp-btn");
-  if (manageBtn) return;
-  
-  // DEBUG : Vérifier l'utilisateur actuel
-  console.log("👤 Utilisateur actuel:", currentUser?.email);
-  console.log("🔐 Est admin?", isUserAdmin());
-  
-  // Vérifier si admin (votre email est dans la liste)
-  if (!isUserAdmin()) {
-    console.log("❌ Pas admin, pas de bouton de gestion");
-    return;
+  // Restaurer la valeur si elle existe encore
+  if (currentValue && DP_LIST.some(dp => dp.includes(currentValue))) {
+    select.value = currentValue;
   }
   
-  manageBtn = document.createElement("button");
-  manageBtn.id = "manage-dp-btn";
-  manageBtn.type = "button";
-  manageBtn.innerHTML = "👥 Gérer DP";
-  manageBtn.style.cssText = `
-    margin-left: 10px;
-    padding: 8px 15px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  manageBtn.onclick = ouvrirGestionDP;
+  console.log("🔄 Dropdown mis à jour avec", DP_LIST.length, "DP");
+}
+
+// ===== VERIFICATION ADMIN =====
+function isUserAdmin() {
+  const ADMIN_EMAILS = [
+    'raoul.aguirre64@gmail.com',
+    'aubard.c@gmail.com',
+    'joelcabirol@gmail.com',
+    'david.marty@sfr.fr'
+  ];
   
-  selectElement.parentNode.appendChild(manageBtn);
-  
-  // NOUVEAU : Ajouter bouton de nettoyage
-  const cleanBtn = document.createElement("button");
-  cleanBtn.id = "clean-dp-btn";
-  cleanBtn.type = "button";
-  cleanBtn.innerHTML = "🧹 Nettoyer";
-  cleanBtn.style.cssText = `
-    margin-left: 5px;
-    padding: 8px 15px;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  cleanBtn.onclick = nettoyerDP;
-  cleanBtn.title = "Supprimer les doublons et DP de test";
-  
-  selectElement.parentNode.appendChild(cleanBtn);
-  
-  // NOUVEAU : Ajouter bouton de réinitialisation
-  const resetBtn = document.createElement("button");
-  resetBtn.id = "reset-dp-btn";
-  resetBtn.type = "button";
-  resetBtn.innerHTML = "🔄 Reset";
-  resetBtn.style.cssText = `
-    margin-left: 5px;
-    padding: 8px 15px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  resetBtn.onclick = reinitialiserDP;
-  resetBtn.title = "Réinitialiser aux 10 DP de base";
-  
-  selectElement.parentNode.appendChild(resetBtn);
-  
-  console.log("✅ Boutons de gestion ajoutés pour admin:", currentUser?.email);
+  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
 }
 
 // ===== POPUP DE GESTION =====
 function ouvrirGestionDP() {
-  const popup = window.open('', 'GestionDP', 'width=600,height=500,scrollbars=yes');
+  const popup = window.open('', 'DPManager', 'width=800,height=600,scrollbars=yes,resizable=yes');
   
-  if (!popup) {
-    alert('Veuillez autoriser les pop-ups');
+  popup.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestion des DP - JSAS</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #2c5282; margin-top: 0; }
+        .dp-list { margin: 20px 0; }
+        .dp-item { background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #007bff; display: flex; justify-content: space-between; align-items: center; }
+        .dp-info { flex-grow: 1; }
+        .dp-niveau { color: #666; font-size: 0.9em; }
+        .btn { padding: 5px 10px; margin: 0 2px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-use { background: #28a745; color: white; }
+        .btn-delete { background: #dc3545; color: white; }
+        .form-section { background: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .form-group { margin: 10px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-add { background: #007bff; color: white; padding: 10px 20px; font-size: 16px; }
+        .stats { background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>👥 Gestion des Directeurs de Plongée</h2>
+        
+        <div class="stats">
+            <strong>📊 Statistiques:</strong> <span id="stats-text">Chargement...</span>
+        </div>
+        
+        <div class="dp-list">
+            <h3>📋 Liste des DP enregistrés:</h3>
+            <div id="dp-container">Chargement...</div>
+        </div>
+        
+        <div class="form-section">
+            <h3>➕ Ajouter un nouveau DP:</h3>
+            <form id="add-form">
+                <div class="form-group">
+                    <label>Nom:</label>
+                    <input type="text" id="nom" required placeholder="Ex: MARTIN">
+                </div>
+                <div class="form-group">
+                    <label>Prénom:</label>
+                    <input type="text" id="prenom" required placeholder="Ex: Jean">
+                </div>
+                <div class="form-group">
+                    <label>Niveau:</label>
+                    <select id="niveau" required>
+                        <option value="">-- Sélectionner --</option>
+                        <option value="E4">E4 (Encadrant 4ème degré)</option>
+                        <option value="E3">E3 (Encadrant 3ème degré)</option>
+                        <option value="P5">P5 (Plongeur 5ème degré)</option>
+                        <option value="N5">N5 (Niveau 5)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-add">➕ Ajouter ce DP</button>
+            </form>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="window.close()" class="btn" style="background: #6c757d; color: white; padding: 10px 20px;">❌ Fermer</button>
+        </div>
+    </div>
+
+    <script>
+        // Variables
+        let dpList = [];
+        
+        // Charger les données depuis le parent
+        function chargerDonnees() {
+            if (window.opener && window.opener.DP_LIST) {
+                dpList = [...window.opener.DP_LIST];
+                afficherDP();
+                mettreAJourStats();
+            } else {
+                document.getElementById('dp-container').innerHTML = '❌ Impossible de charger les données';
+            }
+        }
+        
+        // Afficher la liste des DP
+        function afficherDP() {
+            const container = document.getElementById('dp-container');
+            if (dpList.length === 0) {
+                container.innerHTML = '<p>Aucun DP enregistré.</p>';
+                return;
+            }
+            
+            container.innerHTML = dpList.map((dp, index) => {
+                const [nomPrenom, niveau] = dp.split(' (');
+                const niveauClean = niveau ? niveau.replace(')', '') : '';
+                return \`
+                    <div class="dp-item">
+                        <div class="dp-info">
+                            <strong>\${nomPrenom}</strong>
+                            <div class="dp-niveau">Niveau: \${niveauClean}</div>
+                        </div>
+                        <div>
+                            <button onclick="utiliserDP('\${dp}')" class="btn btn-use">✅ Utiliser</button>
+                            <button onclick="supprimerDP(\${index})" class="btn btn-delete">🗑️ Supprimer</button>
+                        </div>
+                    </div>
+                \`;
+            }).join('');
+        }
+        
+        // Mettre à jour les statistiques
+        function mettreAJourStats() {
+            const total = dpList.length;
+            const parNiveau = {};
+            dpList.forEach(dp => {
+                const niveau = dp.match(/\\((.+)\\)/)?.[1] || 'Inconnu';
+                parNiveau[niveau] = (parNiveau[niveau] || 0) + 1;
+            });
+            
+            const statsText = \`Total: \${total} DP | \${Object.entries(parNiveau).map(([n, c]) => \`\${n}: \${c}\`).join(' | ')}\`;
+            document.getElementById('stats-text').textContent = statsText;
+        }
+        
+        // Utiliser un DP (le sélectionner dans le dropdown principal)
+        function utiliserDP(dp) {
+            if (window.opener) {
+                const select = window.opener.document.getElementById('dp-nom');
+                if (select) {
+                    const nomComplet = dp.split(' (')[0];
+                    select.value = nomComplet;
+                    alert('✅ DP "' + dp + '" sélectionné !');
+                } else {
+                    alert('❌ Impossible de mettre à jour le dropdown principal');
+                }
+            }
+        }
+        
+        // Supprimer un DP
+        function supprimerDP(index) {
+            const dp = dpList[index];
+            if (confirm('🗑️ Supprimer "' + dp + '" de la liste ?')) {
+                dpList.splice(index, 1);
+                
+                // Mettre à jour le parent
+                if (window.opener && window.opener.DP_LIST) {
+                    window.opener.DP_LIST = [...dpList];
+                    window.opener.mettreAJourDropdown();
+                    window.opener.sauvegarderDPVersFirebase();
+                }
+                
+                // Mettre à jour l'affichage
+                afficherDP();
+                mettreAJourStats();
+                
+                console.log('🗑️ DP supprimé:', dp);
+                alert('✅ DP supprimé et sauvegardé !');
+            }
+        }
+        
+        // Ajouter un DP
+        function ajouterDP(e) {
+            e.preventDefault();
+            
+            const nom = document.getElementById('nom').value.trim().toUpperCase();
+            const prenom = document.getElementById('prenom').value.trim();
+            const niveau = document.getElementById('niveau').value;
+            
+            if (!nom || !prenom || !niveau) {
+                alert('❌ Veuillez remplir tous les champs');
+                return;
+            }
+            
+            const nouveauDP = \`\${nom} \${prenom} (\${niveau})\`;
+            
+            // Vérifier les doublons
+            if (dpList.some(dp => dp.toLowerCase().includes(nom.toLowerCase()) && dp.toLowerCase().includes(prenom.toLowerCase()))) {
+                alert('❌ Ce DP existe déjà !');
+                return;
+            }
+            
+            // Ajouter à la liste
+            dpList.push(nouveauDP);
+            
+            // Mettre à jour le parent
+            if (window.opener && window.opener.DP_LIST) {
+                window.opener.DP_LIST = [...dpList];
+                window.opener.mettreAJourDropdown();
+                window.opener.sauvegarderDPVersFirebase();
+            }
+            
+            // Mettre à jour l'affichage
+            afficherDP();
+            mettreAJourStats();
+            
+            // Reset du formulaire
+            document.getElementById('add-form').reset();
+            
+            console.log('➕ DP ajouté:', nouveauDP);
+            alert('✅ DP ajouté et sauvegardé !');
+        }
+        
+        // Initialisation
+        document.getElementById('add-form').addEventListener('submit', ajouterDP);
+        chargerDonnees();
+    </script>
+</body>
+</html>
+  `);
+}
+
+// ===== FONCTIONS DE NETTOYAGE =====
+function nettoyerDP() {
+  console.log("🧹 === NETTOYAGE DES DP ===");
+  const avant = DP_LIST.length;
+  
+  // Supprimer les doublons
+  DP_LIST = [...new Set(DP_LIST)];
+  
+  // Supprimer les DP de test
+  DP_LIST = DP_LIST.filter(dp => {
+    const dpLower = dp.toLowerCase();
+    return !dpLower.includes('test') && 
+           !dpLower.includes('nouveau') && 
+           !dpLower.includes('demo');
+  });
+  
+  const apres = DP_LIST.length;
+  const supprimes = avant - apres;
+  
+  mettreAJourDropdown();
+  sauvegarderDPVersFirebase();
+  
+  console.log(`✅ Nettoyage terminé: ${supprimes} DP supprimés (${avant} → ${apres})`);
+  alert(`🧹 Nettoyage terminé !\n${supprimes} DP supprimés\n${apres} DP restants`);
+}
+
+function reinitialiserDP() {
+  if (confirm('🔄 Remettre la liste aux 10 DP de base ?\n\nTous les DP ajoutés seront supprimés !')) {
+    DP_LIST = [...DP_DE_BASE];
+    mettreAJourDropdown();
+    sauvegarderDPVersFirebase();
+    console.log("🔄 Liste remise aux 10 DP de base");
+    alert('🔄 Liste remise aux 10 DP de base !');
+  }
+}
+
+// ===== BOUTONS D'ADMINISTRATION =====
+function ajouterBoutonsAdmin() {
+  const selectElement = document.getElementById("dp-nom");
+  if (!selectElement) return;
+  
+  // Éviter les doublons
+  if (document.getElementById("manage-dp-btn")) return;
+  
+  // Vérifier les permissions admin
+  if (!isUserAdmin()) {
+    console.log("🔐 Utilisateur non admin, pas de boutons de gestion");
     return;
   }
   
-  popup.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Gestion des DP</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #007bff; text-align: center; }
-        .dp-item { 
-          background: #f8f9fa; 
-          padding: 10px; 
-          margin: 5px 0; 
-          border-radius: 5px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .btn { 
-          padding: 5px 10px; 
-          margin: 0 5px; 
-          border: none; 
-          border-radius: 3px; 
-          cursor: pointer; 
-        }
-        .btn-use { background: #28a745; color: white; }
-        .btn-del { background: #dc3545; color: white; }
-        .add-form { 
-          background: #e3f2fd; 
-          padding: 15px; 
-          border-radius: 5px; 
-          margin-top: 20px;
-        }
-        input, select { 
-          padding: 5px; 
-          margin: 5px; 
-          border: 1px solid #ddd; 
-          border-radius: 3px;
-        }
-      </style>
-    </head>
-    <body>
-      <h1>👥 Gestion des DP JSAS</h1>
-      
-      <div id="dp-list"></div>
-      
-      <div class="add-form">
-        <h3>Ajouter un DP</h3>
-        <input type="text" id="nom" placeholder="NOM" style="text-transform: uppercase;">
-        <input type="text" id="prenom" placeholder="Prénom">
-        <select id="niveau">
-          <option value="">Niveau</option>
-          <option value="E4">E4</option>
-          <option value="E3">E3</option>
-          <option value="P5">P5</option>
-          <option value="N5">N5</option>
-        </select>
-        <br><br>
-        <button onclick="ajouterDP()" class="btn btn-use">Ajouter</button>
-      </div>
-      
-      <br>
-      <button onclick="window.close()" class="btn" style="background: #6c757d; color: white;">Fermer</button>
-
-      <script>
-        let dpList = ${JSON.stringify(DP_LIST)};
-        
-        function afficherDP() {
-          const container = document.getElementById('dp-list');
-          let html = '';
-          
-          dpList.forEach((dp, index) => {
-            html += \`
-              <div class="dp-item">
-                <span>\${dp}</span>
-                <div>
-                  <button class="btn btn-use" onclick="utiliserDP('\${dp.split(' (')[0]}')">Utiliser</button>
-                  <button class="btn btn-del" onclick="supprimerDP(\${index})">Supprimer</button>
-                </div>
-              </div>
-            \`;
-          });
-          
-          container.innerHTML = html;
-        }
-        
-        function utiliserDP(nom) {
-          if (window.opener && window.opener.document.getElementById('dp-nom')) {
-            window.opener.document.getElementById('dp-nom').value = nom;
-            alert('DP sélectionné : ' + nom);
-          }
-        }
-        
-        function supprimerDP(index) {
-          console.log('🗑️ === DEBUT SUPPRESSION DP ===');
-          const dp = dpList[index];
-          console.log('DP à supprimer:', dp);
-          
-          if (confirm('Supprimer "' + dp + '" ?')) {
-            dpList.splice(index, 1);
-            console.log('✅ DP supprimé de la liste popup');
-            console.log('Liste après suppression:', dpList);
-            
-            afficherDP();
-            mettreAJourParent();
-            
-            console.log('🗑️ === FIN SUPPRESSION DP ===');
-            alert('DP supprimé ! Le dropdown a été mis à jour.');
-          }
-        }
-        
-        function ajouterDP() {
-          console.log('🚀 === DEBUT AJOUT DP ===');
-          
-          const nom = document.getElementById('nom').value.trim().toUpperCase();
-          const prenom = document.getElementById('prenom').value.trim();
-          const niveau = document.getElementById('niveau').value;
-          
-          console.log('Données saisies:', { nom, prenom, niveau });
-          
-          if (!nom || !prenom || !niveau) {
-            alert('Veuillez remplir tous les champs');
-            return;
-          }
-          
-          // Vérifier les doublons
-          const nouveauDP = nom + ' ' + prenom + ' (' + niveau + ')';
-          const existe = dpList.some(dp => dp.toLowerCase() === nouveauDP.toLowerCase());
-          
-          if (existe) {
-            alert('Ce DP existe déjà dans la liste !');
-            return;
-          }
-          
-          console.log('Nouveau DP:', nouveauDP);
-          
-          dpList.push(nouveauDP);
-          console.log('Liste après ajout:', dpList);
-          
-          // Vider le formulaire
-          document.getElementById('nom').value = '';
-          document.getElementById('prenom').value = '';
-          document.getElementById('niveau').value = '';
-          
-          // Mettre à jour l'affichage popup
-          afficherDP();
-          
-          // Mettre à jour le parent
-          mettreAJourParent();
-          
-          // NOUVEAU : Sauvegarder vers Firebase
-          sauvegarderVersFirebase();
-          
-          console.log('🚀 === FIN AJOUT DP ===');
-          alert('DP ajouté et sauvegardé ! Le dropdown a été mis à jour automatiquement.');
-        }
-        
-        function supprimerDP(index) {
-          console.log('🗑️ === DEBUT SUPPRESSION DP ===');
-          const dp = dpList[index];
-          console.log('DP à supprimer:', dp);
-          
-          if (confirm('Supprimer "' + dp + '" ?')) {
-            dpList.splice(index, 1);
-            console.log('✅ DP supprimé de la liste popup');
-            console.log('Liste après suppression:', dpList);
-            
-            // Mettre à jour l'affichage popup
-            afficherDP();
-            
-            // Mettre à jour le parent
-            mettreAJourParent();
-            
-            // NOUVEAU : Synchronisation automatique après suppression
-            synchroniserAvecDropdown();
-            
-            // Sauvegarder vers Firebase
-            sauvegarderVersFirebase();
-            
-            console.log('🗑️ === FIN SUPPRESSION DP ===');
-            alert('DP supprimé et sauvegardé automatiquement !');
-          }
-        }
-        
-        // NOUVELLE FONCTION : Synchronisation automatique
-        function synchroniserAvecDropdown() {
-          console.log('🔄 === SYNCHRONISATION AUTOMATIQUE ===');
-          try {
-            if (window.opener) {
-              const select = window.opener.document.getElementById('dp-nom');
-              if (select) {
-                // Récupérer ce qui est vraiment affiché dans le dropdown
-                const options = Array.from(select.options).slice(1); // Exclure l'option par défaut
-                const dropdownList = options.map(opt => opt.textContent);
-                
-                console.log('Dropdown contient:', dropdownList.length, 'DP');
-                console.log('Popup contient:', dpList.length, 'DP');
-                
-                // Mettre à jour DP_LIST du parent avec ce qui est affiché
-                window.opener.DP_LIST = [...dropdownList];
-                console.log('✅ DP_LIST parent synchronisé avec le dropdown');
-                console.log('Nouvelle taille DP_LIST:', window.opener.DP_LIST.length);
-              } else {
-                console.error('❌ Select dropdown non trouvé');
-              }
-            } else {
-              console.error('❌ window.opener non disponible');
-            }
-          } catch (error) {
-            console.error('❌ Erreur synchronisation:', error);
-          }
-          console.log('🔄 === FIN SYNCHRONISATION ===');
-        }
-        
-        // NOUVELLE FONCTION : Sauvegarde depuis la popup
-        async function sauvegarderVersFirebase() {
-          console.log('💾 === DEBUT SAUVEGARDE FIREBASE ===');
-          console.log('Liste popup actuelle:', dpList.length, 'DP');
-          
-          try {
-            if (window.opener) {
-              // CORRECTION : Mettre à jour la liste globale du parent AVANT la sauvegarde
-              console.log('📝 Mise à jour DP_LIST parent...');
-              window.opener.DP_LIST = [...dpList];
-              console.log('✅ DP_LIST parent mis à jour, nouvelle taille:', window.opener.DP_LIST.length);
-              
-              // Sauvegarder via la fonction du parent
-              if (window.opener.sauvegarderDPVersFirebase) {
-                console.log('💾 Appel sauvegarde Firebase...');
-                const success = await window.opener.sauvegarderDPVersFirebase();
-                if (success) {
-                  console.log('✅ Sauvegarde Firebase réussie');
-                } else {
-                  console.warn('⚠️ Sauvegarde Firebase échouée');
-                }
-              } else {
-                console.error('❌ Fonction sauvegarderDPVersFirebase non trouvée');
-              }
-            } else {
-              console.error('❌ window.opener non disponible');
-            }
-          } catch (error) {
-            console.error('❌ Erreur sauvegarde:', error);
-          }
-          
-          console.log('💾 === FIN SAUVEGARDE FIREBASE ===');
-        }
-        
-        function mettreAJourParent() {
-          console.log('🔄 === DEBUT MISE A JOUR PARENT ===');
-          console.log('dpList popup actuel:', dpList.length, 'DP');
-          console.log('window.opener existe?', !!window.opener);
-          
-          if (!window.opener) {
-            console.error('❌ window.opener non disponible');
-            return;
-          }
-          
-          try {
-            // ÉTAPE 1 : Mettre à jour la variable globale DP_LIST EN PREMIER
-            console.log('📝 ÉTAPE 1: Mise à jour de la variable DP_LIST globale...');
-            const ancienneTaille = window.opener.DP_LIST ? window.opener.DP_LIST.length : 0;
-            window.opener.DP_LIST = [...dpList];
-            console.log('✅ DP_LIST global mis à jour:', ancienneTaille, '→', window.opener.DP_LIST.length);
-            
-            // ÉTAPE 2 : Mise à jour du dropdown
-            console.log('🔧 ÉTAPE 2: Mise à jour directe du dropdown...');
-            const select = window.opener.document.getElementById('dp-nom');
-            
-            if (!select) {
-              console.error('❌ Select dp-nom non trouvé dans parent');
-              return;
-            }
-            
-            console.log('✅ Select trouvé, mise à jour...');
-            
-            // Sauvegarder la valeur actuelle
-            const currentValue = select.value;
-            console.log('💾 Valeur actuelle:', currentValue);
-            
-            // Vider le select
-            select.innerHTML = '';
-            
-            // Option par défaut
-            const defaultOption = window.opener.document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
-            select.appendChild(defaultOption);
-            
-            // Ajouter tous les DP
-            let optionsAdded = 0;
-            dpList.forEach(dp => {
-              const option = window.opener.document.createElement('option');
-              option.value = dp.split(' (')[0]; // "AGUIRRE Raoul"
-              option.textContent = dp; // "AGUIRRE Raoul (E3)"
-              select.appendChild(option);
-              optionsAdded++;
-            });
-            
-            console.log('✅', optionsAdded, 'options ajoutées au dropdown');
-            
-            // Restaurer la valeur si possible
-            if (currentValue) {
-              select.value = currentValue;
-              console.log('🔙 Valeur restaurée:', currentValue);
-            }
-            
-            console.log('✅ Mise à jour directe terminée avec succès');
-            
-          } catch (error) {
-            console.error('❌ Erreur lors de la mise à jour:', error);
-          }
-          
-          console.log('🔄 === FIN MISE A JOUR PARENT ===');
-        }
-        
-        afficherDP();
-      </script>
-    </body>
-    </html>
-  `);
+  // Bouton Gérer DP
+  const manageBtn = document.createElement("button");
+  manageBtn.id = "manage-dp-btn";
+  manageBtn.innerHTML = "👥 Gérer DP";
+  manageBtn.style.cssText = "margin-left: 10px; padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;";
+  manageBtn.onclick = ouvrirGestionDP;
   
-  popup.document.close();
-}
-
-// ===== FONCTION DE NETTOYAGE MANUEL =====
-function nettoyerDP() {
-  console.log("🧹 === NETTOYAGE DES DP ===");
-  console.log("Liste avant nettoyage:", DP_LIST.length, "DP");
-  console.log("DP actuels:", DP_LIST);
+  // Bouton Nettoyer
+  const cleanBtn = document.createElement("button");
+  cleanBtn.id = "clean-dp-btn";
+  cleanBtn.innerHTML = "🧹 Nettoyer";
+  cleanBtn.style.cssText = "margin-left: 5px; padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;";
+  cleanBtn.onclick = nettoyerDP;
   
-  // Supprimer les doublons
-  const avantDoublons = DP_LIST.length;
-  DP_LIST = [...new Set(DP_LIST)];
-  const doublonsSupprimes = avantDoublons - DP_LIST.length;
+  // Bouton Reset
+  const resetBtn = document.createElement("button");
+  resetBtn.id = "reset-dp-btn";
+  resetBtn.innerHTML = "🔄 Reset";
+  resetBtn.style.cssText = "margin-left: 5px; padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;";
+  resetBtn.onclick = reinitialiserDP;
   
-  if (doublonsSupprimes > 0) {
-    console.log("✅", doublonsSupprimes, "doublon(s) supprimé(s)");
-  }
+  // Ajouter les boutons
+  selectElement.parentNode.appendChild(manageBtn);
+  selectElement.parentNode.appendChild(cleanBtn);
+  selectElement.parentNode.appendChild(resetBtn);
   
-  // Supprimer les DP contenant certains mots (modifiable)
-  const motsASupprimer = ["NOUVCEAU", "TEST", "NOUVEAU"];
-  const avantFiltrage = DP_LIST.length;
-  
-  DP_LIST = DP_LIST.filter(dp => {
-    return !motsASupprimer.some(mot => dp.toUpperCase().includes(mot));
-  });
-  
-  const filtresSupprimes = avantFiltrage - DP_LIST.length;
-  if (filtresSupprimes > 0) {
-    console.log("✅", filtresSupprimes, "DP de test supprimé(s)");
-  }
-  
-  console.log("Liste après nettoyage:", DP_LIST.length, "DP");
-  console.log("DP finaux:", DP_LIST);
-  
-  // Mettre à jour l'interface
-  mettreAJourDropdown();
-  
-  // Sauvegarder
-  sauvegarderDPVersFirebase().then(() => {
-    console.log("✅ Nettoyage terminé et sauvegardé");
-    alert("🧹 Nettoyage terminé !\n\nDoublons supprimés : " + doublonsSupprimes + "\nDP de test supprimés : " + filtresSupprimes + "\n\nTotal final : " + DP_LIST.length + " DP");
-  });
-  
-  console.log("🧹 === FIN NETTOYAGE ===");
-}
-
-// ===== FONCTION DE REINITIALISATION =====
-function reinitialiserDP() {
-  if (confirm("⚠️ Réinitialiser la liste des DP ?\n\nCela supprimera tous les DP ajoutés et ne gardera que les 10 DP de base.\n\nCette action est irréversible !")) {
-    console.log("🔄 Réinitialisation des DP...");
-    DP_LIST = [...DP_DE_BASE];
-    mettreAJourDropdown();
-    sauvegarderDPVersFirebase().then(() => {
-      console.log("✅ Réinitialisation terminée");
-      alert("✅ Liste réinitialisée aux 10 DP de base !");
-    });
-  }
+  console.log("✅ Boutons d'administration ajoutés");
 }
 
 // ===== INITIALISATION =====
 async function initialiserGestionnaireDP() {
-  console.log("🚀 Initialisation gestionnaire DP avec Firebase...");
+  console.log("🚀 Initialisation gestionnaire DP...");
   
-  // Charger les DP depuis Firebase d'abord
+  // Charger les DP depuis Firebase
   await chargerDPDepuisFirebase();
   
-  // Puis créer l'interface
-  remplirDropdownDP();
-  ajouterBoutonGestion();
+  // Créer le dropdown
+  mettreAJourDropdown();
+  
+  // Ajouter les boutons admin si nécessaire
+  ajouterBoutonsAdmin();
   
   console.log("✅ Gestionnaire DP initialisé avec", DP_LIST.length, "DP");
 }
 
-setTimeout(async () => {
-  await initialiserGestionnaireDP();
-}, 2000);
+// ===== ATTENDRE L'AUTHENTIFICATION =====
+function attendreAuth() {
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    initialiserGestionnaireDP();
+  } else {
+    console.log("⏳ Attente authentification...");
+    setTimeout(attendreAuth, 1000);
+  }
+}
 
-// Exporter les fonctions
-window.mettreAJourDropdown = mettreAJourDropdown;
+// ===== LANCEMENT AUTOMATIQUE =====
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(attendreAuth, 2000));
+} else {
+  setTimeout(attendreAuth, 2000);
+}
+
+// ===== EXPORTS GLOBAUX =====
 window.DP_LIST = DP_LIST;
-window.sauvegarderDPVersFirebase = sauvegarderDPVersFirebase;
-window.chargerDPDepuisFirebase = chargerDPDepuisFirebase;
+window.mettreAJourDropdown = mettreAJourDropdown;
+window.ouvrirGestionDP = ouvrirGestionDP;
 window.nettoyerDP = nettoyerDP;
 window.reinitialiserDP = reinitialiserDP;
-
-console.log("📦 dp-manager simple chargé");
+window.sauvegarderDPVersFirebase = sauvegarderDPVersFirebase;
+window.chargerDPDepuisFirebase = chargerDPDepuisFirebase;
