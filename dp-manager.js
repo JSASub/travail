@@ -186,10 +186,20 @@ function ouvrirGestionDP() {
         }
         
         function supprimerDP(index) {
-          if (confirm('Supprimer ce DP ?')) {
+          console.log('🗑️ === DEBUT SUPPRESSION DP ===');
+          const dp = dpList[index];
+          console.log('DP à supprimer:', dp);
+          
+          if (confirm('Supprimer "' + dp + '" ?')) {
             dpList.splice(index, 1);
+            console.log('✅ DP supprimé de la liste popup');
+            console.log('Liste après suppression:', dpList);
+            
             afficherDP();
             mettreAJourParent();
+            
+            console.log('🗑️ === FIN SUPPRESSION DP ===');
+            alert('DP supprimé ! Le dropdown a été mis à jour.');
           }
         }
         
@@ -207,21 +217,33 @@ function ouvrirGestionDP() {
             return;
           }
           
+          // Vérifier les doublons
           const nouveauDP = nom + ' ' + prenom + ' (' + niveau + ')';
+          const existe = dpList.some(dp => dp.toLowerCase() === nouveauDP.toLowerCase());
+          
+          if (existe) {
+            alert('Ce DP existe déjà dans la liste !');
+            return;
+          }
+          
           console.log('Nouveau DP:', nouveauDP);
           
           dpList.push(nouveauDP);
           console.log('Liste après ajout:', dpList);
           
+          // Vider le formulaire
           document.getElementById('nom').value = '';
           document.getElementById('prenom').value = '';
           document.getElementById('niveau').value = '';
           
+          // Mettre à jour l'affichage popup
           afficherDP();
+          
+          // Mettre à jour le parent
           mettreAJourParent();
           
           console.log('🚀 === FIN AJOUT DP ===');
-          alert('DP ajouté ! Vérifiez le dropdown dans l\\'application principale.');
+          alert('DP ajouté ! Le dropdown a été mis à jour automatiquement.');
         }
         
         function mettreAJourParent() {
@@ -235,49 +257,54 @@ function ouvrirGestionDP() {
           }
           
           try {
-            // Mettre à jour la liste globale directement
-            console.log('📝 Mise à jour DP_LIST dans parent...');
-            window.opener.DP_LIST = [...dpList];
-            console.log('✅ DP_LIST mis à jour:', window.opener.DP_LIST);
+            // MISE A JOUR DIRECTE - Plus simple et plus sûr
+            console.log('🔧 Mise à jour directe du dropdown...');
+            const select = window.opener.document.getElementById('dp-nom');
             
-            // Vérifier si la fonction existe
-            console.log('Fonction mettreAJourDropdown existe?', typeof window.opener.mettreAJourDropdown);
-            
-            if (typeof window.opener.mettreAJourDropdown === 'function') {
-              console.log('🔄 Appel de mettreAJourDropdown...');
-              window.opener.mettreAJourDropdown();
-            } else {
-              console.error('❌ Fonction mettreAJourDropdown non trouvée');
-              console.log('Fonctions disponibles:', Object.keys(window.opener));
-              
-              // Essayer de forcer la mise à jour manuellement
-              console.log('🔧 Tentative de mise à jour manuelle...');
-              const select = window.opener.document.getElementById('dp-nom');
-              if (select) {
-                console.log('✅ Select trouvé, mise à jour manuelle...');
-                
-                // Vider le select
-                select.innerHTML = '';
-                
-                // Option par défaut
-                const defaultOption = window.opener.document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
-                select.appendChild(defaultOption);
-                
-                // Ajouter tous les DP
-                dpList.forEach(dp => {
-                  const option = window.opener.document.createElement('option');
-                  option.value = dp.split(' (')[0];
-                  option.textContent = dp;
-                  select.appendChild(option);
-                });
-                
-                console.log('✅ Mise à jour manuelle terminée');
-              } else {
-                console.error('❌ Select dp-nom non trouvé dans parent');
-              }
+            if (!select) {
+              console.error('❌ Select dp-nom non trouvé dans parent');
+              return;
             }
+            
+            console.log('✅ Select trouvé, mise à jour...');
+            
+            // Sauvegarder la valeur actuelle
+            const currentValue = select.value;
+            console.log('💾 Valeur actuelle:', currentValue);
+            
+            // Vider le select
+            select.innerHTML = '';
+            
+            // Option par défaut
+            const defaultOption = window.opener.document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
+            select.appendChild(defaultOption);
+            
+            // Ajouter tous les DP
+            let optionsAdded = 0;
+            dpList.forEach(dp => {
+              const option = window.opener.document.createElement('option');
+              option.value = dp.split(' (')[0]; // "AGUIRRE Raoul"
+              option.textContent = dp; // "AGUIRRE Raoul (E3)"
+              select.appendChild(option);
+              optionsAdded++;
+            });
+            
+            console.log('✅', optionsAdded, 'options ajoutées');
+            
+            // Restaurer la valeur si possible
+            if (currentValue) {
+              select.value = currentValue;
+              console.log('🔙 Valeur restaurée:', currentValue);
+            }
+            
+            // Mettre à jour aussi la liste globale pour éviter les conflits
+            window.opener.DP_LIST = [...dpList];
+            console.log('✅ DP_LIST global mis à jour');
+            
+            console.log('✅ Mise à jour directe terminée avec succès');
+            
           } catch (error) {
             console.error('❌ Erreur lors de la mise à jour:', error);
           }
