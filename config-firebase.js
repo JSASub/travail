@@ -94,10 +94,15 @@ function initializeFirebase() {
           await initializeAppData();
 		  initializeAfterAuth();
         }
-      } else {
-		  console.log("❌ Utilisateur non connecté");
-		  currentUser = null;
-		  lockSystemInitialized = false;
+	} else {
+	  console.log("❌ Utilisateur non connecté");
+	  currentUser = null;
+	  lockSystemInitialized = false;
+  
+	  // NOUVELLE LIGNE : Nettoyer le système de verrous EN PREMIER
+	  if (typeof cleanupLockSystem === 'function') {
+		  cleanupLockSystem();
+	  }
  
 	  // NOUVELLE LIGNE : Désactiver le gestionnaire des utilisateurs en ligne EN PREMIER
 	  if (typeof setOnlineUsersManagerActive === 'function') {
