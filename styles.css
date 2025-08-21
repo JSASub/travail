@@ -9,8 +9,8 @@ h1, h2 {
   color: #004080;
 }
 
-header h1 {
-  margin-top: 35mm;
+h2[style*="color: #004080"][style*="font-size: 20px"] {
+  margin-top: 15mm !important;
 }
 
 /* STYLES AMÉLIORÉS POUR LES ALERTES */
