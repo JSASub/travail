@@ -76,15 +76,20 @@ function updateDPDropdown() {
 // ===== BOUTON DE GESTION =====
 function addManageButton() {
   const selectElement = document.getElementById("dp-nom");
-  if (!selectElement || !isUserAdmin()) return;
+  if (!selectElement) return;
   
   let manageBtn = document.getElementById("manage-dp-btn");
   if (manageBtn) return;
   
+  // DEBUG : Vérifier l'utilisateur actuel
+  console.log("👤 Utilisateur actuel:", currentUser?.email);
+  console.log("🔐 Est admin?", isUserAdmin());
+  
+  // TEMPORAIRE : Bouton pour tout le monde pour tester
   manageBtn = document.createElement("button");
   manageBtn.id = "manage-dp-btn";
   manageBtn.type = "button";
-  manageBtn.innerHTML = "👥 Gérer DP";
+  manageBtn.innerHTML = "👥 Gérer DP (TEST)";
   manageBtn.style.cssText = `
     margin-left: 10px;
     padding: 8px 15px;
@@ -99,7 +104,7 @@ function addManageButton() {
   manageBtn.onclick = openDPManagerWindow;
   
   selectElement.parentNode.appendChild(manageBtn);
-  console.log("✅ Bouton de gestion ajouté");
+  console.log("✅ Bouton de gestion ajouté (TEST) pour:", currentUser?.email);
 }
 
 // ===== VERIFICATION ADMIN =====
@@ -111,7 +116,10 @@ function isUserAdmin() {
     'david.marty@sfr.fr'
   ];
   
-  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
+  const isAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+  console.log("🔐 Vérification admin pour", currentUser?.email, ":", isAdmin);
+  
+  return isAdmin;
 }
 
 // ===== FENETRE DE GESTION SIMPLIFIEE =====
