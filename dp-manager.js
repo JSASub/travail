@@ -85,11 +85,16 @@ function addManageButton() {
   console.log("👤 Utilisateur actuel:", currentUser?.email);
   console.log("🔐 Est admin?", isUserAdmin());
   
-  // TEMPORAIRE : Bouton pour tout le monde pour tester
+  // Vérifier si admin (votre email est dans la liste)
+  if (!isUserAdmin()) {
+    console.log("❌ Pas admin, pas de bouton de gestion");
+    return;
+  }
+  
   manageBtn = document.createElement("button");
   manageBtn.id = "manage-dp-btn";
   manageBtn.type = "button";
-  manageBtn.innerHTML = "👥 Gérer DP (TEST)";
+  manageBtn.innerHTML = "👥 Gérer DP";
   manageBtn.style.cssText = `
     margin-left: 10px;
     padding: 8px 15px;
@@ -104,7 +109,7 @@ function addManageButton() {
   manageBtn.onclick = openDPManagerWindow;
   
   selectElement.parentNode.appendChild(manageBtn);
-  console.log("✅ Bouton de gestion ajouté (TEST) pour:", currentUser?.email);
+  console.log("✅ Bouton de gestion ajouté pour admin:", currentUser?.email);
 }
 
 // ===== VERIFICATION ADMIN =====
@@ -258,6 +263,9 @@ function openDPManagerWindow() {
         </div>
         
         <div class="footer">
+          <button onclick="testSync()" class="btn" style="background: #17a2b8; color: white; margin-right: 10px;">
+            🔧 Test Sync
+          </button>
           <button onclick="window.close()" class="btn btn-use">✅ Fermer</button>
         </div>
       </div>
@@ -311,14 +319,31 @@ function openDPManagerWindow() {
           if (confirm(\`Supprimer "\${dp.nom} \${dp.prenom}" ?\`)) {
             dpList.splice(index, 1);
             
-            // Mettre à jour la liste parent
-            if (window.opener && window.opener.allDPList) {
-              window.opener.allDPList = dpList;
-              window.opener.updateDPDropdown();
+            console.log('🗑️ DP supprimé:', dp);
+            console.log('📋 Liste popup maintenant:', dpList.length, 'DP');
+            
+            // Mettre à jour la liste parent - CORRECTION ICI
+            try {
+              if (window.opener) {
+                console.log('🔄 Mise à jour window.opener après suppression...');
+                window.opener.allDPList = [...dpList]; // Copie de la liste
+                
+                // Forcer la mise à jour du dropdown
+                if (typeof window.opener.updateDPDropdown === 'function') {
+                  window.opener.updateDPDropdown();
+                  console.log('✅ Dropdown parent mis à jour après suppression');
+                } else {
+                  console.error('❌ Fonction updateDPDropdown non trouvée');
+                }
+              } else {
+                console.error('❌ window.opener non disponible');
+              }
+            } catch (error) {
+              console.error('❌ Erreur mise à jour parent:', error);
             }
             
             displayDPs();
-            alert('✅ DP supprimé');
+            alert('✅ DP supprimé ! Vérifiez le dropdown dans l\\'application principale.');
           }
         }
         
@@ -349,20 +374,66 @@ function openDPManagerWindow() {
           const newDP = { nom, prenom, niveau, email };
           dpList.push(newDP);
           
-          // Mettre à jour la liste parent
-          if (window.opener && window.opener.allDPList) {
-            window.opener.allDPList = dpList;
-            window.opener.updateDPDropdown();
+          console.log('📝 DP ajouté dans popup:', newDP);
+          console.log('📋 Liste popup maintenant:', dpList.length, 'DP');
+          
+          // Mettre à jour la liste parent - CORRECTION ICI
+          try {
+            if (window.opener) {
+              console.log('🔄 Mise à jour window.opener...');
+              window.opener.allDPList = [...dpList]; // Copie de la liste
+              
+              // Forcer la mise à jour du dropdown
+              if (typeof window.opener.updateDPDropdown === 'function') {
+                window.opener.updateDPDropdown();
+                console.log('✅ Dropdown parent mis à jour');
+              } else {
+                console.error('❌ Fonction updateDPDropdown non trouvée');
+              }
+            } else {
+              console.error('❌ window.opener non disponible');
+            }
+          } catch (error) {
+            console.error('❌ Erreur mise à jour parent:', error);
           }
           
           document.getElementById('add-form').reset();
           displayDPs();
-          alert('✅ DP ajouté !');
+          alert('✅ DP ajouté ! Vérifiez le dropdown dans l\\'application principale.');
         }
         
         // Initialisation
         displayDPs();
         document.getElementById('add-form').addEventListener('submit', addDP);
+        
+        // Fonction de test de synchronisation
+        function testSync() {
+          console.log('🔧 === TEST DE SYNCHRONISATION ===');
+          console.log('window.opener:', !!window.opener);
+          console.log('window.opener.allDPList:', window.opener?.allDPList?.length || 'non trouvé');
+          console.log('window.opener.updateDPDropdown:', typeof window.opener?.updateDPDropdown);
+          
+          if (window.opener) {
+            try {
+              window.opener.allDPList = [...dpList];
+              console.log('✅ Liste assignée à window.opener');
+              
+              if (typeof window.opener.updateDPDropdown === 'function') {
+                window.opener.updateDPDropdown();
+                console.log('✅ updateDPDropdown appelé');
+                alert('🔧 Test réussi ! Vérifiez le dropdown.');
+              } else {
+                alert('❌ Fonction updateDPDropdown non trouvée');
+              }
+            } catch (error) {
+              console.error('Erreur test:', error);
+              alert('❌ Erreur: ' + error.message);
+            }
+          } else {
+            alert('❌ window.opener non disponible');
+          }
+          console.log('🔧 === FIN TEST ===');
+        }
       </script>
     </body>
     </html>
