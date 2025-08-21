@@ -194,9 +194,13 @@ function ouvrirGestionDP() {
         }
         
         function ajouterDP() {
+          console.log('🚀 === DEBUT AJOUT DP ===');
+          
           const nom = document.getElementById('nom').value.trim().toUpperCase();
           const prenom = document.getElementById('prenom').value.trim();
           const niveau = document.getElementById('niveau').value;
+          
+          console.log('Données saisies:', { nom, prenom, niveau });
           
           if (!nom || !prenom || !niveau) {
             alert('Veuillez remplir tous les champs');
@@ -204,7 +208,10 @@ function ouvrirGestionDP() {
           }
           
           const nouveauDP = nom + ' ' + prenom + ' (' + niveau + ')';
+          console.log('Nouveau DP:', nouveauDP);
+          
           dpList.push(nouveauDP);
+          console.log('Liste après ajout:', dpList);
           
           document.getElementById('nom').value = '';
           document.getElementById('prenom').value = '';
@@ -212,28 +219,70 @@ function ouvrirGestionDP() {
           
           afficherDP();
           mettreAJourParent();
-          alert('DP ajouté !');
+          
+          console.log('🚀 === FIN AJOUT DP ===');
+          alert('DP ajouté ! Vérifiez le dropdown dans l\\'application principale.');
         }
         
         function mettreAJourParent() {
-          console.log('🔄 Mise à jour du parent...');
+          console.log('🔄 === DEBUT MISE A JOUR PARENT ===');
           console.log('dpList actuel:', dpList);
+          console.log('window.opener existe?', !!window.opener);
           
-          if (window.opener) {
-            // Mettre à jour la liste globale
+          if (!window.opener) {
+            console.error('❌ window.opener non disponible');
+            return;
+          }
+          
+          try {
+            // Mettre à jour la liste globale directement
+            console.log('📝 Mise à jour DP_LIST dans parent...');
             window.opener.DP_LIST = [...dpList];
-            console.log('✅ Liste mise à jour dans parent');
+            console.log('✅ DP_LIST mis à jour:', window.opener.DP_LIST);
             
-            // Appeler la fonction de mise à jour du dropdown
-            if (window.opener.mettreAJourDropdown) {
+            // Vérifier si la fonction existe
+            console.log('Fonction mettreAJourDropdown existe?', typeof window.opener.mettreAJourDropdown);
+            
+            if (typeof window.opener.mettreAJourDropdown === 'function') {
+              console.log('🔄 Appel de mettreAJourDropdown...');
               window.opener.mettreAJourDropdown();
-              console.log('✅ Dropdown parent mis à jour');
             } else {
               console.error('❌ Fonction mettreAJourDropdown non trouvée');
+              console.log('Fonctions disponibles:', Object.keys(window.opener));
+              
+              // Essayer de forcer la mise à jour manuellement
+              console.log('🔧 Tentative de mise à jour manuelle...');
+              const select = window.opener.document.getElementById('dp-nom');
+              if (select) {
+                console.log('✅ Select trouvé, mise à jour manuelle...');
+                
+                // Vider le select
+                select.innerHTML = '';
+                
+                // Option par défaut
+                const defaultOption = window.opener.document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
+                select.appendChild(defaultOption);
+                
+                // Ajouter tous les DP
+                dpList.forEach(dp => {
+                  const option = window.opener.document.createElement('option');
+                  option.value = dp.split(' (')[0];
+                  option.textContent = dp;
+                  select.appendChild(option);
+                });
+                
+                console.log('✅ Mise à jour manuelle terminée');
+              } else {
+                console.error('❌ Select dp-nom non trouvé dans parent');
+              }
             }
-          } else {
-            console.error('❌ window.opener non disponible');
+          } catch (error) {
+            console.error('❌ Erreur lors de la mise à jour:', error);
           }
+          
+          console.log('🔄 === FIN MISE A JOUR PARENT ===');
         }
         
         afficherDP();
