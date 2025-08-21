@@ -16,11 +16,16 @@ const DP_LIST = [
 
 // ===== REMPLIR LE DROPDOWN =====
 function remplirDropdownDP() {
+  console.log("🏁 Remplissage initial du dropdown");
   const dpField = document.getElementById("dp-nom");
-  if (!dpField) return;
+  if (!dpField) {
+    console.error("❌ Champ dp-nom non trouvé");
+    return;
+  }
   
   // Transformer en select si c'est un input
   if (dpField.tagName !== 'SELECT') {
+    console.log("🔄 Transformation input → select");
     const select = document.createElement('select');
     select.id = 'dp-nom';
     select.required = true;
@@ -45,7 +50,7 @@ function remplirDropdownDP() {
     select.appendChild(option);
   });
   
-  console.log("✅ Dropdown rempli avec", DP_LIST.length, "DP");
+  console.log("✅ Dropdown initial rempli avec", DP_LIST.length, "DP");
 }
 
 // ===== BOUTON DE GESTION SIMPLE =====
@@ -211,9 +216,23 @@ function ouvrirGestionDP() {
         }
         
         function mettreAJourParent() {
-          if (window.opener && window.opener.mettreAJourDropdown) {
+          console.log('🔄 Mise à jour du parent...');
+          console.log('dpList actuel:', dpList);
+          
+          if (window.opener) {
+            // Mettre à jour la liste globale
             window.opener.DP_LIST = [...dpList];
-            window.opener.mettreAJourDropdown();
+            console.log('✅ Liste mise à jour dans parent');
+            
+            // Appeler la fonction de mise à jour du dropdown
+            if (window.opener.mettreAJourDropdown) {
+              window.opener.mettreAJourDropdown();
+              console.log('✅ Dropdown parent mis à jour');
+            } else {
+              console.error('❌ Fonction mettreAJourDropdown non trouvée');
+            }
+          } else {
+            console.error('❌ window.opener non disponible');
           }
         }
         
@@ -228,8 +247,44 @@ function ouvrirGestionDP() {
 
 // ===== FONCTION DE MISE A JOUR =====
 function mettreAJourDropdown() {
-  remplirDropdownDP();
-  console.log("🔄 Dropdown mis à jour");
+  console.log("🔄 Mise à jour dropdown avec", DP_LIST.length, "DP");
+  console.log("Liste actuelle:", DP_LIST);
+  
+  const select = document.getElementById("dp-nom");
+  if (!select) {
+    console.error("❌ Select dp-nom non trouvé");
+    return;
+  }
+  
+  // Sauvegarder la valeur actuelle
+  const currentValue = select.value;
+  console.log("💾 Valeur actuelle:", currentValue);
+  
+  // Vider et reconstruire
+  select.innerHTML = '';
+  
+  // Option par défaut
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
+  select.appendChild(defaultOption);
+  
+  // Ajouter tous les DP
+  DP_LIST.forEach((dp, index) => {
+    const option = document.createElement('option');
+    option.value = dp.split(' (')[0]; // "AGUIRRE Raoul"
+    option.textContent = dp; // "AGUIRRE Raoul (E3)"
+    select.appendChild(option);
+    console.log(`➕ Ajouté: ${dp}`);
+  });
+  
+  // Restaurer la valeur si possible
+  if (currentValue) {
+    select.value = currentValue;
+    console.log("🔙 Valeur restaurée:", currentValue);
+  }
+  
+  console.log("✅ Dropdown mis à jour avec", DP_LIST.length, "DP");
 }
 
 // ===== INITIALISATION =====
