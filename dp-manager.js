@@ -1,112 +1,175 @@
-// dp-manager.js - Système de gestion des DP avec liste prédéfinie
-
-// ===== LISTE DES DP PRÉDÉFINIS =====
-const DP_PREDEFINIS = [
-  { nom: "AGUIRRE", prenom: "Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
-  { nom: "AUBARD", prenom: "Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
-  { nom: "BEST", prenom: "Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr" },
-  { nom: "CABIROL", prenom: "Joël", niveau: "E3", email: "joelcabirol@gmail.com" },
-  { nom: "CATTEROU", prenom: "Sacha", niveau: "P5", email: "sacha.catterou@orange.fr" },
-  { nom: "DARDER", prenom: "Olivier", niveau: "P5", email: "olivierdarder@gmail.com" },
-  { nom: "GAUTHIER", prenom: "Christophe", niveau: "P5", email: "cattof24@yahoo.fr" },
-  { nom: "LE MAOUT", prenom: "Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr" },
-  { nom: "MARTY", prenom: "David", niveau: "E3", email: "david.marty@sfr.fr" },
-  { nom: "TROUBADIS", prenom: "Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com" }
-];
+// dp-manager.js - Système de gestion des DP avec liste unique modifiable
 
 // ===== VARIABLES GLOBALES =====
-let dpCustomList = [];
+let allDPList = []; // Liste unique de tous les DP
 let dpManagerWindow = null;
 
-// ===== CHARGEMENT DES DP PERSONNALISÉS =====
-async function loadCustomDPs() {
+// ===== INITIALISATION DE LA LISTE DP DE BASE =====
+const DP_INITIAUX = [
+  { nom: "AGUIRRE", prenom: "Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com", type: "initial" },
+  { nom: "AUBARD", prenom: "Corinne", niveau: "P5", email: "aubard.c@gmail.com", type: "initial" },
+  { nom: "BEST", prenom: "Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr", type: "initial" },
+  { nom: "CABIROL", prenom: "Joël", niveau: "E3", email: "joelcabirol@gmail.com", type: "initial" },
+  { nom: "CATTEROU", prenom: "Sacha", niveau: "P5", email: "sacha.catterou@orange.fr", type: "initial" },
+  { nom: "DARDER", prenom: "Olivier", niveau: "P5", email: "olivierdarder@gmail.com", type: "initial" },
+  { nom: "GAUTHIER", prenom: "Christophe", niveau: "P5", email: "cattof24@yahoo.fr", type: "initial" },
+  { nom: "LE MAOUT", prenom: "Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr", type: "initial" },
+  { nom: "MARTY", prenom: "David", niveau: "E3", email: "david.marty@sfr.fr", type: "initial" },
+  { nom: "TROUBADIS", prenom: "Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com", type: "initial" }
+];
+
+// ===== CHARGEMENT DE LA LISTE COMPLÈTE DES DP =====
+async function loadAllDPs() {
   try {
     if (!db) {
-      console.warn("⚠️ Firebase non disponible pour charger les DP personnalisés");
+      console.warn("⚠️ Firebase non disponible pour charger les DP");
       return;
     }
     
-    const snapshot = await db.ref('custom_dps').once('value');
+    const snapshot = await db.ref('all_dps').once('value');
     if (snapshot.exists()) {
-      dpCustomList = snapshot.val() || [];
-      console.log(`✅ ${dpCustomList.length} DP personnalisés chargés`);
+      allDPList = snapshot.val() || [];
+      console.log(`✅ ${allDPList.length} DP chargés depuis Firebase`);
+    } else {
+      // Première fois : initialiser avec la liste de base
+      console.log("🔧 Initialisation de la liste DP avec les DP de base");
+      allDPList = [...DP_INITIAUX];
+      await saveAllDPs();
     }
   } catch (error) {
-    console.error("❌ Erreur chargement DP personnalisés:", error);
+    console.error("❌ Erreur chargement DP:", error);
+    // Fallback sur la liste de base
+    allDPList = [...DP_INITIAUX];
   }
 }
 
-// ===== SAUVEGARDE DES DP PERSONNALISÉS =====
-async function saveCustomDPs() {
+// ===== SAUVEGARDE DE LA LISTE COMPLÈTE =====
+async function saveAllDPs() {
   try {
     if (!db) {
       console.warn("⚠️ Firebase non disponible pour sauvegarder les DP");
       return false;
     }
     
-    await db.ref('custom_dps').set(dpCustomList);
-    console.log("✅ DP personnalisés sauvegardés");
+    await db.ref('all_dps').set(allDPList);
+    console.log("✅ Liste DP sauvegardée");
     return true;
   } catch (error) {
-    console.error("❌ Erreur sauvegarde DP personnalisés:", error);
+    console.error("❌ Erreur sauvegarde DP:", error);
     return false;
   }
 }
 
-// ===== LISTE COMPLÈTE DES DP =====
-function getAllDPs() {
-  return [...DP_PREDEFINIS, ...dpCustomList];
-}
-
-// ===== AMÉLIORATION DU CHAMP DP AVEC AUTOCOMPLÉTION =====
-function enhanceDPField() {
+// ===== CRÉATION DU DROPDOWN DE SÉLECTION DP =====
+function createDPDropdown() {
   const dpNomField = document.getElementById("dp-nom");
   if (!dpNomField) return;
   
-  // Créer la liste de suggestions
-  let datalist = document.getElementById("dp-suggestions");
-  if (!datalist) {
-    datalist = document.createElement("datalist");
-    datalist.id = "dp-suggestions";
-    dpNomField.parentNode.insertBefore(datalist, dpNomField.nextSibling);
-    dpNomField.setAttribute("list", "dp-suggestions");
+  // Transformer le champ texte en select si ce n'est pas déjà fait
+  if (dpNomField.tagName.toLowerCase() !== 'select') {
+    const select = document.createElement('select');
+    select.id = 'dp-nom';
+    select.name = dpNomField.name;
+    select.className = dpNomField.className;
+    select.style.cssText = dpNomField.style.cssText;
+    select.required = dpNomField.required;
+    
+    // Remplacer l'input par le select
+    dpNomField.parentNode.replaceChild(select, dpNomField);
   }
   
-  // Remplir avec tous les DP
-  const allDPs = getAllDPs();
-  datalist.innerHTML = "";
+  const selectElement = document.getElementById("dp-nom");
   
-  allDPs.forEach(dp => {
-    const option = document.createElement("option");
-    option.value = `${dp.nom} ${dp.prenom}`;
-    option.textContent = `${dp.nom} ${dp.prenom} (${dp.niveau})`;
-    datalist.appendChild(option);
+  // Remplir le dropdown
+  updateDPDropdown();
+  
+  // Ajouter le bouton de gestion pour les admins
+  addManageButton(selectElement);
+  
+  console.log(`✅ Dropdown DP créé avec ${allDPList.length} options`);
+}
+
+// ===== MISE À JOUR DU DROPDOWN =====
+function updateDPDropdown() {
+  const selectElement = document.getElementById("dp-nom");
+  if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') return;
+  
+  // Sauvegarder la valeur actuelle
+  const currentValue = selectElement.value;
+  
+  // Vider et reconstruire les options
+  selectElement.innerHTML = '';
+  
+  // Option par défaut
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Sélectionner un Directeur de Plongée --';
+  selectElement.appendChild(defaultOption);
+  
+  // Trier par nom
+  const sortedDPs = [...allDPList].sort((a, b) => {
+    const nameA = `${a.nom} ${a.prenom}`;
+    const nameB = `${b.nom} ${b.prenom}`;
+    return nameA.localeCompare(nameB);
   });
   
-  // Ajouter un bouton de gestion à côté du champ
-  let manageBtn = document.getElementById("manage-dp-btn");
-  if (!manageBtn) {
-    manageBtn = document.createElement("button");
-    manageBtn.id = "manage-dp-btn";
-    manageBtn.type = "button";
-    manageBtn.textContent = "👥 Gérer DP";
-    manageBtn.style.cssText = `
-      margin-left: 10px;
-      padding: 6px 12px;
-      background: #6f42c1;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    `;
-    manageBtn.title = "Gérer la liste des Directeurs de Plongée";
-    manageBtn.addEventListener("click", openDPManagerWindow);
-    
-    dpNomField.parentNode.appendChild(manageBtn);
+  // Ajouter chaque DP
+  sortedDPs.forEach(dp => {
+    const option = document.createElement('option');
+    option.value = `${dp.nom} ${dp.prenom}`;
+    option.textContent = `${dp.nom} ${dp.prenom} (${dp.niveau})`;
+    option.setAttribute('data-dp-info', JSON.stringify(dp));
+    selectElement.appendChild(option);
+  });
+  
+  // Restaurer la valeur si elle existe encore
+  if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
+    selectElement.value = currentValue;
   }
   
-  console.log(`✅ Champ DP amélioré avec ${allDPs.length} suggestions`);
+  console.log(`🔄 Dropdown DP mis à jour avec ${allDPList.length} DP`);
+}
+
+// ===== AJOUT DU BOUTON DE GESTION =====
+function addManageButton(selectElement) {
+  // Ne pas ajouter le bouton si pas admin
+  if (!isUserAdmin()) return;
+  
+  let manageBtn = document.getElementById("manage-dp-btn");
+  if (manageBtn) return; // Déjà présent
+  
+  manageBtn = document.createElement("button");
+  manageBtn.id = "manage-dp-btn";
+  manageBtn.type = "button";
+  manageBtn.innerHTML = "👥 Gérer DP";
+  manageBtn.style.cssText = `
+    margin-left: 10px;
+    padding: 8px 15px;
+    background: #6f42c1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+  `;
+  manageBtn.title = "Gérer la liste des Directeurs de Plongée";
+  manageBtn.addEventListener("click", openDPManagerWindow);
+  
+  selectElement.parentNode.appendChild(manageBtn);
+  console.log("✅ Bouton de gestion DP ajouté");
+}
+
+// ===== VÉRIFICATION ADMIN =====
+function isUserAdmin() {
+  const ADMIN_EMAILS = [
+    'raoul.aguirre64@gmail.com',
+    'aubard.c@gmail.com',
+    'joelcabirol@gmail.com',
+    'david.marty@sfr.fr'
+  ];
+  
+  return currentUser && ADMIN_EMAILS.includes(currentUser.email);
 }
 
 // ===== FENÊTRE DE GESTION DES DP =====
@@ -117,9 +180,9 @@ function openDPManagerWindow() {
   }
 
   const windowFeatures = `
-    width=800,
+    width=900,
     height=700,
-    left=${(screen.width - 800) / 2},
+    left=${(screen.width - 900) / 2},
     top=${(screen.height - 700) / 2},
     scrollbars=yes,
     resizable=yes,
@@ -181,27 +244,24 @@ function openDPManagerWindow() {
           margin-bottom: 5px;
         }
         
+        .stats {
+          background: #e3f2fd;
+          padding: 15px;
+          text-align: center;
+          font-size: 14px;
+          color: #1565c0;
+        }
+        
         .content {
           flex: 1;
           padding: 20px;
           overflow-y: auto;
-          display: flex;
-          gap: 20px;
         }
         
-        .section {
-          flex: 1;
-          background: #f8f9fa;
-          border-radius: 10px;
-          padding: 20px;
-        }
-        
-        .section h2 {
-          color: #004080;
-          margin-bottom: 15px;
-          font-size: 18px;
-          border-bottom: 2px solid #007bff;
-          padding-bottom: 5px;
+        .dp-grid {
+          display: grid;
+          gap: 10px;
+          margin-bottom: 20px;
         }
         
         .dp-card {
@@ -209,23 +269,23 @@ function openDPManagerWindow() {
           border: 1px solid #dee2e6;
           border-radius: 8px;
           padding: 15px;
-          margin: 10px 0;
           display: flex;
           justify-content: space-between;
           align-items: center;
           transition: all 0.3s ease;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .dp-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
-        .dp-card.predefined {
+        .dp-card.initial {
           border-left: 4px solid #28a745;
         }
         
-        .dp-card.custom {
+        .dp-card.added {
           border-left: 4px solid #007bff;
         }
         
@@ -243,16 +303,26 @@ function openDPManagerWindow() {
         .dp-details {
           font-size: 12px;
           color: #666;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
         
         .dp-level {
           background: #28a745;
           color: white;
-          padding: 4px 8px;
+          padding: 3px 8px;
           border-radius: 12px;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: bold;
-          margin-right: 10px;
+        }
+        
+        .dp-type {
+          background: #6c757d;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 11px;
         }
         
         .dp-actions {
@@ -275,6 +345,11 @@ function openDPManagerWindow() {
           color: white;
         }
         
+        .btn-edit {
+          background: #ffc107;
+          color: #212529;
+        }
+        
         .btn-delete {
           background: #dc3545;
           color: white;
@@ -285,7 +360,7 @@ function openDPManagerWindow() {
         }
         
         .add-form {
-          background: white;
+          background: #f8f9fa;
           border: 2px dashed #007bff;
           border-radius: 10px;
           padding: 20px;
@@ -293,20 +368,25 @@ function openDPManagerWindow() {
         }
         
         .form-row {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
           gap: 10px;
           margin-bottom: 15px;
-          align-items: center;
         }
         
-        .form-row label {
-          min-width: 80px;
+        .form-group {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .form-group label {
           font-weight: bold;
           color: #004080;
+          margin-bottom: 5px;
+          font-size: 12px;
         }
         
-        .form-row input, .form-row select {
-          flex: 1;
+        .form-group input, .form-group select {
           padding: 8px;
           border: 1px solid #ddd;
           border-radius: 4px;
@@ -322,35 +402,17 @@ function openDPManagerWindow() {
           color: #666;
         }
         
-        .stats {
-          background: #e3f2fd;
-          border-radius: 8px;
-          padding: 10px;
-          margin-bottom: 15px;
-          text-align: center;
-          font-size: 14px;
-          color: #1565c0;
+        .btn-primary {
+          background: #007bff;
+          color: white;
+          padding: 10px 20px;
+          margin: 0 10px;
         }
         
-        .empty-state {
-          text-align: center;
-          padding: 40px 20px;
-          color: #666;
-        }
-        
-        /* Scrollbar personnalisée */
-        .content::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .content::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 3px;
-        }
-        
-        .content::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 3px;
+        .btn-success {
+          background: #28a745;
+          color: white;
+          padding: 8px 15px;
         }
       </style>
     </head>
@@ -358,146 +420,122 @@ function openDPManagerWindow() {
       <div class="container">
         <div class="header">
           <h1>👥 Gestion des Directeurs de Plongée</h1>
-          <p>Liste complète et administration des DP JSAS</p>
+          <p>Liste complète et modifiable des DP JSAS</p>
+        </div>
+        
+        <div class="stats">
+          <strong id="total-count">0 DP</strong> • 
+          <span id="initial-count">0 DP de base</span> • 
+          <span id="added-count">0 DP ajoutés</span>
         </div>
         
         <div class="content">
-          <!-- Section DP Prédéfinis -->
-          <div class="section">
-            <h2>🏛️ DP Officiels JSAS</h2>
-            <div class="stats">
-              <strong>${DP_PREDEFINIS.length} DP officiels</strong> • Liste de référence
-            </div>
-            <div id="predefined-dps">
-              <!-- Contenu généré dynamiquement -->
-            </div>
+          <div id="dp-list" class="dp-grid">
+            <!-- Contenu généré dynamiquement -->
           </div>
           
-          <!-- Section DP Personnalisés -->
-          <div class="section">
-            <h2>➕ DP Personnalisés</h2>
-            <div class="stats">
-              <strong id="custom-count">0 DP personnalisés</strong> • Géré par vous
-            </div>
-            <div id="custom-dps">
-              <!-- Contenu généré dynamiquement -->
-            </div>
-            
-            <!-- Formulaire d'ajout -->
-            <div class="add-form">
-              <h3 style="color: #004080; margin-bottom: 15px;">➕ Ajouter un nouveau DP</h3>
-              <form id="add-dp-form">
-                <div class="form-row">
-                  <label>Nom :</label>
+          <!-- Formulaire d'ajout -->
+          <div class="add-form">
+            <h3 style="color: #004080; margin-bottom: 15px;">➕ Ajouter un nouveau DP</h3>
+            <form id="add-dp-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nom *</label>
                   <input type="text" id="new-nom" required placeholder="NOM" style="text-transform: uppercase;">
                 </div>
-                <div class="form-row">
-                  <label>Prénom :</label>
+                <div class="form-group">
+                  <label>Prénom *</label>
                   <input type="text" id="new-prenom" required placeholder="Prénom">
                 </div>
-                <div class="form-row">
-                  <label>Niveau :</label>
+                <div class="form-group">
+                  <label>Niveau *</label>
                   <select id="new-niveau" required>
                     <option value="">-- Choisir --</option>
-                    <option value="E4">E4 (MF2/DESJEPS)</option>
-                    <option value="E3">E3 (MF1/DEJEPS)</option>
-                    <option value="P5">P5 (DP Exploration)</option>
-                    <option value="N4/GP">N4/GP (Guide de Palanquée)</option>
-                    <option value="N4">N4</option>
+                    <option value="E4">E4 (Encadrant 4ème degré)</option>
+                    <option value="E3">E3 (Encadrant 3ème degré)</option>
+                    <option value="P5">P5 (Plongeur 5ème degré)</option>
+                    <option value="N5">N5 (Niveau 5)</option>
                   </select>
                 </div>
-                <div class="form-row">
-                  <label>Email :</label>
-                  <input type="email" id="new-email" placeholder="email@jsas.fr (optionnel)">
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" id="new-email" placeholder="email@jsas.fr">
                 </div>
-                <div class="form-row">
-                  <label></label>
-                  <button type="submit" class="btn" style="background: #28a745; color: white; padding: 10px 20px;">
-                    ➕ Ajouter ce DP
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <button type="submit" class="btn btn-success">
+                ➕ Ajouter ce DP
+              </button>
+            </form>
           </div>
         </div>
         
         <div class="footer">
-          <button onclick="window.opener.updateDPField(); window.close();" 
-                  style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+          <button onclick="window.opener.updateDPField(); window.close();" class="btn btn-primary">
             ✅ Fermer et actualiser
           </button>
-          <span>Système de gestion JSAS - Les modifications sont sauvegardées automatiquement</span>
+          <span>Tous les DP peuvent être modifiés ou supprimés</span>
         </div>
       </div>
       
       <script>
-        // Variables globales pour la fenêtre
-        let dpList = [];
-        
         // Initialiser la fenêtre
         function initDPWindow() {
-          // Récupérer les données depuis la fenêtre parent
-          if (window.opener && window.opener.getAllDPs) {
-            const allDPs = window.opener.getAllDPs();
-            displayPredefinedDPs();
-            displayCustomDPs();
-          }
+          displayAllDPs();
+          updateStats();
           
           // Event listener pour le formulaire
           document.getElementById('add-dp-form').addEventListener('submit', addNewDP);
         }
         
-        function displayPredefinedDPs() {
-          const container = document.getElementById('predefined-dps');
-          const predefinedDPs = window.opener.DP_PREDEFINIS || [];
+        function displayAllDPs() {
+          const container = document.getElementById('dp-list');
+          const allDPs = window.opener.allDPList || [];
           
           let html = '';
-          predefinedDPs.forEach(dp => {
-            html += createDPCard(dp, 'predefined');
+          allDPs.forEach((dp, index) => {
+            html += createDPCard(dp, index);
           });
           
-          container.innerHTML = html;
+          container.innerHTML = html || '<div style="text-align: center; padding: 40px; color: #666;"><h3>Aucun DP</h3><p>Ajoutez des DP avec le formulaire ci-dessous</p></div>';
         }
         
-        function displayCustomDPs() {
-          const container = document.getElementById('custom-dps');
-          const customDPs = window.opener.dpCustomList || [];
-          
-          document.getElementById('custom-count').textContent = customDPs.length + ' DP personnalisés';
-          
-          if (customDPs.length === 0) {
-            container.innerHTML = '<div class="empty-state"><h3>Aucun DP personnalisé</h3><p>Utilisez le formulaire ci-dessous pour ajouter vos propres DP</p></div>';
-            return;
-          }
-          
-          let html = '';
-          customDPs.forEach((dp, index) => {
-            html += createDPCard(dp, 'custom', index);
-          });
-          
-          container.innerHTML = html;
-        }
-        
-        function createDPCard(dp, type, index = null) {
-          const canDelete = type === 'custom';
+        function createDPCard(dp, index) {
+          const isInitial = dp.type === 'initial';
           
           return \`
-            <div class="dp-card \${type}">
+            <div class="dp-card \${isInitial ? 'initial' : 'added'}">
               <div class="dp-info">
                 <div class="dp-name">\${dp.nom} \${dp.prenom}</div>
                 <div class="dp-details">
                   <span class="dp-level">\${dp.niveau}</span>
-                  \${dp.email ? dp.email : 'Pas d\\'email'}
+                  <span class="dp-type">\${isInitial ? 'DP de base' : 'DP ajouté'}</span>
+                  <span>\${dp.email || 'Pas d\\'email'}</span>
+                  \${dp.dateAjout ? '<span style="font-size: 11px;">Ajouté le ' + new Date(dp.dateAjout).toLocaleDateString('fr-FR') + '</span>' : ''}
                 </div>
               </div>
               <div class="dp-actions">
                 <button class="btn btn-use" onclick="useDP('\${dp.nom} \${dp.prenom}')" title="Utiliser ce DP">
                   📋 Utiliser
                 </button>
-                \${canDelete ? \`<button class="btn btn-delete" onclick="deleteDP(\${index})" title="Supprimer ce DP">🗑️</button>\` : ''}
+                <button class="btn btn-edit" onclick="editDP(\${index})" title="Modifier ce DP">
+                  ✏️ Modifier
+                </button>
+                <button class="btn btn-delete" onclick="deleteDP(\${index})" title="Supprimer ce DP">
+                  🗑️ Supprimer
+                </button>
               </div>
             </div>
           \`;
+        }
+        
+        function updateStats() {
+          const allDPs = window.opener.allDPList || [];
+          const initialCount = allDPs.filter(dp => dp.type === 'initial').length;
+          const addedCount = allDPs.filter(dp => dp.type !== 'initial').length;
+          
+          document.getElementById('total-count').textContent = allDPs.length + ' DP';
+          document.getElementById('initial-count').textContent = initialCount + ' DP de base';
+          document.getElementById('added-count').textContent = addedCount + ' DP ajoutés';
         }
         
         function useDP(dpName) {
@@ -507,16 +545,71 @@ function openDPManagerWindow() {
           }
         }
         
-        function deleteDP(index) {
-          if (!window.opener || !window.opener.dpCustomList) return;
+        function editDP(index) {
+          if (!window.opener || !window.opener.allDPList) return;
           
-          const dp = window.opener.dpCustomList[index];
-          if (confirm(\`⚠️ Supprimer \${dp.nom} \${dp.prenom} de la liste ?\\n\\nCette action est irréversible !\`)) {
-            window.opener.dpCustomList.splice(index, 1);
-            window.opener.saveCustomDPs();
-            displayCustomDPs();
-            alert('✅ DP supprimé avec succès !');
+          const dp = window.opener.allDPList[index];
+          const newNom = prompt("Nom:", dp.nom);
+          if (newNom === null) return;
+          
+          const newPrenom = prompt("Prénom:", dp.prenom);
+          if (newPrenom === null) return;
+          
+          const newNiveau = prompt("Niveau (E4/E3/P5/N5):", dp.niveau);
+          if (newNiveau === null) return;
+          
+          const newEmail = prompt("Email:", dp.email || "");
+          if (newEmail === null) return;
+          
+          // Validation
+          if (!newNom.trim() || !newPrenom.trim() || !newNiveau.trim()) {
+            alert("⚠️ Nom, prénom et niveau sont obligatoires !");
+            return;
           }
+          
+          if (!['E4', 'E3', 'P5', 'N5'].includes(newNiveau.trim())) {
+            alert("⚠️ Niveau invalide ! Utilisez : E4, E3, P5 ou N5");
+            return;
+          }
+          
+          // Mettre à jour
+          window.opener.allDPList[index] = {
+            ...dp,
+            nom: newNom.trim().toUpperCase(),
+            prenom: newPrenom.trim(),
+            niveau: newNiveau.trim(),
+            email: newEmail.trim(),
+            dateModification: new Date().toISOString()
+          };
+          
+          // Sauvegarder et rafraîchir
+          window.opener.saveAllDPs().then(() => {
+            displayAllDPs();
+            updateStats();
+            alert("✅ DP modifié avec succès !");
+          }).catch(error => {
+            console.error("❌ Erreur modification:", error);
+            alert("❌ Erreur lors de la modification");
+          });
+        }
+        
+        function deleteDP(index) {
+          if (!window.opener || !window.opener.allDPList) return;
+          
+          const dp = window.opener.allDPList[index];
+          if (!confirm(\`⚠️ Supprimer "\${dp.nom} \${dp.prenom}" de la liste ?\\n\\nCette action est irréversible !\\n\\n⚠️ ATTENTION : Même les DP de base peuvent être supprimés.\`)) {
+            return;
+          }
+          
+          window.opener.allDPList.splice(index, 1);
+          window.opener.saveAllDPs().then(() => {
+            displayAllDPs();
+            updateStats();
+            alert('✅ DP supprimé avec succès !');
+          }).catch(error => {
+            console.error("❌ Erreur suppression:", error);
+            alert("❌ Erreur lors de la suppression");
+          });
         }
         
         function addNewDP(e) {
@@ -533,7 +626,7 @@ function openDPManagerWindow() {
           }
           
           // Vérifier les doublons
-          const allDPs = window.opener.getAllDPs();
+          const allDPs = window.opener.allDPList || [];
           const exists = allDPs.some(dp => 
             dp.nom.toLowerCase() === nom.toLowerCase() && 
             dp.prenom.toLowerCase() === prenom.toLowerCase()
@@ -549,20 +642,25 @@ function openDPManagerWindow() {
             prenom: prenom,
             niveau: niveau,
             email: email || '',
+            type: 'added',
             dateAjout: new Date().toISOString()
           };
           
           // Ajouter à la liste
-          window.opener.dpCustomList.push(newDP);
-          window.opener.saveCustomDPs();
-          
-          // Réinitialiser le formulaire
-          document.getElementById('add-dp-form').reset();
-          
-          // Rafraîchir l'affichage
-          displayCustomDPs();
-          
-          alert('✅ DP ajouté avec succès !');
+          window.opener.allDPList.push(newDP);
+          window.opener.saveAllDPs().then(() => {
+            // Réinitialiser le formulaire
+            document.getElementById('add-dp-form').reset();
+            
+            // Rafraîchir l'affichage
+            displayAllDPs();
+            updateStats();
+            
+            alert('✅ DP ajouté avec succès !');
+          }).catch(error => {
+            console.error("❌ Erreur ajout:", error);
+            alert("❌ Erreur lors de l'ajout");
+          });
         }
         
         // Initialiser au chargement
@@ -577,26 +675,50 @@ function openDPManagerWindow() {
   console.log("✅ Fenêtre de gestion des DP ouverte");
 }
 
-// ===== FONCTION POUR METTRE À JOUR LE CHAMP DP =====
+// ===== SURVEILLANCE DES CHANGEMENTS DE LISTE =====
+function setupDPListSynchronization() {
+  if (!db) return;
+  
+  // Écouter les changements sur la liste complète des DP
+  db.ref('all_dps').on('value', (snapshot) => {
+    const newDPList = snapshot.val() || [];
+    
+    // Vérifier si la liste a changé
+    if (JSON.stringify(newDPList) !== JSON.stringify(allDPList)) {
+      console.log("🔄 Mise à jour automatique de la liste des DP détectée");
+      allDPList = newDPList;
+      
+      // Mettre à jour l'interface
+      updateDPDropdown();
+    }
+  });
+  
+  console.log("👁️ Surveillance des changements DP activée");
+}
+
+// ===== FONCTION POUR METTRE À JOUR LE DROPDOWN =====
 function updateDPField() {
-  enhanceDPField();
-  console.log("✅ Champ DP mis à jour");
+  updateDPDropdown();
+  console.log("✅ Dropdown DP mis à jour");
 }
 
 // ===== INITIALISATION =====
 async function initializeDPManager() {
   try {
-    // Charger les DP personnalisés
-    await loadCustomDPs();
+    // Charger la liste complète des DP
+    await loadAllDPs();
     
-    // Améliorer le champ DP
+    // Configurer la surveillance des changements
+    setupDPListSynchronization();
+    
+    // Créer le dropdown
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', enhanceDPField);
+      document.addEventListener('DOMContentLoaded', createDPDropdown);
     } else {
-      enhanceDPField();
+      createDPDropdown();
     }
     
-    console.log("✅ Gestionnaire DP initialisé");
+    console.log("✅ Gestionnaire DP initialisé avec dropdown et synchronisation automatique");
     
   } catch (error) {
     console.error("❌ Erreur initialisation gestionnaire DP:", error);
@@ -606,10 +728,9 @@ async function initializeDPManager() {
 // ===== EXPORTS GLOBAUX =====
 window.openDPManagerWindow = openDPManagerWindow;
 window.updateDPField = updateDPField;
-window.getAllDPs = getAllDPs;
-window.DP_PREDEFINIS = DP_PREDEFINIS;
-window.dpCustomList = dpCustomList;
-window.saveCustomDPs = saveCustomDPs;
+window.getAllDPs = () => allDPList;
+window.allDPList = allDPList;
+window.saveAllDPs = saveAllDPs;
 
 // ===== INITIALISATION AUTOMATIQUE =====
 // Attendre que Firebase soit prêt
@@ -623,4 +744,4 @@ function waitForFirebaseDP() {
 
 waitForFirebaseDP();
 
-console.log("👥 Gestionnaire de DP chargé");
+console.log("👥 Gestionnaire de DP chargé - Système unifié avec dropdown");
