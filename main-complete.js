@@ -349,9 +349,21 @@ function handleDPReset() {
 }
 
 // ===== VARIABLES GLOBALES =====
-let plongeurs = [];
-let palanquees = [];
-let userConnected = false;
+// Vérifier si les variables existent déjà, sinon les initialiser
+if (typeof window.plongeurs === 'undefined') {
+  window.plongeurs = [];
+}
+if (typeof window.palanquees === 'undefined') {
+  window.palanquees = [];
+}
+if (typeof window.userConnected === 'undefined') {
+  window.userConnected = false;
+}
+
+// Références locales pour compatibilité
+let plongeurs = window.plongeurs;
+let palanquees = window.palanquees;
+let userConnected = window.userConnected;
 
 // ===== FONCTIONS D'EXPORT PDF =====
 async function exportToPDF() {
@@ -966,7 +978,9 @@ async function initializeAfterAuth() {
   try {
     console.log("🔄 Initialisation après authentification...");
     
-    userConnected = true;
+    // Initialiser Firebase auth state
+    window.userConnected = user ? true : false;
+    userConnected = window.userConnected;
     
     // Masquer le formulaire de connexion
     const authSection = document.getElementById("auth-section");
@@ -1001,9 +1015,13 @@ async function initializeAppData() {
   try {
     console.log("🔄 Initialisation des données...");
     
-    // Réinitialiser les variables globales
-    plongeurs = [];
-    palanquees = [];
+    // Réinitialiser les variables globales de manière sécurisée
+    window.plongeurs = window.plongeurs || [];
+    window.palanquees = window.palanquees || [];
+    
+    // Mettre à jour les références locales
+    plongeurs = window.plongeurs;
+    palanquees = window.palanquees;
     
     // Initialiser les dates par défaut
     const dateInput = document.getElementById("date-dp");
@@ -1033,12 +1051,14 @@ async function loadExistingData() {
       const savedPalanquees = localStorage.getItem('jsas-palanquees');
       
       if (savedPlongeurs) {
-        plongeurs = JSON.parse(savedPlongeurs);
+        window.plongeurs = JSON.parse(savedPlongeurs);
+        plongeurs = window.plongeurs;
         console.log(`✅ ${plongeurs.length} plongeurs chargés`);
       }
       
       if (savedPalanquees) {
-        palanquees = JSON.parse(savedPalanquees);
+        window.palanquees = JSON.parse(savedPalanquees);
+        palanquees = window.palanquees;
         console.log(`✅ ${palanquees.length} palanquées chargées`);
       }
     }
