@@ -1,4 +1,4 @@
-// simple-lock-system.js - Système de verrous minimal sans plantage
+// simple-lock-system.js - Système de verrous minimal sans plantage (VERSION CORRIGÉE)
 // À charger APRÈS tous les autres fichiers
 
 // Variables globales pour les verrous (initialisées seulement si pas définies)
@@ -146,6 +146,12 @@ const SimpleLockSystem = {
   
   // Mettre à jour l'interface
   updateUI: function() {
+    // NOUVELLE VÉRIFICATION : Ne pas mettre à jour si pas connecté
+    if (!currentUser) {
+      this.hideUI();
+      return;
+    }
+
     try {
       // Ajouter un indicateur simple
       let indicator = document.getElementById('lock-status');
@@ -196,6 +202,29 @@ const SimpleLockSystem = {
     }
   },
   
+  // NOUVELLE FONCTION : Masquer l'interface des verrous
+  hideUI: function() {
+    try {
+      // Supprimer l'indicateur de statut
+      const indicator = document.getElementById('lock-status');
+      if (indicator) {
+        indicator.remove();
+      }
+      
+      // Nettoyer les classes sur les palanquées
+      document.querySelectorAll('.palanquee').forEach((element) => {
+        element.classList.remove('locked-by-other', 'locked-by-me');
+        element.style.borderColor = '';
+        element.style.opacity = '';
+      });
+      
+      console.log("✅ Interface des verrous masquée");
+      
+    } catch (error) {
+      console.error("❌ Erreur hideUI:", error);
+    }
+  },
+  
   // Notification simple
   showNotification: function(message, type = 'info') {
     try {
@@ -240,8 +269,46 @@ const SimpleLockSystem = {
       if (currentUser && db) {
         db.ref(`dp_online/${currentUser.uid}`).remove();
       }
+      
+      // NOUVEAU : Masquer l'interface
+      this.hideUI();
+      
     } catch (error) {
       console.error("❌ Erreur cleanup:", error);
+    }
+  },
+  
+  // NOUVELLE FONCTION : Nettoyage complet à la déconnexion
+  fullCleanup: function() {
+    try {
+      console.log("🧹 Nettoyage complet du système de verrous...");
+      
+      // Arrêter l'écoute Firebase
+      if (db) {
+        db.ref('palanquee_locks').off();
+      }
+      
+      // Masquer l'interface
+      this.hideUI();
+      
+      // Réinitialiser les variables
+      window.palanqueeLocks = {};
+      window.currentlyEditingPalanquee = null;
+      
+      if (window.lockTimers) {
+        Object.values(window.lockTimers).forEach(timer => {
+          if (timer) clearTimeout(timer);
+        });
+        window.lockTimers = {};
+      }
+      
+      // Marquer comme non initialisé
+      this.initialized = false;
+      
+      console.log("✅ Système de verrous complètement nettoyé");
+      
+    } catch (error) {
+      console.error("❌ Erreur fullCleanup:", error);
     }
   }
 };
@@ -307,4 +374,9 @@ setTimeout(() => {
   clearInterval(initInterval);
 }, 30000);
 
-console.log("📝 Système de verrous simplifié chargé");
+// NOUVELLE FONCTION GLOBALE : Nettoyage à la déconnexion
+window.cleanupLockSystem = function() {
+  SimpleLockSystem.fullCleanup();
+};
+
+console.log("🔒 Système de verrous simplifié chargé (version avec nettoyage)");
