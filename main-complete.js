@@ -1368,107 +1368,124 @@ function setupEventListeners() {
       });
     }
 
-    // === FONCTIONNALITÉ BOUTON "VALIDER DP" SÉCURISÉE ===
-    const validerDPBtn = document.getElementById("valider-dp");
-    if (validerDPBtn) {
-      validerDPBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        
-        try {
-          const dpNom = document.getElementById("dp-nom")?.value?.trim();
-          const dpDate = document.getElementById("dp-date")?.value;
-          const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
-          const dpPlongee = document.getElementById("dp-plongee")?.value;
-          const dpMessage = document.getElementById("dp-message");
-          
-          // Validation des champs obligatoires
-          if (!dpNom) {
-            alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
-            document.getElementById("dp-nom")?.focus();
-            return;
-          }
-          
-          if (!dpDate) {
-            alert("⚠️ Veuillez sélectionner une date");
-            document.getElementById("dp-date")?.focus();
-            return;
-          }
-          
-          if (!dpLieu) {
-            alert("⚠️ Veuillez saisir le lieu de plongée");
-            document.getElementById("dp-lieu")?.focus();
-            return;
-          }
-          
-          // Créer l'objet informations DP
-          const dpInfo = {
-            nom: dpNom,
-            date: dpDate,
-            lieu: dpLieu,
-            plongee: dpPlongee,
-            timestamp: Date.now(),
-            validated: true
-          };
-          
-          // Sauvegarder dans Firebase si disponible
-          if (typeof db !== 'undefined' && db) {
-            try {
-              const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
-              await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
-              console.log("✅ Informations DP sauvegardées dans Firebase");
-            } catch (firebaseError) {
-              console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
-            }
-          }
-          
-          // Afficher le message de confirmation
-          if (dpMessage) {
-            dpMessage.innerHTML = `
-              <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-                ✅ Informations DP validées
-                <br><small style="font-weight: normal;">
-                  ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
-                </small>
-              </div>
-            `;
-            dpMessage.classList.add("dp-valide");
-          }
-          
-          // Désactiver temporairement le bouton
-          validerDPBtn.disabled = true;
-          validerDPBtn.textContent = "✅ Validé";
-          validerDPBtn.style.backgroundColor = "#28a745";
-          
-          setTimeout(() => {
-            validerDPBtn.disabled = false;
-            validerDPBtn.textContent = "Valider DP";
-            validerDPBtn.style.backgroundColor = "#007bff";
-          }, 3000);
-          
-          console.log("✅ Validation DP réussie:", dpInfo);
-          
-          // Synchronisation optionnelle
-          if (typeof syncToDatabase === 'function') {
-            setTimeout(syncToDatabase, 1000);
-          }
-          
-        } catch (error) {
-          console.error("❌ Erreur validation DP:", error);
-          handleError(error, "Validation DP");
-          
-          const dpMessage = document.getElementById("dp-message");
-          if (dpMessage) {
-            dpMessage.innerHTML = `
-              <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
-                ❌ Erreur lors de la validation : ${error.message}
-              </div>
-            `;
-          } else {
-            alert("❌ Erreur lors de la validation : " + error.message);
-          }
+    // === FONCTIONNALITÉ BOUTON "VALIDER Session" SÉCURISÉE ===
+const validerSessionBtn = document.getElementById("valider-session");
+if (validerSessionBtn) {
+  validerSessionBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    try {
+      const dpNom = document.getElementById("dp-nom")?.value?.trim();
+      const dpDate = document.getElementById("dp-date")?.value;
+      const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+      const dpPlongee = document.getElementById("dp-plongee")?.value;
+      const sessionMessage = document.getElementById("session-message");
+      
+      // Validation des champs obligatoires
+      if (!dpNom) {
+        alert("⚠️ Veuillez saisir le nom du Directeur de Plongée");
+        document.getElementById("dp-nom")?.focus();
+        return;
+      }
+      
+      if (!dpDate) {
+        alert("⚠️ Veuillez sélectionner une date");
+        document.getElementById("dp-date")?.focus();
+        return;
+      }
+      
+      if (!dpLieu) {
+        alert("⚠️ Veuillez saisir le lieu de plongée");
+        document.getElementById("dp-lieu")?.focus();
+        return;
+      }
+      
+      // Créer l'objet session complète
+      const sessionComplète = {
+        meta: {
+          dp: dpNom,
+          date: dpDate,
+          lieu: dpLieu,
+          plongee: dpPlongee,
+          timestamp: Date.now(),
+          version: "3.0.1",
+          validated: true
+        },
+        plongeurs: plongeurs || [],
+        palanquees: palanquees || [],
+        stats: {
+          totalPlongeurs: (plongeurs?.length || 0) + (palanquees?.flat().length || 0),
+          nombrePalanquees: palanquees?.length || 0,
+          plongeursNonAssignes: plongeurs?.length || 0,
+          alertesTotal: typeof checkAllAlerts === 'function' ? checkAllAlerts().length : 0
         }
-      });
+      };
+      
+      // Sauvegarder dans Firebase si disponible
+      if (typeof db !== 'undefined' && db) {
+        try {
+          const sessionKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+          
+          // Sauvegarder la session complète
+          await db.ref(`sessions/${sessionKey}`).set(sessionComplète);
+          
+          // Sauvegarder aussi les données courantes
+          await Promise.all([
+            db.ref('plongeurs').set(plongeurs || []),
+            db.ref('palanquees').set(palanquees || [])
+          ]);
+          
+          console.log("✅ Session complète sauvegardée:", sessionKey);
+        } catch (firebaseError) {
+          console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
+        }
+      }
+      
+      // Afficher le message de confirmation
+      if (sessionMessage) {
+        sessionMessage.innerHTML = `
+          <div style="color: #28a745; font-weight: bold; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+            ✅ Session validée et sauvegardée
+            <br><small style="font-weight: normal; margin-top: 8px; display: block;">
+              📋 ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
+              <br>👥 ${sessionComplète.stats.totalPlongeurs} plongeurs dans ${sessionComplète.stats.nombrePalanquees} palanquée(s)
+              ${sessionComplète.stats.alertesTotal > 0 ? `<br>⚠️ ${sessionComplète.stats.alertesTotal} alerte(s) détectée(s)` : ''}
+            </small>
+          </div>
+        `;
+        sessionMessage.classList.add("session-valide", "success");
+      }
+      
+      // Désactiver temporairement le bouton
+      validerSessionBtn.disabled = true;
+      validerSessionBtn.textContent = "✅ Session Validée";
+      validerSessionBtn.style.backgroundColor = "#28a745";
+      
+      setTimeout(() => {
+        validerSessionBtn.disabled = false;
+        validerSessionBtn.textContent = "💾 Valider Session";
+        validerSessionBtn.style.backgroundColor = "#28a745";
+      }, 5000);
+      
+      console.log("✅ Validation session réussie:", sessionComplète);
+      
+    } catch (error) {
+      console.error("❌ Erreur validation session:", error);
+      
+      const sessionMessage = document.getElementById("session-message");
+      if (sessionMessage) {
+        sessionMessage.innerHTML = `
+          <div style="color: #dc3545; font-weight: bold; padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
+            ❌ Erreur lors de la validation : ${error.message}
+          </div>
+        `;
+        sessionMessage.classList.add("session-valide", "error");
+      } else {
+        alert("❌ Erreur lors de la validation : " + error.message);
+      }
     }
+  });
+}
 
     // === AJOUT DE PLONGEUR SÉCURISÉ ===
     const addForm = document.getElementById("addForm");
