@@ -83,18 +83,14 @@ function addManageButton() {
   
   // DEBUG : Vérifier l'utilisateur actuel
   console.log("👤 Utilisateur actuel:", currentUser?.email);
+  console.log("🔐 currentUser complet:", currentUser);
   console.log("🔐 Est admin?", isUserAdmin());
   
-  // Vérifier si admin (votre email est dans la liste)
-  if (!isUserAdmin()) {
-    console.log("❌ Pas admin, pas de bouton de gestion");
-    return;
-  }
-  
+  // TEMPORAIRE : Toujours afficher le bouton pour debug
   manageBtn = document.createElement("button");
   manageBtn.id = "manage-dp-btn";
   manageBtn.type = "button";
-  manageBtn.innerHTML = "👥 Gérer DP";
+  manageBtn.innerHTML = "👥 Gérer DP (DEBUG)";
   manageBtn.style.cssText = `
     margin-left: 10px;
     padding: 8px 15px;
@@ -109,7 +105,7 @@ function addManageButton() {
   manageBtn.onclick = openDPManagerWindow;
   
   selectElement.parentNode.appendChild(manageBtn);
-  console.log("✅ Bouton de gestion ajouté pour admin:", currentUser?.email);
+  console.log("✅ Bouton de gestion ajouté (DEBUG) pour:", currentUser?.email);
 }
 
 // ===== VERIFICATION ADMIN =====
@@ -463,10 +459,25 @@ function initializeDPManager() {
   }
   
   console.log("✅ Gestionnaire DP initialisé avec", allDPList.length, "DP (version simplifiée)");
+  
+  // Essayer d'ajouter le bouton plusieurs fois au cas où currentUser arrive plus tard
+  setTimeout(() => {
+    console.log("🔄 Retry addManageButton après 2s");
+    addManageButton();
+  }, 2000);
+  
+  setTimeout(() => {
+    console.log("🔄 Retry addManageButton après 5s");
+    addManageButton();
+  }, 5000);
 }
 
 // ===== INITIALISATION AUTOMATIQUE =====
 function waitForInit() {
+  console.log("⏳ Attente initialisation...");
+  console.log("currentUser défini?", typeof currentUser !== 'undefined');
+  console.log("currentUser:", currentUser);
+  
   if (typeof currentUser !== 'undefined') {
     initializeDPManager();
   } else {
@@ -474,6 +485,21 @@ function waitForInit() {
   }
 }
 
-waitForInit();
+// Essayer plusieurs approches d'initialisation
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("📄 DOMContentLoaded - démarrage waitForInit");
+    waitForInit();
+  });
+} else {
+  console.log("📄 Document déjà prêt - démarrage waitForInit");
+  waitForInit();
+}
+
+// Backup : forcer l'initialisation après 10 secondes
+setTimeout(() => {
+  console.log("🚨 Initialisation forcée après 10s");
+  initializeDPManager();
+}, 10000);
 
 console.log("👥 Gestionnaire DP simplifié chargé");
