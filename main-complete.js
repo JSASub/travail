@@ -1,4 +1,4 @@
-// main-complete.js - Application principale ultra-sécurisée avec gestion DP (VERSION VÉRIFIÉE)
+// main-complete.js - Application principale ultra-sécurisée avec gestion DP (VERSION CORRIGÉE)
 
 // Mode production - logs réduits
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -9,6 +9,12 @@ if (window.location.hostname !== 'localhost' && window.location.hostname !== '12
     }
   };
 }
+
+// ===== VARIABLES GLOBALES =====
+// Utilisation exclusive de variables globales pour éviter les redéclarations
+window.plongeurs = window.plongeurs || [];
+window.palanquees = window.palanquees || [];
+window.userConnected = window.userConnected || false;
 
 // ===== FONCTIONS UTILITAIRES =====
 function showAuthError(message, details = '') {
@@ -291,7 +297,8 @@ function handleDPDeletion() {
     
     // Reset sélection
     dpSelect.value = "";
-    document.getElementById("dp-nom").value = "";
+    const dpNomInput = document.getElementById("dp-nom");
+    if (dpNomInput) dpNomInput.value = "";
     
     showNotification("✅ DP supprimé avec succès", "success");
   }
@@ -347,12 +354,6 @@ function handleDPReset() {
     showNotification("❌ Erreur lors de la remise à zéro", "error");
   }
 }
-
-// ===== VARIABLES GLOBALES =====
-// Utilisation exclusive de variables globales pour éviter les redéclarations
-window.plongeurs = window.plongeurs || [];
-window.palanquees = window.palanquees || [];
-window.userConnected = window.userConnected || false;
 
 // ===== FONCTIONS D'EXPORT PDF =====
 async function exportToPDF() {
@@ -527,6 +528,249 @@ async function exportToPDF() {
   } catch (error) {
     console.error("🔥 Erreur export PDF:", error);
     showNotification("❌ Erreur lors de la génération du PDF", "error");
+  }
+}
+
+// ===== VALIDATION DE SESSION =====
+async function validerSession() {
+  try {
+    console.log("🔄 Validation de session...");
+    
+    // Récupération des données
+    const dpNom = document.getElementById("dp-nom")?.value?.trim();
+    const dateDP = document.getElementById("date-dp")?.value;
+    const lieuDP = document.getElementById("lieu-dp")?.value?.trim();
+    const typePlongee = document.getElementById("type-plongee")?.value;
+    
+    // Validation des champs obligatoires
+    const erreurs = [];
+    if (!dpNom || dpNom === "" || dpNom === "Non renseigné") erreurs.push("Directeur de Plongée");
+    if (!dateDP) erreurs.push("Date");
+    if (!lieuDP || lieuDP === "" || lieuDP === "Non renseigné") erreurs.push("Lieu");
+    if (!typePlongee) erreurs.push("Type de plongée");
+    
+    if (erreurs.length > 0) {
+      showNotification(`❌ Champs obligatoires manquants: ${erreurs.join(', ')}`, "error");
+      return;
+    }
+    
+    if (window.plongeurs.length === 0) {
+      showNotification("❌ Aucun plongeur enregistré", "error");
+      return;
+    }
+    
+    if (window.palanquees.length === 0) {
+      showNotification("❌ Aucune palanquée créée", "error");
+      return;
+    }
+    
+    // Préparation des données de session
+    const sessionData = {
+      dp: {
+        nom: dpNom,
+        email: document.getElementById("dp-nom")?.getAttribute("data-email") || "",
+        date: dateDP,
+        lieu: lieuDP,
+        typePlongee: typePlongee
+      },
+      plongeurs: window.plongeurs.map(p => ({
+        id: p.id,
+        nom: p.nom,
+        niveau: p.niveau,
+        prerogatives: p.prerogatives || "",
+        certificatMedical: p.certificatMedical || false,
+        assurance: p.assurance || false
+      })),
+      palanquees: window.palanquees.map((pal, index) => ({
+        id: index + 1,
+        profondeur: pal.profondeur,
+        duree: pal.duree,
+        plongeurs: pal.plongeurs || [],
+        guide: pal.guide || "",
+        securiteSurface: pal.securiteSurface || ""
+      })),
+      statistiques: {
+        totalPlongeurs: window.plongeurs.length,
+        totalPalanquees: window.palanquees.length,
+        niveauxRepartition: window.plongeurs.reduce((acc, p) => {
+          acc[p.niveau] = (acc[p.niveau] || 0) + 1;
+          return acc;
+        }, {})
+      },
+      timestamp: new Date().toISOString(),
+      version: "2.0"
+    };
+    
+    // Sauvegarde dans Firebase
+    if (typeof db !== 'undefined' && db) {
+      try {
+        const sessionId = `session-${dateDP}-${Date.now()}`;
+        await db.collection('sessions').doc(sessionId).set(sessionData);
+        console.log("✅ Session sauvegardée dans Firebase");
+      } catch (error) {
+        console.error("🔥 Erreur Firebase:", error);
+        // Fallback localStorage
+        const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
+        sessions.push({...sessionData, id: Date.now()});
+        localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
+      }
+    } else {
+      // Sauvegarde locale
+      const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
+      sessions.push({...sessionData, id: Date.now()});
+      localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
+      console.log("✅ Session sauvegardée localement");
+    }
+    
+    // Message de confirmation détaillé
+    const resumeMessage = `
+Session validée avec succès !
+
+📋 Résumé:
+• DP: ${dpNom}
+• Date: ${dateDP}
+• Lieu: ${lieuDP}
+• Plongeurs: ${window.plongeurs.length}
+• Palanquées: ${window.palanquees.length}
+
+💾 Données sauvegardées et prêtes pour export PDF.
+    `;
+    
+    showNotification("✅ Session validée et sauvegardée", "success");
+    console.log("✅ Validation de session terminée");
+    
+    // Optionnel: proposer d'exporter directement
+    if (confirm("Session validée ! Voulez-vous générer le PDF maintenant ?")) {
+      await exportToPDF();
+    }
+    
+  } catch (error) {
+    console.error("🔥 Erreur validation session:", error);
+    showNotification("❌ Erreur lors de la validation", "error");
+  }
+}
+
+// ===== GESTION DES ÉVÉNEMENTS =====
+function setupEventListeners() {
+  console.log("🔄 Configuration des event listeners...");
+  
+  try {
+    // === AUTHENTIFICATION ===
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        
+        if (!email || !password) {
+          showAuthError("Veuillez remplir tous les champs");
+          return;
+        }
+        
+        try {
+          if (typeof signInWithEmailAndPassword !== 'undefined' && typeof auth !== 'undefined') {
+            await signInWithEmailAndPassword(auth, email, password);
+          } else {
+            showAuthError("Firebase Auth non disponible");
+          }
+        } catch (error) {
+          console.error("🔥 Erreur connexion:", error);
+          showAuthError("Erreur de connexion", error.message);
+        }
+      });
+    }
+    
+    // === EXPORT ET VALIDATION ===
+    // === EXPORT ET VALIDATION ===
+    const exportPDFBtn = document.getElementById("export-pdf");
+    if (exportPDFBtn) {
+      exportPDFBtn.addEventListener("click", exportToPDF);
+    }
+    
+    const previewBtn = document.getElementById("preview-html");
+    if (previewBtn) {
+      previewBtn.addEventListener("click", previewHTML);
+    }
+    
+    const validerSessionBtn = document.getElementById("valider-session");
+    if (validerSessionBtn) {
+      validerSessionBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await validerSession();
+      });
+    }
+    
+    // === MODAL DP ===
+    const modalOverlay = document.getElementById("modal-overlay");
+    const modalCancel = document.getElementById("modal-cancel");
+    const modalSubmit = document.getElementById("modal-submit");
+    
+    if (modalOverlay) {
+      modalOverlay.addEventListener("click", closeDPModal);
+    }
+    
+    if (modalCancel) {
+      modalCancel.addEventListener("click", closeDPModal);
+    }
+    
+    if (modalSubmit) {
+      modalSubmit.addEventListener("click", handleDPSubmit);
+    }
+    
+    // === DRAG & DROP SÉCURISÉ ===
+    const plongeursContainer = document.getElementById("plongeurs-list");
+    if (plongeursContainer) {
+      plongeursContainer.addEventListener("dragstart", (e) => {
+        if (e.target.classList.contains("plongeur-item")) {
+          e.dataTransfer.setData("text/plain", e.target.dataset.plongeurId);
+          e.target.style.opacity = "0.5";
+        }
+      });
+      
+      plongeursContainer.addEventListener("dragend", (e) => {
+        if (e.target.classList.contains("plongeur-item")) {
+          e.target.style.opacity = "1";
+        }
+      });
+    }
+    
+    // === TEST FIREBASE SÉCURISÉ ===
+    const testFirebaseBtn = document.getElementById("test-firebase");
+    if (testFirebaseBtn) {
+      testFirebaseBtn.addEventListener("click", async () => {
+        console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
+        
+        try {
+          if (typeof db === 'undefined') {
+            throw new Error("Firebase Firestore non initialisé");
+          }
+          
+          // Test de lecture
+          const testDoc = await db.collection('test').doc('connectivity').get();
+          console.log("✅ Lecture Firebase OK");
+          
+          // Test d'écriture
+          await db.collection('test').doc('connectivity').set({
+            timestamp: new Date().toISOString(),
+            status: 'connected',
+            user: (typeof auth !== 'undefined' && auth.currentUser?.email) || 'anonymous'
+          });
+          console.log("✅ Écriture Firebase OK");
+          
+          showNotification("✅ Firebase fonctionnel", "success");
+          
+        } catch (error) {
+          console.error("🔥 Erreur test Firebase:", error);
+          showNotification("❌ Erreur Firebase: " + error.message, "error");
+        }
+      });
+    }
+    
+    console.log("✅ Event listeners configurés");
+    
+  } catch (error) {
+    console.error("🔥 Erreur configuration event listeners:", error);
   }
 }
 
@@ -721,254 +965,13 @@ function previewHTML() {
   }
 }
 
-// ===== VALIDATION DE SESSION =====
-async function validerSession() {
-  try {
-    console.log("🔄 Validation de session...");
-    
-    // Récupération des données
-    const dpNom = document.getElementById("dp-nom")?.value?.trim();
-    const dateDP = document.getElementById("date-dp")?.value;
-    const lieuDP = document.getElementById("lieu-dp")?.value?.trim();
-    const typePlongee = document.getElementById("type-plongee")?.value;
-    
-    // Validation des champs obligatoires
-    const erreurs = [];
-    if (!dpNom || dpNom === "" || dpNom === "Non renseigné") erreurs.push("Directeur de Plongée");
-    if (!dateDP) erreurs.push("Date");
-    if (!lieuDP || lieuDP === "" || lieuDP === "Non renseigné") erreurs.push("Lieu");
-    if (!typePlongee) erreurs.push("Type de plongée");
-    
-    if (erreurs.length > 0) {
-      showNotification(`❌ Champs obligatoires manquants: ${erreurs.join(', ')}`, "error");
-      return;
-    }
-    
-    if (window.plongeurs.length === 0) {
-      showNotification("❌ Aucun plongeur enregistré", "error");
-      return;
-    }
-    
-    if (window.palanquees.length === 0) {
-      showNotification("❌ Aucune palanquée créée", "error");
-      return;
-    }
-    
-    // Préparation des données de session
-    const sessionData = {
-      dp: {
-        nom: dpNom,
-        email: document.getElementById("dp-nom")?.getAttribute("data-email") || "",
-        date: dateDP,
-        lieu: lieuDP,
-        typePlongee: typePlongee
-      },
-      plongeurs: window.plongeurs.map(p => ({
-        id: p.id,
-        nom: p.nom,
-        niveau: p.niveau,
-        prerogatives: p.prerogatives || "",
-        certificatMedical: p.certificatMedical || false,
-        assurance: p.assurance || false
-      })),
-      palanquees: window.palanquees.map((pal, index) => ({
-        id: index + 1,
-        profondeur: pal.profondeur,
-        duree: pal.duree,
-        plongeurs: pal.plongeurs || [],
-        guide: pal.guide || "",
-        securiteSurface: pal.securiteSurface || ""
-      })),
-      statistiques: {
-        totalPlongeurs: window.plongeurs.length,
-        totalPalanquees: window.palanquees.length,
-        niveauxRepartition: window.plongeurs.reduce((acc, p) => {
-          acc[p.niveau] = (acc[p.niveau] || 0) + 1;
-          return acc;
-        }, {})
-      },
-      timestamp: new Date().toISOString(),
-      version: "2.0"
-    };
-    
-    // Sauvegarde dans Firebase
-    if (typeof db !== 'undefined' && db) {
-      try {
-        const sessionId = `session-${dateDP}-${Date.now()}`;
-        await db.collection('sessions').doc(sessionId).set(sessionData);
-        console.log("✅ Session sauvegardée dans Firebase");
-      } catch (error) {
-        console.error("🔥 Erreur Firebase:", error);
-        // Fallback localStorage
-        const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
-        sessions.push({...sessionData, id: Date.now()});
-        localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
-      }
-    } else {
-      // Sauvegarde locale
-      const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
-      sessions.push({...sessionData, id: Date.now()});
-      localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
-      console.log("✅ Session sauvegardée localement");
-    }
-    
-    // Message de confirmation détaillé
-    const resumeMessage = `
-Session validée avec succès !
-
-📋 Résumé:
-• DP: ${dpNom}
-• Date: ${dateDP}
-• Lieu: ${lieuDP}
-• Plongeurs: ${window.plongeurs.length}
-• Palanquées: ${window.palanquees.length}
-
-💾 Données sauvegardées et prêtes pour export PDF.
-    `;
-    
-    showNotification("✅ Session validée et sauvegardée", "success");
-    console.log("✅ Validation de session terminée");
-    
-    // Optionnel: proposer d'exporter directement
-    if (confirm("Session validée ! Voulez-vous générer le PDF maintenant ?")) {
-      await exportToPDF();
-    }
-    
-  } catch (error) {
-    console.error("🔥 Erreur validation session:", error);
-    showNotification("❌ Erreur lors de la validation", "error");
-  }
-}
-
-// ===== GESTION DES ÉVÉNEMENTS =====
-function setupEventListeners() {
-  console.log("🔄 Configuration des event listeners...");
-  
-  try {
-    // === AUTHENTIFICATION ===
-    const loginForm = document.getElementById("login-form");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        
-        if (!email || !password) {
-          showAuthError("Veuillez remplir tous les champs");
-          return;
-        }
-        
-        try {
-          await signInWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-          console.error("🔥 Erreur connexion:", error);
-          showAuthError("Erreur de connexion", error.message);
-        }
-      });
-    }
-    
-    // === GESTION DP ===
-    // Les event listeners DP sont configurés dans setupDPEventListeners()
-    
-    // === EXPORT ET VALIDATION ===
-    const exportPDFBtn = document.getElementById("export-pdf");
-    if (exportPDFBtn) {
-      exportPDFBtn.addEventListener("click", exportToPDF);
-    }
-    
-    const previewBtn = document.getElementById("preview-html");
-    if (previewBtn) {
-      previewBtn.addEventListener("click", previewHTML);
-    }
-    
-    const validerSessionBtn = document.getElementById("valider-session");
-    if (validerSessionBtn) {
-      validerSessionBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        await validerSession();
-      });
-    }
-    
-    // === MODAL DP ===
-    const modalOverlay = document.getElementById("modal-overlay");
-    const modalCancel = document.getElementById("modal-cancel");
-    const modalSubmit = document.getElementById("modal-submit");
-    
-    if (modalOverlay) {
-      modalOverlay.addEventListener("click", closeDPModal);
-    }
-    
-    if (modalCancel) {
-      modalCancel.addEventListener("click", closeDPModal);
-    }
-    
-    if (modalSubmit) {
-      modalSubmit.addEventListener("click", handleDPSubmit);
-    }
-    
-    // === DRAG & DROP SÉCURISÉ ===
-    const plongeursContainer = document.getElementById("plongeurs-list");
-    if (plongeursContainer) {
-      plongeursContainer.addEventListener("dragstart", (e) => {
-        if (e.target.classList.contains("plongeur-item")) {
-          e.dataTransfer.setData("text/plain", e.target.dataset.plongeurId);
-          e.target.style.opacity = "0.5";
-        }
-      });
-      
-      plongeursContainer.addEventListener("dragend", (e) => {
-        if (e.target.classList.contains("plongeur-item")) {
-          e.target.style.opacity = "1";
-        }
-      });
-    }
-    
-    // === TEST FIREBASE SÉCURISÉ ===
-    const testFirebaseBtn = document.getElementById("test-firebase");
-    if (testFirebaseBtn) {
-      testFirebaseBtn.addEventListener("click", async () => {
-        console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
-        
-        try {
-          if (typeof db === 'undefined') {
-            throw new Error("Firebase Firestore non initialisé");
-          }
-          
-          // Test de lecture
-          const testDoc = await db.collection('test').doc('connectivity').get();
-          console.log("✅ Lecture Firebase OK");
-          
-          // Test d'écriture
-          await db.collection('test').doc('connectivity').set({
-            timestamp: new Date().toISOString(),
-            status: 'connected',
-            user: auth.currentUser?.email || 'anonymous'
-          });
-          console.log("✅ Écriture Firebase OK");
-          
-          showNotification("✅ Firebase fonctionnel", "success");
-          
-        } catch (error) {
-          console.error("🔥 Erreur test Firebase:", error);
-          showNotification("❌ Erreur Firebase: " + error.message, "error");
-        }
-      });
-    }
-    
-    console.log("✅ Event listeners configurés");
-    
-  } catch (error) {
-    console.error("🔥 Erreur configuration event listeners:", error);
-  }
-}
-
 // ===== INITIALISATION APRÈS AUTHENTIFICATION =====
-async function initializeAfterAuth(user = null) {
+async function initializeAfterAuth(currentUser = null) {
   try {
     console.log("🔄 Initialisation après authentification...");
     
-    // Initialiser Firebase auth state
-    window.userConnected = user ? true : false;
+    // Initialiser Firebase auth state de manière sécurisée
+    window.userConnected = currentUser ? true : false;
     
     // Masquer le formulaire de connexion
     const authSection = document.getElementById("auth-section");
@@ -1006,9 +1009,6 @@ async function initializeAppData() {
     // Réinitialiser les variables globales de manière sécurisée
     window.plongeurs = window.plongeurs || [];
     window.palanquees = window.palanquees || [];
-    
-    // Mettre à jour les références locales
-    // (Plus de variables locales, utilisation directe de window.)
     
     // Initialiser les dates par défaut
     const dateInput = document.getElementById("date-dp");
@@ -1141,23 +1141,25 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log("🚀 JSAS Palanquées - Chargement...");
   
   // Attendre que Firebase soit initialisé
-  if (typeof auth !== 'undefined') {
+  if (typeof auth !== 'undefined' && auth) {
     auth.onAuthStateChanged((user) => {
       if (user) {
         console.log("✅ Utilisateur connecté:", user.email);
-        initializeAfterAuth();
+        initializeAfterAuth(user);
       } else {
         console.log("👤 Utilisateur non connecté");
-        userConnected = false;
+        window.userConnected = false;
+        // Initialiser quand même l'app en mode non connecté
+        initializeAfterAuth(null);
       }
     });
   } else {
     console.log("⚠️ Firebase non disponible, mode dégradé");
     // Mode sans authentification pour développement
     setTimeout(() => {
-      initializeAfterAuth();
+      initializeAfterAuth(null);
     }, 1000);
   }
 });
 
-console.log("✅ Main application sécurisée chargée - Version 2.0 avec gestion DP");
+console.log("✅ Main application sécurisée chargée - Version 2.1 corrigée sans erreur user");
