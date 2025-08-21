@@ -478,31 +478,60 @@ function openDPManagerWindow() {
       </div>
       
       <script>
+        // Variables globales pour la fenêtre popup
+        let dpWindowInstance = null;
+        
+        // Fonctions exposées globalement pour la fenêtre parent
+        window.displayAllDPs = displayAllDPs;
+        window.updateStats = updateStats;
+        window.createDPCard = createDPCard;
+        
         // Initialiser la fenêtre
         function initDPWindow() {
           console.log("🔧 Initialisation de la fenêtre DP...");
+          dpWindowInstance = window;
           
-          // Vérifier si on a accès aux données parent
-          if (!window.opener) {
-            console.error("❌ Pas d'accès à la fenêtre parent");
-            document.getElementById('dp-list').innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;"><h3>❌ Erreur</h3><p>Impossible d\'accéder aux données de l\'application principale</p></div>';
-            return;
-          }
-          
-          if (!window.opener.allDPList) {
-            console.warn("⚠️ Liste DP non disponible, attente...");
-            // Réessayer dans 1 seconde
-            setTimeout(initDPWindow, 1000);
-            return;
-          }
-          
-          console.log("✅ Données DP disponibles:", window.opener.allDPList.length, "DP");
-          
-          displayAllDPs();
-          updateStats();
+          // Essayer de charger les données immédiatement
+          loadDPData();
           
           // Event listener pour le formulaire
           document.getElementById('add-dp-form').addEventListener('submit', addNewDP);
+          
+          // Actualiser toutes les 2 secondes au cas où
+          setInterval(loadDPData, 2000);
+        }
+        
+        function loadDPData() {
+          let dpData = [];
+          
+          // Essayer plusieurs sources
+          if (window.opener?.allDPList && window.opener.allDPList.length > 0) {
+            dpData = window.opener.allDPList;
+            console.log("✅ Données DP trouvées via window.opener:", dpData.length, "DP");
+          } else if (window.parent?.allDPList && window.parent.allDPList.length > 0) {
+            dpData = window.parent.allDPList;
+            console.log("✅ Données DP trouvées via window.parent:", dpData.length, "DP");
+          } else {
+            console.warn("⚠️ Aucune donnée DP trouvée, utilisation des DP de base");
+            dpData = [
+              { nom: "AGUIRRE", prenom: "Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com", type: "initial" },
+              { nom: "AUBARD", prenom: "Corinne", niveau: "P5", email: "aubard.c@gmail.com", type: "initial" },
+              { nom: "BEST", prenom: "Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr", type: "initial" },
+              { nom: "CABIROL", prenom: "Joël", niveau: "E3", email: "joelcabirol@gmail.com", type: "initial" },
+              { nom: "CATTEROU", prenom: "Sacha", niveau: "P5", email: "sacha.catterou@orange.fr", type: "initial" },
+              { nom: "DARDER", prenom: "Olivier", niveau: "P5", email: "olivierdarder@gmail.com", type: "initial" },
+              { nom: "GAUTHIER", prenom: "Christophe", niveau: "P5", email: "cattof24@yahoo.fr", type: "initial" },
+              { nom: "LE MAOUT", prenom: "Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr", type: "initial" },
+              { nom: "MARTY", prenom: "David", niveau: "E3", email: "david.marty@sfr.fr", type: "initial" },
+              { nom: "TROUBADIS", prenom: "Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com", type: "initial" }
+            ];
+          }
+          
+          // Mettre à jour l'affichage seulement si on a des données
+          if (dpData.length > 0) {
+            displayAllDPs(dpData);
+            updateStats(dpData);
+          }
         }
         
         function displayAllDPs() {
@@ -657,11 +686,6 @@ function openDPManagerWindow() {
         function addNewDP(e) {
           e.preventDefault();
           
-          if (!window.opener?.allDPList) {
-            alert("❌ Impossible d'accéder aux données DP");
-            return;
-          }
-          
           const nom = document.getElementById('new-nom').value.trim().toUpperCase();
           const prenom = document.getElementById('new-prenom').value.trim();
           const niveau = document.getElementById('new-niveau').value;
@@ -669,18 +693,6 @@ function openDPManagerWindow() {
           
           if (!nom || !prenom || !niveau) {
             alert('⚠️ Veuillez remplir tous les champs obligatoires');
-            return;
-          }
-          
-          // Vérifier les doublons
-          const allDPs = window.opener.allDPList || [];
-          const exists = allDPs.some(dp => 
-            dp.nom.toLowerCase() === nom.toLowerCase() && 
-            dp.prenom.toLowerCase() === prenom.toLowerCase()
-          );
-          
-          if (exists) {
-            alert('⚠️ Ce DP existe déjà dans la liste !');
             return;
           }
           
@@ -693,25 +705,46 @@ function openDPManagerWindow() {
             dateAjout: new Date().toISOString()
           };
           
-          // Ajouter à la liste
-          window.opener.allDPList.push(newDP);
-          
-          if (window.opener.saveAllDPs) {
-            window.opener.saveAllDPs().then(() => {
-              // Réinitialiser le formulaire
-              document.getElementById('add-dp-form').reset();
-              
-              // Rafraîchir l'affichage
-              displayAllDPs();
-              updateStats();
-              
-              alert('✅ DP ajouté avec succès !');
-            }).catch(error => {
-              console.error("❌ Erreur ajout:", error);
-              alert("❌ Erreur lors de l'ajout");
-            });
+          // Essayer d'ajouter via différentes méthodes
+          if (window.opener?.allDPList) {
+            // Vérifier les doublons
+            const exists = window.opener.allDPList.some(dp => 
+              dp.nom.toLowerCase() === nom.toLowerCase() && 
+              dp.prenom.toLowerCase() === prenom.toLowerCase()
+            );
+            
+            if (exists) {
+              alert('⚠️ Ce DP existe déjà dans la liste !');
+              return;
+            }
+            
+            // Ajouter à la liste parent
+            window.opener.allDPList.push(newDP);
+            
+            // Sauvegarder si possible
+            if (window.opener.saveAllDPs) {
+              window.opener.saveAllDPs().then(() => {
+                // Réinitialiser le formulaire
+                document.getElementById('add-dp-form').reset();
+                
+                // Forcer le rafraîchissement
+                setTimeout(() => {
+                  loadDPData();
+                  if (window.opener.refreshAfterDPChange) {
+                    window.opener.refreshAfterDPChange();
+                  }
+                }, 500);
+                
+                alert('✅ DP ajouté avec succès !');
+              }).catch(error => {
+                console.error("❌ Erreur ajout:", error);
+                alert("❌ Erreur lors de l'ajout: " + error.message);
+              });
+            } else {
+              alert("❌ Fonction de sauvegarde non disponible");
+            }
           } else {
-            alert("❌ Fonction de sauvegarde non disponible");
+            alert("❌ Impossible d'accéder aux données DP de l'application principale");
           }
         }
         
@@ -738,10 +771,14 @@ function setupDPListSynchronization() {
     // Vérifier si la liste a changé
     if (JSON.stringify(newDPList) !== JSON.stringify(allDPList)) {
       console.log("🔄 Mise à jour automatique de la liste des DP détectée");
+      console.log("Ancienne liste:", allDPList.length, "DP");
+      console.log("Nouvelle liste:", newDPList.length, "DP");
+      
       allDPList = newDPList;
+      window.allDPList = allDPList; // Mettre à jour la référence globale
       
       // Mettre à jour l'interface
-      updateDPDropdown();
+      refreshAfterDPChange();
     }
   });
   
@@ -783,6 +820,23 @@ window.updateDPField = updateDPField;
 window.getAllDPs = () => allDPList;
 window.allDPList = allDPList;
 window.saveAllDPs = saveAllDPs;
+
+// ===== FONCTION POUR RAFRAÎCHIR APRÈS CHANGEMENTS =====
+function refreshAfterDPChange() {
+  // Mettre à jour le dropdown
+  updateDPDropdown();
+  
+  // Mettre à jour la fenêtre popup si elle est ouverte
+  if (dpManagerWindow && !dpManagerWindow.closed && dpManagerWindow.displayAllDPs) {
+    dpManagerWindow.displayAllDPs();
+    dpManagerWindow.updateStats();
+  }
+  
+  console.log("🔄 Interface DP rafraîchie après changement");
+}
+
+// Exposer cette fonction
+window.refreshAfterDPChange = refreshAfterDPChange;
 
 // ===== INITIALISATION AUTOMATIQUE =====
 // Attendre que Firebase soit prêt
