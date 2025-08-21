@@ -349,21 +349,10 @@ function handleDPReset() {
 }
 
 // ===== VARIABLES GLOBALES =====
-// Vérifier si les variables existent déjà, sinon les initialiser
-if (typeof window.plongeurs === 'undefined') {
-  window.plongeurs = [];
-}
-if (typeof window.palanquees === 'undefined') {
-  window.palanquees = [];
-}
-if (typeof window.userConnected === 'undefined') {
-  window.userConnected = false;
-}
-
-// Références locales pour compatibilité
-let plongeurs = window.plongeurs;
-let palanquees = window.palanquees;
-let userConnected = window.userConnected;
+// Utilisation exclusive de variables globales pour éviter les redéclarations
+window.plongeurs = window.plongeurs || [];
+window.palanquees = window.palanquees || [];
+window.userConnected = window.userConnected || false;
 
 // ===== FONCTIONS D'EXPORT PDF =====
 async function exportToPDF() {
@@ -408,8 +397,8 @@ async function exportToPDF() {
     }
     
     // Vérifier que les variables globales existent
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    const plongeursLocal = window.plongeurs || [];
+    const palanqueesLocal = window.palanquees || [];
     
     // === EN-TÊTE PRINCIPAL ===
     doc.setFillColor(colors.blueR, colors.blueG, colors.blueB);
@@ -551,8 +540,8 @@ function previewHTML() {
     const lieuDP = document.getElementById("lieu-dp")?.value || "Non renseigné";
     const typePlongee = document.getElementById("type-plongee")?.value || "Exploration";
     
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    const plongeursLocal = window.plongeurs || [];
+    const palanqueesLocal = window.palanquees || [];
     
     // Tri des plongeurs par grade
     const gradeOrder = { 'GP': 1, 'E4': 2, 'E3': 3, 'E2': 4, 'E1': 5, 'P5': 6, 'P4': 7, 'P3': 8, 'P2': 9, 'P1': 10, 'N4': 11, 'N3': 12, 'N2': 13, 'N1': 14 };
@@ -755,12 +744,12 @@ async function validerSession() {
       return;
     }
     
-    if (plongeurs.length === 0) {
+    if (window.plongeurs.length === 0) {
       showNotification("❌ Aucun plongeur enregistré", "error");
       return;
     }
     
-    if (palanquees.length === 0) {
+    if (window.palanquees.length === 0) {
       showNotification("❌ Aucune palanquée créée", "error");
       return;
     }
@@ -774,7 +763,7 @@ async function validerSession() {
         lieu: lieuDP,
         typePlongee: typePlongee
       },
-      plongeurs: plongeurs.map(p => ({
+      plongeurs: window.plongeurs.map(p => ({
         id: p.id,
         nom: p.nom,
         niveau: p.niveau,
@@ -782,7 +771,7 @@ async function validerSession() {
         certificatMedical: p.certificatMedical || false,
         assurance: p.assurance || false
       })),
-      palanquees: palanquees.map((pal, index) => ({
+      palanquees: window.palanquees.map((pal, index) => ({
         id: index + 1,
         profondeur: pal.profondeur,
         duree: pal.duree,
@@ -791,9 +780,9 @@ async function validerSession() {
         securiteSurface: pal.securiteSurface || ""
       })),
       statistiques: {
-        totalPlongeurs: plongeurs.length,
-        totalPalanquees: palanquees.length,
-        niveauxRepartition: plongeurs.reduce((acc, p) => {
+        totalPlongeurs: window.plongeurs.length,
+        totalPalanquees: window.palanquees.length,
+        niveauxRepartition: window.plongeurs.reduce((acc, p) => {
           acc[p.niveau] = (acc[p.niveau] || 0) + 1;
           return acc;
         }, {})
@@ -831,8 +820,8 @@ Session validée avec succès !
 • DP: ${dpNom}
 • Date: ${dateDP}
 • Lieu: ${lieuDP}
-• Plongeurs: ${plongeurs.length}
-• Palanquées: ${palanquees.length}
+• Plongeurs: ${window.plongeurs.length}
+• Palanquées: ${window.palanquees.length}
 
 💾 Données sauvegardées et prêtes pour export PDF.
     `;
@@ -980,7 +969,6 @@ async function initializeAfterAuth() {
     
     // Initialiser Firebase auth state
     window.userConnected = user ? true : false;
-    userConnected = window.userConnected;
     
     // Masquer le formulaire de connexion
     const authSection = document.getElementById("auth-section");
@@ -1020,8 +1008,7 @@ async function initializeAppData() {
     window.palanquees = window.palanquees || [];
     
     // Mettre à jour les références locales
-    plongeurs = window.plongeurs;
-    palanquees = window.palanquees;
+    // (Plus de variables locales, utilisation directe de window.)
     
     // Initialiser les dates par défaut
     const dateInput = document.getElementById("date-dp");
@@ -1052,14 +1039,12 @@ async function loadExistingData() {
       
       if (savedPlongeurs) {
         window.plongeurs = JSON.parse(savedPlongeurs);
-        plongeurs = window.plongeurs;
-        console.log(`✅ ${plongeurs.length} plongeurs chargés`);
+        console.log(`✅ ${window.plongeurs.length} plongeurs chargés`);
       }
       
       if (savedPalanquees) {
         window.palanquees = JSON.parse(savedPalanquees);
-        palanquees = window.palanquees;
-        console.log(`✅ ${palanquees.length} palanquées chargées`);
+        console.log(`✅ ${window.palanquees.length} palanquées chargées`);
       }
     }
     
@@ -1080,8 +1065,8 @@ function updateUI() {
     const plongeursCount = document.getElementById("plongeurs-count");
     const palanqueesCount = document.getElementById("palanquees-count");
     
-    if (plongeursCount) plongeursCount.textContent = plongeurs.length;
-    if (palanqueesCount) palanqueesCount.textContent = palanquees.length;
+    if (plongeursCount) plongeursCount.textContent = window.plongeurs.length;
+    if (palanqueesCount) palanqueesCount.textContent = window.palanquees.length;
     
     // Mettre à jour les listes
     updatePlongeursList();
@@ -1116,8 +1101,8 @@ window.diagnosticJSAS = function() {
       user: auth?.currentUser?.email || 'Non connecté'
     },
     data: {
-      plongeurs: plongeurs?.length || 0,
-      palanquees: palanquees?.length || 0,
+      plongeurs: window.plongeurs?.length || 0,
+      palanquees: window.palanquees?.length || 0,
       dpList: dpList?.length || 0
     },
     ui: {
