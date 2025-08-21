@@ -963,7 +963,7 @@ function setupEventListeners() {
 }
 
 // ===== INITIALISATION APRÈS AUTHENTIFICATION =====
-async function initializeAfterAuth() {
+async function initializeAfterAuth(user = null) {
   try {
     console.log("🔄 Initialisation après authentification...");
     
@@ -1098,7 +1098,7 @@ window.diagnosticJSAS = function() {
     firebase: {
       auth: typeof auth !== 'undefined',
       db: typeof db !== 'undefined',
-      user: auth?.currentUser?.email || 'Non connecté'
+      user: (typeof auth !== 'undefined' && auth?.currentUser?.email) || 'Non connecté'
     },
     data: {
       plongeurs: window.plongeurs?.length || 0,
