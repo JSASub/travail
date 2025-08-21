@@ -974,11 +974,13 @@ async function initializeAfterAuth(currentUser = null) {
     window.userConnected = currentUser ? true : false;
     
     // Masquer le formulaire de connexion
-    const authSection = document.getElementById("auth-section");
-    const mainApp = document.getElementById("main-app");
-    
-    if (authSection) authSection.style.display = "none";
-    if (mainApp) mainApp.style.display = "block";
+	const loadingScreen = document.getElementById("loading-screen"); // ✅ Existe
+	const authContainer = document.getElementById("auth-container"); // ✅ Existe  
+	const mainApp = document.getElementById("main-app"); // ✅ Existe
+  
+	if (loadingScreen) loadingScreen.style.display = "none";
+	if (authContainer) authContainer.style.display = "none";
+	if (mainApp) mainApp.style.display = "block";
     
     // Initialiser les données de l'application
     await initializeAppData();
