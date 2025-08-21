@@ -406,15 +406,51 @@ function ouvrirGestionDP() {
             console.log('✅ DP supprimé de la liste popup');
             console.log('Liste après suppression:', dpList);
             
+            // Mettre à jour l'affichage popup
             afficherDP();
+            
+            // Mettre à jour le parent
             mettreAJourParent();
             
-            // NOUVEAU : Sauvegarder vers Firebase
+            // NOUVEAU : Synchronisation automatique après suppression
+            synchroniserAvecDropdown();
+            
+            // Sauvegarder vers Firebase
             sauvegarderVersFirebase();
             
             console.log('🗑️ === FIN SUPPRESSION DP ===');
-            alert('DP supprimé et sauvegardé ! Le dropdown a été mis à jour.');
+            alert('DP supprimé et sauvegardé automatiquement !');
           }
+        }
+        
+        // NOUVELLE FONCTION : Synchronisation automatique
+        function synchroniserAvecDropdown() {
+          console.log('🔄 === SYNCHRONISATION AUTOMATIQUE ===');
+          try {
+            if (window.opener) {
+              const select = window.opener.document.getElementById('dp-nom');
+              if (select) {
+                // Récupérer ce qui est vraiment affiché dans le dropdown
+                const options = Array.from(select.options).slice(1); // Exclure l'option par défaut
+                const dropdownList = options.map(opt => opt.textContent);
+                
+                console.log('Dropdown contient:', dropdownList.length, 'DP');
+                console.log('Popup contient:', dpList.length, 'DP');
+                
+                // Mettre à jour DP_LIST du parent avec ce qui est affiché
+                window.opener.DP_LIST = [...dropdownList];
+                console.log('✅ DP_LIST parent synchronisé avec le dropdown');
+                console.log('Nouvelle taille DP_LIST:', window.opener.DP_LIST.length);
+              } else {
+                console.error('❌ Select dropdown non trouvé');
+              }
+            } else {
+              console.error('❌ window.opener non disponible');
+            }
+          } catch (error) {
+            console.error('❌ Erreur synchronisation:', error);
+          }
+          console.log('🔄 === FIN SYNCHRONISATION ===');
         }
         
         // NOUVELLE FONCTION : Sauvegarde depuis la popup
