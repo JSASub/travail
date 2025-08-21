@@ -353,7 +353,12 @@ function ouvrirGestionDP() {
           }
           
           try {
-            // MISE A JOUR DIRECTE - Plus simple et plus sûr
+            // CORRECTION : Mettre à jour la variable globale DP_LIST
+            console.log('📝 Mise à jour de la variable DP_LIST globale...');
+            window.opener.DP_LIST = [...dpList];
+            console.log('✅ DP_LIST global mis à jour, nouvelle taille:', window.opener.DP_LIST.length);
+            
+            // MISE A JOUR DIRECTE du dropdown
             console.log('🔧 Mise à jour directe du dropdown...');
             const select = window.opener.document.getElementById('dp-nom');
             
@@ -387,17 +392,13 @@ function ouvrirGestionDP() {
               optionsAdded++;
             });
             
-            console.log('✅', optionsAdded, 'options ajoutées');
+            console.log('✅', optionsAdded, 'options ajoutées au dropdown');
             
             // Restaurer la valeur si possible
             if (currentValue) {
               select.value = currentValue;
               console.log('🔙 Valeur restaurée:', currentValue);
             }
-            
-            // Mettre à jour aussi la liste globale pour éviter les conflits
-            window.opener.DP_LIST = [...dpList];
-            console.log('✅ DP_LIST global mis à jour');
             
             console.log('✅ Mise à jour directe terminée avec succès');
             
