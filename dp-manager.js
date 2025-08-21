@@ -1,7 +1,7 @@
-// dp-manager.js - Version ultra-simple qui marche
+// dp-manager.js - Version avec sauvegarde Firebase
 
-// ===== LISTE DES DP =====
-const DP_LIST = [
+// ===== LISTE DES DP DE BASE =====
+const DP_DE_BASE = [
   "AGUIRRE Raoul (E3)",
   "AUBARD Corinne (P5)", 
   "BEST Sébastien (P5)",
@@ -13,6 +13,55 @@ const DP_LIST = [
   "MARTY David (E3)",
   "TROUBADIS Guillaume (P5)"
 ];
+
+// ===== VARIABLES GLOBALES =====
+let DP_LIST = [...DP_DE_BASE]; // Commencer avec les DP de base
+
+// ===== CHARGEMENT DEPUIS FIREBASE =====
+async function chargerDPDepuisFirebase() {
+  try {
+    if (!db) {
+      console.warn("⚠️ Firebase non disponible, utilisation des DP de base");
+      return;
+    }
+    
+    // Utiliser le chemin sessions/dp_list pour éviter les problèmes de permissions
+    const snapshot = await db.ref('sessions/dp_list').once('value');
+    
+    if (snapshot.exists()) {
+      const dpFirebase = snapshot.val();
+      if (Array.isArray(dpFirebase) && dpFirebase.length > 0) {
+        DP_LIST = dpFirebase;
+        console.log(`✅ ${DP_LIST.length} DP chargés depuis Firebase`);
+      } else {
+        console.log("🔧 Données Firebase invalides, utilisation des DP de base");
+      }
+    } else {
+      console.log("🔧 Aucune donnée Firebase, sauvegarde des DP de base");
+      await sauvegarderDPVersFirebase();
+    }
+  } catch (error) {
+    console.error("❌ Erreur chargement Firebase:", error);
+    console.log("🔄 Utilisation des DP de base comme fallback");
+  }
+}
+
+// ===== SAUVEGARDE VERS FIREBASE =====
+async function sauvegarderDPVersFirebase() {
+  try {
+    if (!db) {
+      console.warn("⚠️ Firebase non disponible pour la sauvegarde");
+      return false;
+    }
+    
+    await db.ref('sessions/dp_list').set(DP_LIST);
+    console.log("💾 DP sauvegardés dans Firebase");
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde Firebase:", error);
+    return false;
+  }
+}
 
 // ===== REMPLIR LE DROPDOWN =====
 function remplirDropdownDP() {
@@ -242,8 +291,55 @@ function ouvrirGestionDP() {
           // Mettre à jour le parent
           mettreAJourParent();
           
+          // NOUVEAU : Sauvegarder vers Firebase
+          sauvegarderVersFirebase();
+          
           console.log('🚀 === FIN AJOUT DP ===');
-          alert('DP ajouté ! Le dropdown a été mis à jour automatiquement.');
+          alert('DP ajouté et sauvegardé ! Le dropdown a été mis à jour automatiquement.');
+        }
+        
+        function supprimerDP(index) {
+          console.log('🗑️ === DEBUT SUPPRESSION DP ===');
+          const dp = dpList[index];
+          console.log('DP à supprimer:', dp);
+          
+          if (confirm('Supprimer "' + dp + '" ?')) {
+            dpList.splice(index, 1);
+            console.log('✅ DP supprimé de la liste popup');
+            console.log('Liste après suppression:', dpList);
+            
+            afficherDP();
+            mettreAJourParent();
+            
+            // NOUVEAU : Sauvegarder vers Firebase
+            sauvegarderVersFirebase();
+            
+            console.log('🗑️ === FIN SUPPRESSION DP ===');
+            alert('DP supprimé et sauvegardé ! Le dropdown a été mis à jour.');
+          }
+        }
+        
+        // NOUVELLE FONCTION : Sauvegarde depuis la popup
+        async function sauvegarderVersFirebase() {
+          console.log('💾 Sauvegarde vers Firebase...');
+          try {
+            if (window.opener && window.opener.DP_LIST) {
+              // Mettre à jour la liste globale
+              window.opener.DP_LIST = [...dpList];
+              
+              // Sauvegarder via la fonction du parent
+              if (window.opener.sauvegarderDPVersFirebase) {
+                const success = await window.opener.sauvegarderDPVersFirebase();
+                if (success) {
+                  console.log('✅ Sauvegarde Firebase réussie');
+                } else {
+                  console.warn('⚠️ Sauvegarde Firebase échouée');
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Erreur sauvegarde:', error);
+          }
         }
         
         function mettreAJourParent() {
@@ -364,14 +460,27 @@ function mettreAJourDropdown() {
 }
 
 // ===== INITIALISATION =====
-setTimeout(() => {
-  console.log("🚀 Initialisation dp-manager simple");
+async function initialiserGestionnaireDP() {
+  console.log("🚀 Initialisation gestionnaire DP avec Firebase...");
+  
+  // Charger les DP depuis Firebase d'abord
+  await chargerDPDepuisFirebase();
+  
+  // Puis créer l'interface
   remplirDropdownDP();
   ajouterBoutonGestion();
+  
+  console.log("✅ Gestionnaire DP initialisé avec", DP_LIST.length, "DP");
+}
+
+setTimeout(async () => {
+  await initialiserGestionnaireDP();
 }, 2000);
 
 // Exporter les fonctions
 window.mettreAJourDropdown = mettreAJourDropdown;
 window.DP_LIST = DP_LIST;
+window.sauvegarderDPVersFirebase = sauvegarderDPVersFirebase;
+window.chargerDPDepuisFirebase = chargerDPDepuisFirebase;
 
 console.log("📦 dp-manager simple chargé");
