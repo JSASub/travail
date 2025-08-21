@@ -321,30 +321,41 @@ function ouvrirGestionDP() {
         
         // NOUVELLE FONCTION : Sauvegarde depuis la popup
         async function sauvegarderVersFirebase() {
-          console.log('💾 Sauvegarde vers Firebase...');
+          console.log('💾 === DEBUT SAUVEGARDE FIREBASE ===');
+          console.log('Liste popup actuelle:', dpList.length, 'DP');
+          
           try {
-            if (window.opener && window.opener.DP_LIST) {
-              // Mettre à jour la liste globale
+            if (window.opener) {
+              // CORRECTION : Mettre à jour la liste globale du parent AVANT la sauvegarde
+              console.log('📝 Mise à jour DP_LIST parent...');
               window.opener.DP_LIST = [...dpList];
+              console.log('✅ DP_LIST parent mis à jour, nouvelle taille:', window.opener.DP_LIST.length);
               
               // Sauvegarder via la fonction du parent
               if (window.opener.sauvegarderDPVersFirebase) {
+                console.log('💾 Appel sauvegarde Firebase...');
                 const success = await window.opener.sauvegarderDPVersFirebase();
                 if (success) {
                   console.log('✅ Sauvegarde Firebase réussie');
                 } else {
                   console.warn('⚠️ Sauvegarde Firebase échouée');
                 }
+              } else {
+                console.error('❌ Fonction sauvegarderDPVersFirebase non trouvée');
               }
+            } else {
+              console.error('❌ window.opener non disponible');
             }
           } catch (error) {
             console.error('❌ Erreur sauvegarde:', error);
           }
+          
+          console.log('💾 === FIN SAUVEGARDE FIREBASE ===');
         }
         
         function mettreAJourParent() {
           console.log('🔄 === DEBUT MISE A JOUR PARENT ===');
-          console.log('dpList actuel:', dpList);
+          console.log('dpList popup actuel:', dpList.length, 'DP');
           console.log('window.opener existe?', !!window.opener);
           
           if (!window.opener) {
@@ -353,13 +364,14 @@ function ouvrirGestionDP() {
           }
           
           try {
-            // CORRECTION : Mettre à jour la variable globale DP_LIST
-            console.log('📝 Mise à jour de la variable DP_LIST globale...');
+            // ÉTAPE 1 : Mettre à jour la variable globale DP_LIST EN PREMIER
+            console.log('📝 ÉTAPE 1: Mise à jour de la variable DP_LIST globale...');
+            const ancienneTaille = window.opener.DP_LIST ? window.opener.DP_LIST.length : 0;
             window.opener.DP_LIST = [...dpList];
-            console.log('✅ DP_LIST global mis à jour, nouvelle taille:', window.opener.DP_LIST.length);
+            console.log('✅ DP_LIST global mis à jour:', ancienneTaille, '→', window.opener.DP_LIST.length);
             
-            // MISE A JOUR DIRECTE du dropdown
-            console.log('🔧 Mise à jour directe du dropdown...');
+            // ÉTAPE 2 : Mise à jour du dropdown
+            console.log('🔧 ÉTAPE 2: Mise à jour directe du dropdown...');
             const select = window.opener.document.getElementById('dp-nom');
             
             if (!select) {
