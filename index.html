@@ -65,7 +65,7 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <span id="user-info" style="color: #666; font-size: 14px;"></span>
       <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
-        🔐 MdP
+        🔑 MdP
       </button>
       <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
         Déconnexion
@@ -85,8 +85,7 @@
   
   <div id="meta-info">
     <label><strong>Directeur de Plongée</strong>
-      <!--<input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />-->
-	  <select id="dp-nom" required>
+      <select id="dp-nom" required>
 		<option value="">-- Sélectionner un Directeur de Plongée --</option>
 			<!-- Les options seront générées automatiquement par dp-manager.js -->
 	  </select>
@@ -107,8 +106,10 @@
         <option value="autre">Autre</option>
       </select>
     </label>
-    <button type="submit" id="valider-dp">Valider DP</button>
-    <div id="dp-message" class="dp-valide"></div>
+    <button type="button" id="enregistrer-session-btn" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+      💾 Enregistrer Session
+    </button>
+    <div id="session-message" class="session-valide" style="margin-top: 10px;"></div>
   </div>
 	
   </header>
@@ -192,7 +193,6 @@
       </select>
       <button id="load-session" class="btn-secondary">Charger</button>
       <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
-      <button id="save-session" class="btn-success">Sauvegarder Session</button>
       <button id="test-firebase" style="background: orange; color: white;">Test Firebase</button>
     </div>
     <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
@@ -215,33 +215,6 @@
     </div>
   </section>
   
-  <hr>
-  <section id="historique-dp">
-    <strong>Historique des DP</strong>
-    <div style="margin: 10px 0;">
-      <label for="dp-dates">Sélectionner une date :</label>
-      <select id="dp-dates">
-        <option value="">-- Choisir une date --</option>
-      </select>
-    </div>
-    <div id="historique-info"></div>
-    
-    <!-- NOUVEAU: Section de nettoyage des DPs -->
-    <div style="margin: 15px 0; border-top: 1px solid #dee2e6; padding-top: 15px;">
-      <strong style="color: #dc3545;">🧹 Nettoyage des DP</strong>
-      <div style="margin: 10px 0;">
-        <label>Sélectionner les DP à supprimer :</label>
-        <div id="dp-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
-          <em>Chargement automatique...</em>
-        </div>
-        <button id="select-all-dp" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
-        <button id="select-none-dp" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
-        <button id="delete-selected-dp" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnés</button>
-        <button id="refresh-dp-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
-      </div>
-    </div>
-  </section>
-  
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
   Version 4.0.1 - RA - 2025 - JSA Subaquatique
   </footer>
@@ -256,7 +229,6 @@
   <script src="simple-lock-system.js"></script>
   <script src="offline-manager.js"></script>
   <script src="password-manager.js"></script>
-  <!--<script src="dp-config.js"></script>-->
   <script src="dp-manager.js"></script>
   <script src="dp-online-manager.js"></script>  
 </body>
