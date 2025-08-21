@@ -1,5 +1,7 @@
 // dp-manager.js - Système de gestion des DP avec liste unique modifiable
 
+// dp-manager.js - Système de gestion des DP avec liste unique modifiable
+
 // ===== VARIABLES GLOBALES =====
 let allDPList = []; // Liste unique de tous les DP
 let dpManagerWindow = null;
@@ -484,6 +486,9 @@ function openDPManagerWindow() {
         </div>
         
         <div class="footer">
+          <button onclick="loadDPData(); alert('Données rechargées!');" class="btn" style="background: #17a2b8; color: white; margin-right: 10px;">
+            🔄 Recharger DP
+          </button>
           <button onclick="window.opener.updateDPField(); window.close();" class="btn btn-primary">
             ✅ Fermer et actualiser
           </button>
@@ -539,13 +544,18 @@ function openDPManagerWindow() {
               { nom: "MARTY", prenom: "David", niveau: "E3", email: "david.marty@sfr.fr", type: "initial" },
               { nom: "TROUBADIS", prenom: "Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com", type: "initial" }
             ];
+            
+            // IMPORTANT : Mettre à jour window.opener avec les DP de base
+            if (window.opener && !window.opener.allDPList) {
+              window.opener.allDPList = dpData;
+              console.log("🔧 DP de base assignés à window.opener");
+            }
           }
           
-          // Mettre à jour l'affichage seulement si on a des données
-          if (dpData.length > 0) {
-            displayAllDPs(dpData);
-            updateStats(dpData);
-          }
+          // FORCER l'affichage même avec les DP de base
+          console.log("🔄 Forçage de l'affichage avec", dpData.length, "DP");
+          displayAllDPs(dpData);
+          updateStats(dpData);
         }
         
         function displayAllDPs() {
@@ -826,6 +836,13 @@ async function initializeDPManager() {
     // Charger la liste complète des DP
     await loadAllDPs();
     
+    // Si la liste est vide après le chargement, utiliser les DP de base
+    if (allDPList.length === 0) {
+      console.log("🔧 Liste vide après chargement, utilisation des DP de base");
+      allDPList = [...DP_INITIAUX];
+      window.allDPList = allDPList;
+    }
+    
     // Configurer la surveillance des changements
     setupDPListSynchronization();
     
@@ -836,10 +853,14 @@ async function initializeDPManager() {
       createDPDropdown();
     }
     
-    console.log("✅ Gestionnaire DP initialisé avec dropdown et synchronisation automatique");
+    console.log("✅ Gestionnaire DP initialisé avec", allDPList.length, "DP et synchronisation automatique");
     
   } catch (error) {
     console.error("❌ Erreur initialisation gestionnaire DP:", error);
+    // En cas d'erreur, utiliser les DP de base
+    allDPList = [...DP_INITIAUX];
+    window.allDPList = allDPList;
+    createDPDropdown();
   }
 }
 
