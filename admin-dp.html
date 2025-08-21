@@ -462,15 +462,24 @@
         // Chargement des données
         async function loadDPData() {
             try {
-                // Charger la liste complète des DP
-                const snapshot = await db.ref('all_dps').once('value');
+                // Charger depuis dp_validated au lieu de all_dps
+                const snapshot = await db.ref('dp_validated').once('value');
                 if (snapshot.exists()) {
-                    allDPList = snapshot.val() || [];
+                    const dpData = snapshot.val();
+                    
+                    // Convertir en tableau si nécessaire
+                    if (Array.isArray(dpData)) {
+                        allDPList = dpData;
+                    } else if (typeof dpData === 'object' && dpData !== null) {
+                        allDPList = Object.values(dpData);
+                    } else {
+                        allDPList = [];
+                    }
                 } else {
                     // Première fois : initialiser avec les DP de base
                     console.log("🔧 Initialisation de la liste DP avec les DP de base");
                     allDPList = [...DP_INITIAUX];
-                    await db.ref('all_dps').set(allDPList);
+                    await db.ref('dp_validated').set(allDPList);
                 }
                 
                 // Afficher les données
@@ -479,7 +488,12 @@
                 
             } catch (error) {
                 console.error("❌ Erreur chargement DP:", error);
-                showAlert("❌ Erreur lors du chargement des données", "error");
+                showAlert("❌ Erreur lors du chargement des données: " + error.message, "error");
+                
+                // Fallback sur les DP de base
+                allDPList = [...DP_INITIAUX];
+                displayAllDPs();
+                updateStats();
             }
         }
 
@@ -573,8 +587,8 @@
                 // Ajouter à la liste
                 allDPList.push(dpData);
                 
-                // Sauvegarder
-                await db.ref('all_dps').set(allDPList);
+                // Sauvegarder dans dp_validated
+                await db.ref('dp_validated').set(allDPList);
                 
                 // Rafraîchir l'affichage
                 displayAllDPs();
@@ -600,7 +614,7 @@
             
             try {
                 allDPList.splice(index, 1);
-                await db.ref('all_dps').set(allDPList);
+                await db.ref('dp_validated').set(allDPList);
                 
                 displayAllDPs();
                 updateStats();
@@ -651,7 +665,7 @@
             };
             
             // Sauvegarder et rafraîchir
-            db.ref('all_dps').set(allDPList).then(() => {
+            db.ref('dp_validated').set(allDPList).then(() => {
                 displayAllDPs();
                 updateStats();
                 showAlert("✅ DP modifié avec succès !", "success");
@@ -703,7 +717,7 @@
                         
                         if (confirm) {
                             allDPList = data.allDPs;
-                            await db.ref('all_dps').set(allDPList);
+                            await db.ref('dp_validated').set(allDPList);
                             
                             displayAllDPs();
                             updateStats();
