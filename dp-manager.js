@@ -1,7 +1,5 @@
 // dp-manager.js - Système de gestion des DP avec liste unique modifiable
 
-// dp-manager.js - Système de gestion des DP avec liste unique modifiable
-
 // ===== VARIABLES GLOBALES =====
 let allDPList = []; // Liste unique de tous les DP
 let dpManagerWindow = null;
@@ -25,6 +23,7 @@ async function loadAllDPs() {
   try {
     if (!db) {
       console.warn("⚠️ Firebase non disponible pour charger les DP");
+      allDPList = [...DP_INITIAUX];
       return;
     }
     
@@ -45,15 +44,28 @@ async function loadAllDPs() {
       
       console.log(`✅ ${allDPList.length} DP chargés depuis dp_validated`);
     } else {
-      // Première fois : initialiser avec la liste de base
-      console.log("🔧 Initialisation de la liste DP avec les DP de base");
+      // Aucune donnée Firebase : utiliser les DP de base et les sauvegarder
+      console.log("🔧 Aucune donnée Firebase, initialisation avec les DP de base");
       allDPList = [...DP_INITIAUX];
-      await saveAllDPs();
+      
+      // Essayer de sauvegarder les DP de base
+      try {
+        await saveAllDPs();
+        console.log("✅ DP de base sauvegardés dans Firebase");
+      } catch (saveError) {
+        console.warn("⚠️ Impossible de sauvegarder les DP de base, mode local uniquement");
+      }
     }
   } catch (error) {
     console.error("❌ Erreur chargement DP:", error);
     // Fallback sur la liste de base
     console.log("🔄 Utilisation des DP de base comme fallback");
+    allDPList = [...DP_INITIAUX];
+  }
+  
+  // Assurer qu'on a toujours au moins les DP de base
+  if (allDPList.length === 0) {
+    console.log("🔧 Liste vide détectée, restauration des DP de base");
     allDPList = [...DP_INITIAUX];
   }
 }
@@ -790,38 +802,49 @@ function setupDPListSynchronization() {
   
   // Écouter les changements sur dp_validated au lieu de all_dps
   db.ref('dp_validated').on('value', (snapshot) => {
-    const newDPData = snapshot.val() || [];
+    const newDPData = snapshot.val() || null;
     let newDPList = [];
     
-    // Convertir en tableau si nécessaire
-    if (Array.isArray(newDPData)) {
-      newDPList = newDPData;
-    } else if (typeof newDPData === 'object' && newDPData !== null) {
-      newDPList = Object.values(newDPData);
+    if (newDPData) {
+      // Convertir en tableau si nécessaire
+      if (Array.isArray(newDPData)) {
+        newDPList = newDPData;
+      } else if (typeof newDPData === 'object' && newDPData !== null) {
+        newDPList = Object.values(newDPData);
+      }
+      
+      console.log("🔄 Données Firebase reçues:", newDPList.length, "DP");
+    } else {
+      console.log("⚠️ Aucune donnée Firebase, conservation des DP actuels");
+      // NE PAS vider la liste si Firebase est vide, garder les DP existants
+      return;
     }
     
-    // Vérifier si la liste a changé
+    // Vérifier si la liste a vraiment changé
     if (JSON.stringify(newDPList) !== JSON.stringify(allDPList)) {
       console.log("🔄 Mise à jour automatique de la liste des DP détectée");
       console.log("Ancienne liste:", allDPList.length, "DP");
       console.log("Nouvelle liste:", newDPList.length, "DP");
       
-      allDPList = newDPList;
-      window.allDPList = allDPList; // Mettre à jour la référence globale
-      
-      // Mettre à jour l'interface
-      refreshAfterDPChange();
+      // Seulement si on a vraiment des données valides
+      if (newDPList.length > 0) {
+        allDPList = newDPList;
+        window.allDPList = allDPList;
+        refreshAfterDPChange();
+      }
     }
   }, (error) => {
     console.error("❌ Erreur surveillance DP:", error);
-    // En cas d'erreur, utiliser les DP de base
+    console.log("🔧 Maintien des DP actuels en cas d'erreur Firebase");
+    // En cas d'erreur, garder les DP actuels ou utiliser les DP de base
     if (allDPList.length === 0) {
       allDPList = [...DP_INITIAUX];
+      window.allDPList = allDPList;
       refreshAfterDPChange();
     }
   });
   
-  console.log("👁️ Surveillance des changements DP activée sur dp_validated");
+  console.log("👁️ Surveillance des changements DP activée sur dp_validated (avec protection des données locales)");
 }
 
 // ===== FONCTION POUR METTRE À JOUR LE DROPDOWN =====
@@ -843,8 +866,9 @@ async function initializeDPManager() {
       window.allDPList = allDPList;
     }
     
-    // Configurer la surveillance des changements
-    setupDPListSynchronization();
+    // TEMPORAIREMENT DÉSACTIVER la surveillance pour éviter le conflit
+    // setupDPListSynchronization();
+    console.log("⚠️ Surveillance Firebase temporairement désactivée");
     
     // Créer le dropdown
     if (document.readyState === 'loading') {
@@ -853,7 +877,7 @@ async function initializeDPManager() {
       createDPDropdown();
     }
     
-    console.log("✅ Gestionnaire DP initialisé avec", allDPList.length, "DP et synchronisation automatique");
+    console.log("✅ Gestionnaire DP initialisé avec", allDPList.length, "DP (mode local)");
     
   } catch (error) {
     console.error("❌ Erreur initialisation gestionnaire DP:", error);
