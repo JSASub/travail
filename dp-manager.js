@@ -480,6 +480,24 @@ function openDPManagerWindow() {
       <script>
         // Initialiser la fenêtre
         function initDPWindow() {
+          console.log("🔧 Initialisation de la fenêtre DP...");
+          
+          // Vérifier si on a accès aux données parent
+          if (!window.opener) {
+            console.error("❌ Pas d'accès à la fenêtre parent");
+            document.getElementById('dp-list').innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;"><h3>❌ Erreur</h3><p>Impossible d\'accéder aux données de l\'application principale</p></div>';
+            return;
+          }
+          
+          if (!window.opener.allDPList) {
+            console.warn("⚠️ Liste DP non disponible, attente...");
+            // Réessayer dans 1 seconde
+            setTimeout(initDPWindow, 1000);
+            return;
+          }
+          
+          console.log("✅ Données DP disponibles:", window.opener.allDPList.length, "DP");
+          
           displayAllDPs();
           updateStats();
           
@@ -489,14 +507,21 @@ function openDPManagerWindow() {
         
         function displayAllDPs() {
           const container = document.getElementById('dp-list');
-          const allDPs = window.opener.allDPList || [];
+          const allDPs = window.opener?.allDPList || [];
+          
+          console.log("📋 Affichage des DP:", allDPs.length, "DP trouvés");
+          
+          if (allDPs.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><h3>Aucun DP trouvé</h3><p>Ajoutez des DP avec le formulaire ci-dessous</p></div>';
+            return;
+          }
           
           let html = '';
           allDPs.forEach((dp, index) => {
             html += createDPCard(dp, index);
           });
           
-          container.innerHTML = html || '<div style="text-align: center; padding: 40px; color: #666;"><h3>Aucun DP</h3><p>Ajoutez des DP avec le formulaire ci-dessous</p></div>';
+          container.innerHTML = html;
         }
         
         function createDPCard(dp, index) {
@@ -529,9 +554,11 @@ function openDPManagerWindow() {
         }
         
         function updateStats() {
-          const allDPs = window.opener.allDPList || [];
+          const allDPs = window.opener?.allDPList || [];
           const initialCount = allDPs.filter(dp => dp.type === 'initial').length;
           const addedCount = allDPs.filter(dp => dp.type !== 'initial').length;
+          
+          console.log("📊 Stats:", { total: allDPs.length, initial: initialCount, added: addedCount });
           
           document.getElementById('total-count').textContent = allDPs.length + ' DP';
           document.getElementById('initial-count').textContent = initialCount + ' DP de base';
@@ -546,7 +573,10 @@ function openDPManagerWindow() {
         }
         
         function editDP(index) {
-          if (!window.opener || !window.opener.allDPList) return;
+          if (!window.opener?.allDPList) {
+            alert("❌ Impossible d'accéder aux données DP");
+            return;
+          }
           
           const dp = window.opener.allDPList[index];
           const newNom = prompt("Nom:", dp.nom);
@@ -583,18 +613,25 @@ function openDPManagerWindow() {
           };
           
           // Sauvegarder et rafraîchir
-          window.opener.saveAllDPs().then(() => {
-            displayAllDPs();
-            updateStats();
-            alert("✅ DP modifié avec succès !");
-          }).catch(error => {
-            console.error("❌ Erreur modification:", error);
-            alert("❌ Erreur lors de la modification");
-          });
+          if (window.opener.saveAllDPs) {
+            window.opener.saveAllDPs().then(() => {
+              displayAllDPs();
+              updateStats();
+              alert("✅ DP modifié avec succès !");
+            }).catch(error => {
+              console.error("❌ Erreur modification:", error);
+              alert("❌ Erreur lors de la modification");
+            });
+          } else {
+            alert("❌ Fonction de sauvegarde non disponible");
+          }
         }
         
         function deleteDP(index) {
-          if (!window.opener || !window.opener.allDPList) return;
+          if (!window.opener?.allDPList) {
+            alert("❌ Impossible d'accéder aux données DP");
+            return;
+          }
           
           const dp = window.opener.allDPList[index];
           if (!confirm(\`⚠️ Supprimer "\${dp.nom} \${dp.prenom}" de la liste ?\\n\\nCette action est irréversible !\\n\\n⚠️ ATTENTION : Même les DP de base peuvent être supprimés.\`)) {
@@ -602,18 +639,28 @@ function openDPManagerWindow() {
           }
           
           window.opener.allDPList.splice(index, 1);
-          window.opener.saveAllDPs().then(() => {
-            displayAllDPs();
-            updateStats();
-            alert('✅ DP supprimé avec succès !');
-          }).catch(error => {
-            console.error("❌ Erreur suppression:", error);
-            alert("❌ Erreur lors de la suppression");
-          });
+          
+          if (window.opener.saveAllDPs) {
+            window.opener.saveAllDPs().then(() => {
+              displayAllDPs();
+              updateStats();
+              alert('✅ DP supprimé avec succès !');
+            }).catch(error => {
+              console.error("❌ Erreur suppression:", error);
+              alert("❌ Erreur lors de la suppression");
+            });
+          } else {
+            alert("❌ Fonction de sauvegarde non disponible");
+          }
         }
         
         function addNewDP(e) {
           e.preventDefault();
+          
+          if (!window.opener?.allDPList) {
+            alert("❌ Impossible d'accéder aux données DP");
+            return;
+          }
           
           const nom = document.getElementById('new-nom').value.trim().toUpperCase();
           const prenom = document.getElementById('new-prenom').value.trim();
@@ -648,19 +695,24 @@ function openDPManagerWindow() {
           
           // Ajouter à la liste
           window.opener.allDPList.push(newDP);
-          window.opener.saveAllDPs().then(() => {
-            // Réinitialiser le formulaire
-            document.getElementById('add-dp-form').reset();
-            
-            // Rafraîchir l'affichage
-            displayAllDPs();
-            updateStats();
-            
-            alert('✅ DP ajouté avec succès !');
-          }).catch(error => {
-            console.error("❌ Erreur ajout:", error);
-            alert("❌ Erreur lors de l'ajout");
-          });
+          
+          if (window.opener.saveAllDPs) {
+            window.opener.saveAllDPs().then(() => {
+              // Réinitialiser le formulaire
+              document.getElementById('add-dp-form').reset();
+              
+              // Rafraîchir l'affichage
+              displayAllDPs();
+              updateStats();
+              
+              alert('✅ DP ajouté avec succès !');
+            }).catch(error => {
+              console.error("❌ Erreur ajout:", error);
+              alert("❌ Erreur lors de l'ajout");
+            });
+          } else {
+            alert("❌ Fonction de sauvegarde non disponible");
+          }
         }
         
         // Initialiser au chargement
