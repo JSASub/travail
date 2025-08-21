@@ -710,12 +710,12 @@ background: #28a745 !important;
 }
 
 header div[style*="margin-top: 5px"] h2 {
-  margin-top: 12px !important; /* 5px + 7mm ≈ 12px */
+  margin-top: 13px !important; /* 5px + 8mm ≈ 13px */
 }
 
 header h2 {
-  margin-top: 7mm !important;
+  margin-top: 8mm !important;
 }
 header div h2 {
-  margin-top: 7 !important;
+  margin-top: 8 !important;
 }
