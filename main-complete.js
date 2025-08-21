@@ -1,59 +1,4 @@
-// main-complete.js - Application principale ultra-sécurisée avec gestion DP (VERSION CORRIGÉE)
-
-// Mode production - logs réduits
-if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-  const originalConsoleLog = console.log;
-  console.log = function(...args) {
-    if (args[0] && args[0].includes('🔥') || args[0] && args[0].includes('✅') || args[0] && args[0].includes('⚠️')) {
-      originalConsoleLog.apply(console, args);
-    }
-  };
-}
-
-// ===== VARIABLES GLOBALES =====
-// Utilisation exclusive de variables globales pour éviter les redéclarations
-window.plongeurs = window.plongeurs || [];
-window.palanquees = window.palanquees || [];
-window.userConnected = window.userConnected || false;
-
-// ===== FONCTIONS UTILITAIRES =====
-function showAuthError(message, details = '') {
-  const errorContainer = document.getElementById("auth-error");
-  if (errorContainer) {
-    errorContainer.innerHTML = `<strong>Erreur:</strong> ${message}${details ? '<br><small>' + details + '</small>' : ''}`;
-    errorContainer.style.display = 'block';
-    setTimeout(() => {
-      errorContainer.style.display = 'none';
-    }, 8000);
-  }
-  console.error("🔥 Erreur Auth:", message, details);
-}
-
-function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
-    color: white;
-    border-radius: 5px;
-    z-index: 10000;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.remove();
-  }, 4000);
-}
-
-// ===== GESTION DES DP - NOUVEAU CODE =====
+// ===== GESTION DES DP =====
 let dpList = [
   { nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
   { nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
@@ -134,7 +79,6 @@ async function saveDPToFirebase() {
     }
   } catch (error) {
     console.error("🔥 Erreur sauvegarde DP:", error);
-    // Fallback local storage
     localStorage.setItem('jsas-dp-list', JSON.stringify(dpList));
   }
 }
@@ -161,7 +105,6 @@ async function loadDPFromFirebase() {
     }
   } catch (error) {
     console.error("🔥 Erreur chargement DP:", error);
-    // Garder la liste par défaut
   }
 }
 
@@ -170,10 +113,9 @@ function updateDPDropdown() {
   const dpSelect = document.getElementById("dp-select");
   if (!dpSelect) return;
 
-  // Trier par nom
   const sortedDP = [...dpList].sort((a, b) => a.nom.localeCompare(b.nom));
   
-  dpSelect.innerHTML = '<option value="">Sélectionner un DP...</option>';
+  dpSelect.innerHTML = '<option value="">-- Sélectionner un DP --</option>';
   
   sortedDP.forEach(dp => {
     const option = document.createElement('option');
@@ -405,7 +347,7 @@ async function exportToPDF() {
     doc.setFillColor(colors.blueR, colors.blueG, colors.blueB);
     doc.rect(0, 0, 210, 40, 'F');
     
-    addText('Palanquées JSAS', margin, 35, 10, 'bold', 'white'); // Descendu de 15mm (était à 20)
+    addText('Palanquées JSAS', margin, 35, 10, 'bold', 'white'); // Descendu de 15mm
     
     // Informations DP
     const dpNom = document.getElementById("dp-nom")?.value || "Non renseigné";
@@ -480,40 +422,6 @@ async function exportToPDF() {
       });
     }
 
-    // === RÈGLES ET ALERTES ===
-    yPosition += 10;
-    if (yPosition > 250) {
-      doc.addPage();
-      yPosition = margin;
-    }
-    
-    addText('CONTRÔLES RÉGLEMENTAIRES', margin, yPosition, 10, 'bold', 'blue');
-    yPosition += 8;
-    
-    const alertes = [];
-    
-    // Vérifications réglementaires
-    palanqueesLocal.forEach((palanquee, index) => {
-      if (palanquee.profondeur > 40) {
-        alertes.push(`⚠️ Palanquée ${index + 1}: Profondeur > 40m (${palanquee.profondeur}m)`);
-      }
-      if (palanquee.duree > 60) {
-        alertes.push(`⚠️ Palanquée ${index + 1}: Durée > 60min (${palanquee.duree}min)`);
-      }
-      if (!palanquee.plongeurs || palanquee.plongeurs.length === 0) {
-        alertes.push(`❌ Palanquée ${index + 1}: Aucun plongeur assigné`);
-      }
-    });
-    
-    if (alertes.length === 0) {
-      addText('✅ Toutes les vérifications réglementaires sont conformes', margin + 5, yPosition, 8, 'normal', 'blue');
-    } else {
-      alertes.forEach(alerte => {
-        addText(alerte, margin + 5, yPosition, 8);
-        yPosition += 5;
-      });
-    }
-
     // === PIED DE PAGE ===
     const pageHeight = doc.internal.pageSize.height;
     addText(`Généré le ${new Date().toLocaleString('fr-FR')} par JSAS Palanquées`, margin, pageHeight - 10, 7);
@@ -528,249 +436,6 @@ async function exportToPDF() {
   } catch (error) {
     console.error("🔥 Erreur export PDF:", error);
     showNotification("❌ Erreur lors de la génération du PDF", "error");
-  }
-}
-
-// ===== VALIDATION DE SESSION =====
-async function validerSession() {
-  try {
-    console.log("🔄 Validation de session...");
-    
-    // Récupération des données
-    const dpNom = document.getElementById("dp-nom")?.value?.trim();
-    const dateDP = document.getElementById("date-dp")?.value;
-    const lieuDP = document.getElementById("lieu-dp")?.value?.trim();
-    const typePlongee = document.getElementById("type-plongee")?.value;
-    
-    // Validation des champs obligatoires
-    const erreurs = [];
-    if (!dpNom || dpNom === "" || dpNom === "Non renseigné") erreurs.push("Directeur de Plongée");
-    if (!dateDP) erreurs.push("Date");
-    if (!lieuDP || lieuDP === "" || lieuDP === "Non renseigné") erreurs.push("Lieu");
-    if (!typePlongee) erreurs.push("Type de plongée");
-    
-    if (erreurs.length > 0) {
-      showNotification(`❌ Champs obligatoires manquants: ${erreurs.join(', ')}`, "error");
-      return;
-    }
-    
-    if (window.plongeurs.length === 0) {
-      showNotification("❌ Aucun plongeur enregistré", "error");
-      return;
-    }
-    
-    if (window.palanquees.length === 0) {
-      showNotification("❌ Aucune palanquée créée", "error");
-      return;
-    }
-    
-    // Préparation des données de session
-    const sessionData = {
-      dp: {
-        nom: dpNom,
-        email: document.getElementById("dp-nom")?.getAttribute("data-email") || "",
-        date: dateDP,
-        lieu: lieuDP,
-        typePlongee: typePlongee
-      },
-      plongeurs: window.plongeurs.map(p => ({
-        id: p.id,
-        nom: p.nom,
-        niveau: p.niveau,
-        prerogatives: p.prerogatives || "",
-        certificatMedical: p.certificatMedical || false,
-        assurance: p.assurance || false
-      })),
-      palanquees: window.palanquees.map((pal, index) => ({
-        id: index + 1,
-        profondeur: pal.profondeur,
-        duree: pal.duree,
-        plongeurs: pal.plongeurs || [],
-        guide: pal.guide || "",
-        securiteSurface: pal.securiteSurface || ""
-      })),
-      statistiques: {
-        totalPlongeurs: window.plongeurs.length,
-        totalPalanquees: window.palanquees.length,
-        niveauxRepartition: window.plongeurs.reduce((acc, p) => {
-          acc[p.niveau] = (acc[p.niveau] || 0) + 1;
-          return acc;
-        }, {})
-      },
-      timestamp: new Date().toISOString(),
-      version: "2.0"
-    };
-    
-    // Sauvegarde dans Firebase
-    if (typeof db !== 'undefined' && db) {
-      try {
-        const sessionId = `session-${dateDP}-${Date.now()}`;
-        await db.collection('sessions').doc(sessionId).set(sessionData);
-        console.log("✅ Session sauvegardée dans Firebase");
-      } catch (error) {
-        console.error("🔥 Erreur Firebase:", error);
-        // Fallback localStorage
-        const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
-        sessions.push({...sessionData, id: Date.now()});
-        localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
-      }
-    } else {
-      // Sauvegarde locale
-      const sessions = JSON.parse(localStorage.getItem('jsas-sessions') || '[]');
-      sessions.push({...sessionData, id: Date.now()});
-      localStorage.setItem('jsas-sessions', JSON.stringify(sessions));
-      console.log("✅ Session sauvegardée localement");
-    }
-    
-    // Message de confirmation détaillé
-    const resumeMessage = `
-Session validée avec succès !
-
-📋 Résumé:
-• DP: ${dpNom}
-• Date: ${dateDP}
-• Lieu: ${lieuDP}
-• Plongeurs: ${window.plongeurs.length}
-• Palanquées: ${window.palanquees.length}
-
-💾 Données sauvegardées et prêtes pour export PDF.
-    `;
-    
-    showNotification("✅ Session validée et sauvegardée", "success");
-    console.log("✅ Validation de session terminée");
-    
-    // Optionnel: proposer d'exporter directement
-    if (confirm("Session validée ! Voulez-vous générer le PDF maintenant ?")) {
-      await exportToPDF();
-    }
-    
-  } catch (error) {
-    console.error("🔥 Erreur validation session:", error);
-    showNotification("❌ Erreur lors de la validation", "error");
-  }
-}
-
-// ===== GESTION DES ÉVÉNEMENTS =====
-function setupEventListeners() {
-  console.log("🔄 Configuration des event listeners...");
-  
-  try {
-    // === AUTHENTIFICATION ===
-    const loginForm = document.getElementById("login-form");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        
-        if (!email || !password) {
-          showAuthError("Veuillez remplir tous les champs");
-          return;
-        }
-        
-        try {
-          if (typeof signInWithEmailAndPassword !== 'undefined' && typeof auth !== 'undefined') {
-            await signInWithEmailAndPassword(auth, email, password);
-          } else {
-            showAuthError("Firebase Auth non disponible");
-          }
-        } catch (error) {
-          console.error("🔥 Erreur connexion:", error);
-          showAuthError("Erreur de connexion", error.message);
-        }
-      });
-    }
-    
-    // === EXPORT ET VALIDATION ===
-    // === EXPORT ET VALIDATION ===
-    const exportPDFBtn = document.getElementById("export-pdf");
-    if (exportPDFBtn) {
-      exportPDFBtn.addEventListener("click", exportToPDF);
-    }
-    
-    const previewBtn = document.getElementById("preview-html");
-    if (previewBtn) {
-      previewBtn.addEventListener("click", previewHTML);
-    }
-    
-    const validerSessionBtn = document.getElementById("valider-session");
-    if (validerSessionBtn) {
-      validerSessionBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        await validerSession();
-      });
-    }
-    
-    // === MODAL DP ===
-    const modalOverlay = document.getElementById("modal-overlay");
-    const modalCancel = document.getElementById("modal-cancel");
-    const modalSubmit = document.getElementById("modal-submit");
-    
-    if (modalOverlay) {
-      modalOverlay.addEventListener("click", closeDPModal);
-    }
-    
-    if (modalCancel) {
-      modalCancel.addEventListener("click", closeDPModal);
-    }
-    
-    if (modalSubmit) {
-      modalSubmit.addEventListener("click", handleDPSubmit);
-    }
-    
-    // === DRAG & DROP SÉCURISÉ ===
-    const plongeursContainer = document.getElementById("plongeurs-list");
-    if (plongeursContainer) {
-      plongeursContainer.addEventListener("dragstart", (e) => {
-        if (e.target.classList.contains("plongeur-item")) {
-          e.dataTransfer.setData("text/plain", e.target.dataset.plongeurId);
-          e.target.style.opacity = "0.5";
-        }
-      });
-      
-      plongeursContainer.addEventListener("dragend", (e) => {
-        if (e.target.classList.contains("plongeur-item")) {
-          e.target.style.opacity = "1";
-        }
-      });
-    }
-    
-    // === TEST FIREBASE SÉCURISÉ ===
-    const testFirebaseBtn = document.getElementById("test-firebase");
-    if (testFirebaseBtn) {
-      testFirebaseBtn.addEventListener("click", async () => {
-        console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
-        
-        try {
-          if (typeof db === 'undefined') {
-            throw new Error("Firebase Firestore non initialisé");
-          }
-          
-          // Test de lecture
-          const testDoc = await db.collection('test').doc('connectivity').get();
-          console.log("✅ Lecture Firebase OK");
-          
-          // Test d'écriture
-          await db.collection('test').doc('connectivity').set({
-            timestamp: new Date().toISOString(),
-            status: 'connected',
-            user: (typeof auth !== 'undefined' && auth.currentUser?.email) || 'anonymous'
-          });
-          console.log("✅ Écriture Firebase OK");
-          
-          showNotification("✅ Firebase fonctionnel", "success");
-          
-        } catch (error) {
-          console.error("🔥 Erreur test Firebase:", error);
-          showNotification("❌ Erreur Firebase: " + error.message, "error");
-        }
-      });
-    }
-    
-    console.log("✅ Event listeners configurés");
-    
-  } catch (error) {
-    console.error("🔥 Erreur configuration event listeners:", error);
   }
 }
 
@@ -900,49 +565,6 @@ function previewHTML() {
       htmlContent += '</section>';
     }
     
-    // Contrôles et alertes
-    const alertesTotal = [];
-    
-    palanqueesLocal.forEach((palanquee, index) => {
-      if (palanquee.profondeur > 40) {
-        alertesTotal.push({
-          type: 'warning',
-          message: `Palanquée ${index + 1}: Profondeur > 40m (${palanquee.profondeur}m)`
-        });
-      }
-      if (palanquee.duree > 60) {
-        alertesTotal.push({
-          type: 'warning',
-          message: `Palanquée ${index + 1}: Durée > 60min (${palanquee.duree}min)`
-        });
-      }
-      if (!palanquee.plongeurs || palanquee.plongeurs.length === 0) {
-        alertesTotal.push({
-          type: 'danger',
-          message: `Palanquée ${index + 1}: Aucun plongeur assigné`
-        });
-      }
-    });
-    
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">🛡️ Contrôles Réglementaires</h2>';
-    
-    if (alertesTotal.length === 0) {
-      htmlContent += '<div class="alert alert-success">✅ Toutes les vérifications réglementaires sont conformes</div>';
-    } else {
-      htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
-    }
-    htmlContent += '</section>';
-    
-    if (alertesTotal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
-      alertesTotal.forEach(alerte => {
-        htmlContent += `<div class="alert alert-${alerte.type}">⚠️ ${alerte.message}</div>`;
-      });
-      htmlContent += '</section>';
-    }
-    
     htmlContent += `
           <footer class="footer">
             Généré le ${new Date().toLocaleString('fr-FR')} par JSAS Palanquées
@@ -965,203 +587,101 @@ function previewHTML() {
   }
 }
 
-// ===== INITIALISATION APRÈS AUTHENTIFICATION =====
-async function initializeAfterAuth(currentUser = null) {
+// ===== VALIDATION DE SESSION =====
+async function validerSession() {
   try {
-    console.log("🔄 Initialisation après authentification...");
+    console.log("🔄 Validation de session...");
     
-    // Initialiser Firebase auth state de manière sécurisée
-    window.userConnected = currentUser ? true : false;
+    // Récupération des données
+    const dpNom = document.getElementById("dp-nom")?.value?.trim();
+    const dateDP = document.getElementById("date-dp")?.value;
+    const lieuDP = document.getElementById("lieu-dp")?.value?.trim();
+    const typePlongee = document.getElementById("type-plongee")?.value;
     
-    // Masquer le formulaire de connexion
-	const loadingScreen = document.getElementById("loading-screen"); // ✅ Existe
-	const authContainer = document.getElementById("auth-container"); // ✅ Existe  
-	const mainApp = document.getElementById("main-app"); // ✅ Existe
-  
-	if (loadingScreen) loadingScreen.style.display = "none";
-	if (authContainer) authContainer.style.display = "none";
-	if (mainApp) mainApp.style.display = "block";
+    // Validation des champs obligatoires
+    const erreurs = [];
+    if (!dpNom || dpNom === "" || dpNom === "Non renseigné") erreurs.push("Directeur de Plongée");
+    if (!dateDP) erreurs.push("Date");
+    if (!lieuDP || lieuDP === "" || lieuDP === "Non renseigné") erreurs.push("Lieu");
+    if (!typePlongee) erreurs.push("Type de plongée");
     
-    // Initialiser les données de l'application
-    await initializeAppData();
-    
-    // Initialiser la gestion DP
-    initializeDPManagement();
-    
-    // Configurer les event listeners
-    setupEventListeners();
-    
-    // Charger les données sauvegardées
-    await loadExistingData();
-    
-    showNotification("✅ Application initialisée", "success");
-    console.log("✅ Initialisation terminée");
-    
-  } catch (error) {
-    console.error("🔥 Erreur initialisation:", error);
-    showAuthError("Erreur d'initialisation", error.message);
-  }
-}
-
-// ===== INITIALISATION DES DONNÉES =====
-async function initializeAppData() {
-  try {
-    console.log("🔄 Initialisation des données...");
-    
-    // Réinitialiser les variables globales de manière sécurisée
-    window.plongeurs = window.plongeurs || [];
-    window.palanquees = window.palanquees || [];
-    
-    // Initialiser les dates par défaut
-    const dateInput = document.getElementById("date-dp");
-    if (dateInput && !dateInput.value) {
-      dateInput.value = new Date().toISOString().split('T')[0];
+    if (erreurs.length > 0) {
+      showNotification(`❌ Champs obligatoires manquants: ${erreurs.join(', ')}`, "error");
+      return;
     }
     
-    console.log("✅ Données initialisées");
-    
-  } catch (error) {
-    console.error("🔥 Erreur initialisation données:", error);
-  }
-}
-
-// ===== CHARGEMENT DES DONNÉES EXISTANTES =====
-async function loadExistingData() {
-  try {
-    console.log("🔄 Chargement des données existantes...");
-    
-    // Chargement depuis Firebase ou localStorage
-    if (typeof db !== 'undefined' && db) {
-      // TODO: Implémenter le chargement depuis Firebase
-      console.log("📡 Chargement depuis Firebase...");
-    } else {
-      // Chargement depuis localStorage
-      const savedPlongeurs = localStorage.getItem('jsas-plongeurs');
-      const savedPalanquees = localStorage.getItem('jsas-palanquees');
-      
-      if (savedPlongeurs) {
-        window.plongeurs = JSON.parse(savedPlongeurs);
-        console.log(`✅ ${window.plongeurs.length} plongeurs chargés`);
-      }
-      
-      if (savedPalanquees) {
-        window.palanquees = JSON.parse(savedPalanquees);
-        console.log(`✅ ${window.palanquees.length} palanquées chargées`);
-      }
+    if (window.plongeurs.length === 0) {
+      showNotification("❌ Aucun plongeur enregistré", "error");
+      return;
     }
     
-    // Mettre à jour l'interface
-    updateUI();
+    if (window.palanquees.length === 0) {
+      showNotification("❌ Aucune palanquée créée", "error");
+      return;
+    }
     
-  } catch (error) {
-    console.error("🔥 Erreur chargement données:", error);
-  }
-}
+    // Préparation des données de session
+    const sessionData = {
+      dp: {
+        nom: dpNom,
+        email: document.getElementById("dp-nom")?.getAttribute("data-email") || "",
+        date: dateDP,
+        // main-complete.js - Application principale compatible avec le HTML corrigé
 
-// ===== MISE À JOUR DE L'INTERFACE =====
-function updateUI() {
-  try {
-    console.log("🔄 Mise à jour de l'interface...");
-    
-    // Mettre à jour les compteurs
-    const plongeursCount = document.getElementById("plongeurs-count");
-    const palanqueesCount = document.getElementById("palanquees-count");
-    
-    if (plongeursCount) plongeursCount.textContent = window.plongeurs.length;
-    if (palanqueesCount) palanqueesCount.textContent = window.palanquees.length;
-    
-    // Mettre à jour les listes
-    updatePlongeursList();
-    updatePalanqueesList();
-    
-    console.log("✅ Interface mise à jour");
-    
-  } catch (error) {
-    console.error("🔥 Erreur mise à jour UI:", error);
-  }
-}
-
-// ===== FONCTIONS DE MISE À JOUR DES LISTES =====
-function updatePlongeursList() {
-  // TODO: Implémenter la mise à jour de la liste des plongeurs
-  console.log("🔄 Mise à jour liste plongeurs...");
-}
-
-function updatePalanqueesList() {
-  // TODO: Implémenter la mise à jour de la liste des palanquées
-  console.log("🔄 Mise à jour liste palanquées...");
-}
-
-// ===== DIAGNOSTIC SYSTÈME =====
-window.diagnosticJSAS = function() {
-  console.log("🔧 === DIAGNOSTIC SYSTÈME JSAS ===");
-  
-  const diagnostics = {
-    firebase: {
-      auth: typeof auth !== 'undefined',
-      db: typeof db !== 'undefined',
-      user: (typeof auth !== 'undefined' && auth?.currentUser?.email) || 'Non connecté'
-    },
-    data: {
-      plongeurs: window.plongeurs?.length || 0,
-      palanquees: window.palanquees?.length || 0,
-      dpList: dpList?.length || 0
-    },
-    ui: {
-      authSection: !!document.getElementById("auth-section"),
-      mainApp: !!document.getElementById("main-app"),
-      dpSelect: !!document.getElementById("dp-select"),
-      modal: !!document.getElementById("dp-modal")
-    },
-    functions: {
-      exportToPDF: typeof exportToPDF === 'function',
-      validerSession: typeof validerSession === 'function',
-      initializeDPManagement: typeof initializeDPManagement === 'function'
+// Mode production - logs réduits
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  const originalConsoleLog = console.log;
+  console.log = function(...args) {
+    if (args[0] && (args[0].includes('🔥') || args[0].includes('✅') || args[0].includes('⚠️'))) {
+      originalConsoleLog.apply(console, args);
     }
   };
-  
-  console.table(diagnostics.firebase);
-  console.table(diagnostics.data);
-  console.table(diagnostics.ui);
-  console.table(diagnostics.functions);
-  
-  return diagnostics;
-};
+}
 
-// ===== EXPORTS GLOBAUX =====
-window.exportToPDF = exportToPDF;
-window.previewHTML = previewHTML;
-window.validerSession = validerSession;
-window.initializeDPManagement = initializeDPManagement;
-window.closeDPModal = closeDPModal;
-window.openDPModal = openDPModal;
-window.setupEventListeners = setupEventListeners;
-window.initializeAfterAuth = initializeAfterAuth;
+// ===== VARIABLES GLOBALES =====
+window.plongeurs = window.plongeurs || [];
+window.palanquees = window.palanquees || [];
+window.userConnected = window.userConnected || false;
 
-// ===== INITIALISATION GLOBALE =====
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("🚀 JSAS Palanquées - Chargement...");
-  
-  // Attendre que Firebase soit initialisé
-  if (typeof auth !== 'undefined' && auth) {
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        console.log("✅ Utilisateur connecté:", user.email);
-        initializeAfterAuth(user);
-      } else {
-        console.log("👤 Utilisateur non connecté");
-        window.userConnected = false;
-        // Initialiser quand même l'app en mode non connecté
-        initializeAfterAuth(null);
-      }
-    });
-  } else {
-    console.log("⚠️ Firebase non disponible, mode dégradé");
-    // Mode sans authentification pour développement
+// ===== FONCTIONS UTILITAIRES =====
+function showAuthError(message, details = '') {
+  const errorContainer = document.getElementById("auth-error");
+  if (errorContainer) {
+    errorContainer.innerHTML = `<strong>Erreur:</strong> ${message}${details ? '<br><small>' + details + '</small>' : ''}`;
+    errorContainer.style.display = 'block';
     setTimeout(() => {
-      initializeAfterAuth(null);
-    }, 1000);
+      errorContainer.style.display = 'none';
+    }, 8000);
   }
-});
+  console.error("🔥 Erreur Auth:", message, details);
+}
 
-console.log("✅ Main application sécurisée chargée - Version 2.1 corrigée sans erreur user");
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+    color: white;
+    border-radius: 5px;
+    z-index: 10000;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 4000);
+}
+
+// ===== GESTION DES DP =====
+let dpList = [
+  { nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
+  { nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
+  { nom: "BEST Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelle
