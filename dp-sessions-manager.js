@@ -367,6 +367,9 @@ async function chargerDonneesDPSelectionne(dpKey) {
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
     if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
     
+    // NOUVEAU : Effacer le message de validation DP précédent
+    clearDPValidationMessage();
+    
     alert("✅ Données DP chargées avec succès !");
     console.log("✅ DP chargé:", dpData);
     
@@ -531,6 +534,9 @@ async function loadSessionFromSelector() {
       } else {
         console.log("✅ Session chargée:", sessionKey);
         
+        // NOUVEAU : Effacer le message de validation DP précédent
+        clearDPValidationMessage();
+        
         // NOUVEAU : Afficher quelle session est chargée
         updateCurrentSessionDisplay(sessionKey, sessionSelector.options[sessionSelector.selectedIndex].text);
         
@@ -659,6 +665,20 @@ function updateCurrentSessionAfterSave() {
     }
   } catch (error) {
     console.error("❌ Erreur updateCurrentSessionAfterSave:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Effacer le message de validation DP
+function clearDPValidationMessage() {
+  try {
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = '';
+      dpMessage.classList.remove("dp-valide");
+      dpMessage.style.display = 'none';
+    }
+  } catch (error) {
+    console.error("❌ Erreur clearDPValidationMessage:", error);
   }
 }
 
@@ -1222,6 +1242,7 @@ window.initializeDPSessionsManager = initializeDPSessionsManager;
 window.updateCurrentSessionDisplay = updateCurrentSessionDisplay;
 window.clearCurrentSessionDisplay = clearCurrentSessionDisplay;
 window.updateCurrentSessionAfterSave = updateCurrentSessionAfterSave;
+window.clearDPValidationMessage = clearDPValidationMessage;
 
 // Auto-initialisation
 if (document.readyState === 'loading') {
