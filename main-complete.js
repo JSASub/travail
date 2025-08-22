@@ -1416,6 +1416,10 @@ function setupEventListeners() {
               const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
               await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
               console.log("✅ Informations DP sauvegardées dans Firebase");
+			  if (typeof saveSessionData === 'function') {
+                await saveSessionData();
+                console.log("✅ Session complète sauvegardée");
+              }
             } catch (firebaseError) {
               console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
             }
@@ -1425,7 +1429,7 @@ function setupEventListeners() {
           if (dpMessage) {
             dpMessage.innerHTML = `
               <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-                ✅ Informations DP validées
+                ✅ Informations DP validées et session sauvegardée
                 <br><small style="font-weight: normal;">
                   ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
                 </small>
@@ -2801,11 +2805,17 @@ if (validerDPBtn) {
       if (typeof db !== 'undefined' && db) {
         try {
           const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
-          await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
-          console.log("✅ Informations DP sauvegardées dans Firebase");
-          
-          // NOUVEAU : Rafraîchir automatiquement après validation
-          setTimeout(refreshAllLists, 500);
+		  await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
+		  console.log("✅ Informations DP sauvegardées dans Firebase");
+
+       // NOUVEAU : Sauvegarder également la session complète
+       if (typeof saveSessionData === 'function') {
+		  await saveSessionData();
+		  console.log("✅ Session complète sauvegardée");
+	   }
+
+       // NOUVEAU : Rafraîchir automatiquement après validation
+       setTimeout(refreshAllLists, 500);
           
         } catch (firebaseError) {
           console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
@@ -2816,7 +2826,7 @@ if (validerDPBtn) {
       if (dpMessage) {
         dpMessage.innerHTML = `
           <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-            ✅ Informations DP validées
+            ✅ Informations DP validées et session sauvegardée
             <br><small style="font-weight: normal;">
               ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
             </small>
