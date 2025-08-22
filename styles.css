@@ -207,56 +207,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: #545b62 !important;
 }
 
-/* Responsive pour mobile */
-@media (max-width: 768px) {
-  #meta-info label:first-child > div {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  
-  #dp-select {
-    min-width: unset;
-    width: 100%;
-  }
-  
-  .dp-management-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 10px;
-    font-size: 14px;
-  }
-  
-  #dp-modal > div {
-    margin: 20px;
-    width: calc(100% - 40px);
-    max-width: none;
-  }
-  
-  #dp-modal button {
-    padding: 12px 16px;
-    font-size: 14px;
-  }
-}
-
-/* Très petit écran */
-@media (max-width: 480px) {
-  #meta-info label:first-child > div {
-    gap: 8px;
-  }
-  
-  .dp-management-btn {
-    font-size: 11px;
-    padding: 8px;
-  }
-  
-  #dp-modal > div {
-    margin: 10px;
-    width: calc(100% - 20px);
-    padding: 20px;
-  }
-}
-
 /* Animation pour le changement de DP */
 #dp-select.dp-changed {
   border-color: #28a745;
@@ -342,39 +292,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   margin-bottom: 1px;
 }
 
-
-/* ===== STYLES POUR LA GESTION AUTOMATISÉE DES DP ===== */
-
-/* Conteneur principal de sélection DP */
-#meta-info label:first-child {
-  position: relative;
-}
-
-#meta-info label:first-child > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Liste déroulante DP */
-#dp-select {
-  flex: 1;
-  min-width: 200px;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background: white;
-}
-
-#dp-select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-/* Boutons de gestion DP */
+/* Boutons de gestion DP - Nouveaux styles */
 .dp-btn {
   padding: 8px 12px;
   border: none;
@@ -612,66 +530,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   border: 1px solid #bee5eb;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  #meta-info label:first-child > div {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  #dp-select {
-    min-width: auto;
-    margin-bottom: 8px;
-  }
-  
-  /* Boutons DP en responsive */
-  #meta-info label:first-child > div {
-    gap: 6px;
-  }
-  
-  .dp-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-  
-  .dp-btn span {
-    display: none; /* Masquer le texte sur mobile pour garder juste les icônes */
-  }
-  
-  .dp-modal-content {
-    margin: 5% auto;
-    width: 95%;
-  }
-  
-  .dp-modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .dp-modal-footer .dp-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .dp-modal-footer .dp-btn span {
-    display: inline; /* Réafficher le texte dans la modal */
-  }
-  
-  .dp-notification {
-    right: 10px;
-    left: 10px;
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .dp-btn {
-    padding: 8px 6px;
-    font-size: 14px; /* Icônes plus grandes sur très petit écran */
-  }
-}
-
 /* États de validation */
 .dp-form-group input.error {
   border-color: #dc3545;
@@ -708,8 +566,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     transform: rotate(360deg);
   }
 }
-
-
 
 /* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
 .dp-status-indicator {
@@ -899,7 +755,7 @@ button:hover {
   background-color: #f8f9fa;
   border-radius: 5px;
   transition: all 0.3s ease;
-  position: relative; /* IMPORTANT pour les indicateurs de verrous */
+  position: relative;
 }
 
 .palanquee-title {
@@ -911,7 +767,7 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative; /* Pour positionner les indicateurs de verrous */
+  position: relative;
 }
 
 .palanquee[data-alert="true"] {
@@ -1207,182 +1063,4 @@ background: #28a745 !important;
 }
 
 .palanquee-plongeur-item .return-plongeur {
-  flex: 0 0 10px !important;
-  order: 4 !important;
-  font-size: 14px !important;
-  font-weight: bold;
-  color: #003366;
-}
-
-/* STYLES POUR LES DÉTAILS DE PALANQUÉE */
-.palanquee-details {
-  background: #f8f9fa;
-  padding: 15px;
-  margin: 15px 0 0 0;
-  border-radius: 5px;
-  border: 1px solid #dee2e6;
-  border-top: 2px solid #007bff;
-}
-
-.palanquee-details::before {
-  content: "📋 Détails de plongée";
-  display: block;
-  font-size: 11px;
-  font-weight: bold;
-  color: #007bff;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 8px 0;
-  flex-wrap: wrap;
-}
-
-.detail-row label {
-  font-size: 12px;
-  font-weight: bold;
-  color: #495057;
-  white-space: nowrap;
-  margin: 0;
-}
-
-.palanquee-horaire,
-.palanquee-prof-prevue,
-.palanquee-duree-prevue,
-.palanquee-prof-realisee,
-.palanquee-duree-realisee,
-.palanquee-paliers {
-  padding: 4px 8px;
-  border: 1px solid #ced4da;
-  border-radius: 3px;
-  font-size: 12px;
-  width: 80px;
-  text-align: center;
-}
-
-.palanquee-horaire {
-  width: 100px;
-}
-
-.palanquee-paliers {
-  width: auto;
-  text-align: left;
-  background-color: #f0f8f0;
-  min-width: 200px;
-}
-
-.paliers-row {
-  flex-wrap: nowrap;
-}
-
-.paliers-row input {
-  flex: 1;
-}
-
-.palanquee-prof-prevue,
-.palanquee-prof-realisee {
-  background-color: #e3f2fd;
-}
-
-.palanquee-duree-prevue,
-.palanquee-duree-realisee {
-  background-color: #f3e5f5;
-}
-
-.palanquee-horaire {
-  background-color: #fff3e0;
-}
-
-.detail-row input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
-}
-
-/* NOUVEAU : États verrouillés pour les champs de détails */
-.palanquee.editing-other .palanquee-horaire,
-.palanquee.editing-other .palanquee-prof-prevue,
-.palanquee.editing-other .palanquee-duree-prevue,
-.palanquee.editing-other .palanquee-prof-realisee,
-.palanquee.editing-other .palanquee-duree-realisee,
-.palanquee.editing-other .palanquee-paliers,
-.palanquee.editing-other .plongeur-prerogatives-editable {
-  background-color: #f5f5f5 !important;
-  color: #6c757d !important;
-  cursor: not-allowed !important;
-  border-color: #dee2e6 !important;
-}
-
-/* Animation pour les palanquées en cours d'édition par soi-même */
-.palanquee.editing-self {
-  animation: pulse-yellow 3s infinite;
-}
-
-@keyframes pulse-yellow {
-  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
-}
-
-/* Responsive pour les détails */
-@media (max-width: 768px) {
-  .detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-  
-  .paliers-row {
-    flex-direction: column;
-  }
-  
-  .palanquee-horaire,
-  .palanquee-prof-prevue,
-  .palanquee-duree-prevue,
-  .palanquee-prof-realisee,
-  .palanquee-duree-realisee {
-    width: 100%;
-    max-width: 150px;
-  }
-  
-  .palanquee-paliers {
-    width: 100%;
-  }
-  
-  /* Adaptation mobile pour les indicateurs de verrous */
-  .lock-indicator {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin: 5px 0;
-    display: block;
-    text-align: center;
-  }
-  
-  .dp-status-indicator {
-    font-size: 12px;
-    padding: 8px;
-  }
-  
-  .dp-status-content {
-    flex-direction: column;
-    gap: 5px;
-    text-align: center;
-  }
-}
-
-header div[style*="margin-top: 5px"] h2 {
-  margin-top: 13px !important; /* 5px + 8mm ≈ 13px */
-}
-
-header h2 {
-  margin-top: 8mm !important;
-}
-header div h2 {
-  margin-top: 8 !important;
-}
+  flex: 0
