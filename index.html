@@ -1,236 +1,509 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gestion de Palanquées JSAS</title>
-  <link rel="stylesheet" href="styles.css" />
-  
-  <!-- Firebase SDK version 8 (compatible syntaxe classique) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  
-  <!-- jsPDF pour l'export PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Palanquées JSA Subaquatique</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <!-- jsPDF pour l'export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* CSS spécifique pour l'interface DP simplifiée */
+        .section-dp {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        #dp-form-title {
+            color: #28a745;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        /* Boutons d'action DP */
+        .dp-actions-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-dp-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-new {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn-dp-action:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-dp-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Liste des DP */
+        .dp-list-section {
+            margin-bottom: 20px;
+        }
+
+        .dp-list-section h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .dp-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .dp-item {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dp-item:hover {
+            background: #e9ecef;
+        }
+
+        .dp-item.selected {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .dp-item-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .dp-item-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .dp-item-empty {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Formulaire DP */
+        .dp-form {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .dp-form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .dp-form-group {
+            flex: 1;
+        }
+
+        .dp-form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        .dp-form-group input,
+        .dp-form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .dp-form-group input:focus,
+        .dp-form-group select:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+        }
+
+        /* Bouton principal */
+        .dp-save-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn-save-main {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save-main:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-save-main:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Messages */
+        #dp-message,
+        #current-session-display {
+            margin-top: 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dp-form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .dp-actions-buttons {
+                justify-content: center;
+            }
+            
+            .dp-item-header,
+            .dp-item-details {
+                flex-direction: column;
+            }
+        }
+
+        /* Styles pour les boutons de plongeurs */
+        .plongeurs-actions {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            background: #138496;
+            transform: translateY(-1px);
+        }
+
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Messages plongeurs */
+        #plongeurs-message {
+            margin: 15px 0;
+        }
+    </style>
 </head>
-
 <body>
-  <!-- INDICATEUR DE CHARGEMENT -->
-  <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-    <div style="text-align: center;">
-      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-      <p style="color: #666; font-size: 16px;">Chargement de l'application JSAS...</p>
+    <div class="container">
+        <header>
+            <h1>🏊‍♂️ JSA Subaquatique - Gestionnaire de Palanquées</h1>
+            <div class="auth-section">
+                <div id="auth-status"></div>
+                <div id="auth-error"></div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Section DP simplifiée -->
+            <div class="section-dp">
+                <!-- Titre dynamique -->
+                <h3 id="dp-form-title">📝 Informations du Directeur de Plongée</h3>
+                
+                <!-- Boutons d'action DP -->
+                <div class="dp-actions-buttons">
+                    <button id="new-dp-btn" class="btn-dp-action btn-new">
+                        🆕 Nouveau
+                    </button>
+                    <button id="edit-dp-btn" class="btn-dp-action btn-edit" disabled>
+                        ✏️ Modifier
+                    </button>
+                    <button id="delete-dp-btn" class="btn-dp-action btn-delete" disabled>
+                        🗑️ Supprimer
+                    </button>
+                    <button id="reset-dp-btn" class="btn-dp-action btn-reset">
+                        🔄 RAZ
+                    </button>
+                    <button id="cancel-dp-btn" class="btn-dp-action btn-cancel" style="display: none;">
+                        🚫 Annuler
+                    </button>
+                </div>
+
+                <!-- Liste des DP existants -->
+                <div class="dp-list-section">
+                    <h4>📋 DP Enregistrés</h4>
+                    <div id="dp-list" class="dp-list">
+                        <div class="dp-item-empty">🔄 Chargement...</div>
+                    </div>
+                </div>
+
+                <!-- Formulaire DP -->
+                <div class="dp-form">
+                    <div class="dp-form-row">
+                        <div class="dp-form-group">
+                            <label for="dp-nom">👤 Nom du DP :</label>
+                            <input type="text" id="dp-nom" placeholder="Nom du directeur de plongée" required>
+                        </div>
+                        <div class="dp-form-group">
+                            <label for="dp-date">📅 Date :</label>
+                            <input type="date" id="dp-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="dp-form-row">
+                        <div class="dp-form-group">
+                            <label for="dp-lieu">📍 Lieu :</label>
+                            <input type="text" id="dp-lieu" placeholder="Lieu de plongée" required>
+                        </div>
+                        <div class="dp-form-group">
+                            <label for="dp-plongee">🏊‍♂️ Type :</label>
+                            <select id="dp-plongee" required>
+                                <option value="">-- Sélectionnez --</option>
+                                <option value="matin">Plongée du matin</option>
+                                <option value="apres-midi">Plongée de l'après-midi</option>
+                                <option value="journee">Plongée de la journée</option>
+                                <option value="nuit">Plongée de nuit</option>
+                                <option value="formation">Formation</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Bouton principal d'enregistrement -->
+                    <div class="dp-save-section">
+                        <button id="valider-dp" class="btn-save-main">
+                            💾 Enregistrer Session + DP
+                        </button>
+                    </div>
+                    
+                    <!-- Messages et affichage de session courante -->
+                    <div id="dp-message"></div>
+                    <div id="current-session-display"></div>
+                </div>
+            </div>
+
+            <!-- Section Plongeurs -->
+            <section class="plongeurs-section">
+                <h2>👥 Gestion des Plongeurs</h2>
+                
+                <!-- Boutons d'action plongeurs -->
+                <div class="plongeurs-actions">
+                    <button id="addPlongeurBtn" class="btn-action">➕ Ajouter Plongeur</button>
+                    <button id="sortPlongeursBtn" class="btn-action">📊 Trier par Niveau</button>
+                    <button id="exportPlongeursBtn" class="btn-action">📥 Exporter JSON</button>
+                    <input type="file" id="importJSON" accept=".json" style="display: none;">
+                    <button id="importPlongeursBtn" class="btn-action">📤 Importer JSON</button>
+                </div>
+
+                <!-- Messages plongeurs -->
+                <div id="plongeurs-message"></div>
+
+                <!-- Formulaire d'ajout de plongeur -->
+                <div class="plongeur-form">
+                    <div class="form-row">
+                        <input type="text" id="plongeurNom" placeholder="Nom du plongeur" required>
+                        <select id="plongeurNiveau" required>
+                            <option value="">Sélectionner niveau</option>
+                            <option value="N1">N1 - Plongeur niveau 1</option>
+                            <option value="N2">N2 - Plongeur niveau 2</option>
+                            <option value="N3">N3 - Plongeur niveau 3</option>
+                            <option value="N4">N4 - Guide de palanquée</option>
+                            <option value="P4">P4 - Plongeur niveau 4</option>
+                            <option value="P5">P5 - Plongeur niveau 5</option>
+                            <option value="E1">E1 - Encadrement niveau 1</option>
+                            <option value="E2">E2 - Encadrement niveau 2</option>
+                            <option value="E3">E3 - Encadrement niveau 3</option>
+                            <option value="E4">E4 - Encadrement niveau 4</option>
+                        </select>
+                        <input type="text" id="plongeurPrerogatives" placeholder="Prérogatives (optionnel)">
+                    </div>
+                </div>
+
+                <!-- Liste des plongeurs -->
+                <div id="plongeursContainer" class="plongeurs-container">
+                    <div class="plongeurs-empty">Aucun plongeur ajouté</div>
+                </div>
+            </section>
+
+            <!-- Section Palanquées -->
+            <section class="palanquees-section">
+                <h2>🏊‍♂️ Gestion des Palanquées</h2>
+                
+                <div class="palanquee-controls">
+                    <button id="addPalanquee" class="btn-action">➕ Ajouter Palanquée</button>
+                    <button id="clearAllPalanquees" class="btn-action btn-danger">🗑️ Vider Toutes</button>
+                </div>
+
+                <!-- Container des palanquées -->
+                <div id="palanqueesContainer" class="palanquees-container">
+                    <div class="palanquees-empty">Aucune palanquée créée</div>
+                </div>
+            </section>
+
+            <!-- Section Export PDF -->
+            <section class="pdf-section">
+                <h2>📄 Export PDF</h2>
+                
+                <div class="pdf-controls">
+                    <button id="generatePDF" class="btn-action btn-primary">👁️ Aperçu PDF</button>
+                    <button id="exportPDF" class="btn-action btn-success">📥 Télécharger PDF</button>
+                </div>
+
+                <!-- Aperçu PDF -->
+                <div id="pdfPreview" class="pdf-preview" style="display: none;">
+                    <div class="pdf-header">
+                        <h3>Aperçu PDF</h3>
+                        <button id="closePDFPreview" class="btn-close">✖️</button>
+                    </div>
+                    <div id="pdfContent" class="pdf-content"></div>
+                </div>
+            </section>
+
+            <!-- Section Sessions -->
+            <section class="sessions-section">
+                <h2>💾 Gestion des Sessions</h2>
+                
+                <div class="session-controls">
+                    <div class="session-selector-group">
+                        <select id="session-selector">
+                            <option value="">Sélectionner une session</option>
+                        </select>
+                        <button id="load-session" class="btn-action">📂 Charger</button>
+                        <button id="refresh-sessions" class="btn-action">🔄 Actualiser</button>
+                    </div>
+                    
+                    <div class="session-actions">
+                        <button id="save-session" class="btn-action btn-success">💾 Sauvegarder Session</button>
+                        <button id="test-firebase" class="btn-action btn-info">🔥 Test Firebase</button>
+                    </div>
+                </div>
+
+                <!-- Historique DP -->
+                <div class="historique-section">
+                    <h3>📋 Historique des DP</h3>
+                    <div id="historique-dp" class="historique-container">
+                        <div class="historique-empty">Aucun historique disponible</div>
+                    </div>
+                </div>
+
+                <!-- Section nettoyage -->
+                <div class="cleanup-section">
+                    <h3>🧹 Nettoyage</h3>
+                    <div class="cleanup-controls">
+                        <button id="select-sessions-cleanup" class="btn-action btn-warning">🎯 Sélectionner Sessions</button>
+                        <button id="refresh-sessions-list" class="btn-action">🔄 Actualiser liste</button>
+                        <button id="delete-selected-sessions" class="btn-action btn-danger" disabled>🗑️ Supprimer Sélectionnées</button>
+                    </div>
+                    <div id="sessions-cleanup-list" class="cleanup-list" style="display: none;"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 JSA Subaquatique - Périgueux</p>
+        </footer>
     </div>
-  </div>
-  
-  <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
 
-  <!-- SECTION DE CONNEXION -->
-  <div id="auth-container" style="display: none;">
-    <div style="max-width: 400px; margin: 50px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-      <h2 style="text-align: center; color: #004080; margin-bottom: 30px;">🤿 Connexion JSAS</h2>
-      
-      <form id="login-form">
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email :</label>
-          <input type="email" id="login-email" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mot de passe :</label>
-          <input type="password" id="login-password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-		  <a href="reset_password.html" style="font-size:12px; opacity:0.8; text-decoration:underline; padding:4px 2px;">J'ai oublié mon mot de passe</a>
-        </div>
-        
-        <button type="submit" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
-          Se connecter
-        </button>
-      </form>
-      
-      <div id="auth-error" style="margin-top: 15px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 5px; display: none;"></div>
-      <div id="auth-loading" style="margin-top: 15px; text-align: center; color: #666; display: none;">Connexion en cours...</div>
-    </div>
-  </div>
+    <!-- Scripts JS dans l'ordre correct -->
+    <script src="config-firebase.js"></script>
+    <script src="ui-interface.js"></script>
+    <script src="render-dom.js"></script>
+    <script src="pdf-manager.js"></script>
+    <script src="plongeurs-manager.js"></script>
+    <script src="dp-sessions-manager.js"></script>
+    <script src="main-core.js"></script>
+    <script src="offline-manager.js"></script>
+    <script src="error-handler-system.js"></script>
+    <script src="password-manager.js"></script>
+    <script src="simple-lock-system.js"></script>
 
-  <!-- APPLICATION PRINCIPALE -->
-  <div id="main-app" style="display: none;">
-<header>
-  <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 0;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span id="user-info" style="color: #666; font-size: 14px;"></span>
-      <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
-        🔐 MdP
-      </button>
-      <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
-        Déconnexion
-      </button>
-    </div>
-  </div>
-  
-  <div style="margin-top: 5px; margin-bottom: 15px;">
-    <h2 style="text-align: left; margin: 0; color: #004080; font-size: 20px;">🤿 Palanquées JSAS</h2>
-  </div>
-  
-  <hr>
-  <div style="text-align: center; margin: 28px 0;">
-    <h1 style="margin: 0; color: #004080;">Création des<br>FICHES de SÉCURITÉ</h1>
-  </div>
-  <hr>
-  
-  <div id="meta-info">
-    <label><strong>Directeur de Plongée</strong>
-      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />
-    </label>
-    <label>Date : <input type="date" id="dp-date" /></label>
-    <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
-    <label>Plongée : 
-      <select id="dp-plongee">
-        <option value="matin">Matin</option>
-        <option value="apres-midi">Après-midi</option>
-        <option value="soir">Soir</option>
-        <option value="nuit">Nuit</option>
-        <option value="plg1">Plg1</option>
-        <option value="plg2">Plg2</option>
-        <option value="plg3">Plg3</option>
-        <option value="plg4">Plg4</option>
-        <option value="formation">Formation</option>
-        <option value="autre">Autre</option>
-      </select>
-    </label>
-    <button type="submit" id="valider-dp">Sauvegarder Session + DP</button>
-    <div id="dp-message" class="dp-valide"></div>
-  </div>
-	
-  </header>
-
-  <!-- SECTION ALERTES -->
-  <div id="alertes-section" class="alert-section alert-hidden">
-    <div class="alert-title">⚠️ Alertes Palanquées</div>
-    <div id="alertes-content"></div>
-  </div>
-
-  <main>
-    <br><br>
-    <strong>Liste des plongeurs <span id="compteur-plongeurs" style="color: #007bff;">(0)</span></strong>
-    
-    <!-- CONTRÔLES DE TRI -->
-    <div class="sort-controls">
-      <span>Trier par :</span>
-      <button class="sort-btn active" data-sort="none">Ordre d'ajout</button>
-      <button class="sort-btn" data-sort="nom">Nom A-Z</button>
-      <button class="sort-btn" data-sort="niveau">Niveau</button>
-    </div>
-    
-	<form id="addForm">  
-    <input type="text" id="nom" placeholder="NOM & Prénom" required />
-	<select id="niveau" required>
-		<option value="">-- Sélectionner le niveau --</option>
-		<option>Déb.</option>
-		<option>Plg.Br</option>
-		<option>Plg.Ar</option>
-		<option>Plg.Or</option>
-		<option>N1</option>
-		<option>N2</option>
-		<option>N3</option>
-		<option>GP</option>
-		<option>N4/GP</option>
-		<option>E1</option>
-		<option>E2</option>
-		<option>E3</option>
-		<option>E4</option>
-	</select>
-    
-    Prérogatives : 
-	<input type="text" id="pre" placeholder="PE20, PA40 ..." />
-    <br>
-	<button type="submit" id="ajouter-plongeur">Ajouter</button>
-  </form>
-
-  <ul id="listePlongeurs" class="dropzone"></ul>
-  <br>
-  
-  <button id="exportJSON" class="btn-success">Enregistrer la Liste des plongeurs JSON</button>
-  <br>
-  Charger la liste des plongeurs: <input type="file" id="importJSON" accept=".json" />
-
-  <br><br><br><br><br><br>
-  <section id="palanquees">
-    <strong>Palanquées <span id="compteur-palanquees" style="color: #28a745;">(0 plongeurs dans 0 palanquées)</span></strong>
-    <br>
-    <button id="addPalanquee">Nouvelle palanquée</button>
-    <br><br>    
-    <div id="palanqueesContainer"></div>
-    
-    <br><br>
-    <button id="generatePDF" class="btn-secondary">Aperçu PDF</button>
-    <button id="exportPDF" class="btn-success">Télécharger PDF</button>
-   </section>
-  </main>
-
-  <div id="previewContainer" style="display:none;">
-    <strong>Aperçu PDF</strong>
-    <iframe id="pdfPreview" width="100%" height="500px"></iframe>
-  </div>
-  <br><br><br>
-  <hr>
-  <section id="sessions-manager">
-    <strong>Gestion des Sessions</strong>
-    <div style="margin: 10px 0;">
-      <label>Charger une session précédente :</label>
-      <select id="session-selector" style="margin: 5px 10px;">
-        <option value="">-- Charger une session --</option>
-      </select>
-      <button id="load-session" class="btn-secondary">Charger</button>
-      <button id="refresh-sessions" class="btn-secondary">Actualiser</button>
-      <button id="save-session" class="btn-success">Sauvegarder Session</button>
-      <button id="test-firebase" style="background: orange; color: white;">Test Firebase</button>
-    </div>
-    <div style="margin: 10px 0; font-size: 0.9em; color: #666;">
-      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
-    </div>
-  </section>
-
-  <hr>
-  <section id="sessions-manager-extended">
-    <strong>Nettoyage des Sessions</strong>
-    <div style="margin: 10px 0;">
-      <label>Sélectionner les sessions à supprimer :</label>
-      <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
-        <em>Chargement automatique...</em>
-      </div>
-      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
-      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
-      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
-      <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
-    </div>
-  </section>
-  
-  <hr>
-
-  
-  <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 3.0.1 - RA - 2025 - JSA Subaquatique
-  </footer>
-
-  </div> <!-- Fin main-app -->
-
-  <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
-  <script src="config-firebase.js"></script>
-  <script src="ui-interface.js"></script>
-  <script src="render-dom.js"></script>
-  <script src="pdf-manager.js"></script>
-  <script src="plongeurs-manager.js"></script>
-  <script src="dp-sessions-manager.js"></script>
-  <script src="main-core.js"></script>
-  <script src="simple-lock-system.js"></script>
-  <script src="offline-manager.js"></script>
-  <script src="password-manager.js"></script>  
-  <script src="dp-online-manager.js"></script>  
+    <script>
+        // Initialisation après chargement complet
+        document.addEventListener('DOMContentLoaded', function() {
+            // Définir l'heure de chargement de la page
+            window.pageLoadTime = Date.now();
+            
+            // Mettre la date du jour par défaut
+            const dateField = document.getElementById("dp-date");
+            if (dateField && !dateField.value) {
+                dateField.value = new Date().toISOString().split('T')[0];
+            }
+            
+            console.log("🚀 Application JSA Subaquatique initialisée");
+        });
+    </script>
 </body>
 </html>
