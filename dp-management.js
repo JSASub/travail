@@ -294,7 +294,8 @@ function showDPModal(title, dpData, callback) {
     <div style="margin-bottom: 15px;">
       <label style="display: block; margin-bottom: 5px; font-weight: bold;">Niveau :</label>
       <select id="modal-dp-niveau" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-        <option value="E3" ${dpData?.niveau === 'E3' ? 'selected' : ''}>E3</option>
+        <option value="E4" ${dpData?.niveau === 'E4' ? 'selected' : ''}>E4</option>
+		<option value="E3" ${dpData?.niveau === 'E3' ? 'selected' : ''}>E3</option>
         <option value="P5" ${dpData?.niveau === 'P5' ? 'selected' : ''}>P5</option>
       </select>
     </div>
