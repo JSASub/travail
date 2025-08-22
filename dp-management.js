@@ -20,45 +20,96 @@ let dpDatabase = null;
 
 // ===== RÉFÉRENCE FIREBASE =====
 function getFirebaseReference() {
-  if (typeof firebase !== 'undefined' && firebase.database) {
-    if (!dpDatabase) {
-      dpDatabase = firebase.database().ref('dp_database');
-    }
-    return dpDatabase;
+  console.log('🔍 Vérification Firebase...');
+  
+  // Vérifier si Firebase est chargé
+  if (typeof firebase === 'undefined') {
+    console.error('❌ Firebase n\'est pas chargé !');
+    console.log('💡 Vérifiez que les scripts Firebase sont bien inclus dans index.html');
+    return null;
   }
-  console.warn('Firebase non disponible, utilisation du stockage local');
-  return null;
+  
+  // Vérifier si Firebase Database est disponible
+  if (!firebase.database) {
+    console.error('❌ Firebase Database n\'est pas disponible !');
+    console.log('💡 Vérifiez que firebase-database.js est inclus');
+    return null;
+  }
+  
+  // Vérifier si l'app Firebase est initialisée
+  try {
+    const app = firebase.app();
+    console.log('✅ Firebase app disponible:', app.name);
+  } catch (error) {
+    console.error('❌ Firebase non initialisé:', error.message);
+    console.log('💡 Vérifiez config-firebase.js et l\'initialisation');
+    return null;
+  }
+  
+  // Créer ou récupérer la référence
+  if (!dpDatabase) {
+    try {
+      dpDatabase = firebase.database().ref('dp_database');
+      console.log('✅ Référence Firebase créée: dp_database');
+    } catch (error) {
+      console.error('❌ Erreur création référence:', error);
+      return null;
+    }
+  }
+  
+  return dpDatabase;
 }
 
 // ===== SAUVEGARDE DANS FIREBASE =====
 async function saveDpToFirebase() {
+  console.log('🔄 Tentative de sauvegarde Firebase...');
+  
   const dbRef = getFirebaseReference();
   
   if (dbRef) {
     try {
+      console.log('📤 Sauvegarde de', DP_LIST.length, 'DP dans Firebase...');
+      
       // Sauvegarder la liste complète des DP
       await dbRef.set(DP_LIST);
-      console.log('✅ Liste DP sauvegardée dans Firebase');
+      
+      console.log('✅ Liste DP sauvegardée dans Firebase avec succès !');
+      console.log('📋 Données sauvegardées:', DP_LIST);
       
       // Afficher un message de confirmation temporaire
-      showNotification('DP sauvegardés avec succès', 'success');
+      showNotification('DP sauvegardés avec succès dans Firebase', 'success');
+      
+      // Vérification immédiate
+      const verification = await dbRef.once('value');
+      const savedData = verification.val();
+      console.log('🔍 Vérification - Données dans Firebase:', savedData);
       
       return true;
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde Firebase:', error);
-      showNotification('Erreur lors de la sauvegarde', 'error');
-      return false;
+      console.error('📄 Détails de l\'erreur:', error.message);
+      showNotification(`Erreur Firebase: ${error.message}`, 'error');
+      
+      // Fallback vers localStorage
+      return saveToLocalStorage();
     }
   } else {
-    // Fallback vers localStorage si Firebase n'est pas disponible
-    try {
-      localStorage.setItem('dp_list', JSON.stringify(DP_LIST));
-      console.log('📱 Liste DP sauvegardée localement');
-      return true;
-    } catch (error) {
-      console.error('❌ Erreur localStorage:', error);
-      return false;
-    }
+    console.warn('⚠️ Firebase non disponible, utilisation localStorage');
+    return saveToLocalStorage();
+  }
+}
+
+// ===== SAUVEGARDE LOCALSTORAGE DE SECOURS =====
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('dp_list', JSON.stringify(DP_LIST));
+    console.log('📱 Liste DP sauvegardée localement');
+    showNotification('DP sauvegardés localement', 'info');
+    return true;
+  } catch (error) {
+    console.error('❌ Erreur localStorage:', error);
+    showNotification('Erreur de sauvegarde', 'error');
+    return false;
   }
 }
 
@@ -125,10 +176,20 @@ function showNotification(message, type = 'info') {
 // ===== TRI ALPHABÉTIQUE =====
 function sortDpList() {
   DP_LIST.sort((a, b) => {
-    const nomA = a.nom.split(' ').pop(); // Nom de famille
-    const nomB = b.nom.split(' ').pop();
+    // Extraire le nom de famille (dernier mot)
+    const extractLastName = (nom) => {
+      const parts = nom.trim().split(' ');
+      return parts[parts.length - 1].toUpperCase();
+    };
+    
+    const nomA = extractLastName(a.nom);
+    const nomB = extractLastName(b.nom);
+    
+    console.log(`Tri: ${nomA} vs ${nomB}`);
     return nomA.localeCompare(nomB, 'fr');
   });
+  
+  console.log('Liste triée:', DP_LIST.map(dp => dp.nom));
 }
 
 // ===== GÉNÉRATION D'ID UNIQUE =====
@@ -295,11 +356,20 @@ async function deleteDp() {
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🔄 Initialisation du gestionnaire DP...');
   
-  // Charger les données depuis Firebase
-  await loadDpFromFirebase();
-  
-  // Mettre à jour l'interface
-  updateDpSelect();
+  // Attendre un peu que Firebase soit complètement chargé
+  setTimeout(async () => {
+    console.log('⏰ Démarrage différé du gestionnaire DP...');
+    
+    // Charger les données depuis Firebase
+    await loadDpFromFirebase();
+    
+    // Forcer le tri et la mise à jour
+    sortDpList();
+    updateDpSelect();
+    
+    console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
+    console.log('📋 Liste finale:', DP_LIST.map(dp => dp.nom));
+  }, 1000);
   
   // Gestionnaires d'événements
   const dpSelect = document.getElementById('dp-select');
@@ -348,8 +418,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (e.target === modal) hideModal();
     });
   }
-  
-  console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
 });
 
 // ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
