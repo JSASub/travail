@@ -89,9 +89,15 @@
       <select id="dp-select">
         <option value="">-- Choisir un DP --</option>
       </select>
-      <button type="button" id="add-dp-btn" class="dp-btn" title="Ajouter un DP">➕</button>
-      <button type="button" id="edit-dp-btn" class="dp-btn" title="Modifier le DP" disabled>✏️</button>
-      <button type="button" id="delete-dp-btn" class="dp-btn" title="Supprimer le DP" disabled>🗑️</button>
+      <button type="button" id="add-dp-btn" class="dp-btn dp-btn-add" title="Ajouter un DP">
+        ➕ <span>Nouveau</span>
+      </button>
+      <button type="button" id="edit-dp-btn" class="dp-btn dp-btn-edit" title="Modifier le DP" disabled>
+        ✏️ <span>Modifier</span>
+      </button>
+      <button type="button" id="delete-dp-btn" class="dp-btn dp-btn-delete" title="Supprimer le DP" disabled>
+        🗑️ <span>Supprimer</span>
+      </button>
     </div>
   </label>
   <label>Date : <input type="date" id="dp-date" /></label>
@@ -257,6 +263,7 @@
         <label for="dp-niveau">Niveau :</label>
         <select id="dp-niveau" required>
           <option value="E3">E3</option>
+          <option value="E4">E4</option>
           <option value="P5">P5</option>
         </select>
       </div>
@@ -271,5 +278,3 @@
     </div>
   </div>
 </div>
-</body>
-</html>
