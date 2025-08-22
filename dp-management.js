@@ -176,20 +176,36 @@ function showNotification(message, type = 'info') {
 // ===== TRI ALPHABÉTIQUE =====
 function sortDpList() {
   DP_LIST.sort((a, b) => {
-    // Extraire le nom de famille (dernier mot)
-    const extractLastName = (nom) => {
-      const parts = nom.trim().split(' ');
-      return parts[parts.length - 1].toUpperCase();
+    // Extraire le nom de famille (dernier mot) pour les noms composés
+    const extractLastName = (nomComplet) => {
+      const mots = nomComplet.trim().split(' ');
+      // Pour "AGUIRRE Raoul" -> "AGUIRRE"
+      // Pour "LE MAOUT Jean-François" -> "MAOUT" 
+      
+      // Si le premier mot est en majuscules, c'est probablement le nom de famille
+      if (mots[0] === mots[0].toUpperCase()) {
+        // Gérer les noms composés comme "LE MAOUT"
+        if (mots.length > 2 && (mots[0] === 'LE' || mots[0] === 'DE' || mots[0] === 'DU')) {
+          return mots[1].toUpperCase();
+        }
+        return mots[0].toUpperCase();
+      } else {
+        // Si c'est "Prénom NOM", prendre le dernier mot
+        return mots[mots.length - 1].toUpperCase();
+      }
     };
     
     const nomA = extractLastName(a.nom);
     const nomB = extractLastName(b.nom);
     
-    console.log(`Tri: ${nomA} vs ${nomB}`);
+    console.log(`Tri: "${a.nom}" -> "${nomA}" vs "${b.nom}" -> "${nomB}"`);
     return nomA.localeCompare(nomB, 'fr');
   });
   
-  console.log('Liste triée:', DP_LIST.map(dp => dp.nom));
+  console.log('🔤 Liste triée par nom de famille:');
+  DP_LIST.forEach((dp, index) => {
+    console.log(`${index + 1}. ${dp.nom}`);
+  });
 }
 
 // ===== GÉNÉRATION D'ID UNIQUE =====
