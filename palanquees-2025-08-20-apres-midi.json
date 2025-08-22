@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "dp": "RA E3",
+    "date": "2025-08-20",
+    "lieu": "Lieu test 24110",
+    "plongee": "apres-midi",
+    "version": "2.5.1",
+    "exportDate": "2025-08-20T07:52:19.961Z"
+  },
+  "plongeurs": [
+    {
+      "nom": "AGUIRRE Anne",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "AUBARD Corinne",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BAPPEL Hubert",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BERDEAUX Clara",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "BERDEAUX Cyril",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BERDEAUX Maëlys",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "BERDEAUX Stéphanie",
+      "niveau": "N2",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BERTIN Armand",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BERTIN Élina",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BEST Sébastien",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BEST Stéphanie",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BUCHERIC Nicolas",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CABIROL Joël",
+      "niveau": "E3",
+      "prerogatives": "E3"
+    },
+    {
+      "nom": "CALAU Samuel",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "CATTEROU Raphaël",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CHARAZAC Bastien",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "DARDER Olivier",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "DESGRAUPES Nicolas",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "DORCHIN Olivier",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "DUPIN Ariane",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "FONTANILLAS Romain",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "GAUTHIER Christophe",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "GONTHIER Axel",
+      "niveau": "N2",
+      "prerogatives": "PE40/PA20"
+    },
+    {
+      "nom": "GONTHIER Éric",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "GORY Ethan",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "LE MAOUT Jean-François",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "LEMÉE Jean-Marc",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "Nom-Plg.Ar Prénom-Plg.Ar",
+      "niveau": "Plg.Ar",
+      "prerogatives": "PE8"
+    },
+    {
+      "nom": "VOLLET Denis",
+      "niveau": "N3",
+      "prerogatives": "PA40"
+    },
+    {
+      "nom": "BOSSA Nathan",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "MORIN Thiya",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    }
+  ],
+  "palanquees": [
+    {
+      "numero": 1,
+      "plongeurs": [
+        {
+          "nom": "MARTY David",
+          "niveau": "E3",
+          "prerogatives": "E3"
+        },
+        {
+          "nom": "PETRUCEL Sacha",
+          "niveau": "N2",
+          "prerogatives": "PE40/PA20"
+        },
+        {
+          "nom": "TROUBADIS Lola",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        }
+      ],
+      "alertes": []
+    },
+    {
+      "numero": 2,
+      "plongeurs": [
+        {
+          "nom": "TROUBADIS Guillaume",
+          "niveau": "E2",
+          "prerogatives": "GP"
+        },
+        {
+          "nom": "LE MAOUT Laure",
+          "niveau": "N2",
+          "prerogatives": "PE20"
+        },
+        {
+          "nom": "MARTY Élina",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        }
+      ],
+      "alertes": []
+    },
+    {
+      "numero": 3,
+      "plongeurs": [
+        {
+          "nom": "IDIER Charlène",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        },
+        {
+          "nom": "CATTEROU Sacha",
+          "niveau": "E2",
+          "prerogatives": "GP"
+        },
+        {
+          "nom": "DELBARRE Mathieu",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        }
+      ],
+      "alertes": []
+    },
+    {
+      "numero": 4,
+      "plongeurs": [
+        {
+          "nom": "Nom-deb Prénom-deb",
+          "niveau": "Déb.",
+          "prerogatives": "PE20"
+        },
+        {
+          "nom": "AGUIRRE Raoul",
+          "niveau": "E3",
+          "prerogatives": "DP"
+        },
+        {
+          "nom": "NICOT Damien",
+          "niveau": "N1",
+          "prerogatives": "PE20"
+        }
+      ],
+      "alertes": []
+    }
+  ],
+  "resume": {
+    "totalPlongeurs": 43,
+    "nombrePalanquees": 4,
+    "plongeursNonAssignes": 31,
+    "alertesTotal": 0
+  }
+}
