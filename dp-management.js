@@ -241,6 +241,66 @@ function updateDpSelect() {
     select.value = currentValue;
   }
   
+  // Synchroniser avec la zone de session si elle existe
+  updateSessionDpDisplay();
+  
+  updateButtonStates();
+}
+
+// ===== SYNCHRONISATION AVEC LA ZONE DE SESSION =====
+function updateSessionDpDisplay() {
+  const sessionSelect = document.querySelector('#meta-info select, [id*="session"] select, [class*="session"] select');
+  
+  if (sessionSelect && sessionSelect !== document.getElementById('dp-select')) {
+    console.log('🔄 Synchronisation avec la zone de session...');
+    
+    // Vider et remplir la zone de session
+    sessionSelect.innerHTML = '<option value="">-- Choisir un DP --</option>';
+    
+    DP_LIST.forEach(dp => {
+      const option = document.createElement('option');
+      option.value = dp.id;
+      option.textContent = `${dp.nom} (${dp.niveau})`;
+      sessionSelect.appendChild(option);
+    });
+    
+    console.log('✅ Zone de session mise à jour avec', DP_LIST.length, 'DP');
+  }
+}
+
+// ===== ÉVÉNEMENT DE SÉLECTION DP =====
+function onDpSelectionChange() {
+  const dpSelect = document.getElementById('dp-select');
+  const selectedId = dpSelect.value;
+  
+  if (selectedId) {
+    const selectedDp = DP_LIST.find(dp => dp.id === selectedId);
+    if (selectedDp) {
+      console.log('👤 DP sélectionné:', selectedDp.nom, selectedDp.niveau);
+      
+      // Synchroniser avec la zone de session
+      const sessionSelect = document.querySelector('#meta-info select, [id*="session"] select, [class*="session"] select');
+      if (sessionSelect && sessionSelect !== dpSelect) {
+        sessionSelect.value = selectedId;
+        console.log('🔗 DP synchronisé avec la zone de session');
+      }
+      
+      // Mettre à jour le message
+      const message = document.getElementById('dp-message');
+      if (message) {
+        message.textContent = `DP sélectionné: ${selectedDp.nom} (${selectedDp.niveau})`;
+        message.className = 'dp-valide';
+      }
+    }
+  } else {
+    // Aucun DP sélectionné
+    const message = document.getElementById('dp-message');
+    if (message) {
+      message.textContent = '';
+      message.className = 'dp-valide';
+    }
+  }
+  
   updateButtonStates();
 }
 
@@ -390,7 +450,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Gestionnaires d'événements
   const dpSelect = document.getElementById('dp-select');
   if (dpSelect) {
-    dpSelect.addEventListener('change', updateButtonStates);
+    dpSelect.addEventListener('change', onDpSelectionChange);
   }
   
   const addBtn = document.getElementById('add-dp-btn');
@@ -441,3 +501,9 @@ window.getDpList = () => DP_LIST;
 window.getDpById = (id) => DP_LIST.find(dp => dp.id === id);
 window.getDpByName = (nom) => DP_LIST.find(dp => dp.nom === nom);
 window.refreshDpList = updateDpSelect;
+window.syncSessionDp = updateSessionDpDisplay;
+window.getSelectedDp = () => {
+  const select = document.getElementById('dp-select');
+  const selectedId = select ? select.value : null;
+  return selectedId ? DP_LIST.find(dp => dp.id === selectedId) : null;
+};
