@@ -397,10 +397,6 @@ function updateSessionDpDisplay() {
     console.log('⚠️ Aucun select de session trouvé pour synchronisation');
   }
   
-  // Tenter la synchronisation avec session existante
-  setTimeout(() => {
-    syncWithExistingSession();
-  }, 500);
 }
 
 // ===== ÉVÉNEMENT DE SÉLECTION DP =====
@@ -673,16 +669,19 @@ function watchForSessionChanges() {
 function tryAutoSync() {
   console.log('🔄 Tentative de synchronisation automatique...');
   
-  const sessionDp = extractDpFromSession();
+  // NOUVEAU CODE SIMPLE : chercher "GAUTHIER" directement dans la page
+  const bodyText = document.body.textContent || '';
   
-  if (sessionDp) {
-    console.log('🎯 DP de session détecté:', sessionDp);
+  // Chercher dans "Session chargée: 2025-08-23_GAUTHIER_plg1"
+  const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})_([A-Z]+)_/);
+  
+  if (sessionMatch) {
+    const sessionDp = sessionMatch[2]; // "GAUTHIER"
+    console.log('🎯 DP détecté dans session:', sessionDp);
     
-    const matchingDp = DP_LIST.find(dp => {
-      const parts = dp.nom.split(' ');
-      const nom = parts[0];
-      return nom && nom.toLowerCase() === sessionDp.toLowerCase();
-    });
+    const matchingDp = DP_LIST.find(dp => 
+      dp.nom.toUpperCase().includes(sessionDp.toUpperCase())
+    );
     
     if (matchingDp) {
       console.log('✅ Correspondance trouvée:', matchingDp.nom);
@@ -691,13 +690,13 @@ function tryAutoSync() {
       if (dpSelect && dpSelect.value !== matchingDp.id) {
         dpSelect.value = matchingDp.id;
         onDpSelectionChange();
-        console.log('🔄 Sélecteur DP mis à jour automatiquement avec:', matchingDp.nom);
+        console.log('🔄 DP sélectionné automatiquement:', matchingDp.nom);
       }
     } else {
       console.log('❌ Aucune correspondance pour:', sessionDp);
     }
   } else {
-    console.log('⚠️ Aucun DP de session détecté pour synchronisation');
+    console.log('⚠️ Aucune session détectée pour synchronisation');
   }
 }
 
