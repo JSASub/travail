@@ -501,7 +501,16 @@ async function populateSessionSelector() {
 }
 
 async function loadSessionFromSelector() {
+  const loadBtn = document.getElementById("load-session");
+  
   try {
+    // Indicateur de chargement
+    if (loadBtn) {
+      loadBtn.disabled = true;
+      loadBtn.textContent = "🔄 Chargement...";
+      loadBtn.style.backgroundColor = "#6c757d";
+    }
+    
     const sessionSelector = document.getElementById("session-selector");
     if (!sessionSelector) {
       alert("Sélecteur de session non trouvé");
@@ -525,6 +534,16 @@ async function loadSessionFromSelector() {
         // NOUVEAU : Afficher quelle session est chargée
         updateCurrentSessionDisplay(sessionKey, sessionSelector.options[sessionSelector.selectedIndex].text);
         
+        // Indicateur de succès temporaire
+        if (loadBtn) {
+          loadBtn.textContent = "✅ Chargé !";
+          loadBtn.style.backgroundColor = "#28a745";
+          setTimeout(() => {
+            loadBtn.textContent = "Charger";
+            loadBtn.style.backgroundColor = "#6c757d";
+          }, 2000);
+        }
+        
         return true;
       }
     } else {
@@ -539,6 +558,15 @@ async function loadSessionFromSelector() {
     }
     alert("Erreur lors du chargement : " + error.message);
     return false;
+  } finally {
+    // Restaurer le bouton dans tous les cas
+    if (loadBtn) {
+      loadBtn.disabled = false;
+      if (loadBtn.textContent.includes("🔄")) {
+        loadBtn.textContent = "Charger";
+        loadBtn.style.backgroundColor = "#6c757d";
+      }
+    }
   }
 }
 
@@ -837,6 +865,62 @@ async function refreshAllLists() {
   }
 }
 
+// NOUVELLE FONCTION : Rafraîchissement avec indicateur visuel
+async function refreshAllListsWithIndicator(buttonId = "refresh-sessions") {
+  const refreshBtn = document.getElementById(buttonId);
+  
+  try {
+    // Indicateur de rafraîchissement
+    if (refreshBtn) {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = "🔄 Actualisation...";
+      refreshBtn.style.backgroundColor = "#6c757d";
+    }
+    
+    // Effectuer le rafraîchissement
+    await refreshAllLists();
+    
+    // Indicateur de succès temporaire
+    if (refreshBtn) {
+      refreshBtn.textContent = "✅ Actualisé !";
+      refreshBtn.style.backgroundColor = "#28a745";
+      
+      setTimeout(() => {
+        refreshBtn.textContent = "Actualiser";
+        refreshBtn.style.backgroundColor = "#6c757d";
+      }, 2000);
+    }
+    
+    console.log("✅ Actualisation manuelle réussie avec indicateur");
+    
+  } catch (error) {
+    console.error("❌ Erreur actualisation manuelle:", error);
+    if (typeof handleError === 'function') {
+      handleError(error, "Actualisation manuelle");
+    }
+    
+    // Indicateur d'erreur
+    if (refreshBtn) {
+      refreshBtn.textContent = "❌ Erreur";
+      refreshBtn.style.backgroundColor = "#dc3545";
+      
+      setTimeout(() => {
+        refreshBtn.textContent = "Actualiser";
+        refreshBtn.style.backgroundColor = "#6c757d";
+      }, 3000);
+    }
+  } finally {
+    // Restaurer le bouton dans tous les cas
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      if (refreshBtn.textContent.includes("🔄")) {
+        refreshBtn.textContent = "Actualiser";
+        refreshBtn.style.backgroundColor = "#6c757d";
+      }
+    }
+  }
+}
+
 // ===== TEST FIREBASE =====
 async function testFirebaseConnection() {
   console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
@@ -940,27 +1024,68 @@ function setupDPSessionsEventListeners() {
     const refreshSessionsBtn = document.getElementById("refresh-sessions");
     if (refreshSessionsBtn) {
       refreshSessionsBtn.addEventListener("click", async () => {
-        refreshSessionsBtn.disabled = true;
-        refreshSessionsBtn.textContent = "🔄 Actualisation...";
-        
-        try {
-          await refreshAllLists();
-          console.log("✅ Actualisation manuelle réussie");
-        } catch (error) {
-          console.error("❌ Erreur actualisation manuelle:", error);
-          if (typeof handleError === 'function') {
-            handleError(error, "Actualisation manuelle");
-          }
-        } finally {
-          refreshSessionsBtn.disabled = false;
-          refreshSessionsBtn.textContent = "Actualiser";
-        }
+        await refreshAllListsWithIndicator("refresh-sessions");
       });
     }
 
     const saveSessionBtn = document.getElementById("save-session");
     if (saveSessionBtn) {
-      saveSessionBtn.addEventListener("click", saveCurrentSession);
+      saveSessionBtn.addEventListener("click", async () => {
+        const saveBtn = document.getElementById("save-session");
+        
+        try {
+          // Indicateur de sauvegarde
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "💾 Sauvegarde...";
+            saveBtn.style.backgroundColor = "#6c757d";
+          }
+          
+          const success = await saveCurrentSession();
+          
+          if (success) {
+            // Indicateur de succès
+            if (saveBtn) {
+              saveBtn.textContent = "✅ Sauvegardé !";
+              saveBtn.style.backgroundColor = "#28a745";
+              setTimeout(() => {
+                saveBtn.textContent = "Sauvegarder Session";
+                saveBtn.style.backgroundColor = "#28a745";
+              }, 2000);
+            }
+          } else {
+            // Indicateur d'erreur
+            if (saveBtn) {
+              saveBtn.textContent = "❌ Erreur";
+              saveBtn.style.backgroundColor = "#dc3545";
+              setTimeout(() => {
+                saveBtn.textContent = "Sauvegarder Session";
+                saveBtn.style.backgroundColor = "#28a745";
+              }, 3000);
+            }
+          }
+          
+        } catch (error) {
+          console.error("❌ Erreur sauvegarde:", error);
+          if (saveBtn) {
+            saveBtn.textContent = "❌ Erreur";
+            saveBtn.style.backgroundColor = "#dc3545";
+            setTimeout(() => {
+              saveBtn.textContent = "Sauvegarder Session";
+              saveBtn.style.backgroundColor = "#28a745";
+            }, 3000);
+          }
+        } finally {
+          // Restaurer le bouton
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            if (saveBtn.textContent.includes("💾")) {
+              saveBtn.textContent = "Sauvegarder Session";
+              saveBtn.style.backgroundColor = "#28a745";
+            }
+          }
+        }
+      });
     }
 
     // === NETTOYAGE SESSIONS ===
@@ -986,7 +1111,47 @@ function setupDPSessionsEventListeners() {
     const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
     if (refreshSessionsListBtn) {
       refreshSessionsListBtn.addEventListener("click", async () => {
-        await populateSessionsCleanupList();
+        const refreshBtn = document.getElementById("refresh-sessions-list");
+        
+        try {
+          // Indicateur de rafraîchissement
+          if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = "🔄 Actualisation...";
+            refreshBtn.style.backgroundColor = "#6c757d";
+          }
+          
+          await populateSessionsCleanupList();
+          
+          // Indicateur de succès
+          if (refreshBtn) {
+            refreshBtn.textContent = "✅ Actualisé !";
+            refreshBtn.style.backgroundColor = "#28a745";
+            setTimeout(() => {
+              refreshBtn.textContent = "Actualiser liste";
+              refreshBtn.style.backgroundColor = "#6c757d";
+            }, 2000);
+          }
+          
+        } catch (error) {
+          console.error("❌ Erreur actualisation liste:", error);
+          if (refreshBtn) {
+            refreshBtn.textContent = "❌ Erreur";
+            refreshBtn.style.backgroundColor = "#dc3545";
+            setTimeout(() => {
+              refreshBtn.textContent = "Actualiser liste";
+              refreshBtn.style.backgroundColor = "#6c757d";
+            }, 3000);
+          }
+        } finally {
+          if (refreshBtn) {
+            refreshBtn.disabled = false;
+            if (refreshBtn.textContent.includes("🔄")) {
+              refreshBtn.textContent = "Actualiser liste";
+              refreshBtn.style.backgroundColor = "#6c757d";
+            }
+          }
+        }
       });
     }
 
@@ -1050,6 +1215,7 @@ window.selectAllSessions = selectAllSessions;
 window.updateCleanupSelection = updateCleanupSelection;
 window.deleteSelectedSessions = deleteSelectedSessions;
 window.refreshAllLists = refreshAllLists;
+window.refreshAllListsWithIndicator = refreshAllListsWithIndicator;
 window.testFirebaseConnection = testFirebaseConnection;
 window.initializeAfterAuth = initializeAfterAuth;
 window.initializeDPSessionsManager = initializeDPSessionsManager;
