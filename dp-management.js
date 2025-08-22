@@ -115,27 +115,61 @@ function saveToLocalStorage() {
 
 // ===== CHARGEMENT DEPUIS FIREBASE =====
 async function loadDpFromFirebase() {
+  console.log('🔍 Tentative de chargement des DP depuis Firebase...');
+  
   const dbRef = getFirebaseReference();
   
   if (dbRef) {
     try {
+      console.log('📡 Connexion à Firebase...');
       const snapshot = await dbRef.once('value');
       const firebaseData = snapshot.val();
+      
+      console.log('📥 Données reçues de Firebase:', firebaseData);
       
       if (firebaseData && Array.isArray(firebaseData) && firebaseData.length > 0) {
         DP_LIST = firebaseData;
         console.log('✅ Liste DP chargée depuis Firebase:', DP_LIST.length, 'DP');
+        console.log('📋 DP chargés:', DP_LIST.map(dp => dp.nom));
       } else {
-        console.log('ℹ️ Aucune donnée DP dans Firebase, utilisation des données par défaut');
+        console.log('ℹ️ Aucune donnée DP valide dans Firebase, utilisation des données par défaut');
+        // Les données par défaut sont déjà dans DP_LIST
+        console.log('📋 Utilisation de', DP_LIST.length, 'DP par défaut');
+        
         // Sauvegarder les données par défaut dans Firebase
         await saveDpToFirebase();
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement Firebase:', error);
+      console.log('📱 Tentative de chargement depuis localStorage...');
       loadDpFromLocalStorage();
     }
   } else {
+    console.log('📱 Firebase non disponible, chargement depuis localStorage...');
     loadDpFromLocalStorage();
+  }
+  
+  // Vérification finale
+  console.log('🔍 Vérification finale - DP_LIST contient:', DP_LIST.length, 'éléments');
+  if (DP_LIST.length === 0) {
+    console.error('❌ PROBLÈME : DP_LIST est vide !');
+    console.log('🔧 Restauration des données par défaut...');
+    
+    // Restaurer les données par défaut
+    DP_LIST = [
+      { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
+      { id: "dp2", nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
+      { id: "dp3", nom: "BEST Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr" },
+      { id: "dp4", nom: "CABIROL Joël", niveau: "E3", email: "joelcabirol@gmail.com" },
+      { id: "dp5", nom: "CATTEROU Sacha", niveau: "P5", email: "sacha.catterou@orange.fr" },
+      { id: "dp6", nom: "DARDER Olivier", niveau: "P5", email: "olivierdarder@gmail.com" },
+      { id: "dp7", nom: "GAUTHIER Christophe", niveau: "P5", email: "jsasubaquatique24@gmail.com" },
+      { id: "dp8", nom: "LE MAOUT Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr" },
+      { id: "dp9", nom: "MARTY David", niveau: "E3", email: "david.marty@sfr.fr" },
+      { id: "dp10", nom: "TROUBADIS Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com" }
+    ];
+    
+    console.log('✅ Données par défaut restaurées:', DP_LIST.length, 'DP');
   }
 }
 
@@ -220,31 +254,53 @@ function generateDpId() {
 // ===== MISE À JOUR DE LA LISTE DÉROULANTE =====
 function updateDpSelect() {
   const select = document.getElementById('dp-select');
-  if (!select) return;
+  if (!select) {
+    console.error('❌ Élément dp-select non trouvé !');
+    return;
+  }
+  
+  console.log('🔄 Mise à jour du sélecteur DP...');
+  console.log('📋 Nombre de DP à afficher:', DP_LIST.length);
   
   const currentValue = select.value;
   
   // Vider et reconstruire les options
   select.innerHTML = '<option value="">-- Choisir un DP --</option>';
   
+  if (DP_LIST.length === 0) {
+    console.warn('⚠️ Aucun DP dans la liste !');
+    select.innerHTML = '<option value="">Aucun DP disponible</option>';
+    return;
+  }
+  
   sortDpList();
   
-  DP_LIST.forEach(dp => {
+  DP_LIST.forEach((dp, index) => {
+    console.log(`📝 Ajout DP ${index + 1}: ${dp.nom} (${dp.niveau}) [ID: ${dp.id}]`);
+    
     const option = document.createElement('option');
     option.value = dp.id;
     option.textContent = `${dp.nom} (${dp.niveau})`;
     select.appendChild(option);
   });
   
+  console.log(`✅ ${DP_LIST.length} DP ajoutés au sélecteur`);
+  
   // Restaurer la sélection si possible
   if (currentValue && DP_LIST.find(dp => dp.id === currentValue)) {
     select.value = currentValue;
+    console.log('🔄 Valeur restaurée:', currentValue);
   }
   
   // Synchroniser avec la zone de session si elle existe
   updateSessionDpDisplay();
   
   updateButtonStates();
+  
+  // Tenter la synchronisation automatique après un délai
+  setTimeout(() => {
+    tryAutoSync();
+  }, 1000);
 }
 
 // ===== CORRESPONDANCE AUTOMATIQUE AVEC SESSION EXISTANTE =====
@@ -786,4 +842,25 @@ window.getSelectedDp = () => {
   const select = document.getElementById('dp-select');
   const selectedId = select ? select.value : null;
   return selectedId ? DP_LIST.find(dp => dp.id === selectedId) : null;
+};
+
+// ===== OVERRIDE POUR EMPÊCHER LA SÉLECTION AUTOMATIQUE DE RAOUL =====
+window.forceCorrectDpSync = function() {
+  console.log('🔧 Force la synchronisation correcte du DP...');
+  
+  // Attendre que la session soit complètement chargée
+  setTimeout(() => {
+    const sessionDp = extractDpFromSession();
+    if (sessionDp && sessionDp === 'GAUTHIER') {
+      const gauthierDp = DP_LIST.find(dp => dp.nom.includes('GAUTHIER'));
+      if (gauthierDp) {
+        const dpSelect = document.getElementById('dp-select');
+        if (dpSelect) {
+          dpSelect.value = gauthierDp.id;
+          onDpSelectionChange();
+          console.log('✅ DP GAUTHIER forcé manuellement');
+        }
+      }
+    }
+  }, 3000); // Attendre 3 secondes
 };
