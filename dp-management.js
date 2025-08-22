@@ -1,583 +1,359 @@
-// dp-management.js - Gestionnaire automatisé des DP
+// dp-management.js - Gestionnaire automatisé des DP avec sauvegarde Firebase
 
 // ===== DONNÉES DES DP =====
-const DP_LIST = [
-  { nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
-  { nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
-  { nom: "BEST Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr" },
-  { nom: "CABIROL Joël", niveau: "E3", email: "joelcabirol@gmail.com" },
-  { nom: "CATTEROU Sacha", niveau: "P5", email: "sacha.catterou@orange.fr" },
-  { nom: "DARDER Olivier", niveau: "P5", email: "olivierdarder@gmail.com" },
-  { nom: "GAUTHIER Christophe", niveau: "P5", email: "jsasubaquatique24@gmail.com" },
-  { nom: "LE MAOUT Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr" },
-  { nom: "MARTY David", niveau: "E3", email: "david.marty@sfr.fr" },
-  { nom: "TROUBADIS Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com" }
+let DP_LIST = [
+  { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
+  { id: "dp2", nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
+  { id: "dp3", nom: "BEST Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr" },
+  { id: "dp4", nom: "CABIROL Joël", niveau: "E3", email: "joelcabirol@gmail.com" },
+  { id: "dp5", nom: "CATTEROU Sacha", niveau: "P5", email: "sacha.catterou@orange.fr" },
+  { id: "dp6", nom: "DARDER Olivier", niveau: "P5", email: "olivierdarder@gmail.com" },
+  { id: "dp7", nom: "GAUTHIER Christophe", niveau: "P5", email: "jsasubaquatique24@gmail.com" },
+  { id: "dp8", nom: "LE MAOUT Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr" },
+  { id: "dp9", nom: "MARTY David", niveau: "E3", email: "david.marty@sfr.fr" },
+  { id: "dp10", nom: "TROUBADIS Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com" }
 ];
 
-// Variables globales
-let dpDatabase = [];
-let selectedDPIndex = -1;
+// ===== VARIABLES GLOBALES =====
+let currentEditingId = null;
+let dpDatabase = null;
 
-// ===== INITIALISATION =====
-async function initializeDPManager() {
-  console.log("🎯 Initialisation du gestionnaire DP automatisé...");
+// ===== RÉFÉRENCE FIREBASE =====
+function getFirebaseReference() {
+  if (typeof firebase !== 'undefined' && firebase.database) {
+    if (!dpDatabase) {
+      dpDatabase = firebase.database().ref('dp_database');
+    }
+    return dpDatabase;
+  }
+  console.warn('Firebase non disponible, utilisation du stockage local');
+  return null;
+}
+
+// ===== SAUVEGARDE DANS FIREBASE =====
+async function saveDpToFirebase() {
+  const dbRef = getFirebaseReference();
   
-  try {
-    // Charger les DP depuis Firebase ou initialiser avec la liste par défaut
-    await loadDPFromFirebase();
-    
-    // Créer l'interface
-    createDPInterface();
-    
-    // Configurer les event listeners
-    setupDPEventListeners();
-    
-    console.log("✅ Gestionnaire DP automatisé initialisé");
-    
-  } catch (error) {
-    console.error("❌ Erreur initialisation gestionnaire DP:", error);
+  if (dbRef) {
+    try {
+      // Sauvegarder la liste complète des DP
+      await dbRef.set(DP_LIST);
+      console.log('✅ Liste DP sauvegardée dans Firebase');
+      
+      // Afficher un message de confirmation temporaire
+      showNotification('DP sauvegardés avec succès', 'success');
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde Firebase:', error);
+      showNotification('Erreur lors de la sauvegarde', 'error');
+      return false;
+    }
+  } else {
+    // Fallback vers localStorage si Firebase n'est pas disponible
+    try {
+      localStorage.setItem('dp_list', JSON.stringify(DP_LIST));
+      console.log('📱 Liste DP sauvegardée localement');
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur localStorage:', error);
+      return false;
+    }
   }
 }
 
 // ===== CHARGEMENT DEPUIS FIREBASE =====
-async function loadDPFromFirebase() {
-  try {
-    if (typeof db !== 'undefined' && db) {
-      const snapshot = await db.ref('dp_database').once('value');
+async function loadDpFromFirebase() {
+  const dbRef = getFirebaseReference();
+  
+  if (dbRef) {
+    try {
+      const snapshot = await dbRef.once('value');
+      const firebaseData = snapshot.val();
       
-      if (snapshot.exists()) {
-        dpDatabase = snapshot.val();
-        console.log(`✅ ${dpDatabase.length} DP chargés depuis Firebase`);
+      if (firebaseData && Array.isArray(firebaseData) && firebaseData.length > 0) {
+        DP_LIST = firebaseData;
+        console.log('✅ Liste DP chargée depuis Firebase:', DP_LIST.length, 'DP');
       } else {
-        // Première initialisation - utiliser la liste par défaut
-        dpDatabase = [...DP_LIST].sort((a, b) => a.nom.localeCompare(b.nom));
-        await saveDPToFirebase();
-        console.log("✅ Base DP initialisée avec la liste par défaut");
+        console.log('ℹ️ Aucune donnée DP dans Firebase, utilisation des données par défaut');
+        // Sauvegarder les données par défaut dans Firebase
+        await saveDpToFirebase();
       }
-    } else {
-      // Mode hors ligne - utiliser la liste par défaut
-      dpDatabase = [...DP_LIST].sort((a, b) => a.nom.localeCompare(b.nom));
-      console.warn("⚠️ Firebase non disponible, utilisation de la liste par défaut");
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement Firebase:', error);
+      loadDpFromLocalStorage();
     }
-  } catch (error) {
-    console.error("❌ Erreur chargement DP:", error);
-    dpDatabase = [...DP_LIST].sort((a, b) => a.nom.localeCompare(b.nom));
+  } else {
+    loadDpFromLocalStorage();
   }
 }
 
-// ===== SAUVEGARDE DANS FIREBASE =====
-async function saveDPToFirebase() {
+// ===== CHARGEMENT DEPUIS LOCALSTORAGE =====
+function loadDpFromLocalStorage() {
   try {
-    if (typeof db !== 'undefined' && db) {
-      await db.ref('dp_database').set(dpDatabase);
-      console.log("✅ Base DP sauvegardée dans Firebase");
+    const stored = localStorage.getItem('dp_list');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        DP_LIST = parsed;
+        console.log('📱 Liste DP chargée depuis localStorage');
+      }
     }
   } catch (error) {
-    console.error("❌ Erreur sauvegarde DP:", error);
+    console.error('❌ Erreur localStorage:', error);
   }
 }
 
-// ===== CRÉATION DE L'INTERFACE =====
-function createDPInterface() {
-  const dpNomField = document.getElementById("dp-nom");
-  if (!dpNomField) return;
+// ===== NOTIFICATION SYSTÈME =====
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `dp-notification dp-notification-${type}`;
+  notification.textContent = message;
   
-  // Créer le conteneur principal
-  const container = document.createElement("div");
-  container.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  `;
+  document.body.appendChild(notification);
   
-  // Créer la liste déroulante
-  const selectDP = document.createElement("select");
-  selectDP.id = "dp-select";
-  selectDP.style.cssText = `
-    flex: 1;
-    min-width: 200px;
-    padding: 8px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    background: white;
-  `;
+  // Animation d'entrée
+  setTimeout(() => notification.classList.add('dp-notification-show'), 100);
   
-  // Créer les boutons de gestion
-  const btnAdd = document.createElement("button");
-  btnAdd.id = "dp-add-btn";
-  btnAdd.type = "button";
-  btnAdd.innerHTML = "➕ Ajouter";
-  btnAdd.style.cssText = `
-    padding: 8px 12px;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-  `;
-  
-  const btnEdit = document.createElement("button");
-  btnEdit.id = "dp-edit-btn";
-  btnEdit.type = "button";
-  btnEdit.innerHTML = "✏️ Modifier";
-  btnEdit.style.cssText = `
-    padding: 8px 12px;
-    background: #ffc107;
-    color: #212529;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-  `;
-  
-  const btnDelete = document.createElement("button");
-  btnDelete.id = "dp-delete-btn";
-  btnDelete.type = "button";
-  btnDelete.innerHTML = "🗑️ Supprimer";
-  btnDelete.style.cssText = `
-    padding: 8px 12px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-  `;
-  
-  // Assembler l'interface
-  container.appendChild(selectDP);
-  container.appendChild(btnAdd);
-  container.appendChild(btnEdit);
-  container.appendChild(btnDelete);
-  
-  // Remplacer le champ de texte par le nouveau conteneur
-  dpNomField.parentNode.replaceChild(container, dpNomField);
-  
-  // Populer la liste
-  populateDPSelect();
+  // Suppression automatique après 3 secondes
+  setTimeout(() => {
+    notification.classList.remove('dp-notification-show');
+    setTimeout(() => document.body.removeChild(notification), 300);
+  }, 3000);
 }
 
-// ===== POPULATION DE LA LISTE DÉROULANTE =====
-function populateDPSelect() {
-  const selectDP = document.getElementById("dp-select");
-  if (!selectDP) return;
+// ===== TRI ALPHABÉTIQUE =====
+function sortDpList() {
+  DP_LIST.sort((a, b) => {
+    const nomA = a.nom.split(' ').pop(); // Nom de famille
+    const nomB = b.nom.split(' ').pop();
+    return nomA.localeCompare(nomB, 'fr');
+  });
+}
+
+// ===== GÉNÉRATION D'ID UNIQUE =====
+function generateDpId() {
+  const maxId = DP_LIST.reduce((max, dp) => {
+    const idNum = parseInt(dp.id.replace('dp', ''));
+    return Math.max(max, idNum);
+  }, 0);
+  return `dp${maxId + 1}`;
+}
+
+// ===== MISE À JOUR DE LA LISTE DÉROULANTE =====
+function updateDpSelect() {
+  const select = document.getElementById('dp-select');
+  if (!select) return;
   
-  // Vider la liste
-  selectDP.innerHTML = "";
+  const currentValue = select.value;
   
-  // Option par défaut
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.textContent = "-- Sélectionner un Directeur de Plongée --";
-  selectDP.appendChild(defaultOption);
+  // Vider et reconstruire les options
+  select.innerHTML = '<option value="">-- Choisir un DP --</option>';
   
-  // Ajouter tous les DP triés par nom
-  dpDatabase.forEach((dp, index) => {
-    const option = document.createElement("option");
-    option.value = index;
+  sortDpList();
+  
+  DP_LIST.forEach(dp => {
+    const option = document.createElement('option');
+    option.value = dp.id;
     option.textContent = `${dp.nom} (${dp.niveau})`;
-    selectDP.appendChild(option);
+    select.appendChild(option);
   });
   
-  // Mettre à jour l'état des boutons
+  // Restaurer la sélection si possible
+  if (currentValue && DP_LIST.find(dp => dp.id === currentValue)) {
+    select.value = currentValue;
+  }
+  
   updateButtonStates();
 }
 
-// ===== MISE À JOUR DE L'ÉTAT DES BOUTONS =====
+// ===== MISE À JOUR DES BOUTONS =====
 function updateButtonStates() {
-  const selectDP = document.getElementById("dp-select");
-  const btnEdit = document.getElementById("dp-edit-btn");
-  const btnDelete = document.getElementById("dp-delete-btn");
+  const select = document.getElementById('dp-select');
+  const editBtn = document.getElementById('edit-dp-btn');
+  const deleteBtn = document.getElementById('delete-dp-btn');
   
-  if (!selectDP || !btnEdit || !btnDelete) return;
+  const hasSelection = select && select.value;
   
-  const hasSelection = selectDP.value !== "";
-  
-  btnEdit.disabled = !hasSelection;
-  btnDelete.disabled = !hasSelection;
-  
-  if (hasSelection) {
-    btnEdit.style.opacity = "1";
-    btnEdit.style.cursor = "pointer";
-    btnDelete.style.opacity = "1";
-    btnDelete.style.cursor = "pointer";
-  } else {
-    btnEdit.style.opacity = "0.5";
-    btnEdit.style.cursor = "not-allowed";
-    btnDelete.style.opacity = "0.5";
-    btnDelete.style.cursor = "not-allowed";
-  }
+  if (editBtn) editBtn.disabled = !hasSelection;
+  if (deleteBtn) deleteBtn.disabled = !hasSelection;
 }
 
-// ===== CONFIGURATION DES EVENT LISTENERS =====
-function setupDPEventListeners() {
-  const selectDP = document.getElementById("dp-select");
-  const btnAdd = document.getElementById("dp-add-btn");
-  const btnEdit = document.getElementById("dp-edit-btn");
-  const btnDelete = document.getElementById("dp-delete-btn");
-  
-  if (selectDP) {
-    selectDP.addEventListener("change", () => {
-      selectedDPIndex = selectDP.value !== "" ? parseInt(selectDP.value) : -1;
-      updateButtonStates();
-    });
-  }
-  
-  if (btnAdd) {
-    btnAdd.addEventListener("click", openAddDPModal);
-  }
-  
-  if (btnEdit) {
-    btnEdit.addEventListener("click", openEditDPModal);
-  }
-  
-  if (btnDelete) {
-    btnDelete.addEventListener("click", confirmDeleteDP);
-  }
+// ===== VALIDATION EMAIL =====
+function isValidEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
 }
 
-// ===== MODAL D'AJOUT/MODIFICATION =====
-function openAddDPModal() {
-  showDPModal("Ajouter un nouveau DP", null, addDP);
+// ===== AFFICHAGE MODAL =====
+function showModal(dp = null) {
+  currentEditingId = dp ? dp.id : null;
+  
+  document.getElementById('modal-title').textContent = dp ? 'Modifier le DP' : 'Ajouter un DP';
+  document.getElementById('dp-nom').value = dp ? dp.nom : '';
+  document.getElementById('dp-niveau').value = dp ? dp.niveau : 'P5';
+  document.getElementById('dp-email').value = dp ? dp.email : '';
+  
+  document.getElementById('dp-modal').style.display = 'block';
+  document.getElementById('dp-nom').focus();
 }
 
-function openEditDPModal() {
-  if (selectedDPIndex >= 0 && selectedDPIndex < dpDatabase.length) {
-    const dp = dpDatabase[selectedDPIndex];
-    showDPModal("Modifier le DP", dp, editDP);
-  }
+// ===== FERMETURE MODAL =====
+function hideModal() {
+  document.getElementById('dp-modal').style.display = 'none';
+  currentEditingId = null;
 }
 
-function showDPModal(title, dpData, callback) {
-  // Créer le modal
-  const modal = document.createElement("div");
-  modal.id = "dp-modal";
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-  `;
+// ===== SAUVEGARDE DP =====
+async function saveDp() {
+  const nom = document.getElementById('dp-nom').value.trim();
+  const niveau = document.getElementById('dp-niveau').value;
+  const email = document.getElementById('dp-email').value.trim();
   
-  const modalContent = document.createElement("div");
-  modalContent.style.cssText = `
-    background: white;
-    border-radius: 8px;
-    padding: 25px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  `;
-  
-  modalContent.innerHTML = `
-    <h3 style="margin: 0 0 20px 0; color: #004080;">${title}</h3>
-    
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Nom et Prénom :</label>
-      <input type="text" id="modal-dp-nom" value="${dpData?.nom || ''}" 
-             style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
-             placeholder="NOM Prénom" />
-    </div>
-    
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Niveau :</label>
-      <select id="modal-dp-niveau" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-        <option value="E4" ${dpData?.niveau === 'E4' ? 'selected' : ''}>E4</option>
-		<option value="E3" ${dpData?.niveau === 'E3' ? 'selected' : ''}>E3</option>
-        <option value="P5" ${dpData?.niveau === 'P5' ? 'selected' : ''}>P5</option>
-      </select>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email :</label>
-      <input type="email" id="modal-dp-email" value="${dpData?.email || ''}" 
-             style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" 
-             placeholder="email@exemple.fr" />
-    </div>
-    
-    <div style="display: flex; gap: 10px; justify-content: flex-end;">
-      <button id="modal-cancel" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Annuler
-      </button>
-      <button id="modal-save" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Enregistrer
-      </button>
-    </div>
-  `;
-  
-  modal.appendChild(modalContent);
-  document.body.appendChild(modal);
-  
-  // Event listeners du modal
-  document.getElementById("modal-cancel").addEventListener("click", () => {
-    document.body.removeChild(modal);
-  });
-  
-  document.getElementById("modal-save").addEventListener("click", () => {
-    const nom = document.getElementById("modal-dp-nom").value.trim();
-    const niveau = document.getElementById("modal-dp-niveau").value;
-    const email = document.getElementById("modal-dp-email").value.trim();
-    
-    if (!nom || !email) {
-      alert("⚠️ Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-    
-    if (!isValidEmail(email)) {
-      alert("⚠️ Format d'email invalide");
-      return;
-    }
-    
-    callback({ nom, niveau, email });
-    document.body.removeChild(modal);
-  });
-  
-  // Fermer avec Échap
-  modal.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      document.body.removeChild(modal);
-    }
-  });
-  
-  // Focus sur le nom
-  document.getElementById("modal-dp-nom").focus();
-}
-
-// ===== FONCTIONS DE GESTION DES DP =====
-async function addDP(dpData) {
-  try {
-    // Vérifier les doublons
-    const exists = dpDatabase.some(dp => 
-      dp.nom.toLowerCase() === dpData.nom.toLowerCase() ||
-      dp.email.toLowerCase() === dpData.email.toLowerCase()
-    );
-    
-    if (exists) {
-      alert("⚠️ Un DP avec ce nom ou cet email existe déjà");
-      return;
-    }
-    
-    // Ajouter le nouveau DP
-    dpDatabase.push(dpData);
-    
-    // Trier par nom
-    dpDatabase.sort((a, b) => a.nom.localeCompare(b.nom));
-    
-    // Sauvegarder
-    await saveDPToFirebase();
-    
-    // Mettre à jour l'interface
-    populateDPSelect();
-    
-    // Sélectionner le nouveau DP
-    const newIndex = dpDatabase.findIndex(dp => dp.nom === dpData.nom);
-    if (newIndex >= 0) {
-      document.getElementById("dp-select").value = newIndex;
-      selectedDPIndex = newIndex;
-      updateButtonStates();
-    }
-    
-    console.log("✅ DP ajouté:", dpData.nom);
-    
-  } catch (error) {
-    console.error("❌ Erreur ajout DP:", error);
-    alert("❌ Erreur lors de l'ajout du DP");
-  }
-}
-
-async function editDP(dpData) {
-  try {
-    if (selectedDPIndex < 0 || selectedDPIndex >= dpDatabase.length) {
-      alert("❌ Erreur de sélection");
-      return;
-    }
-    
-    // Vérifier les doublons (sauf pour le DP actuel)
-    const exists = dpDatabase.some((dp, index) => 
-      index !== selectedDPIndex && (
-        dp.nom.toLowerCase() === dpData.nom.toLowerCase() ||
-        dp.email.toLowerCase() === dpData.email.toLowerCase()
-      )
-    );
-    
-    if (exists) {
-      alert("⚠️ Un autre DP avec ce nom ou cet email existe déjà");
-      return;
-    }
-    
-    // Modifier le DP
-    dpDatabase[selectedDPIndex] = dpData;
-    
-    // Trier par nom
-    dpDatabase.sort((a, b) => a.nom.localeCompare(b.nom));
-    
-    // Sauvegarder
-    await saveDPToFirebase();
-    
-    // Mettre à jour l'interface
-    populateDPSelect();
-    
-    // Resélectionner le DP modifié
-    const newIndex = dpDatabase.findIndex(dp => dp.nom === dpData.nom);
-    if (newIndex >= 0) {
-      document.getElementById("dp-select").value = newIndex;
-      selectedDPIndex = newIndex;
-      updateButtonStates();
-    }
-    
-    console.log("✅ DP modifié:", dpData.nom);
-    
-  } catch (error) {
-    console.error("❌ Erreur modification DP:", error);
-    alert("❌ Erreur lors de la modification du DP");
-  }
-}
-
-async function confirmDeleteDP() {
-  if (selectedDPIndex < 0 || selectedDPIndex >= dpDatabase.length) {
-    alert("❌ Aucun DP sélectionné");
+  // Validations
+  if (!nom) {
+    showNotification('Le nom est obligatoire', 'error');
     return;
   }
   
-  const dp = dpDatabase[selectedDPIndex];
-  const confirmed = confirm(`⚠️ Supprimer le DP "${dp.nom}" ?\n\nCette action est irréversible.`);
-  
-  if (confirmed) {
-    await deleteDP();
-  }
-}
-
-async function deleteDP() {
-  try {
-    const deletedDP = dpDatabase[selectedDPIndex];
-    
-    // Supprimer de la base
-    dpDatabase.splice(selectedDPIndex, 1);
-    
-    // Sauvegarder
-    await saveDPToFirebase();
-    
-    // Mettre à jour l'interface
-    populateDPSelect();
-    
-    // Réinitialiser la sélection
-    selectedDPIndex = -1;
-    document.getElementById("dp-select").value = "";
-    updateButtonStates();
-    
-    console.log("✅ DP supprimé:", deletedDP.nom);
-    
-  } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
-    alert("❌ Erreur lors de la suppression du DP");
-  }
-}
-
-// ===== FONCTIONS UTILITAIRES =====
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function getSelectedDP() {
-  const selectDP = document.getElementById("dp-select");
-  if (!selectDP || selectDP.value === "") return null;
-  
-  const index = parseInt(selectDP.value);
-  return dpDatabase[index] || null;
-}
-
-// ===== INTÉGRATION AVEC LE SYSTÈME EXISTANT =====
-function getDPNomForSaving() {
-  const selectedDP = getSelectedDP();
-  return selectedDP ? selectedDP.nom : "";
-}
-
-// Remplacer les fonctions existantes qui récupèrent le nom du DP
-function patchExistingDPFunctions() {
-  // Intercepter les fonctions qui utilisent dp-nom
-  const originalSaveSessionData = window.saveSessionData;
-  if (originalSaveSessionData) {
-    window.saveSessionData = async function() {
-      // Temporairement créer un champ dp-nom virtuel
-      const virtualInput = document.createElement("input");
-      virtualInput.id = "dp-nom";
-      virtualInput.value = getDPNomForSaving();
-      virtualInput.style.display = "none";
-      document.body.appendChild(virtualInput);
-      
-      try {
-        await originalSaveSessionData.apply(this, arguments);
-      } finally {
-        document.body.removeChild(virtualInput);
-      }
-    };
+  if (!email || !isValidEmail(email)) {
+    showNotification('Email invalide', 'error');
+    return;
   }
   
-  // Intercepter validateAndSaveDP
-  const originalValidateAndSaveDP = window.validateAndSaveDP;
-  if (originalValidateAndSaveDP) {
-    window.validateAndSaveDP = async function() {
-      const selectedDP = getSelectedDP();
-      if (!selectedDP) {
-        alert("⚠️ Veuillez sélectionner un Directeur de Plongée");
-        return false;
-      }
-      
-      // Créer temporairement les champs virtuels
-      const virtualNom = document.createElement("input");
-      virtualNom.id = "dp-nom";
-      virtualNom.value = selectedDP.nom;
-      virtualNom.style.display = "none";
-      document.body.appendChild(virtualNom);
-      
-      try {
-        return await originalValidateAndSaveDP.apply(this, arguments);
-      } finally {
-        document.body.removeChild(virtualNom);
-      }
-    };
+  // Vérifier les doublons
+  const existingDp = DP_LIST.find(dp => 
+    dp.id !== currentEditingId && 
+    (dp.nom.toLowerCase() === nom.toLowerCase() || dp.email.toLowerCase() === email.toLowerCase())
+  );
+  
+  if (existingDp) {
+    showNotification('Un DP avec ce nom ou cet email existe déjà', 'error');
+    return;
   }
-}
-
-// ===== INITIALISATION AUTOMATIQUE =====
-function initializeDPManagerWhenReady() {
-  // Attendre que le DOM soit prêt et que le champ dp-nom existe
-  const checkReady = () => {
-    if (document.getElementById("dp-nom")) {
-      initializeDPManager().then(() => {
-        patchExistingDPFunctions();
-      });
-    } else {
-      setTimeout(checkReady, 100);
+  
+  // Sauvegarder ou modifier
+  if (currentEditingId) {
+    // Modification
+    const dpIndex = DP_LIST.findIndex(dp => dp.id === currentEditingId);
+    if (dpIndex !== -1) {
+      DP_LIST[dpIndex] = { id: currentEditingId, nom, niveau, email };
+      showNotification('DP modifié avec succès', 'success');
     }
-  };
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkReady);
   } else {
-    checkReady();
+    // Ajout
+    const newDp = {
+      id: generateDpId(),
+      nom,
+      niveau,
+      email
+    };
+    DP_LIST.push(newDp);
+    showNotification('DP ajouté avec succès', 'success');
+  }
+  
+  // Sauvegarder dans Firebase
+  const saved = await saveDpToFirebase();
+  
+  if (saved) {
+    updateDpSelect();
+    hideModal();
+  } else {
+    showNotification('Erreur lors de la sauvegarde', 'error');
   }
 }
 
-// Démarrer l'initialisation
-initializeDPManagerWhenReady();
+// ===== SUPPRESSION DP =====
+async function deleteDp() {
+  const select = document.getElementById('dp-select');
+  const selectedId = select.value;
+  
+  if (!selectedId) return;
+  
+  const dp = DP_LIST.find(d => d.id === selectedId);
+  if (!dp) return;
+  
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer "${dp.nom}" ?`)) {
+    return;
+  }
+  
+  // Supprimer de la liste
+  DP_LIST = DP_LIST.filter(d => d.id !== selectedId);
+  
+  // Sauvegarder dans Firebase
+  const saved = await saveDpToFirebase();
+  
+  if (saved) {
+    updateDpSelect();
+    showNotification('DP supprimé avec succès', 'success');
+  } else {
+    showNotification('Erreur lors de la suppression', 'error');
+  }
+}
 
-// ===== EXPORTS GLOBAUX =====
-window.getDPNomForSaving = getDPNomForSaving;
-window.getSelectedDP = getSelectedDP;
-window.dpDatabase = dpDatabase;
+// ===== ÉVÉNEMENTS =====
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🔄 Initialisation du gestionnaire DP...');
+  
+  // Charger les données depuis Firebase
+  await loadDpFromFirebase();
+  
+  // Mettre à jour l'interface
+  updateDpSelect();
+  
+  // Gestionnaires d'événements
+  const dpSelect = document.getElementById('dp-select');
+  if (dpSelect) {
+    dpSelect.addEventListener('change', updateButtonStates);
+  }
+  
+  const addBtn = document.getElementById('add-dp-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => showModal());
+  }
+  
+  const editBtn = document.getElementById('edit-dp-btn');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      const selectedId = dpSelect.value;
+      const dp = DP_LIST.find(d => d.id === selectedId);
+      if (dp) showModal(dp);
+    });
+  }
+  
+  const deleteBtn = document.getElementById('delete-dp-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', deleteDp);
+  }
+  
+  const saveBtn = document.getElementById('save-dp-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveDp);
+  }
+  
+  const cancelBtn = document.getElementById('cancel-dp-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', hideModal);
+  }
+  
+  // Fermer modal avec Echap
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideModal();
+  });
+  
+  // Fermer modal en cliquant à l'extérieur
+  const modal = document.getElementById('dp-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) hideModal();
+    });
+  }
+  
+  console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
+});
 
-console.log("🎯 Module DP Management chargé - Gestion automatisée des DP activée");
+// ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
+window.getDpList = () => DP_LIST;
+window.getDpById = (id) => DP_LIST.find(dp => dp.id === id);
+window.getDpByName = (nom) => DP_LIST.find(dp => dp.nom === nom);
+window.refreshDpList = updateDpSelect;
