@@ -85,7 +85,8 @@
   
   <div id="meta-info">
     <label><strong>Directeur de Plongée</strong>
-      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" />
+      <!-- Le champ dp-nom sera remplacé automatiquement par le gestionnaire DP -->
+      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" style="display: none;" />
     </label>
     <label>Date : <input type="date" id="dp-date" /></label>
     <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
@@ -215,7 +216,7 @@
 
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 3.0.1 - RA - 2025 - JSA Subaquatique
+  Version 3.0.2 - RA - 2025 - JSA Subaquatique
   </footer>
 
   </div> <!-- Fin main-app -->
@@ -231,6 +232,8 @@
   <script src="simple-lock-system.js"></script>
   <script src="offline-manager.js"></script>
   <script src="password-manager.js"></script>  
-  <script src="dp-online-manager.js"></script>  
+  <script src="dp-online-manager.js"></script>
+  <!-- NOUVEAU MODULE DE GESTION DES DP -->
+  <script src="dp-management.js"></script>
 </body>
 </html>
