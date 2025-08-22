@@ -603,6 +603,9 @@ function setupEventListeners() {
         }
       });
     }
+
+    // REMARQUE: Les event listeners pour les sessions sont gérés dans dp-sessions-manager.js
+    // via setupDPSessionsEventListeners() qui s'auto-initialise
     
     console.log("✅ Event listeners configurés avec succès");
     
