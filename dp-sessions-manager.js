@@ -38,11 +38,11 @@ async function validateAndSaveDP() {
         await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
         console.log("✅ Informations DP sauvegardées dans Firebase");
         
-        // NOUVEAU : Sauvegarder également la session complète
-        if (typeof saveSessionData === 'function') {
-          await saveSessionData();
-          console.log("✅ Session complète sauvegardée");
-        }
+// NOUVEAU : Sauvegarder également la session complète
+// if (typeof saveSessionData === 'function') {
+//   await saveSessionData();
+//   console.log("✅ Session complète sauvegardée");
+// }
         
         // NOUVEAU : Mettre à jour l'indicateur de session courante
         updateCurrentSessionAfterSave();
