@@ -4,11 +4,20 @@
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
   console.log = function() {
-    if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('❌'))) {
+    const message = arguments[0] || '';
+    
+    // FILTRER LES MESSAGES DE L'ANCIEN SYSTÈME DP
+    if (message.includes('DP trouvé dans body avec pattern') || 
+        message.includes('Aucune correspondance pour:') ||
+        message.includes('DP "Raoul" sélectionné automatiquement')) {
+      return; // Ne pas afficher ces messages
+    }
+    
+    if (message && (message.includes('✅') || message.includes('❌'))) {
       originalConsoleLog.apply(console, arguments);
     }
+  }
 }
-
 // ===== SYNCHRONISATION BASE DE DONNÉES =====
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
