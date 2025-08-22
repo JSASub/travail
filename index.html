@@ -83,30 +83,36 @@
   </div>
   <hr>
   
-  <div id="meta-info">
-    <label><strong>Directeur de Plongée</strong>
-      <!-- Le champ dp-nom sera remplacé automatiquement par le gestionnaire DP -->
-      <input type="text" id="dp-nom" placeholder="NOM & Prénom du DP" style="display: none;" />
-    </label>
-    <label>Date : <input type="date" id="dp-date" /></label>
-    <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
-    <label>Plongée : 
-      <select id="dp-plongee">
-        <option value="matin">Matin</option>
-        <option value="apres-midi">Après-midi</option>
-        <option value="soir">Soir</option>
-        <option value="nuit">Nuit</option>
-        <option value="plg1">Plg1</option>
-        <option value="plg2">Plg2</option>
-        <option value="plg3">Plg3</option>
-        <option value="plg4">Plg4</option>
-        <option value="formation">Formation</option>
-        <option value="autre">Autre</option>
+<div id="meta-info">
+  <label><strong>Directeur de Plongée</strong>
+    <div>
+      <select id="dp-select">
+        <option value="">-- Choisir un DP --</option>
       </select>
-    </label>
-    <button type="submit" id="valider-dp">Sauvegarder Session + DP</button>
-    <div id="dp-message" class="dp-valide"></div>
-  </div>
+      <button type="button" id="add-dp-btn" class="dp-btn" title="Ajouter un DP">➕</button>
+      <button type="button" id="edit-dp-btn" class="dp-btn" title="Modifier le DP" disabled>✏️</button>
+      <button type="button" id="delete-dp-btn" class="dp-btn" title="Supprimer le DP" disabled>🗑️</button>
+    </div>
+  </label>
+  <label>Date : <input type="date" id="dp-date" /></label>
+  <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
+  <label>Plongée : 
+    <select id="dp-plongee">
+      <option value="matin">Matin</option>
+      <option value="apres-midi">Après-midi</option>
+      <option value="soir">Soir</option>
+      <option value="nuit">Nuit</option>
+      <option value="plg1">Plg1</option>
+      <option value="plg2">Plg2</option>
+      <option value="plg3">Plg3</option>
+      <option value="plg4">Plg4</option>
+      <option value="formation">Formation</option>
+      <option value="autre">Autre</option>
+    </select>
+  </label>
+  <button type="submit" id="valider-dp">Sauvegarder Session + DP</button>
+  <div id="dp-message" class="dp-valide"></div>
+</div>
 	
   </header>
 
@@ -235,5 +241,35 @@
   <script src="dp-online-manager.js"></script>
   <!-- NOUVEAU MODULE DE GESTION DES DP -->
   <script src="dp-management.js"></script>
+<!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
+<div id="dp-modal">
+  <div class="dp-modal-content">
+    <div class="dp-modal-header">
+      <h3 id="modal-title">Ajouter un DP</h3>
+      <button class="dp-close" onclick="hideModal()">&times;</button>
+    </div>
+    <div class="dp-modal-body">
+      <div class="dp-form-group">
+        <label for="dp-nom">Nom complet :</label>
+        <input type="text" id="dp-nom" placeholder="Ex: DUPONT Jean" required>
+      </div>
+      <div class="dp-form-group">
+        <label for="dp-niveau">Niveau :</label>
+        <select id="dp-niveau" required>
+          <option value="E3">E3</option>
+          <option value="P5">P5</option>
+        </select>
+      </div>
+      <div class="dp-form-group">
+        <label for="dp-email">Email :</label>
+        <input type="email" id="dp-email" placeholder="exemple@email.com" required>
+      </div>
+    </div>
+    <div class="dp-modal-footer">
+      <button type="button" id="cancel-dp-btn" class="dp-btn">Annuler</button>
+      <button type="button" id="save-dp-btn" class="dp-btn">Sauvegarder</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
