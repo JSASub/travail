@@ -376,16 +376,22 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 /* Boutons de gestion DP */
 .dp-btn {
-  padding: 6px 12px;
+  padding: 8px 12px;
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.dp-btn span {
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .dp-btn:disabled {
@@ -395,34 +401,37 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 .dp-btn:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
 }
 
-#add-dp-btn {
-  background: #28a745;
+.dp-btn-add {
+  background: linear-gradient(135deg, #28a745, #20c997);
   color: white;
+  border: 1px solid #1e7e34;
 }
 
-#add-dp-btn:not(:disabled):hover {
-  background: #218838;
+.dp-btn-add:not(:disabled):hover {
+  background: linear-gradient(135deg, #218838, #1ea080);
 }
 
-#edit-dp-btn {
-  background: #ffc107;
+.dp-btn-edit {
+  background: linear-gradient(135deg, #ffc107, #fd7e14);
   color: #212529;
+  border: 1px solid #d39e00;
 }
 
-#edit-dp-btn:not(:disabled):hover {
-  background: #e0a800;
+.dp-btn-edit:not(:disabled):hover {
+  background: linear-gradient(135deg, #e0a800, #e8590c);
 }
 
-#delete-dp-btn {
-  background: #dc3545;
+.dp-btn-delete {
+  background: linear-gradient(135deg, #dc3545, #e83e8c);
   color: white;
+  border: 1px solid #bd2130;
 }
 
-#delete-dp-btn:not(:disabled):hover {
-  background: #c82333;
+.dp-btn-delete:not(:disabled):hover {
+  background: linear-gradient(135deg, #c82333, #d91a72);
 }
 
 /* Modal DP */
@@ -615,6 +624,22 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     margin-bottom: 8px;
   }
   
+  /* Boutons DP en responsive */
+  #meta-info label:first-child > div {
+    gap: 6px;
+  }
+  
+  .dp-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .dp-btn span {
+    display: none; /* Masquer le texte sur mobile pour garder juste les icônes */
+  }
+  
   .dp-modal-content {
     margin: 5% auto;
     width: 95%;
@@ -629,10 +654,21 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     justify-content: center;
   }
   
+  .dp-modal-footer .dp-btn span {
+    display: inline; /* Réafficher le texte dans la modal */
+  }
+  
   .dp-notification {
     right: 10px;
     left: 10px;
     max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dp-btn {
+    padding: 8px 6px;
+    font-size: 14px; /* Icônes plus grandes sur très petit écran */
   }
 }
 
