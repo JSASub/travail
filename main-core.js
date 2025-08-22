@@ -568,6 +568,41 @@ function setupEventListeners() {
         }
       });
     }
+
+    // === PDF SÉCURISÉ ===
+    const generatePDFBtn = document.getElementById("generatePDF");
+    if (generatePDFBtn) {
+      generatePDFBtn.addEventListener("click", () => {
+        try {
+          if (typeof generatePDFPreview === 'function') {
+            generatePDFPreview();
+          } else {
+            console.error("❌ Fonction generatePDFPreview non disponible");
+            alert("Erreur: Module PDF non chargé");
+          }
+        } catch (error) {
+          console.error("❌ Erreur génération aperçu PDF:", error);
+          handleError(error, "Génération aperçu PDF");
+        }
+      });
+    }
+    
+    const exportPDFBtn = document.getElementById("exportPDF");
+    if (exportPDFBtn) {
+      exportPDFBtn.addEventListener("click", () => {
+        try {
+          if (typeof exportToPDF === 'function') {
+            exportToPDF();
+          } else {
+            console.error("❌ Fonction exportToPDF non disponible");
+            alert("Erreur: Module PDF non chargé");
+          }
+        } catch (error) {
+          console.error("❌ Erreur export PDF:", error);
+          handleError(error, "Export PDF");
+        }
+      });
+    }
     
     console.log("✅ Event listeners configurés avec succès");
     
