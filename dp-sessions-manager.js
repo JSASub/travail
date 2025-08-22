@@ -44,6 +44,9 @@ async function validateAndSaveDP() {
           console.log("✅ Session complète sauvegardée");
         }
         
+        // NOUVEAU : Mettre à jour l'indicateur de session courante
+        updateCurrentSessionAfterSave();
+        
         // NOUVEAU : Rafraîchir automatiquement après validation
         if (typeof refreshAllLists === 'function') {
           setTimeout(refreshAllLists, 500);
@@ -518,6 +521,10 @@ async function loadSessionFromSelector() {
         return false;
       } else {
         console.log("✅ Session chargée:", sessionKey);
+        
+        // NOUVEAU : Afficher quelle session est chargée
+        updateCurrentSessionDisplay(sessionKey, sessionSelector.options[sessionSelector.selectedIndex].text);
+        
         return true;
       }
     } else {
@@ -532,6 +539,98 @@ async function loadSessionFromSelector() {
     }
     alert("Erreur lors du chargement : " + error.message);
     return false;
+  }
+}
+
+// NOUVELLE FONCTION : Afficher la session actuellement chargée
+function updateCurrentSessionDisplay(sessionKey, sessionText) {
+  try {
+    // Chercher ou créer l'indicateur de session courante
+    let currentSessionDiv = document.getElementById("current-session-indicator");
+    
+    if (!currentSessionDiv) {
+      // Créer l'indicateur s'il n'existe pas
+      currentSessionDiv = document.createElement("div");
+      currentSessionDiv.id = "current-session-indicator";
+      currentSessionDiv.style.cssText = `
+        margin: 10px 0;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        border: 1px solid #4caf50;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #2e7d32;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+      
+      // L'insérer après le bouton "Enregistrer Session + DP"
+      const validerDPBtn = document.getElementById("valider-dp");
+      if (validerDPBtn && validerDPBtn.parentNode) {
+        validerDPBtn.parentNode.insertBefore(currentSessionDiv, validerDPBtn.nextSibling);
+      } else {
+        // Fallback : l'insérer dans meta-info
+        const metaInfo = document.getElementById("meta-info");
+        if (metaInfo) {
+          metaInfo.appendChild(currentSessionDiv);
+        }
+      }
+    }
+    
+    // Mettre à jour le contenu
+    if (sessionKey && sessionText) {
+      currentSessionDiv.innerHTML = `
+        <span style="font-size: 16px;">📋</span>
+        <span>Session chargée : ${sessionText}</span>
+        <button onclick="clearCurrentSessionDisplay()" style="
+          background: rgba(255,255,255,0.7);
+          border: none;
+          border-radius: 3px;
+          padding: 2px 6px;
+          font-size: 11px;
+          cursor: pointer;
+          margin-left: auto;
+        " title="Effacer l'indicateur">✕</button>
+      `;
+      currentSessionDiv.style.display = "flex";
+    } else {
+      currentSessionDiv.style.display = "none";
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur updateCurrentSessionDisplay:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Effacer l'indicateur de session
+function clearCurrentSessionDisplay() {
+  try {
+    const currentSessionDiv = document.getElementById("current-session-indicator");
+    if (currentSessionDiv) {
+      currentSessionDiv.style.display = "none";
+    }
+  } catch (error) {
+    console.error("❌ Erreur clearCurrentSessionDisplay:", error);
+  }
+}
+
+// NOUVELLE FONCTION : Mettre à jour l'indicateur après sauvegarde
+function updateCurrentSessionAfterSave() {
+  try {
+    const dpNom = document.getElementById("dp-nom")?.value?.trim();
+    const dpDate = document.getElementById("dp-date")?.value;
+    const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+    const dpPlongee = document.getElementById("dp-plongee")?.value;
+    
+    if (dpNom && dpDate && dpLieu) {
+      const sessionText = `${dpDate} - ${dpNom} - ${dpLieu} (${dpPlongee})`;
+      const sessionKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+      updateCurrentSessionDisplay(sessionKey, sessionText);
+    }
+  } catch (error) {
+    console.error("❌ Erreur updateCurrentSessionAfterSave:", error);
   }
 }
 
@@ -954,6 +1053,9 @@ window.refreshAllLists = refreshAllLists;
 window.testFirebaseConnection = testFirebaseConnection;
 window.initializeAfterAuth = initializeAfterAuth;
 window.initializeDPSessionsManager = initializeDPSessionsManager;
+window.updateCurrentSessionDisplay = updateCurrentSessionDisplay;
+window.clearCurrentSessionDisplay = clearCurrentSessionDisplay;
+window.updateCurrentSessionAfterSave = updateCurrentSessionAfterSave;
 
 // Auto-initialisation
 if (document.readyState === 'loading') {
