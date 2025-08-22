@@ -1440,12 +1440,12 @@ function setupEventListeners() {
           
           // Désactiver temporairement le bouton
           validerDPBtn.disabled = true;
-          validerDPBtn.textContent = "✅ Validé";
+          validerDPBtn.textContent = "✅ Enregistrer";
           validerDPBtn.style.backgroundColor = "#28a745";
           
           setTimeout(() => {
             validerDPBtn.disabled = false;
-            validerDPBtn.textContent = "Valider DP";
+            validerDPBtn.textContent = "Enregistrer Session + DP";
             validerDPBtn.style.backgroundColor = "#007bff";
           }, 3000);
           
@@ -2826,10 +2826,11 @@ if (validerDPBtn) {
       if (dpMessage) {
         dpMessage.innerHTML = `
           <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-            ✅ Informations DP validées et session sauvegardée
-            <br><small style="font-weight: normal;">
-              ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
-            </small>
+			 ✅ Session complète enregistrée avec succès
+             <br><small style="font-weight: normal;">
+               📋 ${plongeurs?.length || 0} plongeurs, ${palanquees?.length || 0} palanquées
+               <br>📍 ${dpNom} - ${new Date(dpDate).toLocaleDateString('fr-FR')} - ${dpLieu} (${dpPlongee})
+             </small>
           </div>
         `;
         dpMessage.classList.add("dp-valide");
@@ -2846,7 +2847,7 @@ if (validerDPBtn) {
         validerDPBtn.style.backgroundColor = "#007bff";
       }, 3000);
       
-      console.log("✅ Validation DP réussie:", dpInfo);
+      console.log("✅ Validation DP + sauvegarde session réussie:", dpInfo);
       
       // Synchronisation optionnelle
       if (typeof syncToDatabase === 'function') {
