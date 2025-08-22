@@ -4,7 +4,6 @@
 let onlineUsersData = {};
 let onlineUsersWindow = null;
 let onlineUsersInterval = null;
-let isUserAuthenticated = false; // NOUVEAU : Flag d'authentification local
 
 // ===== ÉCOUTEUR DES UTILISATEURS EN LIGNE =====
 function initializeOnlineUsersListener() {
@@ -16,18 +15,9 @@ function initializeOnlineUsersListener() {
   console.log("👥 Initialisation de l'écoute des utilisateurs connectés...");
 
   try {
-    // NOUVEAU : Marquer comme authentifié
-    isUserAuthenticated = true;
-    
     const onlineRef = db.ref('dp_online');
     
     onlineRef.on('value', (snapshot) => {
-      // NOUVEAU : Vérifier si on est toujours authentifié
-      if (!isUserAuthenticated || !currentUser) {
-        console.log("🚫 Utilisateur déconnecté - ignore les mises à jour");
-        return;
-      }
-      
       onlineUsersData = snapshot.val() || {};
       console.log(`👥 ${Object.keys(onlineUsersData).length} utilisateur(s) connecté(s)`);
       
@@ -40,8 +30,8 @@ function initializeOnlineUsersListener() {
       updateOnlineUsersIndicator();
     });
 
-    // IMPORTANT : Stocker la référence pour pouvoir la nettoyer
-    window.onlineUsersRef = onlineRef;
+    // Nettoyer à la déconnexion
+    onlineRef.onDisconnect().remove();
     
     console.log("✅ Écoute des utilisateurs connectés initialisée");
     
@@ -52,15 +42,7 @@ function initializeOnlineUsersListener() {
 
 // ===== INDICATEUR DANS L'INTERFACE PRINCIPALE =====
 function updateOnlineUsersIndicator() {
-  // NOUVEAU : Vérifier l'authentification avant de créer/mettre à jour
-  if (!isUserAuthenticated || !currentUser) {
-    // Supprimer l'indicateur si on n'est pas authentifié
-    const indicator = document.getElementById('online-users-indicator');
-    if (indicator) {
-      indicator.remove();
-    }
-    return;
-  }
+  if (!currentUser) return;
 
   let indicator = document.getElementById('online-users-indicator');
   
@@ -70,7 +52,7 @@ function updateOnlineUsersIndicator() {
     indicator.id = 'online-users-indicator';
     indicator.style.cssText = `
       position: fixed;
-      top: 57px;
+      top: 60px;
       left: 10px;
       background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
       border: 1px solid #2196f3;
@@ -119,12 +101,6 @@ function updateOnlineUsersIndicator() {
 
 // ===== FENÊTRE DES UTILISATEURS CONNECTÉS =====
 function openOnlineUsersWindow() {
-  // NOUVEAU : Vérifier l'authentification avant d'ouvrir
-  if (!isUserAuthenticated || !currentUser) {
-    alert("⚠️ Vous devez être connecté pour voir les utilisateurs en ligne");
-    return;
-  }
-
   if (onlineUsersWindow && !onlineUsersWindow.closed) {
     onlineUsersWindow.focus();
     return;
@@ -382,15 +358,6 @@ function openOnlineUsersWindow() {
 
 // ===== MISE À JOUR DE LA FENÊTRE =====
 function updateOnlineUsersWindow() {
-  // NOUVEAU : Vérifier l'authentification
-  if (!isUserAuthenticated || !currentUser) {
-    // Fermer la fenêtre si on n'est plus authentifié
-    if (onlineUsersWindow && !onlineUsersWindow.closed) {
-      onlineUsersWindow.close();
-    }
-    return;
-  }
-
   if (!onlineUsersWindow || onlineUsersWindow.closed) {
     return;
   }
@@ -473,46 +440,27 @@ function updateOnlineUsersWindow() {
 // ===== NETTOYAGE À LA DÉCONNEXION =====
 function cleanupOnlineUsersManager() {
   try {
-    console.log("🧹 Nettoyage du gestionnaire des utilisateurs en ligne...");
-    
-    // NOUVEAU : Marquer comme déconnecté IMMÉDIATEMENT
-    isUserAuthenticated = false;
-    
-    // Nettoyer les écouteurs Firebase
-    if (window.onlineUsersRef) {
-      window.onlineUsersRef.off();
-      window.onlineUsersRef = null;
-      console.log("✅ Écouteur Firebase supprimé");
-    }
-    
-    // Fermer la fenêtre IMMÉDIATEMENT
+    // Fermer la fenêtre
     if (onlineUsersWindow && !onlineUsersWindow.closed) {
       onlineUsersWindow.close();
-      console.log("✅ Fenêtre utilisateurs fermée");
     }
     
-    // Supprimer l'indicateur IMMÉDIATEMENT
+    // Supprimer l'indicateur
     const indicator = document.getElementById('online-users-indicator');
     if (indicator) {
       indicator.remove();
-      console.log("✅ Indicateur supprimé");
+    }
+    
+    // Nettoyer les écouteurs Firebase
+    if (db) {
+      db.ref('dp_online').off();
     }
     
     // Réinitialiser les variables
     onlineUsersData = {};
     onlineUsersWindow = null;
     
-    // NOUVEAU : Forcer la suppression immédiate de Firebase
-    if (currentUser && db) {
-      try {
-        db.ref(`dp_online/${currentUser.uid}`).remove();
-        console.log("✅ Entrée Firebase supprimée");
-      } catch (error) {
-        console.warn("⚠️ Erreur suppression Firebase:", error);
-      }
-    }
-    
-    console.log("✅ Gestionnaire des utilisateurs en ligne nettoyé complètement");
+    console.log("🧹 Gestionnaire des utilisateurs en ligne nettoyé");
     
   } catch (error) {
     console.error("❌ Erreur nettoyage gestionnaire utilisateurs:", error);
@@ -527,7 +475,7 @@ function initOnlineUsersManager() {
   } else {
     // Réessayer toutes les 2 secondes jusqu'à ce que l'utilisateur soit connecté
     const checkInterval = setInterval(() => {
-      if (typeof currentUser !== 'undefined' && currentUser && isUserAuthenticated !== false) {
+      if (typeof currentUser !== 'undefined' && currentUser) {
         clearInterval(checkInterval);
         initializeOnlineUsersListener();
       }
@@ -540,26 +488,10 @@ function initOnlineUsersManager() {
   }
 }
 
-// ===== NOUVELLE FONCTION : Activer/Désactiver le gestionnaire =====
-function setOnlineUsersManagerActive(active) {
-  if (active) {
-    isUserAuthenticated = true;
-    console.log("✅ Gestionnaire utilisateurs en ligne activé");
-    // Réinitialiser si nécessaire
-    if (currentUser && db) {
-      initializeOnlineUsersListener();
-    }
-  } else {
-    console.log("🚫 Gestionnaire utilisateurs en ligne désactivé");
-    cleanupOnlineUsersManager();
-  }
-}
-
 // ===== EXPORTS GLOBAUX =====
 window.openOnlineUsersWindow = openOnlineUsersWindow;
 window.updateOnlineUsersWindow = updateOnlineUsersWindow;
 window.cleanupOnlineUsersManager = cleanupOnlineUsersManager;
-window.setOnlineUsersManagerActive = setOnlineUsersManagerActive; // NOUVEAU
 
 // ===== INITIALISATION =====
 // Lancer l'initialisation quand le DOM est prêt
