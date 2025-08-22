@@ -1,68 +1,4 @@
-// plongeurs-manager.js - Gestion complète des plongeurs
-
-// ===== PLONGEURS PRÉDÉFINIS JSA =====
-const plongeursPredefinis = [
-  {
-    nom: "AGUIRRE Raoul",
-    niveau: "E3",
-    prerogatives: "Encadrement jusqu'à 40m, formation N1-N2-N3",
-    email: "raoul.aguirre64@gmail.com"
-  },
-  {
-    nom: "AUBARD Corinne", 
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée",
-    email: "aubard.c@gmail.com"
-  },
-  {
-    nom: "BEST Sébastien",
-    niveau: "P5", 
-    prerogatives: "PDP exploration, guide de palanquée, guide de palanquée",
-    email: "sebastien.best@cma-nouvelleaquitaine.fr"
-  },
-  {
-    nom: "CABIROL Joël",
-    niveau: "E3",
-    prerogatives: "Encadrement jusqu'à 40m, formation N1-N2-N3", 
-    email: "joelcabirol@gmail.com"
-  },
-  {
-    nom: "CATTEROU Sacha",
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée, guide de palanquée",
-    email: "sacha.catterou@orange.fr"
-  },
-  {
-    nom: "DARDER Olivier", 
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée, guide de palanquée",
-    email: "olivierdarder@gmail.com"
-  },
-  {
-    nom: "GAUTHIER Christophe",
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée, guide de palanquée", 
-    email: "jsasubaquatique24@gmail.com"
-  },
-  {
-    nom: "LE MAOUT Jean-François",
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée, guide de palanquée",
-    email: "jf.lemaout@wanadoo.fr"
-  },
-  {
-    nom: "MARTY David",
-    niveau: "E3", 
-    prerogatives: "Encadrement jusqu'à 40m, formation N1-N2-N3",
-    email: "david.marty@sfr.fr"
-  },
-  {
-    nom: "TROUBADIS Guillaume",
-    niveau: "P5",
-    prerogatives: "DP exploration, guide de palanquée, guide de palanquée",
-    email: "guillaume.troubadis@gmail.com"
-  }
-];
+// plongeurs-manager.js - Gestion complète des plongeurs (extrait de main-complete.js)
 
 // ===== GESTION DES PLONGEURS =====
 
@@ -70,705 +6,783 @@ const plongeursPredefinis = [
 function addPlongeur(nom, niveau, prerogatives = "") {
   try {
     if (!nom || !niveau) {
-      showPlongeursMessage("❌ Nom et niveau sont obligatoires", "error");
-      return false;
+      throw new Error("Nom et niveau requis");
     }
     
-    // Vérifier si le plongeur existe déjà
-    if (window.plongeurs && window.plongeurs.find(p => p.nom.toLowerCase() === nom.toLowerCase())) {
-      showPlongeursMessage("⚠️ Ce plongeur existe déjà", "warning");
-      return false;
-    }
+    // S'assurer que les variables globales existent
+    if (typeof plongeurs === 'undefined') window.plongeurs = [];
+    if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
     
-    // Créer le plongeur
-    const nouveauPlongeur = {
-      nom: nom.trim(),
-      niveau: niveau.trim(),
-      prerogatives: prerogatives.trim() || getPrerogativesParDefaut(niveau),
-      id: Date.now(),
-      timestamp: new Date().toISOString()
+    const nouveauPlongeur = { 
+      nom: nom.trim(), 
+      niveau: niveau, 
+      pre: prerogatives.trim() 
     };
     
-    // Ajouter à la liste
-    if (!window.plongeurs) window.plongeurs = [];
-    window.plongeurs.push(nouveauPlongeur);
-    
-    // Mettre à jour plongeursOriginaux
-    if (!window.plongeursOriginaux) window.plongeursOriginaux = [];
-    window.plongeursOriginaux.push({...nouveauPlongeur});
+    plongeurs.push(nouveauPlongeur);
+    plongeursOriginaux.push(nouveauPlongeur);
     
     console.log("✅ Plongeur ajouté:", nouveauPlongeur);
     
-    // Re-render l'interface
-    if (typeof renderPlongeurs === 'function') {
-      renderPlongeurs();
-    }
-    
-    // Synchroniser avec Firebase
+    // Synchroniser avec la base de données
     if (typeof syncToDatabase === 'function') {
       syncToDatabase();
     }
     
-    showPlongeursMessage("✅ Plongeur ajouté avec succès", "success");
     return true;
-    
   } catch (error) {
     console.error("❌ Erreur ajout plongeur:", error);
-    showPlongeursMessage("❌ Erreur lors de l'ajout", "error");
     return false;
   }
 }
 
-// Obtenir les prérogatives par défaut selon le niveau
-function getPrerogativesParDefaut(niveau) {
-  const niveauUpper = niveau.toUpperCase();
-  
-  if (niveauUpper.startsWith('E')) {
-    return "Encadrement jusqu'à 60m, formation N1-N2-N3";
-  } else if (niveauUpper === 'P5' || niveauUpper === 'N4') {
-    return "Plongée autonome tous niveaux, guide de palanquée";
-  } else if (niveauUpper === 'P4' || niveauUpper === 'N3') {
-    return "Plongée autonome jusqu'à 60m";
-  } else if (niveauUpper === 'N2') {
-    return "Plongée encadrée jusqu'à 40m, autonome jusqu'à 20m";
-  } else if (niveauUpper === 'N1') {
-    return "Plongée encadrée jusqu'à 20m";
-  }
-  
-  return "Prérogatives selon niveau";
-}
-
-// Supprimer un plongeur
-function removePlongeur(plongeurId) {
+// Fonction de suppression de plongeur
+function removePlongeur(index) {
   try {
-    if (!window.plongeurs) {
-      showPlongeursMessage("❌ Aucun plongeur à supprimer", "error");
-      return false;
+    if (index < 0 || index >= plongeurs.length) {
+      throw new Error("Index invalide");
     }
     
-    const index = window.plongeurs.findIndex(p => p.id === plongeurId);
-    if (index === -1) {
-      showPlongeursMessage("❌ Plongeur non trouvé", "error");
-      return false;
-    }
+    const plongeurSupprime = plongeurs[index];
+    plongeurs.splice(index, 1);
     
-    const plongeurSupprime = window.plongeurs[index];
+    // Supprimer aussi des originaux
+    plongeursOriginaux = plongeursOriginaux.filter(po => 
+      po.nom !== plongeurSupprime.nom || po.niveau !== plongeurSupprime.niveau
+    );
     
-    // Supprimer de la liste
-    window.plongeurs.splice(index, 1);
+    console.log("✅ Plongeur supprimé:", plongeurSupprime);
     
-    // Supprimer de plongeursOriginaux
-    if (window.plongeursOriginaux) {
-      const origIndex = window.plongeursOriginaux.findIndex(p => p.id === plongeurId);
-      if (origIndex !== -1) {
-        window.plongeursOriginaux.splice(origIndex, 1);
-      }
-    }
-    
-    console.log("🗑️ Plongeur supprimé:", plongeurSupprime);
-    
-    // Re-render l'interface
-    if (typeof renderPlongeurs === 'function') {
-      renderPlongeurs();
-    }
-    
-    // Synchroniser avec Firebase
+    // Synchroniser avec la base de données
     if (typeof syncToDatabase === 'function') {
       syncToDatabase();
     }
     
-    showPlongeursMessage("✅ Plongeur supprimé avec succès", "success");
     return true;
-    
   } catch (error) {
     console.error("❌ Erreur suppression plongeur:", error);
-    showPlongeursMessage("❌ Erreur lors de la suppression", "error");
     return false;
   }
 }
 
-// Trier les plongeurs par niveau
-function sortPlongeurs() {
+// ===== TRI DES PLONGEURS AVEC NOUVEAUX NIVEAUX =====
+function sortPlongeurs(type) {
   try {
-    if (!window.plongeurs || window.plongeurs.length === 0) {
-      showPlongeursMessage("⚠️ Aucun plongeur à trier", "warning");
-      return false;
+    if (typeof currentSort !== 'undefined') {
+      currentSort = type;
     }
     
-    // Ordre de tri des niveaux (du plus élevé au plus bas)
-    const ordreNiveaux = ['E4', 'E3', 'E2', 'E1', 'P5', 'N4', 'P4', 'N3', 'N2', 'N1'];
-    
-    window.plongeurs.sort((a, b) => {
-      const indexA = ordreNiveaux.indexOf(a.niveau.toUpperCase());
-      const indexB = ordreNiveaux.indexOf(b.niveau.toUpperCase());
-      
-      // Si un niveau n'est pas dans la liste, le mettre à la fin
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      
-      // Trier par ordre croissant des index (niveaux les plus élevés en premier)
-      if (indexA !== indexB) {
-        return indexA - indexB;
+    // Mettre à jour l'interface des boutons de tri
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.sort === type) {
+        btn.classList.add('active');
       }
-      
-      // Si même niveau, trier par nom
-      return a.nom.localeCompare(b.nom);
     });
     
-    console.log("📊 Plongeurs triés par niveau");
+    switch(type) {
+      case 'nom':
+        plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
+        break;
+      case 'niveau':
+        // Nouvel ordre de tri avec les niveaux jeunes plongeurs
+        const niveauOrder = {
+          'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+          'N3': 7, 'N2': 8, 'N1': 9,
+          'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+          'Déb.': 13, 'débutant': 14, 'Déb': 15
+        };
+        plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
+        break;
+      case 'none':
+      default:
+        if (typeof plongeursOriginaux !== 'undefined') {
+          plongeurs = [...plongeursOriginaux];
+        }
+        break;
+    }
     
-    // Re-render l'interface
+    // Re-rendre la liste
     if (typeof renderPlongeurs === 'function') {
       renderPlongeurs();
     }
     
-    showPlongeursMessage("✅ Plongeurs triés par niveau", "success");
-    return true;
+    console.log(`📋 Plongeurs triés par: ${type}`);
     
   } catch (error) {
-    console.error("❌ Erreur tri plongeurs:", error);
-    showPlongeursMessage("❌ Erreur lors du tri", "error");
-    return false;
+    console.error("❌ Erreur sortPlongeurs:", error);
+    if (typeof handleError === 'function') {
+      handleError(error, "Tri plongeurs");
+    }
   }
 }
 
-// Export des plongeurs en JSON
-function exportPlongeursToJSON() {
+// ===== IMPORT/EXPORT JSON SÉCURISÉ =====
+function importPlongeursFromJSON(fileData) {
   try {
-    if (!window.plongeurs || window.plongeurs.length === 0) {
-      showPlongeursMessage("⚠️ Aucun plongeur à exporter", "warning");
-      return false;
+    let data;
+    
+    // Parser les données JSON
+    if (typeof fileData === 'string') {
+      data = JSON.parse(fileData);
+    } else {
+      data = fileData;
     }
     
-    const dataToExport = {
-      plongeurs: window.plongeurs,
-      exportDate: new Date().toISOString(),
-      version: "1.0"
-    };
+    // S'assurer que les variables globales existent
+    if (typeof plongeurs === 'undefined') window.plongeurs = [];
+    if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
     
-    const jsonString = JSON.stringify(dataToExport, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    // Créer le lien de téléchargement
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `plongeurs_JSA_${new Date().toISOString().split('T')[0]}.json`;
-    
-    // Déclencher le téléchargement
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Nettoyer l'URL
-    URL.revokeObjectURL(url);
-    
-    console.log("📥 Export JSON réussi");
-    showPlongeursMessage("✅ Export JSON téléchargé", "success");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Erreur export JSON:", error);
-    showPlongeursMessage("❌ Erreur lors de l'export", "error");
-    return false;
-  }
-}
-
-// Import des plongeurs depuis JSON
-function importPlongeursFromJSON(file) {
-  try {
-    if (!file) {
-      showPlongeursMessage("❌ Aucun fichier sélectionné", "error");
-      return false;
+    // Traiter différents formats de fichier
+    if (data.plongeurs && Array.isArray(data.plongeurs)) {
+      // Format avec métadonnées
+      plongeurs = data.plongeurs.map(p => ({
+        nom: p.nom,
+        niveau: p.niveau,
+        pre: p.prerogatives || p.pre || ""
+      }));
+    } else if (Array.isArray(data)) {
+      // Format tableau simple
+      plongeurs = data.map(p => ({
+        nom: p.nom,
+        niveau: p.niveau,
+        pre: p.prerogatives || p.pre || ""
+      }));
+    } else {
+      throw new Error("Format de fichier non reconnu");
     }
     
-    const reader = new FileReader();
+    plongeursOriginaux = [...plongeurs];
     
-    reader.onload = function(e) {
-      try {
-        const jsonData = JSON.parse(e.target.result);
-        
-        // Validation du format
-        if (!jsonData.plongeurs || !Array.isArray(jsonData.plongeurs)) {
-          throw new Error("Format JSON invalide - 'plongeurs' requis");
-        }
-        
-        // Validation des plongeurs
-        const plongeursValides = jsonData.plongeurs.filter(plongeur => {
-          return plongeur.nom && plongeur.niveau && 
-                 typeof plongeur.nom === 'string' && 
-                 typeof plongeur.niveau === 'string';
-        });
-        
-        if (plongeursValides.length === 0) {
-          throw new Error("Aucun plongeur valide trouvé dans le fichier");
-        }
-        
-        // Confirmation si des plongeurs existent déjà
-        if (window.plongeurs && window.plongeurs.length > 0) {
-          if (!confirm(`Des plongeurs sont déjà présents (${window.plongeurs.length}).\nVoulez-vous les remplacer par les ${plongeursValides.length} plongeurs du fichier ?`)) {
-            return false;
-          }
-        }
-        
-        // Ajouter des IDs et timestamps si manquants
-        const plongeursWithIds = plongeursValides.map(plongeur => ({
-          ...plongeur,
-          id: plongeur.id || Date.now() + Math.random(),
-          timestamp: plongeur.timestamp || new Date().toISOString(),
-          prerogatives: plongeur.prerogatives || getPrerogativesParDefaut(plongeur.niveau)
-        }));
-        
-        // Remplacer la liste
-        window.plongeurs = plongeursWithIds;
-        window.plongeursOriginaux = [...plongeursWithIds];
-        
-        console.log("📤 Import JSON réussi:", plongeursWithIds.length, "plongeurs");
-        
-        // Re-render l'interface
-        if (typeof renderPlongeurs === 'function') {
-          renderPlongeurs();
-        }
-        
-        // Synchroniser avec Firebase
-        if (typeof syncToDatabase === 'function') {
-          syncToDatabase();
-        }
-        
-        showPlongeursMessage(`✅ ${plongeursWithIds.length} plongeurs importés avec succès`, "success");
-        return true;
-        
-      } catch (parseError) {
-        console.error("❌ Erreur parsing JSON:", parseError);
-        showPlongeursMessage("❌ Fichier JSON invalide: " + parseError.message, "error");
-        return false;
-      }
+    console.log(`✅ Import réussi: ${plongeurs.length} plongeurs importés`);
+    
+    // Synchroniser avec la base de données
+    if (typeof syncToDatabase === 'function') {
+      syncToDatabase();
+    }
+    
+    return {
+      success: true,
+      count: plongeurs.length,
+      message: `${plongeurs.length} plongeur(s) importé(s) avec succès`
     };
-    
-    reader.onerror = function() {
-      console.error("❌ Erreur lecture fichier");
-      showPlongeursMessage("❌ Erreur lors de la lecture du fichier", "error");
-    };
-    
-    reader.readAsText(file);
-    return true;
     
   } catch (error) {
     console.error("❌ Erreur import JSON:", error);
-    showPlongeursMessage("❌ Erreur lors de l'import", "error");
+    return {
+      success: false,
+      message: `Erreur d'import: ${error.message}`
+    };
+  }
+}
+
+function exportPlongeursToJSON() {
+  try {
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+    
+    const exportData = {
+      meta: {
+        dp: dpNom,
+        date: dpDate,
+        lieu: dpLieu,
+        plongee: dpPlongee,
+        version: "3.0.1",
+        exportDate: new Date().toISOString(),
+        type: "plongeurs_only"
+      },
+      plongeurs: plongeurs.map(p => ({
+        nom: p.nom,
+        niveau: p.niveau,
+        prerogatives: p.pre || ""
+      })),
+      stats: {
+        totalPlongeurs: plongeurs.length,
+        niveaux: getPlongeursStats()
+      }
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `plongeurs-jsas-${dpDate || 'export'}-${dpPlongee}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log("📤 Export JSON plongeurs effectué");
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur exportToJSON:", error);
+    alert("Erreur lors de l'export : " + error.message);
     return false;
   }
 }
 
-// ===== CHARGEMENT PLONGEURS PRÉDÉFINIS =====
-
-// Fonction de chargement des plongeurs prédéfinis
-function chargerPlongeursPredefinis() {
-  console.log("📋 Chargement des plongeurs prédéfinis JSA...");
-  
+// ===== STATISTIQUES DES PLONGEURS =====
+function getPlongeursStats() {
   try {
-    // Vérifier si la liste des plongeurs est vide ou contient peu de plongeurs
-    if (!window.plongeurs || !Array.isArray(window.plongeurs) || window.plongeurs.length < 5) {
-      
-      // Ajouter des IDs et timestamps aux plongeurs prédéfinis
-      const plongeursAvecIds = plongeursPredefinis.map((plongeur, index) => ({
-        ...plongeur,
-        id: Date.now() + index,
-        timestamp: new Date().toISOString()
-      }));
-      
-      // Charger les plongeurs prédéfinis
-      window.plongeurs = [...plongeursAvecIds];
-      window.plongeursOriginaux = [...plongeursAvecIds];
-      
-      console.log(`✅ ${plongeursPredefinis.length} plongeurs prédéfinis chargés`);
-      
-      // Re-render l'interface
+    if (!Array.isArray(plongeurs)) {
+      return {};
+    }
+    
+    const stats = {};
+    
+    plongeurs.forEach(p => {
+      if (p && p.niveau) {
+        stats[p.niveau] = (stats[p.niveau] || 0) + 1;
+      }
+    });
+    
+    // Ajouter des catégories
+    const categories = {
+      encadrants: ['E4', 'E3', 'E2', 'GP', 'N4/GP', 'N4'].reduce((sum, niveau) => sum + (stats[niveau] || 0), 0),
+      autonomes: ['N3', 'N2'].reduce((sum, niveau) => sum + (stats[niveau] || 0), 0),
+      encadres: ['N1'].reduce((sum, niveau) => sum + (stats[niveau] || 0), 0),
+      jeunes: ['Plg.Or', 'Plg.Ar', 'Plg.Br'].reduce((sum, niveau) => sum + (stats[niveau] || 0), 0),
+      debutants: ['Déb.', 'débutant', 'Déb'].reduce((sum, niveau) => sum + (stats[niveau] || 0), 0)
+    };
+    
+    return {
+      parNiveau: stats,
+      parCategorie: categories,
+      total: plongeurs.length
+    };
+    
+  } catch (error) {
+    console.error("❌ Erreur getPlongeursStats:", error);
+    return {};
+  }
+}
+
+// ===== RECHERCHE ET FILTRAGE =====
+function searchPlongeurs(query) {
+  try {
+    if (!query || query.trim() === '') {
+      // Réinitialiser la liste complète
       if (typeof renderPlongeurs === 'function') {
         renderPlongeurs();
       }
-      
-      // Sauvegarder automatiquement dans Firebase
-      if (typeof syncToDatabase === 'function') {
-        syncToDatabase();
-      }
-      
-      // Message à l'utilisateur
-      showPlongeursMessage(`✅ ${plongeursPredefinis.length} plongeurs JSA chargés avec succès`, "success");
-      
-      return true;
-    } else {
-      console.log("ℹ️ Des plongeurs sont déjà présents, aucun chargement nécessaire");
-      showPlongeursMessage("ℹ️ Des plongeurs sont déjà présents", "info");
-      return false;
+      return;
     }
+    
+    const searchTerm = query.toLowerCase().trim();
+    const filteredPlongeurs = plongeurs.filter(p => {
+      return p.nom.toLowerCase().includes(searchTerm) ||
+             p.niveau.toLowerCase().includes(searchTerm) ||
+             (p.pre && p.pre.toLowerCase().includes(searchTerm));
+    });
+    
+    // Afficher les résultats filtrés
+    displayFilteredPlongeurs(filteredPlongeurs);
+    
+    console.log(`🔍 Recherche "${query}": ${filteredPlongeurs.length} résultat(s)`);
     
   } catch (error) {
-    console.error("❌ Erreur lors du chargement des plongeurs prédéfinis:", error);
-    showPlongeursMessage("❌ Erreur lors du chargement", "error");
-    return false;
+    console.error("❌ Erreur searchPlongeurs:", error);
   }
 }
 
-// Ajouter un bouton de chargement des plongeurs prédéfinis
-function ajouterBoutonChargementPredefinis() {
-  // Chercher le container des boutons plongeurs
-  const boutonContainer = document.querySelector('.plongeurs-actions');
+function displayFilteredPlongeurs(filteredList) {
+  const liste = document.getElementById("listePlongeurs");
+  if (!liste) return;
   
-  if (boutonContainer) {
-    // Vérifier si le bouton n'existe pas déjà
-    if (!document.getElementById('charger-predefinis-btn')) {
-      const boutonCharger = document.createElement('button');
-      boutonCharger.id = 'charger-predefinis-btn';
-      boutonCharger.textContent = '👥 Charger plongeurs JSA';
-      boutonCharger.className = 'btn-action';
-      boutonCharger.style.cssText = `
-        background: #17a2b8;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 5px;
-        font-weight: bold;
-        transition: all 0.3s ease;
+  liste.innerHTML = "";
+  
+  if (filteredList.length === 0) {
+    liste.innerHTML = '<li style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun résultat trouvé</li>';
+  } else {
+    filteredList.forEach((p, i) => {
+      // Retrouver l'index original
+      const originalIndex = plongeurs.findIndex(orig => 
+        orig.nom === p.nom && orig.niveau === p.niveau
+      );
+      
+      const li = document.createElement("li");
+      li.className = "plongeur-item";
+      li.draggable = true;
+      li.dataset.index = originalIndex;
+      li.dataset.type = "mainList";
+      
+      li.innerHTML = `
+        <div class="plongeur-content">
+          <span class="plongeur-nom">${p.nom}</span>
+          <span class="plongeur-niveau">${p.niveau}</span>
+          <span class="plongeur-prerogatives">[${p.pre || 'Aucune'}]</span>
+          <span class="delete-plongeur" title="Supprimer ce plongeur">⌫</span>
+        </div>
       `;
       
-      // Event listener
-      boutonCharger.addEventListener('click', (e) => {
-        e.preventDefault();
-        
-        // Confirmation si des plongeurs existent déjà
-        if (window.plongeurs && window.plongeurs.length > 0) {
-          if (!confirm(`Des plongeurs sont déjà présents (${window.plongeurs.length}).\nVoulez-vous les remplacer par les plongeurs JSA prédéfinis ?`)) {
-            return;
-          }
-        }
-        
-        // Effet visuel pendant le chargement
-        boutonCharger.disabled = true;
-        boutonCharger.textContent = '🔄 Chargement...';
-        boutonCharger.style.background = '#6c757d';
-        
-        setTimeout(() => {
-          const success = chargerPlongeursPredefinis();
-          
-          // Restaurer le bouton
-          boutonCharger.disabled = false;
-          
-          if (success) {
-            boutonCharger.textContent = '✅ Chargé !';
-            boutonCharger.style.background = '#28a745';
-          } else {
-            boutonCharger.textContent = '⚠️ Déjà présents';
-            boutonCharger.style.background = '#ffc107';
-          }
-          
-          // Remettre le texte normal après 3 secondes
-          setTimeout(() => {
-            boutonCharger.textContent = '👥 Charger plongeurs JSA';
-            boutonCharger.style.background = '#17a2b8';
-          }, 3000);
-        }, 500);
-      });
-      
-      // Hover effect
-      boutonCharger.addEventListener('mouseenter', () => {
-        if (!boutonCharger.disabled) {
-          boutonCharger.style.background = '#138496';
-          boutonCharger.style.transform = 'translateY(-1px)';
+      // Event listener pour suppression
+      li.querySelector(".delete-plongeur").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm(`Supprimer ${p.nom} de la liste ?`)) {
+          removePlongeur(originalIndex);
         }
       });
       
-      boutonCharger.addEventListener('mouseleave', () => {
-        if (!boutonCharger.disabled) {
-          boutonCharger.style.background = '#17a2b8';
-          boutonCharger.style.transform = 'translateY(0)';
-        }
-      });
-      
-      // Ajouter le bouton au container
-      boutonContainer.appendChild(boutonCharger);
-      console.log("✅ Bouton de chargement plongeurs JSA ajouté");
-    }
+      liste.appendChild(li);
+    });
   }
 }
 
-// ===== GESTION DES EVENT LISTENERS =====
-
-// Configuration des event listeners pour les plongeurs
-function setupPlongeursEventListeners() {
-  console.log("🔧 Configuration des event listeners plongeurs...");
-  
-  // Bouton d'ajout de plongeur
-  const addBtn = document.getElementById("addPlongeurBtn");
-  if (addBtn) {
-    addBtn.addEventListener("click", () => {
-      const nom = document.getElementById("plongeurNom")?.value?.trim();
-      const niveau = document.getElementById("plongeurNiveau")?.value?.trim();
-      const prerogatives = document.getElementById("plongeurPrerogatives")?.value?.trim();
-      
-      if (!nom || !niveau) {
-        showPlongeursMessage("❌ Nom et niveau sont obligatoires", "error");
-        return;
-      }
-      
-      if (addPlongeur(nom, niveau, prerogatives)) {
-        // Vider les champs après ajout réussi
-        document.getElementById("plongeurNom").value = '';
-        document.getElementById("plongeurNiveau").value = '';
-        document.getElementById("plongeurPrerogatives").value = '';
-      }
-    });
-  }
-  
-  // Bouton de tri
-  const sortBtn = document.getElementById("sortPlongeursBtn");
-  if (sortBtn) {
-    sortBtn.addEventListener("click", sortPlongeurs);
-  }
-  
-  // Bouton d'export JSON
-  const exportBtn = document.getElementById("exportPlongeursBtn");
-  if (exportBtn) {
-    exportBtn.addEventListener("click", exportPlongeursToJSON);
-  }
-  
-  // Bouton d'import JSON (déclenche le sélecteur de fichier)
-  const importBtn = document.getElementById("importPlongeursBtn");
-  const importInput = document.getElementById("importJSON");
-  
-  if (importBtn && importInput) {
-    importBtn.addEventListener("click", () => {
-      importInput.click();
-    });
-    
-    importInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        importPlongeursFromJSON(file);
-        // Vider l'input pour permettre de réimporter le même fichier
-        e.target.value = '';
-      }
-    });
-  }
-  
-  // Auto-complétion des prérogatives selon le niveau sélectionné
-  const niveauSelect = document.getElementById("plongeurNiveau");
-  const prerogativesInput = document.getElementById("plongeurPrerogatives");
-  
-  if (niveauSelect && prerogativesInput) {
-    niveauSelect.addEventListener("change", (e) => {
-      const niveau = e.target.value;
-      if (niveau && !prerogativesInput.value) {
-        prerogativesInput.value = getPrerogativesParDefaut(niveau);
-      }
-    });
-  }
-  
-  console.log("✅ Event listeners plongeurs configurés");
-}
-
-// ===== VALIDATION ET DIAGNOSTIC =====
-
-// Valider un plongeur
-function validatePlongeur(plongeur) {
+// ===== VALIDATION DES PLONGEURS =====
+function validatePlongeur(nom, niveau, prerogatives = "") {
   const errors = [];
   
-  if (!plongeur.nom || typeof plongeur.nom !== 'string' || plongeur.nom.trim().length === 0) {
-    errors.push("Nom manquant ou invalide");
+  // Validation du nom
+  if (!nom || nom.trim().length < 2) {
+    errors.push("Le nom doit contenir au moins 2 caractères");
   }
   
-  if (!plongeur.niveau || typeof plongeur.niveau !== 'string' || plongeur.niveau.trim().length === 0) {
-    errors.push("Niveau manquant ou invalide");
+  if (nom && nom.trim().length > 50) {
+    errors.push("Le nom ne peut pas dépasser 50 caractères");
   }
   
-  // Vérifier que le niveau est dans la liste des niveaux acceptés
-  const niveauxValides = ['N1', 'N2', 'N3', 'N4', 'P4', 'P5', 'E1', 'E2', 'E3', 'E4'];
-  if (plongeur.niveau && !niveauxValides.includes(plongeur.niveau.toUpperCase())) {
-    errors.push(`Niveau "${plongeur.niveau}" non reconnu`);
+  // Validation du niveau
+  const niveauxValides = [
+    'E4', 'E3', 'E2', 'GP', 'N4/GP', 'N4', 'N3', 'N2', 'N1',
+    'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'
+  ];
+  
+  if (!niveau || !niveauxValides.includes(niveau)) {
+    errors.push("Niveau de plongée invalide");
+  }
+  
+  // Validation des prérogatives (optionnel)
+  if (prerogatives && prerogatives.length > 100) {
+    errors.push("Les prérogatives ne peuvent pas dépasser 100 caractères");
+  }
+  
+  // Vérifier les doublons
+  const existe = plongeurs.some(p => 
+    p.nom.toLowerCase().trim() === nom.toLowerCase().trim() &&
+    p.niveau === niveau
+  );
+  
+  if (existe) {
+    errors.push("Ce plongeur existe déjà dans la liste");
   }
   
   return {
-    isValid: errors.length === 0,
+    valid: errors.length === 0,
     errors: errors
   };
 }
 
-// Diagnostic de la liste des plongeurs
-function diagnosticPlongeurs() {
-  console.log("🔍 Diagnostic de la liste des plongeurs...");
+// ===== UTILITAIRES =====
+function getPlongeurByIndex(index) {
+  try {
+    if (index >= 0 && index < plongeurs.length) {
+      return plongeurs[index];
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Erreur getPlongeurByIndex:", error);
+    return null;
+  }
+}
+
+function findPlongeurIndex(nom, niveau) {
+  try {
+    return plongeurs.findIndex(p => 
+      p.nom.toLowerCase() === nom.toLowerCase() && p.niveau === niveau
+    );
+  } catch (error) {
+    console.error("❌ Erreur findPlongeurIndex:", error);
+    return -1;
+  }
+}
+
+function updatePlongeurPrerogatives(index, newPrerogatives) {
+  try {
+    if (index >= 0 && index < plongeurs.length) {
+      plongeurs[index].pre = newPrerogatives.trim();
+      
+      // Mettre à jour aussi dans les originaux
+      const plongeur = plongeurs[index];
+      const origIndex = plongeursOriginaux.findIndex(p => 
+        p.nom === plongeur.nom && p.niveau === plongeur.niveau
+      );
+      
+      if (origIndex !== -1) {
+        plongeursOriginaux[origIndex].pre = newPrerogatives.trim();
+      }
+      
+      // Synchroniser
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
+      }
+      
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("❌ Erreur updatePlongeurPrerogatives:", error);
+    return false;
+  }
+}
+
+// ===== SETUP EVENT LISTENERS POUR LES PLONGEURS =====
+function setupPlongeursEventListeners() {
+  console.log("🎛️ Configuration des event listeners plongeurs...");
   
-  if (!window.plongeurs || !Array.isArray(window.plongeurs)) {
-    console.log("❌ Liste des plongeurs non initialisée");
+  try {
+    // === AJOUT DE PLONGEUR SÉCURISÉ ===
+    const addForm = document.getElementById("addForm");
+    if (addForm) {
+      addForm.addEventListener("submit", e => {
+        e.preventDefault();
+        
+        try {
+          const nomInput = document.getElementById("nom");
+          const niveauInput = document.getElementById("niveau");
+          const preInput = document.getElementById("pre");
+          
+          if (!nomInput || !niveauInput || !preInput) {
+            alert("Éléments de formulaire manquants");
+            return;
+          }
+          
+          const nom = nomInput.value.trim();
+          const niveau = niveauInput.value;
+          const pre = preInput.value.trim();
+          
+          // Validation
+          const validation = validatePlongeur(nom, niveau, pre);
+          if (!validation.valid) {
+            alert("Erreurs de validation :\n" + validation.errors.join('\n'));
+            return;
+          }
+          
+          // Ajouter le plongeur
+          const success = addPlongeur(nom, niveau, pre);
+          
+          if (success) {
+            // Vider les champs
+            nomInput.value = "";
+            niveauInput.value = "";
+            preInput.value = "";
+            
+            // Focus sur le nom pour ajout rapide
+            nomInput.focus();
+          }
+          
+        } catch (error) {
+          console.error("❌ Erreur ajout plongeur:", error);
+          if (typeof handleError === 'function') {
+            handleError(error, "Ajout plongeur");
+          }
+        }
+      });
+    }
+
+    // === IMPORT JSON SÉCURISÉ ===
+    const importJSONInput = document.getElementById("importJSON");
+    if (importJSONInput) {
+      importJSONInput.addEventListener("change", e => {
+        try {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = e2 => {
+            try {
+              const result = importPlongeursFromJSON(e2.target.result);
+              
+              if (result.success) {
+                alert(result.message);
+                console.log("✅ Import JSON réussi");
+              } else {
+                alert(result.message);
+              }
+              
+              // Vider l'input pour permettre de recharger le même fichier
+              importJSONInput.value = "";
+              
+            } catch (error) {
+              console.error("❌ Erreur import:", error);
+              if (typeof handleError === 'function') {
+                handleError(error, "Import JSON");
+              }
+              alert("Erreur lors de l'import du fichier JSON");
+            }
+          };
+          reader.readAsText(file);
+        } catch (error) {
+          console.error("❌ Erreur lecture fichier:", error);
+          if (typeof handleError === 'function') {
+            handleError(error, "Lecture fichier");
+          }
+        }
+      });
+    }
+
+    // === EXPORT JSON ===
+    const exportJSONBtn = document.getElementById("exportJSON");
+    if (exportJSONBtn) {
+      exportJSONBtn.addEventListener("click", () => {
+        try {
+          exportPlongeursToJSON();
+        } catch (error) {
+          console.error("❌ Erreur export JSON:", error);
+          if (typeof handleError === 'function') {
+            handleError(error, "Export JSON");
+          }
+        }
+      });
+    }
+
+    // === TRI DES PLONGEURS SÉCURISÉ ===
+    const sortBtns = document.querySelectorAll('.sort-btn');
+    sortBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const sortType = btn.dataset.sort;
+          sortPlongeurs(sortType);
+        } catch (error) {
+          console.error("❌ Erreur tri plongeurs:", error);
+          if (typeof handleError === 'function') {
+            handleError(error, "Tri plongeurs");
+          }
+        }
+      });
+    });
+    
+    console.log("✅ Event listeners plongeurs configurés avec succès");
+    
+  } catch (error) {
+    console.error("❌ Erreur configuration event listeners plongeurs:", error);
+    if (typeof handleError === 'function') {
+      handleError(error, "Configuration event listeners plongeurs");
+    }
+  }
+}
+
+// ===== GESTION DES PRÉROGATIVES =====
+function getPrerogativesSuggestions(niveau) {
+  const suggestions = {
+    'E4': ['DP', 'Toutes prérogatives'],
+    'E3': ['DP', 'Nitrox', 'Trim', 'Plongée profonde'],
+    'E2': ['GP', 'Nitrox', 'Plongée profonde'],
+    'GP': ['GP', 'Nitrox'],
+    'N4/GP': ['GP', 'Nitrox', 'PA60'],
+    'N4': ['PA60', 'Nitrox'],
+    'N3': ['PA60', 'Nitrox', 'Autonomie 60m'],
+    'N2': ['PA40', 'PE40', 'Nitrox'],
+    'N1': ['PE20'],
+    'Plg.Or': ['PE12', 'Plongée encadrée'],
+    'Plg.Ar': ['PE6', 'Plongée encadrée'],
+    'Plg.Br': ['PE6', 'Plongée encadrée'],
+    'Déb.': ['Baptême', 'PE6'],
+    'débutant': ['Baptême', 'PE6'],
+    'Déb': ['Baptême', 'PE6']
+  };
+  
+  return suggestions[niveau] || [];
+}
+
+function showPrerogativesSuggestions(niveau, inputElement) {
+  try {
+    const suggestions = getPrerogativesSuggestions(niveau);
+    
+    if (suggestions.length === 0) return;
+    
+    const suggestionsText = suggestions.join(', ');
+    const useThis = confirm(
+      `Suggestions de prérogatives pour ${niveau} :\n\n${suggestionsText}\n\n` +
+      `Utiliser ces suggestions ?`
+    );
+    
+    if (useThis && inputElement) {
+      inputElement.value = suggestions[0]; // Utiliser la première suggestion
+      inputElement.focus();
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur suggestions prérogatives:", error);
+  }
+}
+
+// ===== BATCH OPERATIONS =====
+function addMultiplePlongeurs(plongeursList) {
+  try {
+    let added = 0;
+    const errors = [];
+    
+    plongeursList.forEach((plongeurData, index) => {
+      try {
+        const validation = validatePlongeur(
+          plongeurData.nom, 
+          plongeurData.niveau, 
+          plongeurData.pre
+        );
+        
+        if (validation.valid) {
+          if (addPlongeur(plongeurData.nom, plongeurData.niveau, plongeurData.pre)) {
+            added++;
+          }
+        } else {
+          errors.push(`Ligne ${index + 1}: ${validation.errors.join(', ')}`);
+        }
+      } catch (error) {
+        errors.push(`Ligne ${index + 1}: ${error.message}`);
+      }
+    });
+    
+    const result = {
+      success: added > 0,
+      added: added,
+      total: plongeursList.length,
+      errors: errors
+    };
+    
+    console.log(`📊 Ajout multiple: ${added}/${plongeursList.length} plongeurs ajoutés`);
+    
+    return result;
+    
+  } catch (error) {
+    console.error("❌ Erreur addMultiplePlongeurs:", error);
     return {
+      success: false,
+      added: 0,
       total: 0,
-      valid: 0,
-      invalid: 0,
-      errors: ["Liste des plongeurs non initialisée"]
+      errors: [error.message]
     };
   }
-  
-  let valid = 0;
-  let invalid = 0;
-  const allErrors = [];
-  
-  window.plongeurs.forEach((plongeur, index) => {
-    const validation = validatePlongeur(plongeur);
-    if (validation.isValid) {
-      valid++;
-    } else {
-      invalid++;
-      allErrors.push(`Plongeur ${index + 1} (${plongeur.nom || 'sans nom'}): ${validation.errors.join(', ')}`);
-    }
-  });
-  
-  const diagnostic = {
-    total: window.plongeurs.length,
-    valid: valid,
-    invalid: invalid,
-    errors: allErrors
-  };
-  
-  console.log("📊 Diagnostic plongeurs:", diagnostic);
-  return diagnostic;
 }
 
-// ===== AFFICHAGE DES MESSAGES =====
-
-// Afficher un message dans la section plongeurs
-function showPlongeursMessage(message, type = "info") {
-  const messageContainer = document.getElementById("plongeurs-message");
-  if (!messageContainer) return;
-  
-  const colors = {
-    info: "#17a2b8",
-    success: "#28a745", 
-    warning: "#ffc107",
-    error: "#dc3545"
-  };
-  
-  const icons = {
-    info: "ℹ️",
-    success: "✅",
-    warning: "⚠️", 
-    error: "❌"
-  };
-  
-  messageContainer.innerHTML = `
-    <div style="
-      color: ${colors[type]}; 
-      font-weight: bold; 
-      padding: 8px 12px; 
-      background: ${colors[type]}15; 
-      border: 1px solid ${colors[type]}40; 
-      border-radius: 4px;
-      margin: 5px 0;
-    ">
-      ${icons[type]} ${message}
-    </div>
-  `;
-  
-  // Auto-effacement après 4 secondes pour les messages info/success
-  if (type === "info" || type === "success") {
-    setTimeout(() => {
-      if (messageContainer.innerHTML.includes(message)) {
-        messageContainer.innerHTML = '';
+function clearAllPlongeurs() {
+  try {
+    const confirm = window.confirm(
+      `⚠️ Supprimer tous les plongeurs ?\n\n` +
+      `${plongeurs.length} plongeur(s) seront supprimés.\n` +
+      `Cette action est irréversible !`
+    );
+    
+    if (confirm) {
+      plongeurs.length = 0;
+      plongeursOriginaux.length = 0;
+      
+      // Synchroniser
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
       }
-    }, 4000);
+      
+      console.log("🗑️ Tous les plongeurs supprimés");
+      return true;
+    }
+    
+    return false;
+    
+  } catch (error) {
+    console.error("❌ Erreur clearAllPlongeurs:", error);
+    return false;
   }
 }
 
-// ===== FONCTIONS UTILITAIRES =====
-
-// Nettoyer la liste des plongeurs (supprime les doublons)
-function cleanupPlongeurs() {
-  if (!window.plongeurs || !Array.isArray(window.plongeurs)) {
-    return false;
-  }
-  
-  console.log("🧹 Nettoyage des plongeurs...");
-  
-  const avant = window.plongeurs.length;
-  const plongeursUniques = [];
-  const nomsVus = new Set();
-  
-  window.plongeurs.forEach(plongeur => {
-    const nomNormalise = plongeur.nom.toLowerCase().trim();
-    if (!nomsVus.has(nomNormalise)) {
-      nomsVus.add(nomNormalise);
-      plongeursUniques.push(plongeur);
-    }
-  });
-  
-  window.plongeurs = plongeursUniques;
-  window.plongeursOriginaux = [...plongeursUniques];
-  
-  const apres = window.plongeurs.length;
-  const doublonsSupprimes = avant - apres;
-  
-  if (doublonsSupprimes > 0) {
-    console.log(`🧹 ${doublonsSupprimes} doublon(s) supprimé(s)`);
-    showPlongeursMessage(`✅ ${doublonsSupprimes} doublon(s) supprimé(s)`, "success");
-    
-    // Re-render l'interface
-    if (typeof renderPlongeurs === 'function') {
-      renderPlongeurs();
+// ===== EXPORT AVANCÉ =====
+function exportPlongeursToCSV() {
+  try {
+    if (plongeurs.length === 0) {
+      alert("Aucun plongeur à exporter");
+      return false;
     }
     
+    // En-têtes CSV
+    let csvContent = "Nom,Niveau,Prérogatives\n";
+    
+    // Données
+    plongeurs.forEach(p => {
+      const nom = `"${p.nom.replace(/"/g, '""')}"`;
+      const niveau = `"${p.niveau}"`;
+      const pre = `"${(p.pre || '').replace(/"/g, '""')}"`;
+      csvContent += `${nom},${niveau},${pre}\n`;
+    });
+    
+    // Téléchargement
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `plongeurs-jsas-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log("📊 Export CSV réussi");
     return true;
-  } else {
-    console.log("✅ Aucun doublon trouvé");
-    showPlongeursMessage("✅ Aucun doublon trouvé", "info");
+    
+  } catch (error) {
+    console.error("❌ Erreur export CSV:", error);
+    alert("Erreur lors de l'export CSV : " + error.message);
     return false;
   }
 }
 
-// Rechercher des plongeurs par nom ou niveau
-function searchPlongeurs(query) {
-  if (!window.plongeurs || !Array.isArray(window.plongeurs) || !query) {
+// ===== DIAGNOSTIC PLONGEURS =====
+function diagnosticPlongeurs() {
+  try {
+    const stats = getPlongeursStats();
+    const diagnostic = {
+      timestamp: new Date().toISOString(),
+      totalPlongeurs: plongeurs.length,
+      stats: stats,
+      validation: {
+        nomsVides: plongeurs.filter(p => !p.nom || p.nom.trim() === '').length,
+        niveauxInvalides: plongeurs.filter(p => !p.niveau).length,
+        doublons: findDoublons()
+      },
+      memoire: {
+        plongeurs: plongeurs.length,
+        plongeursOriginaux: plongeursOriginaux?.length || 0,
+        coherence: plongeurs.length === (plongeursOriginaux?.length || 0)
+      }
+    };
+    
+    console.log("🔍 === DIAGNOSTIC PLONGEURS ===");
+    console.log(diagnostic);
+    console.log("==============================");
+    
+    return diagnostic;
+    
+  } catch (error) {
+    console.error("❌ Erreur diagnostic plongeurs:", error);
+    return null;
+  }
+}
+
+function findDoublons() {
+  try {
+    const seen = new Set();
+    const doublons = [];
+    
+    plongeurs.forEach((p, index) => {
+      const key = `${p.nom.toLowerCase()}_${p.niveau}`;
+      if (seen.has(key)) {
+        doublons.push({ index, plongeur: p });
+      } else {
+        seen.add(key);
+      }
+    });
+    
+    return doublons;
+    
+  } catch (error) {
+    console.error("❌ Erreur findDoublons:", error);
     return [];
   }
-  
-  const queryLower = query.toLowerCase().trim();
-  
-  return window.plongeurs.filter(plongeur => {
-    return plongeur.nom.toLowerCase().includes(queryLower) ||
-           plongeur.niveau.toLowerCase().includes(queryLower) ||
-           (plongeur.prerogatives && plongeur.prerogatives.toLowerCase().includes(queryLower));
-  });
-}
-
-// Obtenir les statistiques des plongeurs
-function getPlongeursStats() {
-  if (!window.plongeurs || !Array.isArray(window.plongeurs)) {
-    return {
-      total: 0,
-      parNiveau: {}
-    };
-  }
-  
-  const stats = {
-    total: window.plongeurs.length,
-    parNiveau: {}
-  };
-  
-  window.plongeurs.forEach(plongeur => {
-    const niveau = plongeur.niveau.toUpperCase();
-    stats.parNiveau[niveau] = (stats.parNiveau[niveau] || 0) + 1;
-  });
-  
-  return stats;
 }
 
 // ===== INITIALISATION =====
-
-// Initialisation du gestionnaire de plongeurs
 function initializePlongeursManager() {
   console.log("🏊‍♂️ Initialisation du gestionnaire de plongeurs...");
   
   try {
-    // Initialiser les variables globales si elles n'existent pas
+    // S'assurer que les variables globales existent
     if (typeof window.plongeurs === 'undefined') {
       window.plongeurs = [];
     }
@@ -779,33 +793,32 @@ function initializePlongeursManager() {
     // Configurer les event listeners
     setupPlongeursEventListeners();
     
-    // Ajouter le bouton de chargement des prédéfinis
-    setTimeout(() => {
-      ajouterBoutonChargementPredefinis();
-    }, 100);
-    
-    // Charger automatiquement les plongeurs prédéfinis si la liste est vide
-    if (window.plongeurs.length === 0) {
-      console.log("📋 Liste vide détectée, chargement automatique des plongeurs JSA...");
-      setTimeout(() => {
-        chargerPlongeursPredefinis();
-      }, 1000); // Délai pour laisser l'interface se charger
-    }
-    
-    // Diagnostic initial
-    setTimeout(() => {
-      diagnosticPlongeurs();
-    }, 2000);
-    
-    console.log("✅ Gestionnaire de plongeurs initialisé avec succès");
+    console.log("✅ Gestionnaire de plongeurs initialisé");
     
   } catch (error) {
-    console.error("❌ Erreur initialisation plongeurs:", error);
-    showPlongeursMessage("❌ Erreur lors de l'initialisation", "error");
+    console.error("❌ Erreur initialisation gestionnaire plongeurs:", error);
   }
 }
 
-// ===== AUTO-INITIALISATION =====
+// ===== EXPORTS GLOBAUX =====
+window.addPlongeur = addPlongeur;
+window.removePlongeur = removePlongeur;
+window.sortPlongeurs = sortPlongeurs;
+window.importPlongeursFromJSON = importPlongeursFromJSON;
+window.exportPlongeursToJSON = exportPlongeursToJSON;
+window.exportPlongeursToCSV = exportPlongeursToCSV;
+window.searchPlongeurs = searchPlongeurs;
+window.validatePlongeur = validatePlongeur;
+window.getPlongeursStats = getPlongeursStats;
+window.getPlongeurByIndex = getPlongeurByIndex;
+window.findPlongeurIndex = findPlongeurIndex;
+window.updatePlongeurPrerogatives = updatePlongeurPrerogatives;
+window.getPrerogativesSuggestions = getPrerogativesSuggestions;
+window.showPrerogativesSuggestions = showPrerogativesSuggestions;
+window.addMultiplePlongeurs = addMultiplePlongeurs;
+window.clearAllPlongeurs = clearAllPlongeurs;
+window.diagnosticPlongeurs = diagnosticPlongeurs;
+window.initializePlongeursManager = initializePlongeursManager;
 
 // Auto-initialisation
 if (document.readyState === 'loading') {
@@ -814,20 +827,4 @@ if (document.readyState === 'loading') {
   initializePlongeursManager();
 }
 
-// ===== EXPORTS GLOBAUX =====
-window.addPlongeur = addPlongeur;
-window.removePlongeur = removePlongeur;
-window.sortPlongeurs = sortPlongeurs;
-window.exportPlongeursToJSON = exportPlongeursToJSON;
-window.importPlongeursFromJSON = importPlongeursFromJSON;
-window.chargerPlongeursPredefinis = chargerPlongeursPredefinis;
-window.ajouterBoutonChargementPredefinis = ajouterBoutonChargementPredefinis;
-window.validatePlongeur = validatePlongeur;
-window.diagnosticPlongeurs = diagnosticPlongeurs;
-window.showPlongeursMessage = showPlongeursMessage;
-window.cleanupPlongeurs = cleanupPlongeurs;
-window.searchPlongeurs = searchPlongeurs;
-window.getPlongeursStats = getPlongeursStats;
-window.getPrerogativesParDefaut = getPrerogativesParDefaut;
-window.setupPlongeursEventListeners = setupPlongeursEventListeners;
-window.initializePlongeursManager = initializePlongeursManager;
+console.log("🏊‍♂️ Module Plongeurs Manager chargé - Toutes fonctionnalités plongeurs disponibles");
