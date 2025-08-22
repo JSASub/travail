@@ -247,14 +247,65 @@ function updateDpSelect() {
   updateButtonStates();
 }
 
-// ===== SYNCHRONISATION AVEC LA ZONE DE SESSION =====
-function updateSessionDpDisplay() {
-  const sessionSelect = document.querySelector('#meta-info select, [id*="session"] select, [class*="session"] select');
+// ===== DIAGNOSTIC DES ÉLÉMENTS DP =====
+function findDpElements() {
+  console.log('🔍 Recherche des éléments DP sur la page...');
   
-  if (sessionSelect && sessionSelect !== document.getElementById('dp-select')) {
-    console.log('🔄 Synchronisation avec la zone de session...');
+  // Chercher tous les selects
+  const selects = document.querySelectorAll('select');
+  console.log('📋 Selects trouvés:', selects.length);
+  
+  selects.forEach((select, index) => {
+    console.log(`Select ${index}:`, {
+      id: select.id,
+      name: select.name,
+      classes: select.className,
+      options: select.options.length
+    });
+  });
+  
+  // Chercher des éléments avec 'dp' dans l'ID ou classe
+  const dpElements = document.querySelectorAll('[id*="dp"], [class*="dp"]');
+  console.log('🎯 Éléments avec "dp":', dpElements.length);
+  
+  dpElements.forEach((elem, index) => {
+    console.log(`DP Element ${index}:`, {
+      tag: elem.tagName,
+      id: elem.id,
+      classes: elem.className,
+      type: elem.type
+    });
+  });
+}
+
+// ===== SYNCHRONISATION AMÉLIORÉE =====
+function updateSessionDpDisplay() {
+  // Diagnostic
+  findDpElements();
+  
+  // Chercher le select principal (pas celui de gestion)
+  const allSelects = document.querySelectorAll('select');
+  const managementSelect = document.getElementById('dp-select');
+  
+  let sessionSelect = null;
+  
+  // Trouver le select qui n'est pas celui de gestion
+  allSelects.forEach(select => {
+    if (select !== managementSelect && 
+        (select.id.includes('dp') || select.className.includes('dp') || 
+         select.name && select.name.includes('dp'))) {
+      sessionSelect = select;
+      console.log('🎯 Select de session trouvé:', select.id || select.className);
+    }
+  });
+  
+  if (sessionSelect) {
+    console.log('🔄 Synchronisation avec le select de session...');
     
-    // Vider et remplir la zone de session
+    // Sauvegarder la valeur actuelle
+    const currentValue = sessionSelect.value;
+    
+    // Vider et remplir
     sessionSelect.innerHTML = '<option value="">-- Choisir un DP --</option>';
     
     DP_LIST.forEach(dp => {
@@ -264,7 +315,14 @@ function updateSessionDpDisplay() {
       sessionSelect.appendChild(option);
     });
     
-    console.log('✅ Zone de session mise à jour avec', DP_LIST.length, 'DP');
+    // Restaurer la valeur si possible
+    if (currentValue && DP_LIST.find(dp => dp.id === currentValue)) {
+      sessionSelect.value = currentValue;
+    }
+    
+    console.log('✅ Select de session synchronisé avec', DP_LIST.length, 'DP');
+  } else {
+    console.log('⚠️ Aucun select de session trouvé pour synchronisation');
   }
 }
 
