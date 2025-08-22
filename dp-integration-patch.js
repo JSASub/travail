@@ -655,6 +655,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
     console.log('📋 Liste finale:', DP_LIST.map(dp => dp.nom));
+    
+    // Écouter les changements de session pour synchroniser automatiquement
+    watchForSessionChanges();
+    
   }, 1000);
   
   // Gestionnaires d'événements
@@ -705,6 +709,72 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 });
+
+// ===== SURVEILLANCE DES CHANGEMENTS DE SESSION =====
+function watchForSessionChanges() {
+  console.log('👁️ Surveillance des changements de session activée...');
+  
+  // Observer les changements dans le DOM pour détecter les nouvelles sessions
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('Session chargée')) {
+            console.log('🔔 Nouvelle session détectée:', node.textContent);
+            
+            // Attendre un peu puis synchroniser
+            setTimeout(() => {
+              tryAutoSync();
+            }, 500);
+          }
+        });
+      }
+    });
+  });
+  
+  // Observer tout le body pour les changements
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  // Tentative de synchronisation immédiate au cas où la session serait déjà chargée
+  setTimeout(() => {
+    tryAutoSync();
+  }, 2000);
+}
+
+// ===== TENTATIVE DE SYNCHRONISATION =====
+function tryAutoSync() {
+  console.log('🔄 Tentative de synchronisation automatique...');
+  
+  const sessionDp = extractDpFromSession();
+  
+  if (sessionDp) {
+    console.log('🎯 DP de session détecté:', sessionDp);
+    
+    const matchingDp = DP_LIST.find(dp => {
+      const parts = dp.nom.split(' ');
+      const nom = parts[0];
+      return nom && nom.toLowerCase() === sessionDp.toLowerCase();
+    });
+    
+    if (matchingDp) {
+      console.log('✅ Correspondance trouvée:', matchingDp.nom);
+      
+      const dpSelect = document.getElementById('dp-select');
+      if (dpSelect && dpSelect.value !== matchingDp.id) {
+        dpSelect.value = matchingDp.id;
+        onDpSelectionChange();
+        console.log('🔄 Sélecteur DP mis à jour automatiquement avec:', matchingDp.nom);
+      }
+    } else {
+      console.log('❌ Aucune correspondance pour:', sessionDp);
+    }
+  } else {
+    console.log('⚠️ Aucun DP de session détecté pour synchronisation');
+  }
+}
 
 // ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
 window.getDpList = () => DP_LIST;
