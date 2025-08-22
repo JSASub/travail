@@ -1,5 +1,5 @@
 // dp-management.js - Gestionnaire automatisé des DP avec sauvegarde Firebase
-console.log('🔥 DP-MANAGER VERSION MISE À JOUR CHARGÉE !');
+
 // ===== DONNÉES DES DP =====
 let DP_LIST = [
   { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
@@ -370,31 +370,36 @@ function extractDpFromSession() {
 function findDpByPartialName(partialName) {
   if (!partialName) return null;
   
+  console.log('🔍 Recherche DP pour:', partialName);
+  
   const searchTerm = partialName.toLowerCase().trim();
   
-  // Recherche par prénom
+  // NE PAS chercher "Raoul" automatiquement !
+  // Chercher d'abord par nom de famille (plus important)
   let found = DP_LIST.find(dp => {
-    const prenom = dp.nom.split(' ')[1]?.toLowerCase();
-    return prenom === searchTerm;
+    const nom = dp.nom.split(' ')[0]?.toLowerCase(); // "GAUTHIER" -> "gauthier"
+    const match = nom === searchTerm;
+    if (match) {
+      console.log('🎯 DP trouvé par nom de famille:', dp.nom);
+    }
+    return match;
   });
   
-  if (found) {
-    console.log('🎯 DP trouvé par prénom:', found.nom);
-    return found;
-  }
+  if (found) return found;
   
-  // Recherche par nom de famille
+  // Puis chercher par prénom seulement si pas trouvé par nom
   found = DP_LIST.find(dp => {
-    const nom = dp.nom.split(' ')[0]?.toLowerCase();
-    return nom === searchTerm;
+    const prenom = dp.nom.split(' ')[1]?.toLowerCase();
+    const match = prenom === searchTerm;
+    if (match) {
+      console.log('🎯 DP trouvé par prénom:', dp.nom);
+    }
+    return match;
   });
   
-  if (found) {
-    console.log('🎯 DP trouvé par nom:', found.nom);
-    return found;
-  }
+  if (found) return found;
   
-  // Recherche partielle
+  // Recherche partielle en dernier recours
   found = DP_LIST.find(dp => 
     dp.nom.toLowerCase().includes(searchTerm)
   );
@@ -404,6 +409,7 @@ function findDpByPartialName(partialName) {
     return found;
   }
   
+  console.log('❌ Aucun DP trouvé pour:', partialName);
   return null;
 }
 
@@ -411,20 +417,12 @@ function findDpByPartialName(partialName) {
 function syncWithExistingSession() {
   console.log('🔄 Synchronisation avec session existante...');
   
-  // Méthode 1 : Correspondance automatique
+  // NE PAS forcer "Raoul" ! Chercher le vrai DP de session
   const matched = matchSessionDpWithList();
   
   if (!matched) {
-    // Méthode 2 : Recherche par "Raoul" 
-    const raoulDp = findDpByPartialName('Raoul');
-    if (raoulDp) {
-      const dpSelect = document.getElementById('dp-select');
-      if (dpSelect) {
-        dpSelect.value = raoulDp.id;
-        onDpSelectionChange();
-        console.log('✅ DP "Raoul" sélectionné automatiquement');
-      }
-    }
+    console.log('⚠️ Aucune correspondance automatique trouvée');
+    console.log('💡 Le sélecteur restera vide pour permettre sélection manuelle');
   }
 }
 
@@ -657,6 +655,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
     console.log('📋 Liste finale:', DP_LIST.map(dp => dp.nom));
+    
+    // Écouter les changements de session pour synchroniser automatiquement
+    watchForSessionChanges();
+    
   }, 1000);
   
   // Gestionnaires d'événements
@@ -707,6 +709,72 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 });
+
+// ===== SURVEILLANCE DES CHANGEMENTS DE SESSION =====
+function watchForSessionChanges() {
+  console.log('👁️ Surveillance des changements de session activée...');
+  
+  // Observer les changements dans le DOM pour détecter les nouvelles sessions
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('Session chargée')) {
+            console.log('🔔 Nouvelle session détectée:', node.textContent);
+            
+            // Attendre un peu puis synchroniser
+            setTimeout(() => {
+              tryAutoSync();
+            }, 500);
+          }
+        });
+      }
+    });
+  });
+  
+  // Observer tout le body pour les changements
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  // Tentative de synchronisation immédiate au cas où la session serait déjà chargée
+  setTimeout(() => {
+    tryAutoSync();
+  }, 2000);
+}
+
+// ===== TENTATIVE DE SYNCHRONISATION =====
+function tryAutoSync() {
+  console.log('🔄 Tentative de synchronisation automatique...');
+  
+  const sessionDp = extractDpFromSession();
+  
+  if (sessionDp) {
+    console.log('🎯 DP de session détecté:', sessionDp);
+    
+    const matchingDp = DP_LIST.find(dp => {
+      const parts = dp.nom.split(' ');
+      const nom = parts[0];
+      return nom && nom.toLowerCase() === sessionDp.toLowerCase();
+    });
+    
+    if (matchingDp) {
+      console.log('✅ Correspondance trouvée:', matchingDp.nom);
+      
+      const dpSelect = document.getElementById('dp-select');
+      if (dpSelect && dpSelect.value !== matchingDp.id) {
+        dpSelect.value = matchingDp.id;
+        onDpSelectionChange();
+        console.log('🔄 Sélecteur DP mis à jour automatiquement avec:', matchingDp.nom);
+      }
+    } else {
+      console.log('❌ Aucune correspondance pour:', sessionDp);
+    }
+  } else {
+    console.log('⚠️ Aucun DP de session détecté pour synchronisation');
+  }
+}
 
 // ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
 window.getDpList = () => DP_LIST;
