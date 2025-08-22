@@ -7,6 +7,142 @@ if (window.location.hostname !== 'localhost' && window.location.hostname !== '12
     if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('❌'))) {
       originalConsoleLog.apply(console, arguments);
     }
+}
+
+// ===== SYNCHRONISATION BASE DE DONNÉES =====
+async function syncToDatabase() {
+  console.log("💾 Synchronisation Firebase...");
+  
+  try {
+    // S'assurer que les variables globales existent et sont des tableaux
+    if (typeof plongeurs === 'undefined') window.plongeurs = [];
+    if (typeof palanquees === 'undefined') window.palanquees = [];
+    if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
+    
+    // Mettre à jour plongeursOriginaux
+    plongeursOriginaux = [...plongeurs];
+    
+    // Re-rendre l'interface
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    if (typeof updateCompteurs === 'function') updateCompteurs();
+    
+    // Sauvegarder dans Firebase si connecté
+    if (typeof firebaseConnected !== 'undefined' && firebaseConnected && typeof db !== 'undefined' && db) {
+      try {
+        await Promise.all([
+          db.ref('plongeurs').set(plongeurs),
+          db.ref('palanquees').set(palanquees)
+        ]);
+        
+        // Sauvegarder la session si les métadonnées sont remplies
+        if (typeof saveSessionData === 'function') {
+          await saveSessionData();
+        }
+        
+        console.log("✅ Sauvegarde Firebase réussie");
+        
+      } catch (error) {
+        console.error("❌ Erreur sync Firebase:", error.message);
+        
+        // Utiliser le gestionnaire d'erreurs si disponible
+        if (typeof handleFirebaseError === 'function') {
+          handleFirebaseError(error, 'Synchronisation');
+        }
+      }
+    } else {
+      console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur syncToDatabase:", error);
+    handleError(error, "Synchronisation base de données");
+  }
+}
+
+// ===== CHARGEMENT DEPUIS FIREBASE =====
+async function loadFromFirebase() {
+  try {
+    console.log("🔥 Chargement des données depuis Firebase...");
+    
+    if (!db) {
+      console.warn("⚠️ DB non disponible");
+      return;
+    }
+    
+    // Charger les plongeurs
+    const plongeursSnapshot = await db.ref('plongeurs').once('value');
+    if (plongeursSnapshot.exists()) {
+      plongeurs = plongeursSnapshot.val() || [];
+      console.log("✅ Plongeurs chargés:", plongeurs.length);
+    }
+    
+    // Charger les palanquées avec correction automatique
+    const palanqueesSnapshot = await db.ref('palanquees').once('value');
+    if (palanqueesSnapshot.exists()) {
+      const rawPalanquees = palanqueesSnapshot.val() || [];
+      
+      palanquees = rawPalanquees.map((pal, index) => {
+        if (Array.isArray(pal)) {
+          // S'assurer que toutes les propriétés existent
+          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
+          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
+          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
+          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
+          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
+          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
+          return pal;
+        } else if (pal && typeof pal === 'object') {
+          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+          
+          const nouveauTableau = [];
+          Object.keys(pal).forEach(key => {
+            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
+              nouveauTableau.push(pal[key]);
+            }
+          });
+          
+          // Ajouter les propriétés spéciales
+          nouveauTableau.horaire = pal.horaire || '';
+          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
+          nouveauTableau.dureePrevue = pal.dureePrevue || '';
+          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
+          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
+          nouveauTableau.paliers = pal.paliers || '';
+          
+          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          return nouveauTableau;
+        }
+        
+        // Palanquée vide par défaut
+        const nouveauTableau = [];
+        nouveauTableau.horaire = '';
+        nouveauTableau.profondeurPrevue = '';
+        nouveauTableau.dureePrevue = '';
+        nouveauTableau.profondeurRealisee = '';
+        nouveauTableau.dureeRealisee = '';
+        nouveauTableau.paliers = '';
+        return nouveauTableau;
+      });
+      
+      console.log("✅ Palanquées chargées:", palanquees.length);
+    } else {
+      palanquees = [];
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
+    // Rendu sécurisé
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    if (typeof updateCompteurs === 'function') updateCompteurs();
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement Firebase:", error);
+    handleError(error, "Chargement Firebase");
+  }
   };
 }
 
@@ -749,5 +885,7 @@ window.testFirebaseConnectionSafe = testFirebaseConnectionSafe;
 window.initializeAppData = initializeAppData;
 window.setupDragAndDrop = setupDragAndDrop;
 window.setupEventListeners = setupEventListeners;
+window.syncToDatabase = syncToDatabase;
+window.loadFromFirebase = loadFromFirebase;
 
 console.log("✅ Main Core sécurisé chargé - Version 3.0.1");
