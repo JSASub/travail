@@ -1,5 +1,5 @@
 // dp-management.js - Gestionnaire automatisé des DP avec sauvegarde Firebase
-
+console.log('🔥 DP-MANAGER VERSION MISE À JOUR CHARGÉE !');
 // ===== DONNÉES DES DP =====
 let DP_LIST = [
   { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
