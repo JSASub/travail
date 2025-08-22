@@ -247,41 +247,130 @@ function updateDpSelect() {
   updateButtonStates();
 }
 
-// ===== DIAGNOSTIC DES ÉLÉMENTS DP =====
-function findDpElements() {
-  console.log('🔍 Recherche des éléments DP sur la page...');
+// ===== CORRESPONDANCE AUTOMATIQUE AVEC SESSION EXISTANTE =====
+function matchSessionDpWithList() {
+  console.log('🔍 Recherche de correspondance avec session existante...');
   
-  // Chercher tous les selects
-  const selects = document.querySelectorAll('select');
-  console.log('📋 Selects trouvés:', selects.length);
-  
-  selects.forEach((select, index) => {
-    console.log(`Select ${index}:`, {
-      id: select.id,
-      name: select.name,
-      classes: select.className,
-      options: select.options.length
-    });
+  // Diagnostic détaillé
+  console.log('📋 Liste DP disponible :');
+  DP_LIST.forEach(dp => {
+    const parts = dp.nom.split(' ');
+    console.log(`- ${dp.nom} → Nom: "${parts[0]}", Prénom: "${parts[1] || 'N/A'}"`);
   });
   
-  // Chercher des éléments avec 'dp' dans l'ID ou classe
-  const dpElements = document.querySelectorAll('[id*="dp"], [class*="dp"]');
-  console.log('🎯 Éléments avec "dp":', dpElements.length);
+  // Chercher "Raoul" spécifiquement (le plus probable)
+  let sessionDpName = "Raoul"; // Ce qu'on cherche
+  console.log('🎯 Recherche pour:', sessionDpName);
   
-  dpElements.forEach((elem, index) => {
-    console.log(`DP Element ${index}:`, {
-      tag: elem.tagName,
-      id: elem.id,
-      classes: elem.className,
-      type: elem.type
-    });
+  // Nouvelle recherche améliorée
+  const matchingDp = DP_LIST.find(dp => {
+    const parts = dp.nom.split(' ');
+    const nom = parts[0];           // "AGUIRRE"
+    const prenom = parts[1];        // "Raoul"
+    
+    console.log(`🔍 Test: "${dp.nom}" → Nom:"${nom}", Prénom:"${prenom}"`);
+    
+    // Correspondance exacte avec le prénom
+    const match = prenom && prenom.toLowerCase() === sessionDpName.toLowerCase();
+    
+    if (match) {
+      console.log(`✅ CORRESPONDANCE TROUVÉE ! "${sessionDpName}" = "${prenom}" dans "${dp.nom}"`);
+    }
+    
+    return match;
   });
+  
+  if (matchingDp) {
+    console.log('🎯 DP correspondant trouvé:', matchingDp.nom);
+    
+    // Mettre à jour le sélecteur
+    const dpSelect = document.getElementById('dp-select');
+    if (dpSelect) {
+      console.log('🔄 Mise à jour du sélecteur avec ID:', matchingDp.id);
+      dpSelect.value = matchingDp.id;
+      
+      // Vérifier que la sélection a fonctionné
+      console.log('📋 Valeur du sélecteur après mise à jour:', dpSelect.value);
+      console.log('📋 Texte sélectionné:', dpSelect.options[dpSelect.selectedIndex]?.textContent);
+      
+      // Déclencher l'événement de changement
+      onDpSelectionChange();
+      
+      return matchingDp;
+    }
+  } else {
+    console.log('❌ Aucune correspondance trouvée pour:', sessionDpName);
+    console.log('💡 Vérifiez que "Raoul" est bien le prénom d\'un DP dans la liste');
+  }
+  
+  return null;
+}
+
+// ===== SYNCHRONISATION AVEC NOM PARTIEL =====
+function findDpByPartialName(partialName) {
+  if (!partialName) return null;
+  
+  const searchTerm = partialName.toLowerCase().trim();
+  
+  // Recherche par prénom
+  let found = DP_LIST.find(dp => {
+    const prenom = dp.nom.split(' ')[1]?.toLowerCase();
+    return prenom === searchTerm;
+  });
+  
+  if (found) {
+    console.log('🎯 DP trouvé par prénom:', found.nom);
+    return found;
+  }
+  
+  // Recherche par nom de famille
+  found = DP_LIST.find(dp => {
+    const nom = dp.nom.split(' ')[0]?.toLowerCase();
+    return nom === searchTerm;
+  });
+  
+  if (found) {
+    console.log('🎯 DP trouvé par nom:', found.nom);
+    return found;
+  }
+  
+  // Recherche partielle
+  found = DP_LIST.find(dp => 
+    dp.nom.toLowerCase().includes(searchTerm)
+  );
+  
+  if (found) {
+    console.log('🎯 DP trouvé par recherche partielle:', found.nom);
+    return found;
+  }
+  
+  return null;
+}
+
+// ===== SYNCHRONISATION GLOBALE =====
+function syncWithExistingSession() {
+  console.log('🔄 Synchronisation avec session existante...');
+  
+  // Méthode 1 : Correspondance automatique
+  const matched = matchSessionDpWithList();
+  
+  if (!matched) {
+    // Méthode 2 : Recherche par "Raoul" 
+    const raoulDp = findDpByPartialName('Raoul');
+    if (raoulDp) {
+      const dpSelect = document.getElementById('dp-select');
+      if (dpSelect) {
+        dpSelect.value = raoulDp.id;
+        onDpSelectionChange();
+        console.log('✅ DP "Raoul" sélectionné automatiquement');
+      }
+    }
+  }
 }
 
 // ===== SYNCHRONISATION AMÉLIORÉE =====
 function updateSessionDpDisplay() {
-  // Diagnostic
-  findDpElements();
+  console.log('🔄 Synchronisation avec la zone de session...');
   
   // Chercher le select principal (pas celui de gestion)
   const allSelects = document.querySelectorAll('select');
@@ -324,6 +413,11 @@ function updateSessionDpDisplay() {
   } else {
     console.log('⚠️ Aucun select de session trouvé pour synchronisation');
   }
+  
+  // Tenter la synchronisation avec session existante
+  setTimeout(() => {
+    syncWithExistingSession();
+  }, 500);
 }
 
 // ===== ÉVÉNEMENT DE SÉLECTION DP =====
