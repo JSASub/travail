@@ -1,5 +1,5 @@
 // config-firebase.js - Configuration Firebase et services de base (VERSION ULTRA-SÉCURISÉE)
-
+//
 // Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
