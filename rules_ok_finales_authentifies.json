@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "plongeurs": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "palanquees": {
+      ".read": "auth != null", 
+      ".write": "auth != null"
+    },
+    "sessions": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "dpInfo": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "test": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "test-button": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "palanquee_locks": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+      "dp_online": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
