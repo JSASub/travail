@@ -48,6 +48,300 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   font-size: 0.9em;
 }
 
+/* ===== STYLES POUR LA GESTION AUTOMATISÉE DES DP ===== */
+
+/* Conteneur principal de sélection DP */
+#meta-info label:first-child {
+  position: relative;
+}
+
+#meta-info label:first-child > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+
+/* Liste déroulante DP */
+#dp-select {
+  flex: 1;
+  min-width: 250px;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+#dp-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+#dp-select option {
+  padding: 8px;
+}
+
+/* Boutons de gestion DP */
+.dp-management-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#dp-add-btn {
+  background: #28a745;
+  color: white;
+}
+
+#dp-add-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+#dp-edit-btn {
+  background: #ffc107;
+  color: #212529;
+}
+
+#dp-edit-btn:hover:not(:disabled) {
+  background: #e0a800;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+#dp-delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+#dp-delete-btn:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* États désactivés */
+#dp-edit-btn:disabled,
+#dp-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Modal DP */
+#dp-modal {
+  animation: fadeInModal 0.3s ease;
+}
+
+#dp-modal > div {
+  animation: slideInModal 0.3s ease;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInModal {
+  from { 
+    transform: translateY(-50px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+/* Champs du modal */
+#dp-modal input,
+#dp-modal select {
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+#dp-modal input:focus,
+#dp-modal select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Boutons du modal */
+#dp-modal button {
+  transition: all 0.3s ease;
+}
+
+#dp-modal button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#modal-save {
+  background: #007bff !important;
+}
+
+#modal-save:hover {
+  background: #0056b3 !important;
+}
+
+#modal-cancel {
+  background: #6c757d !important;
+}
+
+#modal-cancel:hover {
+  background: #545b62 !important;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  #meta-info label:first-child > div {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  #dp-select {
+    min-width: unset;
+    width: 100%;
+  }
+  
+  .dp-management-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  #dp-modal > div {
+    margin: 20px;
+    width: calc(100% - 40px);
+    max-width: none;
+  }
+  
+  #dp-modal button {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Très petit écran */
+@media (max-width: 480px) {
+  #meta-info label:first-child > div {
+    gap: 8px;
+  }
+  
+  .dp-management-btn {
+    font-size: 11px;
+    padding: 8px;
+  }
+  
+  #dp-modal > div {
+    margin: 10px;
+    width: calc(100% - 20px);
+    padding: 20px;
+  }
+}
+
+/* Animation pour le changement de DP */
+#dp-select.dp-changed {
+  border-color: #28a745;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  animation: dpSelectedPulse 1s ease;
+}
+
+@keyframes dpSelectedPulse {
+  0% { 
+    border-color: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  }
+  50% { 
+    border-color: #34ce57;
+    box-shadow: 0 0 12px rgba(40, 167, 69, 0.6);
+  }
+  100% { 
+    border-color: #ddd;
+    box-shadow: none;
+  }
+}
+
+/* Indicateur de niveau dans la liste déroulante */
+#dp-select option {
+  background: white;
+  color: #333;
+}
+
+/* Style pour différencier les niveaux E3 et P5 */
+#dp-select option[data-niveau="E3"] {
+  background: #e3f2fd;
+}
+
+#dp-select option[data-niveau="P5"] {
+  background: #f3e5f5;
+}
+
+/* Amélioration visuelle du label */
+#meta-info label:first-child strong {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #004080;
+  font-size: 14px;
+  position: relative;
+}
+
+#meta-info label:first-child strong::after {
+  content: " *";
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Tooltip pour les boutons désactivés */
+.dp-management-btn[disabled] {
+  position: relative;
+}
+
+.dp-management-btn[disabled]:hover::after {
+  content: "Sélectionnez un DP";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+.dp-management-btn[disabled]:hover::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+  margin-bottom: 1px;
+}
+
 /* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
 .dp-status-indicator {
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
