@@ -258,11 +258,16 @@ function matchSessionDpWithList() {
     console.log(`- ${dp.nom} → Nom: "${parts[0]}", Prénom: "${parts[1] || 'N/A'}"`);
   });
   
-  // Chercher "Raoul" spécifiquement (le plus probable)
-  let sessionDpName = "Raoul"; // Ce qu'on cherche
-  console.log('🎯 Recherche pour:', sessionDpName);
+  // Chercher le vrai DP de la session (pas forcer "Raoul")
+  let sessionDpName = extractDpFromSession();
+  console.log('🎯 DP extrait de la session:', sessionDpName);
   
-  // Nouvelle recherche améliorée
+  if (!sessionDpName) {
+    console.log('⚠️ Aucun DP détecté dans la session');
+    return null;
+  }
+  
+  // Nouvelle recherche améliorée - chercher par prénom OU nom
   const matchingDp = DP_LIST.find(dp => {
     const parts = dp.nom.split(' ');
     const nom = parts[0];           // "AGUIRRE"
@@ -270,14 +275,18 @@ function matchSessionDpWithList() {
     
     console.log(`🔍 Test: "${dp.nom}" → Nom:"${nom}", Prénom:"${prenom}"`);
     
-    // Correspondance exacte avec le prénom
-    const match = prenom && prenom.toLowerCase() === sessionDpName.toLowerCase();
+    // Correspondance avec le prénom OU le nom de famille
+    const matchPrenom = prenom && prenom.toLowerCase() === sessionDpName.toLowerCase();
+    const matchNom = nom && nom.toLowerCase() === sessionDpName.toLowerCase();
     
-    if (match) {
-      console.log(`✅ CORRESPONDANCE TROUVÉE ! "${sessionDpName}" = "${prenom}" dans "${dp.nom}"`);
+    if (matchPrenom) {
+      console.log(`✅ CORRESPONDANCE PRÉNOM ! "${sessionDpName}" = "${prenom}" dans "${dp.nom}"`);
+    }
+    if (matchNom) {
+      console.log(`✅ CORRESPONDANCE NOM ! "${sessionDpName}" = "${nom}" dans "${dp.nom}"`);
     }
     
-    return match;
+    return matchPrenom || matchNom;
   });
   
   if (matchingDp) {
@@ -300,9 +309,60 @@ function matchSessionDpWithList() {
     }
   } else {
     console.log('❌ Aucune correspondance trouvée pour:', sessionDpName);
-    console.log('💡 Vérifiez que "Raoul" est bien le prénom d\'un DP dans la liste');
+    console.log('💡 DP disponibles:', DP_LIST.map(dp => dp.nom).join(', '));
   }
   
+  return null;
+}
+
+// ===== EXTRACTION DU DP DEPUIS LA SESSION =====
+function extractDpFromSession() {
+  // Chercher dans le titre de la page ou éléments visibles
+  const title = document.title || '';
+  const bodyText = document.body.textContent || '';
+  
+  console.log('🔍 Recherche DP dans:');
+  console.log('- Title:', title);
+  console.log('- Body (premiers 200 char):', bodyText.substring(0, 200));
+  
+  // Patterns de recherche pour différents formats
+  const patterns = [
+    /Session.*?(\w+)_/i,              // "2025-08-23_Gauthier_apres-midi"
+    /DP[:\s]+(\w+)/i,                 // "DP: Gauthier" ou "DP Gauthier"
+    /Directeur.*?(\w+)/i,             // "Directeur Gauthier"
+    /_(\w+)_/i,                       // "_Gauthier_"
+    /\b(AGUIRRE|AUBARD|BEST|CABIROL|CATTEROU|DARDER|GAUTHIER|MAOUT|MARTY|TROUBADIS)\b/i // Noms directs
+  ];
+  
+  for (const pattern of patterns) {
+    let match = title.match(pattern);
+    if (match) {
+      console.log(`✅ DP trouvé dans title avec pattern ${pattern}: "${match[1]}"`);
+      return match[1];
+    }
+    
+    match = bodyText.match(pattern);
+    if (match) {
+      console.log(`✅ DP trouvé dans body avec pattern ${pattern}: "${match[1]}"`);
+      return match[1];
+    }
+  }
+  
+  // Recherche spécifique dans les messages de log (pour "Gauthier")
+  const logMessages = document.querySelectorAll('*');
+  for (const element of logMessages) {
+    const text = element.textContent || '';
+    if (text.includes('Session chargée') && text.includes('_')) {
+      const parts = text.split('_');
+      if (parts.length >= 2) {
+        const dpName = parts[1];
+        console.log(`✅ DP trouvé dans log de session: "${dpName}"`);
+        return dpName;
+      }
+    }
+  }
+  
+  console.log('⚠️ Aucun DP détecté automatiquement');
   return null;
 }
 
