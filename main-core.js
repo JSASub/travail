@@ -153,7 +153,6 @@ async function loadFromFirebase() {
     handleError(error, "Chargement Firebase");
   }
   };
-}
 
 // ===== FONCTIONS UTILITAIRES SÉCURISÉES =====
 function showAuthError(message) {
