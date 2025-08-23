@@ -1,5 +1,5 @@
 // dp-management.js - Gestionnaire automatisé des DP - Version complète et corrigée
-
+console.log('🔥 TEST - DEBUT DU FICHIER DP-MANAGEMENT.JS !')
 // ===== DONNÉES DES DP COMPLÈTES =====
 let DP_LIST = [
   { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
