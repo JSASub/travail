@@ -1,5 +1,5 @@
 // dp-management.js - Gestionnaire automatisé des DP avec synchronisation corrigée
-
+console.log('🔥 NOUVEAU DP-MANAGEMENT.JS CHARGÉ !');
 // ===== DONNÉES DES DP =====
 let DP_LIST = [
   { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
