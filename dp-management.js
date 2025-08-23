@@ -443,6 +443,7 @@ function tryAutoSync() {
 }
 
 // ===== SURVEILLANCE DES CHANGEMENTS DE SESSION CORRIGÉE =====
+/*
 function setupSessionObserver() {
   console.log('👁️ Configuration de la surveillance des sessions...');
   
@@ -489,7 +490,7 @@ function setupSessionObserver() {
   
   console.log('✅ MutationObserver configuré pour détecter les sessions');
 }
-
+*/
 // ===== ÉVÉNEMENTS =====
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🔄 Initialisation du gestionnaire DP...');
@@ -504,7 +505,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
     
     // Configurer la surveillance des sessions
-    setupSessionObserver();
+    //setupSessionObserver();
     
     // Tentative de synchronisation immédiate
     setTimeout(() => tryAutoSync(), 2000);
