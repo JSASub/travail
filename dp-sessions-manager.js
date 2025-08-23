@@ -653,7 +653,10 @@ function clearCurrentSessionDisplay() {
 // NOUVELLE FONCTION : Mettre à jour l'indicateur après sauvegarde
 function updateCurrentSessionAfterSave() {
   try {
-    const dpNom = document.getElementById("dp-nom")?.value?.trim();
+    const dpSelect = document.getElementById("dp-select");
+const dpNom = dpSelect?.value ? 
+  dpSelect.options[dpSelect.selectedIndex].text.replace(/\s*\([^)]*\)/, '') : 
+  document.getElementById("dp-nom")?.value?.trim();
     const dpDate = document.getElementById("dp-date")?.value;
     const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
     const dpPlongee = document.getElementById("dp-plongee")?.value;
