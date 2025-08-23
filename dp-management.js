@@ -411,7 +411,7 @@ function tryAutoSync() {
   const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})\s*-\s*([A-Z]+)\s+/);
   
   if (sessionMatch) {
-    const sessionDp = sessionMatch[2]; // "GAUTHIER"
+    const sessionDp = sessionMatch[2]; //
     console.log('🎯 DP détecté dans session:', sessionDp);
     
     // Rechercher le DP correspondant dans les options
@@ -443,7 +443,7 @@ function tryAutoSync() {
 }
 
 // ===== SURVEILLANCE DES CHANGEMENTS DE SESSION CORRIGÉE =====
-/*
+
 function setupSessionObserver() {
   console.log('👁️ Configuration de la surveillance des sessions...');
   
@@ -490,7 +490,7 @@ function setupSessionObserver() {
   
   console.log('✅ MutationObserver configuré pour détecter les sessions');
 }
-*/
+
 // ===== ÉVÉNEMENTS =====
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🔄 Initialisation du gestionnaire DP...');
