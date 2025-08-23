@@ -539,6 +539,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     deleteBtn.addEventListener('click', deleteDp);
   }
   
+  // ← Autosync on/off ↓
+  const autoSyncBtn = document.getElementById('auto-sync-btn');
+  if (autoSyncBtn) {
+    autoSyncBtn.addEventListener('click', () => {
+      window.userOverrideDP = false;
+      console.log('🔄 Synchronisation automatique réactivée');
+      showNotification('Synchronisation automatique réactivée', 'info');
+      setTimeout(() => tryAutoSync(), 500);
+    });
+  }
+
+  const saveBtn = document.getElementById('save-dp-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveDp);
+  }
+
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
