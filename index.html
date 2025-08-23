@@ -233,20 +233,22 @@
 
   </div> <!-- Fin main-app -->
 
-<!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
+<!-- Scripts JavaScript modulaires - ORDRE CORRIGÉ -->
 <script src="config-firebase.js"></script>
+<!-- Attendre que Firebase soit initialisé AVANT dp-management -->
 <script src="ui-interface.js"></script>
 <script src="render-dom.js"></script>
 <script src="pdf-manager.js"></script>
 <script src="plongeurs-manager.js"></script>
-<!-- NOUVEAU MODULE DE GESTION DES DP - CHARGER AVANT les sessions -->
-<script src="dp-management.js"></script>
 <script src="dp-sessions-manager.js"></script>
 <script src="main-core.js"></script>
 <script src="simple-lock-system.js"></script>
 <script src="offline-manager.js"></script>
 <script src="password-manager.js"></script>  
-<script src="dp-online-manager.js"></script>script>
+<script src="dp-online-manager.js"></script>
+<!-- CHARGER dp-management EN DERNIER -->
+<script src="dp-management.js"></script>
+
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
 <div id="dp-modal">
   <div class="dp-modal-content">
