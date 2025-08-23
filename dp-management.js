@@ -408,7 +408,7 @@ function tryAutoSync() {
   
   // Chercher "GAUTHIER" directement dans le contenu de la page
   const bodyText = document.body.textContent || '';
-  const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})_([A-Z]+)_/);
+  const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})\s*-\s*([A-Z]+)\s+/);
   
   if (sessionMatch) {
     const sessionDp = sessionMatch[2]; // "GAUTHIER"
