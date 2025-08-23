@@ -1,4 +1,4 @@
-// dp-management.js - Gestionnaire automatisé des DP avec sauvegarde Firebase
+// dp-management.js - Gestionnaire automatisé des DP avec synchronisation corrigée
 
 // ===== DONNÉES DES DP =====
 let DP_LIST = [
@@ -22,21 +22,18 @@ let dpDatabase = null;
 function getFirebaseReference() {
   console.log('🔍 Vérification Firebase...');
   
-  // Vérifier si Firebase est chargé
   if (typeof firebase === 'undefined') {
     console.error('❌ Firebase n\'est pas chargé !');
     console.log('💡 Vérifiez que les scripts Firebase sont bien inclus dans index.html');
     return null;
   }
   
-  // Vérifier si Firebase Database est disponible
   if (!firebase.database) {
     console.error('❌ Firebase Database n\'est pas disponible !');
     console.log('💡 Vérifiez que firebase-database.js est inclus');
     return null;
   }
   
-  // Vérifier si l'app Firebase est initialisée
   try {
     const app = firebase.app();
     console.log('✅ Firebase app disponible:', app.name);
@@ -46,7 +43,6 @@ function getFirebaseReference() {
     return null;
   }
   
-  // Créer ou récupérer la référence
   if (!dpDatabase) {
     try {
       dpDatabase = firebase.database().ref('dp_database');
@@ -69,28 +65,13 @@ async function saveDpToFirebase() {
   if (dbRef) {
     try {
       console.log('📤 Sauvegarde de', DP_LIST.length, 'DP dans Firebase...');
-      
-      // Sauvegarder la liste complète des DP
       await dbRef.set(DP_LIST);
-      
       console.log('✅ Liste DP sauvegardée dans Firebase avec succès !');
-      console.log('📋 Données sauvegardées:', DP_LIST);
-      
-      // Afficher un message de confirmation temporaire
       showNotification('DP sauvegardés avec succès dans Firebase', 'success');
-      
-      // Vérification immédiate
-      const verification = await dbRef.once('value');
-      const savedData = verification.val();
-      console.log('🔍 Vérification - Données dans Firebase:', savedData);
-      
       return true;
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde Firebase:', error);
-      console.error('📄 Détails de l\'erreur:', error.message);
       showNotification(`Erreur Firebase: ${error.message}`, 'error');
-      
-      // Fallback vers localStorage
       return saveToLocalStorage();
     }
   } else {
@@ -99,7 +80,6 @@ async function saveDpToFirebase() {
   }
 }
 
-// ===== SAUVEGARDE LOCALSTORAGE DE SECOURS =====
 function saveToLocalStorage() {
   try {
     localStorage.setItem('dp_list', JSON.stringify(DP_LIST));
@@ -130,13 +110,8 @@ async function loadDpFromFirebase() {
       if (firebaseData && Array.isArray(firebaseData) && firebaseData.length > 0) {
         DP_LIST = firebaseData;
         console.log('✅ Liste DP chargée depuis Firebase:', DP_LIST.length, 'DP');
-        console.log('📋 DP chargés:', DP_LIST.map(dp => dp.nom));
       } else {
         console.log('ℹ️ Aucune donnée DP valide dans Firebase, utilisation des données par défaut');
-        // Les données par défaut sont déjà dans DP_LIST
-        console.log('📋 Utilisation de', DP_LIST.length, 'DP par défaut');
-        
-        // Sauvegarder les données par défaut dans Firebase
         await saveDpToFirebase();
       }
     } catch (error) {
@@ -149,31 +124,9 @@ async function loadDpFromFirebase() {
     loadDpFromLocalStorage();
   }
   
-  // Vérification finale
   console.log('🔍 Vérification finale - DP_LIST contient:', DP_LIST.length, 'éléments');
-  if (DP_LIST.length === 0) {
-    console.error('❌ PROBLÈME : DP_LIST est vide !');
-    console.log('🔧 Restauration des données par défaut...');
-    
-    // Restaurer les données par défaut
-    DP_LIST = [
-      { id: "dp1", nom: "AGUIRRE Raoul", niveau: "E3", email: "raoul.aguirre64@gmail.com" },
-      { id: "dp2", nom: "AUBARD Corinne", niveau: "P5", email: "aubard.c@gmail.com" },
-      { id: "dp3", nom: "BEST Sébastien", niveau: "P5", email: "sebastien.best@cma-nouvelleaquitaine.fr" },
-      { id: "dp4", nom: "CABIROL Joël", niveau: "E3", email: "joelcabirol@gmail.com" },
-      { id: "dp5", nom: "CATTEROU Sacha", niveau: "P5", email: "sacha.catterou@orange.fr" },
-      { id: "dp6", nom: "DARDER Olivier", niveau: "P5", email: "olivierdarder@gmail.com" },
-      { id: "dp7", nom: "GAUTHIER Christophe", niveau: "P5", email: "jsasubaquatique24@gmail.com" },
-      { id: "dp8", nom: "LE MAOUT Jean-François", niveau: "P5", email: "jf.lemaout@wanadoo.fr" },
-      { id: "dp9", nom: "MARTY David", niveau: "E3", email: "david.marty@sfr.fr" },
-      { id: "dp10", nom: "TROUBADIS Guillaume", niveau: "P5", email: "guillaume.troubadis@gmail.com" }
-    ];
-    
-    console.log('✅ Données par défaut restaurées:', DP_LIST.length, 'DP');
-  }
 }
 
-// ===== CHARGEMENT DEPUIS LOCALSTORAGE =====
 function loadDpFromLocalStorage() {
   try {
     const stored = localStorage.getItem('dp_list');
@@ -197,34 +150,29 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // Animation d'entrée
   setTimeout(() => notification.classList.add('dp-notification-show'), 100);
   
-  // Suppression automatique après 3 secondes
   setTimeout(() => {
     notification.classList.remove('dp-notification-show');
-    setTimeout(() => document.body.removeChild(notification), 300);
+    setTimeout(() => {
+      if (notification.parentNode) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
   }, 3000);
 }
 
 // ===== TRI ALPHABÉTIQUE =====
 function sortDpList() {
   DP_LIST.sort((a, b) => {
-    // Extraire le nom de famille (dernier mot) pour les noms composés
     const extractLastName = (nomComplet) => {
       const mots = nomComplet.trim().split(' ');
-      // Pour "AGUIRRE Raoul" -> "AGUIRRE"
-      // Pour "LE MAOUT Jean-François" -> "MAOUT" 
-      
-      // Si le premier mot est en majuscules, c'est probablement le nom de famille
       if (mots[0] === mots[0].toUpperCase()) {
-        // Gérer les noms composés comme "LE MAOUT"
         if (mots.length > 2 && (mots[0] === 'LE' || mots[0] === 'DE' || mots[0] === 'DU')) {
           return mots[1].toUpperCase();
         }
         return mots[0].toUpperCase();
       } else {
-        // Si c'est "Prénom NOM", prendre le dernier mot
         return mots[mots.length - 1].toUpperCase();
       }
     };
@@ -264,7 +212,6 @@ function updateDpSelect() {
   
   const currentValue = select.value;
   
-  // Vider et reconstruire les options
   select.innerHTML = '<option value="">-- Choisir un DP --</option>';
   
   if (DP_LIST.length === 0) {
@@ -286,153 +233,17 @@ function updateDpSelect() {
   
   console.log(`✅ ${DP_LIST.length} DP ajoutés au sélecteur`);
   
-  // Restaurer la sélection si possible
   if (currentValue && DP_LIST.find(dp => dp.id === currentValue)) {
     select.value = currentValue;
     console.log('🔄 Valeur restaurée:', currentValue);
   }
   
-  // Synchroniser avec la zone de session si elle existe
-  updateSessionDpDisplay();
-  
   updateButtonStates();
   
-  // Tenter la synchronisation automatique après un délai
+  // Déclencher la détection de session après un délai
   setTimeout(() => {
     tryAutoSync();
   }, 1000);
-}
-
-
-// ===== SYNCHRONISATION AVEC NOM PARTIEL =====
-function findDpByPartialName(partialName) {
-  if (!partialName) return null;
-  
-  console.log('🔍 Recherche DP pour:', partialName);
-  
-  const searchTerm = partialName.toLowerCase().trim();
-  
-  // NE PAS chercher "Raoul" automatiquement !
-  // Chercher d'abord par nom de famille (plus important)
-  let found = DP_LIST.find(dp => {
-    const nom = dp.nom.split(' ')[0]?.toLowerCase(); // "GAUTHIER" -> "gauthier"
-    const match = nom === searchTerm;
-    if (match) {
-      console.log('🎯 DP trouvé par nom de famille:', dp.nom);
-    }
-    return match;
-  });
-  
-  if (found) return found;
-  
-  // Puis chercher par prénom seulement si pas trouvé par nom
-  found = DP_LIST.find(dp => {
-    const prenom = dp.nom.split(' ')[1]?.toLowerCase();
-    const match = prenom === searchTerm;
-    if (match) {
-      console.log('🎯 DP trouvé par prénom:', dp.nom);
-    }
-    return match;
-  });
-  
-  if (found) return found;
-  
-  // Recherche partielle en dernier recours
-  found = DP_LIST.find(dp => 
-    dp.nom.toLowerCase().includes(searchTerm)
-  );
-  
-  if (found) {
-    console.log('🎯 DP trouvé par recherche partielle:', found.nom);
-    return found;
-  }
-  
-  console.log('❌ Aucun DP trouvé pour:', partialName);
-  return null;
-}
-
-// ===== SYNCHRONISATION AMÉLIORÉE =====
-function updateSessionDpDisplay() {
-  console.log('🔄 Synchronisation avec la zone de session...');
-  
-  // Chercher le select principal (pas celui de gestion)
-  const allSelects = document.querySelectorAll('select');
-  const managementSelect = document.getElementById('dp-select');
-  
-  let sessionSelect = null;
-  
-  // Trouver le select qui n'est pas celui de gestion
-  allSelects.forEach(select => {
-    if (select !== managementSelect && 
-        (select.id.includes('dp') || select.className.includes('dp') || 
-         select.name && select.name.includes('dp'))) {
-      sessionSelect = select;
-      console.log('🎯 Select de session trouvé:', select.id || select.className);
-    }
-  });
-  
-  if (sessionSelect) {
-    console.log('🔄 Synchronisation avec le select de session...');
-    
-    // Sauvegarder la valeur actuelle
-    const currentValue = sessionSelect.value;
-    
-    // Vider et remplir
-    sessionSelect.innerHTML = '<option value="">-- Choisir un DP --</option>';
-    
-    DP_LIST.forEach(dp => {
-      const option = document.createElement('option');
-      option.value = dp.id;
-      option.textContent = `${dp.nom} (${dp.niveau})`;
-      sessionSelect.appendChild(option);
-    });
-    
-    // Restaurer la valeur si possible
-    if (currentValue && DP_LIST.find(dp => dp.id === currentValue)) {
-      sessionSelect.value = currentValue;
-    }
-    
-    console.log('✅ Select de session synchronisé avec', DP_LIST.length, 'DP');
-  } else {
-    console.log('⚠️ Aucun select de session trouvé pour synchronisation');
-  }
-  
-}
-
-// ===== ÉVÉNEMENT DE SÉLECTION DP =====
-function onDpSelectionChange() {
-  const dpSelect = document.getElementById('dp-select');
-  const selectedId = dpSelect.value;
-  
-  if (selectedId) {
-    const selectedDp = DP_LIST.find(dp => dp.id === selectedId);
-    if (selectedDp) {
-      console.log('👤 DP sélectionné:', selectedDp.nom, selectedDp.niveau);
-      
-      // Synchroniser avec la zone de session
-      const sessionSelect = document.querySelector('#meta-info select, [id*="session"] select, [class*="session"] select');
-      if (sessionSelect && sessionSelect !== dpSelect) {
-        sessionSelect.value = selectedId;
-        console.log('🔗 DP synchronisé avec la zone de session');
-      }
-      
-      // Mettre à jour le message
-      const message = document.getElementById('dp-message');
-      if (message) {
-        message.textContent = `DP sélectionné: ${selectedDp.nom} (${selectedDp.niveau})`;
-        message.className = 'dp-valide';
-      }
-    }
-  } else {
-    // Aucun DP sélectionné
-    const message = document.getElementById('dp-message');
-    if (message) {
-      message.textContent = '';
-      message.className = 'dp-valide';
-    }
-  }
-  
-  updateButtonStates();
 }
 
 // ===== MISE À JOUR DES BOUTONS =====
@@ -478,7 +289,6 @@ async function saveDp() {
   const niveau = document.getElementById('dp-niveau').value;
   const email = document.getElementById('dp-email').value.trim();
   
-  // Validations
   if (!nom) {
     showNotification('Le nom est obligatoire', 'error');
     return;
@@ -489,7 +299,6 @@ async function saveDp() {
     return;
   }
   
-  // Vérifier les doublons
   const existingDp = DP_LIST.find(dp => 
     dp.id !== currentEditingId && 
     (dp.nom.toLowerCase() === nom.toLowerCase() || dp.email.toLowerCase() === email.toLowerCase())
@@ -500,16 +309,13 @@ async function saveDp() {
     return;
   }
   
-  // Sauvegarder ou modifier
   if (currentEditingId) {
-    // Modification
     const dpIndex = DP_LIST.findIndex(dp => dp.id === currentEditingId);
     if (dpIndex !== -1) {
       DP_LIST[dpIndex] = { id: currentEditingId, nom, niveau, email };
       showNotification('DP modifié avec succès', 'success');
     }
   } else {
-    // Ajout
     const newDp = {
       id: generateDpId(),
       nom,
@@ -520,7 +326,6 @@ async function saveDp() {
     showNotification('DP ajouté avec succès', 'success');
   }
   
-  // Sauvegarder dans Firebase
   const saved = await saveDpToFirebase();
   
   if (saved) {
@@ -545,10 +350,8 @@ async function deleteDp() {
     return;
   }
   
-  // Supprimer de la liste
   DP_LIST = DP_LIST.filter(d => d.id !== selectedId);
   
-  // Sauvegarder dans Firebase
   const saved = await saveDpToFirebase();
   
   if (saved) {
@@ -559,26 +362,152 @@ async function deleteDp() {
   }
 }
 
+// ===== ÉVÉNEMENT DE SÉLECTION DP =====
+function onDpSelectionChange() {
+  const dpSelect = document.getElementById('dp-select');
+  const selectedId = dpSelect.value;
+  
+  if (selectedId) {
+    const selectedDp = DP_LIST.find(dp => dp.id === selectedId);
+    if (selectedDp) {
+      console.log('👤 DP sélectionné:', selectedDp.nom, selectedDp.niveau);
+      
+      const message = document.getElementById('dp-message');
+      if (message) {
+        message.textContent = `DP sélectionné: ${selectedDp.nom} (${selectedDp.niveau})`;
+        message.className = 'dp-valide';
+      }
+    }
+  } else {
+    const message = document.getElementById('dp-message');
+    if (message) {
+      message.textContent = '';
+      message.className = 'dp-valide';
+    }
+  }
+  
+  updateButtonStates();
+}
+
+// ===== SYNCHRONISATION AUTOMATIQUE CORRIGÉE =====
+function tryAutoSync() {
+  console.log('🔄 Tentative de synchronisation automatique...');
+  
+  // Vérifier que le sélecteur DP existe et est peuplé
+  const dpSelect = document.getElementById('dp-select');
+  if (!dpSelect) {
+    console.warn('❌ Sélecteur DP non trouvé');
+    return false;
+  }
+  
+  if (dpSelect.options.length <= 1) {
+    console.warn('⚠️ Liste DP non encore chargée, nouvelle tentative dans 500ms');
+    setTimeout(() => tryAutoSync(), 500);
+    return false;
+  }
+  
+  // Chercher "GAUTHIER" directement dans le contenu de la page
+  const bodyText = document.body.textContent || '';
+  const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})_([A-Z]+)_/);
+  
+  if (sessionMatch) {
+    const sessionDp = sessionMatch[2]; // "GAUTHIER"
+    console.log('🎯 DP détecté dans session:', sessionDp);
+    
+    // Rechercher le DP correspondant dans les options
+    const targetDp = Array.from(dpSelect.options).find(option => {
+      const optionText = option.text.toUpperCase();
+      return optionText.includes(sessionDp) || optionText.includes(sessionDp.toLowerCase());
+    });
+    
+    if (targetDp) {
+      console.log('✅ DP correspondant trouvé:', targetDp.text);
+      dpSelect.value = targetDp.value;
+      
+      // Déclencher l'événement de changement
+      const changeEvent = new Event('change', { bubbles: true });
+      dpSelect.dispatchEvent(changeEvent);
+      onDpSelectionChange();
+      
+      console.log('🔄 Synchronisation automatique réussie pour:', targetDp.text);
+      return true;
+    } else {
+      console.warn('❌ Aucun DP correspondant pour:', sessionDp);
+      console.log('💡 Options DP disponibles:', Array.from(dpSelect.options).map(o => o.text));
+      return false;
+    }
+  } else {
+    console.log('ℹ️ Aucune session détectée pour synchronisation');
+    return false;
+  }
+}
+
+// ===== SURVEILLANCE DES CHANGEMENTS DE SESSION CORRIGÉE =====
+function setupSessionObserver() {
+  console.log('👁️ Configuration de la surveillance des sessions...');
+  
+  // Déconnecter l'observateur existant s'il y en a un
+  if (window.sessionObserver) {
+    window.sessionObserver.disconnect();
+  }
+  
+  // Configuration améliorée pour détecter les changements de texte
+  const observerConfig = {
+    childList: true,      // CRITIQUE: surveille les changements de nœuds de texte
+    subtree: true,        // Surveille tous les descendants
+    characterData: true   // Sauvegarde pour les modifications directes
+  };
+  
+  // Callback optimisé
+  const observerCallback = (mutationsList) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE) {
+            const text = node.textContent || node.innerText || '';
+            if (text.includes('Session chargée')) {
+              console.log('🔔 Session détectée par MutationObserver:', text.substring(0, 100));
+              setTimeout(() => tryAutoSync(), 150);
+            }
+          }
+        });
+      } else if (mutation.type === 'characterData') {
+        const text = mutation.target.textContent;
+        if (text && text.includes('Session chargée')) {
+          console.log('🔔 Session détectée par changement de caractères:', text.substring(0, 100));
+          setTimeout(() => tryAutoSync(), 150);
+        }
+      }
+    }
+  };
+  
+  // Créer et démarrer l'observateur
+  window.sessionObserver = new MutationObserver(observerCallback);
+  
+  // Observer le body entier avec la configuration corrigée
+  window.sessionObserver.observe(document.body, observerConfig);
+  
+  console.log('✅ MutationObserver configuré pour détecter les sessions');
+}
+
 // ===== ÉVÉNEMENTS =====
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🔄 Initialisation du gestionnaire DP...');
   
-  // Attendre un peu que Firebase soit complètement chargé
   setTimeout(async () => {
     console.log('⏰ Démarrage différé du gestionnaire DP...');
     
-    // Charger les données depuis Firebase
     await loadDpFromFirebase();
-    
-    // Forcer le tri et la mise à jour
     sortDpList();
     updateDpSelect();
     
     console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
-    console.log('📋 Liste finale:', DP_LIST.map(dp => dp.nom));
     
-    // Écouter les changements de session pour synchroniser automatiquement
-    watchForSessionChanges();
+    // Configurer la surveillance des sessions
+    setupSessionObserver();
+    
+    // Tentative de synchronisation immédiate
+    setTimeout(() => tryAutoSync(), 2000);
     
   }, 1000);
   
@@ -631,104 +560,14 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
-// ===== SURVEILLANCE DES CHANGEMENTS DE SESSION =====
-function watchForSessionChanges() {
-  console.log('👁️ Surveillance des changements de session activée...');
-  
-  // Observer les changements dans le DOM pour détecter les nouvelles sessions
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('Session chargée')) {
-            console.log('🔔 Nouvelle session détectée:', node.textContent);
-            
-            // Attendre un peu puis synchroniser
-            setTimeout(() => {
-              tryAutoSync();
-            }, 500);
-          }
-        });
-      }
-    });
-  });
-  
-  // Observer tout le body pour les changements
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-  
-  // Tentative de synchronisation immédiate au cas où la session serait déjà chargée
-  setTimeout(() => {
-    tryAutoSync();
-  }, 2000);
-}
-
-// ===== TENTATIVE DE SYNCHRONISATION =====
-function tryAutoSync() {
-  console.log('🔄 Tentative de synchronisation automatique...');
-  
-  // NOUVEAU CODE SIMPLE : chercher "GAUTHIER" directement dans la page
-  const bodyText = document.body.textContent || '';
-  
-  // Chercher dans "Session chargée: 2025-08-23_GAUTHIER_plg1"
-  const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})_([A-Z]+)_/);
-  
-  if (sessionMatch) {
-    const sessionDp = sessionMatch[2]; // "GAUTHIER"
-    console.log('🎯 DP détecté dans session:', sessionDp);
-    
-    const matchingDp = DP_LIST.find(dp => 
-      dp.nom.toUpperCase().includes(sessionDp.toUpperCase())
-    );
-    
-    if (matchingDp) {
-      console.log('✅ Correspondance trouvée:', matchingDp.nom);
-      
-      const dpSelect = document.getElementById('dp-select');
-      if (dpSelect && dpSelect.value !== matchingDp.id) {
-        dpSelect.value = matchingDp.id;
-        onDpSelectionChange();
-        console.log('🔄 DP sélectionné automatiquement:', matchingDp.nom);
-      }
-    } else {
-      console.log('❌ Aucune correspondance pour:', sessionDp);
-    }
-  } else {
-    console.log('⚠️ Aucune session détectée pour synchronisation');
-  }
-}
-
 // ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
 window.getDpList = () => DP_LIST;
 window.getDpById = (id) => DP_LIST.find(dp => dp.id === id);
 window.getDpByName = (nom) => DP_LIST.find(dp => dp.nom === nom);
 window.refreshDpList = updateDpSelect;
-window.syncSessionDp = updateSessionDpDisplay;
 window.getSelectedDp = () => {
   const select = document.getElementById('dp-select');
   const selectedId = select ? select.value : null;
   return selectedId ? DP_LIST.find(dp => dp.id === selectedId) : null;
 };
-
-// ===== OVERRIDE POUR EMPÊCHER LA SÉLECTION AUTOMATIQUE DE RAOUL =====
-window.forceCorrectDpSync = function() {
-  console.log('🔧 Force la synchronisation correcte du DP...');
-  
-  // Attendre que la session soit complètement chargée
-  setTimeout(() => {
-    const sessionDp = extractDpFromSession();
-    if (sessionDp && sessionDp === 'GAUTHIER') {
-      const gauthierDp = DP_LIST.find(dp => dp.nom.includes('GAUTHIER'));
-      if (gauthierDp) {
-        const dpSelect = document.getElementById('dp-select');
-        if (dpSelect) {
-          dpSelect.value = gauthierDp.id;
-          onDpSelectionChange();
-          console.log('✅ DP GAUTHIER forcé manuellement');
-        }
-      }
-    }
-  }, 3000); // Attendre 3 secondes
-};
+window.forceAutoSync = tryAutoSync;
