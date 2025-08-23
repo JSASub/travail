@@ -371,35 +371,52 @@ async function chargerDonneesDPSelectionne(dpKey) {
     const dpDateInput = document.getElementById("dp-date");
     const dpLieuInput = document.getElementById("dp-lieu");
     const dpPlongeeInput = document.getElementById("dp-plongee");
-//
-// Fonction pour synchroniser session → sélecteur DP
-function syncSessionToDP() {
-  const dpNomInput = document.getElementById('dp-nom');
-  const dpSelect = document.getElementById('dp-select');
-  
-  if (dpNomInput && dpNomInput.value && dpSelect) {
-    const sessionDpName = dpNomInput.value.trim();
-    console.log('🔍 Recherche DP pour session:', sessionDpName);
     
-    // Chercher l'option correspondante
-    for (let i = 0; i < dpSelect.options.length; i++) {
-      const option = dpSelect.options[i];
-      if (option.text.includes(sessionDpName)) {
-        dpSelect.value = option.value;
-        console.log('✅ DP sélectionné:', option.text);
-        break;
-      }
-    }
-  }
-}
-
-// Activer la synchronisation
-syncSessionToDP();
-//    
     if (dpNomInput) dpNomInput.value = dpData.nom || "";
     if (dpDateInput) dpDateInput.value = dpData.date || "";
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
     if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
+    
+    // NOUVEAU : Synchroniser avec le nouveau sélecteur DP
+    if (dpData.nom) {
+      console.log('🔄 Synchronisation du DP chargé:', dpData.nom);
+      
+      // Attendre que le sélecteur soit prêt
+      setTimeout(() => {
+        const dpSelect = document.getElementById('dp-select');
+        if (dpSelect && dpSelect.options.length > 1) {
+          // Chercher l'option correspondante par nom de famille ou prénom
+          for (let i = 0; i < dpSelect.options.length; i++) {
+            const option = dpSelect.options[i];
+            const nomParts = dpData.nom.split(' ');
+            const nomFamille = nomParts[0]; // AGUIRRE
+            const prenom = nomParts[1] || ''; // Raoul
+            
+            if (option.text.includes(nomFamille) || (prenom && option.text.includes(prenom))) {
+              dpSelect.value = option.value;
+              console.log('✅ DP synchronisé avec session:', option.text);
+              
+              // Déclencher l'événement de changement si la fonction existe
+              if (typeof onDpSelectionChange === 'function') {
+                onDpSelectionChange();
+              }
+              
+              // Désactiver le choix automatique pour respecter le chargement de session
+              window.userOverrideDP = true;
+              break;
+            }
+          }
+        } else {
+          console.log('⚠️ Sélecteur DP pas encore prêt, nouvelle tentative...');
+          // Réessayer après un délai plus long
+          setTimeout(() => {
+            if (typeof window.forceAutoSync === 'function') {
+              window.forceAutoSync();
+            }
+          }, 500);
+        }
+      }, 300);
+    }
     
     // NOUVEAU : Effacer le message de validation DP précédent
     clearDPValidationMessage();
@@ -413,39 +430,6 @@ syncSessionToDP();
       handleError(error, "Chargement DP sélectionné");
     }
     alert("❌ Erreur lors du chargement : " + error.message);
-  }
-}
-
-async function supprimerDPSelectionne(dpKey) {
-  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
-  
-  if (!confirmation) return;
-  
-  try {
-    if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
-      return;
-    }
-    
-    await db.ref(`dpInfo/${dpKey}`).remove();
-    alert("✅ DP supprimé avec succès !");
-    
-    // Recharger l'historique
-    await chargerHistoriqueDP();
-    
-    // Rafraîchir les listes si la fonction existe
-    if (typeof refreshAllLists === 'function') {
-      await refreshAllLists();
-    }
-    
-    console.log("✅ DP supprimé:", dpKey, "+ listes rafraîchies");
-    
-  } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
-    if (typeof handleError === 'function') {
-      handleError(error, "Suppression DP");
-    }
-    alert("❌ Erreur lors de la suppression : " + error.message);
   }
 }
 
