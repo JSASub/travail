@@ -367,10 +367,14 @@ function onDpSelectionChange() {
   const dpSelect = document.getElementById('dp-select');
   const selectedId = dpSelect.value;
   
+  // NOUVEAU : Désactiver la synchronisation automatique si l'utilisateur fait un choix manuel
+  window.userOverrideDP = true;
+  console.log('👤 Utilisateur a fait un choix manuel - synchronisation automatique désactivée');
+  
   if (selectedId) {
     const selectedDp = DP_LIST.find(dp => dp.id === selectedId);
     if (selectedDp) {
-      console.log('👤 DP sélectionné:', selectedDp.nom, selectedDp.niveau);
+      console.log('👤 DP sélectionné manuellement:', selectedDp.nom, selectedDp.niveau);
       
       const message = document.getElementById('dp-message');
       if (message) {
@@ -391,15 +395,13 @@ function onDpSelectionChange() {
 
 // ===== SYNCHRONISATION AUTOMATIQUE CORRIGÉE =====
 function tryAutoSync() {
-  console.log('🔄 Tentative de synchronisation automatique...');
-  
-  // Vérifier que le sélecteur DP existe et est peuplé
-  const dpSelect = document.getElementById('dp-select');
-  if (!dpSelect) {
-    console.warn('❌ Sélecteur DP non trouvé');
+  // NOUVEAU : Ne pas synchroniser si l'utilisateur a fait un choix manuel
+  if (window.userOverrideDP) {
+    console.log('🚫 Synchronisation automatique désactivée - choix utilisateur respecté');
     return false;
   }
   
+  console.log('🔄 Tentative de synchronisation automatique...');
   if (dpSelect.options.length <= 1) {
     console.warn('⚠️ Liste DP non encore chargée, nouvelle tentative dans 500ms');
     setTimeout(() => tryAutoSync(), 500);
