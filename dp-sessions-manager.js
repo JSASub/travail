@@ -5,6 +5,16 @@
 // Validation et enregistrement des informations DP
 async function validateAndSaveDP() {
   try {
+    // NOUVEAU : Synchroniser automatiquement le champ dp-nom avec le sélecteur
+    const dpSelect = document.getElementById("dp-select");
+    const dpNomInput = document.getElementById("dp-nom");
+    
+    if (dpSelect && dpSelect.value && dpNomInput) {
+      const selectedOption = dpSelect.options[dpSelect.selectedIndex];
+      const dpName = selectedOption.text.replace(/\s*\([^)]*\)/, '');
+      dpNomInput.value = dpName;
+      console.log('🔄 Synchronisation auto dp-nom:', dpName);
+    }
     const dpNom = document.getElementById("dp-nom")?.value?.trim();
     const dpDate = document.getElementById("dp-date")?.value;
     const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
