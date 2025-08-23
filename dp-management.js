@@ -550,11 +550,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  /*
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
   }
-
+*/
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
