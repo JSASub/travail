@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (addBtn) {
     addBtn.addEventListener('click', () => showModal());
   }
-  
+    
   const editBtn = document.getElementById('edit-dp-btn');
   if (editBtn) {
     editBtn.addEventListener('click', () => {
@@ -550,12 +550,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  /*
+
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
   }
-*/
+
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
