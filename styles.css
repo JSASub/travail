@@ -567,6 +567,15 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   }
 }
 
+.dp-btn-sync {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  border: 1px solid #495057;
+}
+
+.dp-btn-sync:not(:disabled):hover {
+  background: linear-gradient(135deg, #495057, #343a40);
+}
 /* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
 .dp-status-indicator {
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
