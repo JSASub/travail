@@ -406,7 +406,7 @@ function tryAutoSync() {
     return false;
   }
   
-  // Chercher "GAUTHIER" directement dans le contenu de la page
+  // Chercher le nom du DP directement dans le contenu de la page
   const bodyText = document.body.textContent || '';
   const sessionMatch = bodyText.match(/Session chargée.*?(\d{4}-\d{2}-\d{2})\s*-\s*([A-Z]+)\s+/);
   
