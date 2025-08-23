@@ -371,7 +371,31 @@ async function chargerDonneesDPSelectionne(dpKey) {
     const dpDateInput = document.getElementById("dp-date");
     const dpLieuInput = document.getElementById("dp-lieu");
     const dpPlongeeInput = document.getElementById("dp-plongee");
+//
+// Fonction pour synchroniser session → sélecteur DP
+function syncSessionToDP() {
+  const dpNomInput = document.getElementById('dp-nom');
+  const dpSelect = document.getElementById('dp-select');
+  
+  if (dpNomInput && dpNomInput.value && dpSelect) {
+    const sessionDpName = dpNomInput.value.trim();
+    console.log('🔍 Recherche DP pour session:', sessionDpName);
     
+    // Chercher l'option correspondante
+    for (let i = 0; i < dpSelect.options.length; i++) {
+      const option = dpSelect.options[i];
+      if (option.text.includes(sessionDpName)) {
+        dpSelect.value = option.value;
+        console.log('✅ DP sélectionné:', option.text);
+        break;
+      }
+    }
+  }
+}
+
+// Activer la synchronisation
+syncSessionToDP();
+//    
     if (dpNomInput) dpNomInput.value = dpData.nom || "";
     if (dpDateInput) dpDateInput.value = dpData.date || "";
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
