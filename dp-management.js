@@ -505,7 +505,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Gestionnaire DP initialisé avec', DP_LIST.length, 'DP');
     
     // Configurer la surveillance des sessions
-    //setupSessionObserver();
+    setupSessionObserver();
     
     // Tentative de synchronisation immédiate
     setTimeout(() => tryAutoSync(), 2000);
