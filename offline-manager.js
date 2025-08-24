@@ -795,644 +795,173 @@ window.cleanupOfflineManager = cleanupOfflineManager;
 window.waitForElement = waitForElement;
 window.verifyRequiredElements = verifyRequiredElements;
 ////
-// ===== SYSTÈME DE PERSISTANCE COMPLÈTE F5 =====
-// Sauvegarde automatique de TOUTES les données : DP, palanquées, plongeurs, etc.
+// ===== PERSISTANCE SIMPLE DU NOM DP (F5) =====
 // À ajouter à la fin de offline-manager.js
 
-let f5PersistenceActive = true;
-let f5SaveTimeout = null;
-let f5RestoreInProgress = false;
-
-// Clé de stockage pour la persistance F5
-const F5_STORAGE_KEY = 'jsas_f5_complete_session';
-
-// ===== SAUVEGARDE COMPLÈTE F5 =====
-function saveCompleteSessionF5() {
-  if (!f5PersistenceActive || f5RestoreInProgress) return;
-  
+// Sauvegarder le nom du DP automatiquement
+function saveDPName() {
   try {
-    console.log('💾 Sauvegarde complète F5 en cours...');
-    
-    // Vérifier que les éléments essentiels existent
-    const missing = verifyRequiredElements();
-    if (missing) {
-      console.warn('⚠️ Éléments manquants pour sauvegarde F5:', missing);
-      return false;
-    }
-
-    // 1. MÉTADONNÉES DP
-    const dpData = {
-      nom: document.querySelector(SELECTORS.dp.nom)?.value || "",
-      niveau: document.querySelector(SELECTORS.dp.niveau)?.value || "",
-      date: document.querySelector(SELECTORS.dp.date)?.value || "",
-      lieu: document.querySelector(SELECTORS.dp.lieu)?.value || "",
-      plongee: document.querySelector(SELECTORS.dp.plongee)?.value || "matin"
-    };
-
-    // 2. SÉLECTION DP
+    const dpNom = document.querySelector(SELECTORS.dp.nom)?.value?.trim();
     const dpSelect = document.querySelector(SELECTORS.dp.select);
-    const dpSelection = dpSelect && dpSelect.value ? {
-      id: dpSelect.value,
-      text: dpSelect.options[dpSelect.selectedIndex]?.text || ""
-    } : null;
-
-    // 3. PALANQUÉES COMPLÈTES avec tous les détails
-    const palanqueesData = [];
-    const palanqueeElements = document.querySelectorAll(SELECTORS.palanquee.container);
-
-    palanqueeElements.forEach((element, index) => {
-      const palanquee = {
-        id: element.dataset?.index || index.toString(),
-        
-        // Détails de la palanquée
-        horaire: element.querySelector(SELECTORS.palanquee.horaire)?.value || '',
-        profondeurPrevue: element.querySelector(SELECTORS.palanquee.profPrevue)?.value || '',
-        dureePrevue: element.querySelector(SELECTORS.palanquee.dureePrevue)?.value || '',
-        profondeurRealisee: element.querySelector(SELECTORS.palanquee.profRealisee)?.value || '',
-        dureeRealisee: element.querySelector(SELECTORS.palanquee.dureeRealisee)?.value || '',
-        paliers: element.querySelector(SELECTORS.palanquee.paliers)?.value || '',
-        
-        // Tous les plongeurs de cette palanquée
-        plongeurs: []
-      };
-
-      // Collecter TOUS les plongeurs avec TOUS leurs détails
-      const plongeurElements = element.querySelectorAll(SELECTORS.plongeur.container);
-      plongeurElements.forEach((plongeurEl, plongeurIndex) => {
-        const plongeur = {
-          index: plongeurIndex
-        };
-        
-        // Récupérer TOUS les champs du plongeur
-        const inputs = plongeurEl.querySelectorAll(SELECTORS.plongeur.inputs);
-        inputs.forEach(input => {
-          if (input.name && input.value) {
-            plongeur[input.name] = input.value;
-          }
-          
-          // Aussi sauvegarder les champs avec des IDs spécifiques
-          if (input.id && input.value) {
-            plongeur[`id_${input.id}`] = input.value;
-          }
-        });
-        
-        // Sauvegarder les checkboxes et radio buttons
-        const checkboxes = plongeurEl.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-          if (checkbox.name || checkbox.id) {
-            const key = checkbox.name || checkbox.id;
-            plongeur[key] = checkbox.checked;
-          }
-        });
-        
-        const radios = plongeurEl.querySelectorAll('input[type="radio"]:checked');
-        radios.forEach(radio => {
-          if (radio.name) {
-            plongeur[radio.name] = radio.value;
-          }
-        });
-        
-        // Sauvegarder même les plongeurs "vides" pour préserver la structure
-        palanquee.plongeurs.push(plongeur);
-      });
-
-      palanqueesData.push(palanquee);
-    });
-
-    // 4. DONNÉES GLOBALES (si disponibles)
-    const globalData = {
-      plongeurs: typeof plongeurs !== 'undefined' ? plongeurs : [],
-      palanquees: typeof palanquees !== 'undefined' ? palanquees : []
-    };
-
-    // 5. STRUCTURE COMPLÈTE DE SAUVEGARDE F5
-    const completeSession = {
-      timestamp: Date.now(),
-      version: "F5-Complete-v1.0",
-      type: "f5_persistence",
-      
-      dp: {
-        metadata: dpData,
-        selection: dpSelection
-      },
-      
-      palanquees: palanqueesData,
-      globalData: globalData,
-      
-      stats: {
-        totalPalanquees: palanqueesData.length,
-        totalPlongeurs: palanqueesData.reduce((sum, p) => sum + p.plongeurs.length, 0),
-        nonEmptyPalanquees: palanqueesData.filter(p => 
-          p.horaire || p.profondeurPrevue || p.dureePrevue || 
-          p.profondeurRealisee || p.dureeRealisee || p.paliers ||
-          p.plongeurs.some(pl => Object.keys(pl).length > 1)
-        ).length
-      }
-    };
-
-    // Sauvegarder dans sessionStorage
-    sessionStorage.setItem(F5_STORAGE_KEY, JSON.stringify(completeSession));
     
-    console.log(`💾 Session complète F5 sauvegardée:`, {
-      palanquees: completeSession.stats.totalPalanquees,
-      plongeurs: completeSession.stats.totalPlongeurs,
-      nonEmpty: completeSession.stats.nonEmptyPalanquees
-    });
-    
-    // Notification discrète (seulement si beaucoup de données)
-    if (completeSession.stats.nonEmptyPalanquees > 0 && typeof showNotification === 'function') {
-      showNotification(`💾 Session auto-sauvegardée (${completeSession.stats.nonEmptyPalanquees} palanquées)`, "info");
+    if (dpNom) {
+      sessionStorage.setItem('jsas_dp_nom_f5', JSON.stringify({
+        nom: dpNom,
+        timestamp: Date.now()
+      }));
     }
     
-    return true;
+    // Sauvegarder aussi la sélection si disponible
+    if (dpSelect && dpSelect.value) {
+      sessionStorage.setItem('jsas_dp_select_f5', JSON.stringify({
+        value: dpSelect.value,
+        text: dpSelect.options[dpSelect.selectedIndex]?.text || '',
+        timestamp: Date.now()
+      }));
+    }
     
   } catch (error) {
-    console.error('❌ Erreur sauvegarde complète F5:', error);
-    return false;
+    console.error('❌ Erreur sauvegarde nom DP:', error);
   }
 }
 
-// ===== RESTAURATION COMPLÈTE F5 =====
-async function restoreCompleteSessionF5() {
-  if (!f5PersistenceActive) return false;
-  
+// Restaurer le nom du DP après F5
+async function restoreDPName() {
   try {
-    console.log('📥 Tentative de restauration complète F5...');
-    
-    const storedData = sessionStorage.getItem(F5_STORAGE_KEY);
-    if (!storedData) {
-      console.log('ℹ️ Aucune session F5 à restaurer');
-      return false;
-    }
-    
-    f5RestoreInProgress = true; // Éviter les sauvegardes pendant la restauration
-    
-    const sessionData = JSON.parse(storedData);
-    console.log(`📦 Session F5 trouvée: ${new Date(sessionData.timestamp).toLocaleString()}`);
-    
-    // Vérifier l'âge de la session (max 2 heures)
-    const age = Date.now() - sessionData.timestamp;
-    if (age > 2 * 60 * 60 * 1000) {
-      console.log('🗑️ Session F5 trop ancienne, nettoyage');
-      sessionStorage.removeItem(F5_STORAGE_KEY);
-      f5RestoreInProgress = false;
-      return false;
-    }
-    
-    // Attendre que les éléments DOM soient prêts
+    // Attendre que les éléments soient prêts
     await waitForElement(SELECTORS.dp.nom, 5000);
-    await waitForElement(SELECTORS.palanquee.container, 8000);
     
-    // Vérifier si des données sont déjà présentes (éviter d'écraser)
-    const currentNom = document.querySelector(SELECTORS.dp.nom)?.value?.trim();
-    const currentDate = document.querySelector(SELECTORS.dp.date)?.value?.trim();
-    
-    if (currentNom && currentNom.length > 2 && currentDate) {
-      console.log('⚠️ Données déjà présentes, restauration F5 annulée');
-      f5RestoreInProgress = false;
-      return false;
+    // Restaurer le nom DP
+    const storedName = sessionStorage.getItem('jsas_dp_nom_f5');
+    if (storedName) {
+      const { nom, timestamp } = JSON.parse(storedName);
+      
+      // Vérifier que ce n'est pas trop ancien (1 heure max)
+      if (Date.now() - timestamp < 60 * 60 * 1000) {
+        const dpNomInput = document.querySelector(SELECTORS.dp.nom);
+        if (dpNomInput && !dpNomInput.value.trim()) {
+          dpNomInput.value = nom;
+          console.log('📥 Nom DP restauré après F5:', nom);
+          
+          if (typeof showNotification === 'function') {
+            showNotification(`📥 Nom DP restauré: ${nom}`, "info");
+          }
+        }
+      } else {
+        // Nettoyer si trop ancien
+        sessionStorage.removeItem('jsas_dp_nom_f5');
+      }
     }
     
-    let restoredItems = [];
+    // Restaurer la sélection DP
+    const storedSelect = sessionStorage.getItem('jsas_dp_select_f5');
+    if (storedSelect) {
+      const { value, text, timestamp } = JSON.parse(storedSelect);
+      
+      if (Date.now() - timestamp < 60 * 60 * 1000) {
+        // Attendre un peu plus pour que les options soient chargées
+        setTimeout(() => {
+          const dpSelect = document.querySelector(SELECTORS.dp.select);
+          if (dpSelect && dpSelect.options.length > 1) {
+            const optionExists = Array.from(dpSelect.options).some(opt => opt.value === value);
+            if (optionExists && !dpSelect.value) {
+              dpSelect.value = value;
+              dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('📥 Sélection DP restaurée après F5:', text);
+            }
+          }
+        }, 2000);
+      } else {
+        sessionStorage.removeItem('jsas_dp_select_f5');
+      }
+    }
     
-    // 1. RESTAURER LES MÉTADONNÉES DP
-    console.log('📝 Restauration métadonnées DP...');
-    if (sessionData.dp.metadata) {
-      const dpElements = {
-        nom: document.querySelector(SELECTORS.dp.nom),
-        niveau: document.querySelector(SELECTORS.dp.niveau),
-        date: document.querySelector(SELECTORS.dp.date),
-        lieu: document.querySelector(SELECTORS.dp.lieu),
-        plongee: document.querySelector(SELECTORS.dp.plongee)
+  } catch (error) {
+    console.error('❌ Erreur restauration nom DP:', error);
+  }
+}
+
+// Attacher les event listeners pour sauvegarder automatiquement
+function setupDPNamePersistence() {
+  try {
+    // Surveiller le champ nom DP
+    const dpNomInput = document.querySelector(SELECTORS.dp.nom);
+    if (dpNomInput && !dpNomInput.hasAttribute('data-f5-persistence')) {
+      let saveTimeout = null;
+      
+      const saveWithDelay = () => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveDPName, 1000); // Sauver après 1s d'inactivité
       };
-
-      Object.entries(dpElements).forEach(([key, element]) => {
-        const value = sessionData.dp.metadata[key];
-        if (element && value && !element.value.trim()) {
-          element.value = value;
-          element.dispatchEvent(new Event('change', { bubbles: true }));
-          restoredItems.push(`DP ${key}`);
-          console.log(`  ✅ DP ${key}: "${value}"`);
-        }
-      });
+      
+      dpNomInput.addEventListener('input', saveWithDelay);
+      dpNomInput.addEventListener('change', saveWithDelay);
+      dpNomInput.setAttribute('data-f5-persistence', 'true');
+      console.log('✅ Persistance nom DP configurée');
     }
-
-    // 2. RESTAURER LA SÉLECTION DP
-    if (sessionData.dp.selection && sessionData.dp.selection.id) {
-      setTimeout(() => {
-        const dpSelect = document.querySelector(SELECTORS.dp.select);
-        if (dpSelect && dpSelect.options.length > 1) {
-          const optionExists = Array.from(dpSelect.options).some(opt => opt.value === sessionData.dp.selection.id);
-          if (optionExists && !dpSelect.value) {
-            dpSelect.value = sessionData.dp.selection.id;
-            dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            restoredItems.push('sélection DP');
-            console.log(`  ✅ Sélection DP: "${sessionData.dp.selection.text}"`);
-          }
-        }
-      }, 1500);
-    }
-
-    // 3. RESTAURER LES PALANQUÉES COMPLÈTES
-    console.log('📋 Restauration des palanquées complètes...');
-    const palanqueeElements = document.querySelectorAll(SELECTORS.palanquee.container);
     
-    if (palanqueeElements.length > 0 && sessionData.palanquees) {
-      sessionData.palanquees.forEach((palanqueeData, index) => {
-        const element = document.querySelector(`[data-index="${palanqueeData.id}"]`) || 
-                       palanqueeElements[index];
-
-        if (!element) {
-          console.warn(`⚠️ Palanquée ${index} non trouvée pour restauration F5`);
-          return;
-        }
-
-        let palanqueeRestored = false;
-
-        // Restaurer les détails de la palanquée
-        const fieldMappings = [
-          { selector: SELECTORS.palanquee.horaire, value: palanqueeData.horaire, name: 'horaire' },
-          { selector: SELECTORS.palanquee.profPrevue, value: palanqueeData.profondeurPrevue, name: 'prof. prévue' },
-          { selector: SELECTORS.palanquee.dureePrevue, value: palanqueeData.dureePrevue, name: 'durée prévue' },
-          { selector: SELECTORS.palanquee.profRealisee, value: palanqueeData.profondeurRealisee, name: 'prof. réalisée' },
-          { selector: SELECTORS.palanquee.dureeRealisee, value: palanqueeData.dureeRealisee, name: 'durée réalisée' },
-          { selector: SELECTORS.palanquee.paliers, value: palanqueeData.paliers, name: 'paliers' }
-        ];
-
-        fieldMappings.forEach(({ selector, value, name }) => {
-          const fieldElement = element.querySelector(selector);
-          if (fieldElement && value && !fieldElement.value.trim()) {
-            fieldElement.value = value;
-            fieldElement.dispatchEvent(new Event('change', { bubbles: true }));
-            palanqueeRestored = true;
-            console.log(`    ✅ ${name}: "${value}"`);
-          }
-        });
-
-        // Restaurer TOUS les plongeurs de cette palanquée
-        if (palanqueeData.plongeurs && palanqueeData.plongeurs.length > 0) {
-          palanqueeData.plongeurs.forEach((plongeurData, pIndex) => {
-            const plongeurElements = element.querySelectorAll(SELECTORS.plongeur.container);
-            const plongeurEl = plongeurElements[pIndex];
-
-            if (plongeurEl && Object.keys(plongeurData).length > 1) { // Plus que juste l'index
-              let plongeurRestored = false;
-              
-              Object.entries(plongeurData).forEach(([fieldName, value]) => {
-                if (fieldName === 'index') return; // Ignorer l'index
-                
-                // Restaurer par nom d'attribut
-                let input = plongeurEl.querySelector(`[name="${fieldName}"]`);
-                
-                // Si pas trouvé par name, essayer par ID (pour les champs avec id_prefixe)
-                if (!input && fieldName.startsWith('id_')) {
-                  const actualId = fieldName.replace('id_', '');
-                  input = plongeurEl.querySelector(`#${actualId}`);
-                }
-                
-                if (input && value !== undefined) {
-                  if (input.type === 'checkbox') {
-                    if (!input.checked && value === true) {
-                      input.checked = value;
-                      input.dispatchEvent(new Event('change', { bubbles: true }));
-                      plongeurRestored = true;
-                    }
-                  } else if (input.type === 'radio') {
-                    if (input.value === value && !input.checked) {
-                      input.checked = true;
-                      input.dispatchEvent(new Event('change', { bubbles: true }));
-                      plongeurRestored = true;
-                    }
-                  } else {
-                    // Champs texte, select, etc.
-                    if (!input.value.trim() && value) {
-                      input.value = value;
-                      input.dispatchEvent(new Event('change', { bubbles: true }));
-                      plongeurRestored = true;
-                    }
-                  }
-                }
-              });
-              
-              if (plongeurRestored) {
-                palanqueeRestored = true;
-                console.log(`      ✅ Plongeur ${pIndex} restauré`);
-              }
-            }
-          });
-        }
-        
-        if (palanqueeRestored) {
-          restoredItems.push(`palanquée ${index}`);
-        }
-      });
-    }
-
-    // 4. RESTAURER LES VARIABLES GLOBALES SI DISPONIBLES
-    if (sessionData.globalData) {
-      if (typeof plongeurs !== 'undefined' && sessionData.globalData.plongeurs && sessionData.globalData.plongeurs.length > 0) {
-        if (plongeurs.length === 0) { // Ne pas écraser si déjà des données
-          plongeurs.splice(0, plongeurs.length, ...sessionData.globalData.plongeurs);
-          restoredItems.push('données globales plongeurs');
-        }
-      }
-      if (typeof palanquees !== 'undefined' && sessionData.globalData.palanquees && sessionData.globalData.palanquees.length > 0) {
-        if (palanquees.length === 0) { // Ne pas écraser si déjà des données
-          palanquees.splice(0, palanquees.length, ...sessionData.globalData.palanquees);
-          restoredItems.push('données globales palanquées');
-        }
-      }
-    }
-
-    // 5. FINALISATION
-    f5RestoreInProgress = false;
-    
-    if (restoredItems.length > 0) {
-      console.log(`🎉 Restauration F5 complète terminée: ${restoredItems.length} éléments`);
-      console.log('📋 Éléments restaurés:', restoredItems);
-      
-      // Notification utilisateur
-      if (typeof showNotification === 'function') {
-        const summary = sessionData.stats.nonEmptyPalanquees > 0 ? 
-          `${sessionData.stats.nonEmptyPalanquees} palanquées, ${sessionData.stats.totalPlongeurs} plongeurs` :
-          `${restoredItems.length} éléments`;
-        showNotification(`📥 Session complète restaurée: ${summary}`, "success");
-      }
-      
-      // Nettoyer la sauvegarde après restauration réussie
-      sessionStorage.removeItem(F5_STORAGE_KEY);
-      
-      // Synchronisation différée si disponible
-      if (typeof syncToDatabase === 'function') {
-        setTimeout(syncToDatabase, 3000);
-      }
-      
-      return true;
-    } else {
-      console.log('ℹ️ Aucun élément à restaurer ou données déjà présentes');
-      return false;
+    // Surveiller le sélecteur DP
+    const dpSelect = document.querySelector(SELECTORS.dp.select);
+    if (dpSelect && !dpSelect.hasAttribute('data-f5-persistence')) {
+      dpSelect.addEventListener('change', saveDPName);
+      dpSelect.setAttribute('data-f5-persistence', 'true');
+      console.log('✅ Persistance sélection DP configurée');
     }
     
   } catch (error) {
-    console.error('❌ Erreur restauration complète F5:', error);
-    f5RestoreInProgress = false;
-    return false;
+    console.error('❌ Erreur configuration persistance nom DP:', error);
   }
 }
 
-// ===== SURVEILLANCE AUTOMATIQUE INTELLIGENTE =====
-function setupCompleteF5Surveillance() {
-  console.log('🎛️ Configuration de la surveillance complète F5...');
-  
-  try {
-    // Liste de tous les sélecteurs à surveiller
-    const watchedSelectors = [
-      // Champs DP
-      SELECTORS.dp.nom,
-      SELECTORS.dp.niveau,
-      SELECTORS.dp.date,
-      SELECTORS.dp.lieu,
-      SELECTORS.dp.plongee,
-      SELECTORS.dp.select,
-      
-      // Champs palanquées
-      SELECTORS.palanquee.horaire,
-      SELECTORS.palanquee.profPrevue,
-      SELECTORS.palanquee.dureePrevue,
-      SELECTORS.palanquee.profRealisee,
-      SELECTORS.palanquee.dureeRealisee,
-      SELECTORS.palanquee.paliers
-    ];
-    
-    // Fonction de sauvegarde avec délai intelligent
-    const saveWithSmartDelay = () => {
-      if (f5SaveTimeout) {
-        clearTimeout(f5SaveTimeout);
-      }
-      
-      // Délai adaptatif : plus court pour les champs DP, plus long pour les détails
-      const delay = event?.target?.closest('.palanquee') ? 2000 : 1500;
-      
-      f5SaveTimeout = setTimeout(() => {
-        saveCompleteSessionF5();
-      }, delay);
-    };
-    
-    // Attacher les listeners aux éléments existants
-    watchedSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (!element.hasAttribute('data-f5-complete-attached')) {
-          
-          // Différents types d'événements selon le type d'élément
-          if (element.tagName.toLowerCase() === 'select') {
-            element.addEventListener('change', saveWithSmartDelay);
-          } else {
-            element.addEventListener('input', saveWithSmartDelay);
-            element.addEventListener('change', saveWithSmartDelay);
-          }
-          
-          element.setAttribute('data-f5-complete-attached', 'true');
-        }
-      });
-    });
-    
-    // Surveillance dynamique pour les nouveaux éléments (palanquées ajoutées dynamiquement)
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) { // Element node
-              // Vérifier si c'est une palanquée ou contient des éléments à surveiller
-              const elementsToWatch = [];
-              
-              watchedSelectors.forEach(selector => {
-                if (node.matches && node.matches(selector)) {
-                  elementsToWatch.push(node);
-                }
-                const childElements = node.querySelectorAll ? node.querySelectorAll(selector) : [];
-                elementsToWatch.push(...childElements);
-              });
-              
-              // Aussi surveiller tous les inputs dans les nouvelles palanquées
-              if (node.classList && node.classList.contains('palanquee')) {
-                const allInputs = node.querySelectorAll('input, select, textarea');
-                elementsToWatch.push(...allInputs);
-              }
-              
-              elementsToWatch.forEach(element => {
-                if (!element.hasAttribute('data-f5-complete-attached')) {
-                  if (element.tagName.toLowerCase() === 'select') {
-                    element.addEventListener('change', saveWithSmartDelay);
-                  } else {
-                    element.addEventListener('input', saveWithSmartDelay);
-                    element.addEventListener('change', saveWithSmartDelay);
-                  }
-                  element.setAttribute('data-f5-complete-attached', 'true');
-                }
-              });
-            }
-          });
-        }
-      });
-    });
-    
-    // Observer les changements dans le DOM
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    console.log('✅ Surveillance complète F5 configurée');
-    
-  } catch (error) {
-    console.error('❌ Erreur configuration surveillance F5:', error);
-  }
-}
-
-// ===== FONCTIONS UTILITAIRES F5 =====
-function getF5SessionStats() {
-  try {
-    const storedData = sessionStorage.getItem(F5_STORAGE_KEY);
-    if (!storedData) {
-      return { hasSession: false };
-    }
-    
-    const sessionData = JSON.parse(storedData);
-    const age = Date.now() - sessionData.timestamp;
-    
-    return {
-      hasSession: true,
-      age: Math.round(age / 1000), // en secondes
-      ageFormatted: age < 60000 ? `${Math.round(age/1000)}s` : `${Math.round(age/60000)}min`,
-      stats: sessionData.stats,
-      version: sessionData.version,
-      timestamp: new Date(sessionData.timestamp).toLocaleString('fr-FR')
-    };
-    
-  } catch (error) {
-    console.error('❌ Erreur stats session F5:', error);
-    return { hasSession: false, error: error.message };
-  }
-}
-
-function showF5SessionStats() {
-  const stats = getF5SessionStats();
-  
-  let message = `📊 Statistiques Session F5 :\n\n`;
-  
-  if (stats.hasSession) {
-    message += `💾 Session sauvegardée : ✅ Disponible\n`;
-    message += `⏰ Âge : ${stats.ageFormatted}\n`;
-    message += `📅 Créée le : ${stats.timestamp}\n\n`;
-    
-    if (stats.stats) {
-      message += `📋 Contenu :\n`;
-      message += `  • Palanquées : ${stats.stats.totalPalanquees}\n`;
-      message += `  • Plongeurs : ${stats.stats.totalPlongeurs}\n`;
-      message += `  • Palanquées avec données : ${stats.stats.nonEmptyPalanquees}\n\n`;
-    }
-    
-    message += `🔄 Version : ${stats.version || 'Inconnue'}`;
-  } else {
-    message += `💾 Session sauvegardée : ❌ Aucune\n\n`;
-    message += `ℹ️ Les données seront sauvegardées automatiquement\nlorsque vous commencerez à saisir des informations.`;
-    
-    if (stats.error) {
-      message += `\n\n❌ Erreur : ${stats.error}`;
-    }
-  }
-  
-  alert(message);
-  console.log('📊 Stats session F5:', stats);
-}
-
-function clearF5Session() {
-  try {
-    sessionStorage.removeItem(F5_STORAGE_KEY);
-    console.log('🗑️ Session F5 effacée');
-    
-    if (typeof showNotification === 'function') {
-      showNotification("🗑️ Session F5 effacée", "info");
-    }
-    
-  } catch (error) {
-    console.error('❌ Erreur nettoyage session F5:', error);
-  }
-}
-
-function toggleF5Persistence(enabled = null) {
-  if (enabled === null) {
-    f5PersistenceActive = !f5PersistenceActive;
-  } else {
-    f5PersistenceActive = enabled;
-  }
-  
-  console.log(`🔧 Persistance F5 complète: ${f5PersistenceActive ? 'Activée' : 'Désactivée'}`);
-  
-  if (typeof showNotification === 'function') {
-    showNotification(
-      `🔧 Sauvegarde F5 ${f5PersistenceActive ? 'activée' : 'désactivée'}`, 
-      "info"
-    );
-  }
-  
-  if (f5PersistenceActive) {
-    setupCompleteF5Surveillance();
-  }
-}
-
-// ===== INTÉGRATION DANS LE SYSTÈME EXISTANT =====
-
-// Modifier l'initialisation existante
+// Modifier l'initialisation existante pour ajouter la persistance
 const originalInitOffline = window.initializeOfflineManager;
 window.initializeOfflineManager = function() {
   // Appeler la fonction originale
   if (originalInitOffline) originalInitOffline();
   
-  // Ajouter la persistance complète F5
+  // Ajouter la persistance du nom DP
   if (userAuthenticationCompleted && currentUser) {
-    console.log('🔧 Initialisation de la persistance complète F5...');
+    console.log('🔧 Ajout de la persistance du nom DP...');
     
     setTimeout(() => {
-      setupCompleteF5Surveillance();
-    }, 2000);
+      setupDPNamePersistence();
+    }, 1500);
     
     setTimeout(() => {
-      restoreCompleteSessionF5();
-    }, 4000);
+      restoreDPName();
+    }, 3000);
   }
 };
 
-// Restauration immédiate au chargement
+// Restauration immédiate au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
+  // Attendre un peu que tout soit initialisé
   setTimeout(() => {
     if (userAuthenticationCompleted && currentUser) {
-      restoreCompleteSessionF5();
-      setTimeout(setupCompleteF5Surveillance, 1000);
+      restoreDPName();
+      setupDPNamePersistence();
     }
-  }, 6000);
+  }, 5000);
 });
 
 // Sauvegarde avant fermeture/refresh
 window.addEventListener('beforeunload', () => {
-  if (userAuthenticationCompleted && currentUser && f5PersistenceActive) {
-    console.log('💾 Sauvegarde F5 avant fermeture...');
-    saveCompleteSessionF5();
+  if (userAuthenticationCompleted && currentUser) {
+    saveDPName();
   }
 });
 
-// ===== EXPORTS GLOBAUX =====
-window.saveCompleteSessionF5 = saveCompleteSessionF5;
-window.restoreCompleteSessionF5 = restoreCompleteSessionF5;
-window.getF5SessionStats = getF5SessionStats;
-window.showF5SessionStats = showF5SessionStats;
-window.clearF5Session = clearF5Session;
-window.toggleF5Persistence = toggleF5Persistence;
-window.setupCompleteF5Surveillance = setupCompleteF5Surveillance;
+// Export des fonctions utiles
+window.saveDPName = saveDPName;
+window.restoreDPName = restoreDPName;
+window.clearDPNamePersistence = () => {
+  sessionStorage.removeItem('jsas_dp_nom_f5');
+  sessionStorage.removeItem('jsas_dp_select_f5');
+  console.log('🗑️ Persistance nom DP effacée');
+};
 
-console.log("🎉 Persistance COMPLÈTE F5 activée - TOUTES les données conservées lors des rafraîchissements !");
-///
+console.log("🔧 Persistance du nom DP activée - Conservé lors des F5 !");
+////
 // ===== CORRECTIF SPÉCIFIQUE DP ET DATE - F5 PERSISTANCE =====
 // À ajouter à la fin de offline-manager.js après le système F5 complet
 
@@ -1822,6 +1351,5 @@ window.testDPDatePersistence = testDPDatePersistence;
 window.setupDPDateSpecificListeners = setupDPDateSpecificListeners;
 
 console.log("🔧 Correctif spécialisé DP/Date chargé - Diagnostic et correction ciblée");
-
 ////
 console.log("🎯 Gestionnaire offline chargé - Version 2.5.2 CORRIGÉE - Problème loadEmergencyBackup résolu");
