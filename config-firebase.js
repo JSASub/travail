@@ -95,7 +95,7 @@ function initializeFirebase() {
 		  //initializeAfterAuth();
 		  ////
 		  if (typeof window.initializeAfterAuth === 'function') {
-  window.initializeAfterAuth();
+  //window.initializeAfterAuth();
 } else {
   console.log('⚠️ initializeAfterAuth non trouvée, initialisation alternative...');
   
