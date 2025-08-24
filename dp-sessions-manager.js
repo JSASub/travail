@@ -1,86 +1,13 @@
-// dp-sessions-manager.js - Gestion DP et Sessions (VERSION CORRIGÉE COMPLÈTE)
-
-// ===== CONFIGURATION SÉLECTEURS UNIFIÉE =====
-// Réutilise la même configuration que offline-manager pour cohérence
-const DP_SELECTORS = {
-  dp: {
-    nom: "#dp-nom",
-    niveau: "#dp-niveau",
-    date: "#dp-date", 
-    lieu: "#dp-lieu",
-    plongee: "#dp-plongee", // CORRIGÉ : unifié avec offline-manager
-    select: "#dp-select",
-    message: "#dp-message"
-  },
-  palanquee: {
-    container: ".palanquee",
-    horaire: ".palanquee-horaire",
-    profPrevue: ".palanquee-prof-prevue",
-    dureePrevue: ".palanquee-duree-prevue",
-    profRealisee: ".palanquee-prof-realisee",
-    dureeRealisee: ".palanquee-duree-realisee",
-    paliers: ".palanquee-paliers"
-  },
-  plongeur: {
-    container: ".plongeur",
-    inputs: "input, select, textarea"
-  }
-};
-
-// ===== UTILITAIRES DOM PARTAGÉS =====
-function waitForDPElement(selector, timeout = 10000) {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-    
-    function check() {
-      const element = document.querySelector(selector);
-      if (element) {
-        resolve(element);
-        return;
-      }
-      
-      if (Date.now() - startTime > timeout) {
-        reject(new Error(`Timeout: élément ${selector} non trouvé après ${timeout}ms`));
-        return;
-      }
-      
-      setTimeout(check, 100);
-    }
-    
-    check();
-  });
-}
-
-function verifyDPElements() {
-  const required = [
-    DP_SELECTORS.dp.nom,
-    DP_SELECTORS.dp.date,
-    DP_SELECTORS.dp.lieu,
-    DP_SELECTORS.dp.plongee
-  ];
-  
-  const missing = required.filter(selector => !document.querySelector(selector));
-  return missing.length === 0 ? null : missing;
-}
+// dp-sessions-manager.js - Gestion DP et Sessions (extrait de main-complete.js)
 
 // ===== GESTION DU DIRECTEUR DE PLONGÉE =====
 
 // Validation et enregistrement des informations DP
 async function validateAndSaveDP() {
   try {
-    console.log("💾 Validation et sauvegarde DP...");
-
-    // Vérifier les éléments DOM
-    const missing = verifyDPElements();
-    if (missing) {
-      console.error("❌ Éléments DOM manquants:", missing);
-      alert("⚠️ Interface non prête. Veuillez réessayer dans quelques secondes.");
-      return false;
-    }
-
     // NOUVEAU : Synchroniser automatiquement le champ dp-nom avec le sélecteur
-    const dpSelect = document.querySelector(DP_SELECTORS.dp.select);
-    const dpNomInput = document.querySelector(DP_SELECTORS.dp.nom);
+    const dpSelect = document.getElementById("dp-select");
+    const dpNomInput = document.getElementById("dp-nom");
     
     if (dpSelect && dpSelect.value && dpNomInput) {
       const selectedOption = dpSelect.options[dpSelect.selectedIndex];
@@ -89,60 +16,60 @@ async function validateAndSaveDP() {
       console.log('🔄 Synchronisation auto dp-nom:', dpName);
     }
     
-    // Récupérer les valeurs avec sélecteurs unifiés
-    const dpNom = dpNomInput?.value?.trim();
-    const dpDate = document.querySelector(DP_SELECTORS.dp.date)?.value;
-    const dpLieu = document.querySelector(DP_SELECTORS.dp.lieu)?.value?.trim();
-    const dpPlongee = document.querySelector(DP_SELECTORS.dp.plongee)?.value; // CORRIGÉ
-    const dpMessage = document.querySelector(DP_SELECTORS.dp.message);
+    const dpNom = document.getElementById("dp-nom")?.value?.trim();
+    const dpDate = document.getElementById("dp-date")?.value;
+    const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+    const dpPlongee = document.getElementById("dp-plongee")?.value;
+    const dpMessage = document.getElementById("dp-message");
     
     // Validation des champs obligatoires
     const validation = validateDPFields(dpNom, dpDate, dpLieu, dpPlongee);
     if (!validation.valid) {
       alert(validation.message);
       if (validation.focusElement) {
-        document.querySelector(`#${validation.focusElement}`)?.focus();
+        document.getElementById(validation.focusElement)?.focus();
       }
       return false;
     }
     
-    // Créer l'objet informations DP avec structure cohérente
+    // Créer l'objet informations DP
     const dpInfo = {
       nom: dpNom,
       date: dpDate,
       lieu: dpLieu,
-      plongee: dpPlongee, // CORRIGÉ : nom cohérent
+      plongee: dpPlongee,
       timestamp: Date.now(),
       validated: true
     };
     
-    // NOUVEAU : Inclure le DP sélectionné
-    if (dpSelect && dpSelect.value) {
-      dpInfo.dp_selected_id = dpSelect.value;
-      dpInfo.dp_selected_text = dpSelect.options[dpSelect.selectedIndex].text;
+    // NOUVEAU : Inclure le DP sélectionné et détails palanquées
+    const dpSelect2 = document.getElementById('dp-select');
+    if (dpSelect2 && dpSelect2.value) {
+      dpInfo.dp_selected_id = dpSelect2.value;
+      dpInfo.dp_selected_text = dpSelect2.options[dpSelect2.selectedIndex].text;
     }
 
-    // Sauvegarder les détails de toutes les palanquées avec sélecteurs unifiés
+    // Sauvegarder les détails de toutes les palanquées
     const palanqueeDetails = [];
-    const palanqueeElements = document.querySelectorAll(DP_SELECTORS.palanquee.container); 
+    const palanqueeElements = document.querySelectorAll('.palanquee'); 
     
-    console.log(`💾 Sauvegarde détails de ${palanqueeElements.length} palanquées...`);
+    console.log('💾 Sauvegarde session détails palanquées:', palanqueeElements.length, 'éléments trouvés');
 
     palanqueeElements.forEach((element, index) => {
       const details = {
-        id: element.dataset?.index || index.toString(),
-        horaire: element.querySelector(DP_SELECTORS.palanquee.horaire)?.value || '',
-        profondeurPrevue: element.querySelector(DP_SELECTORS.palanquee.profPrevue)?.value || '',
-        dureePrevue: element.querySelector(DP_SELECTORS.palanquee.dureePrevue)?.value || '',
-        profondeurRealisee: element.querySelector(DP_SELECTORS.palanquee.profRealisee)?.value || '',
-        dureeRealisee: element.querySelector(DP_SELECTORS.palanquee.dureeRealisee)?.value || '',
-        paliers: element.querySelector(DP_SELECTORS.palanquee.paliers)?.value || ''
+        id: element.dataset?.index || index,
+        horaire: element.querySelector('.palanquee-horaire')?.value || '',
+        profondeurPrevue: element.querySelector('.palanquee-prof-prevue')?.value || '',
+        dureePrevue: element.querySelector('.palanquee-duree-prevue')?.value || '',
+        profondeurRealisee: element.querySelector('.palanquee-prof-realisee')?.value || '',
+        dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
+        paliers: element.querySelector('.palanquee-paliers')?.value || ''
       };
       
       // Log des valeurs trouvées (seulement si non vides)
       const nonEmptyFields = Object.entries(details).filter(([key, value]) => key !== 'id' && value !== '');
       if (nonEmptyFields.length > 0) {
-        console.log(`  Palanquée ${index}:`, nonEmptyFields.reduce((obj, [key, value]) => {
+        console.log(`  Session Palanquée ${index}:`, nonEmptyFields.reduce((obj, [key, value]) => {
           obj[key] = value;
           return obj;
         }, {}));
@@ -191,9 +118,9 @@ async function validateAndSaveDP() {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur validation DP:", error);
+    console.error("⌚ Erreur validation DP:", error);
     
-    const dpMessage = document.querySelector(DP_SELECTORS.dp.message);
+    const dpMessage = document.getElementById("dp-message");
     showDPValidationMessage(dpMessage, "", "", "", "", false, error.message);
     
     if (typeof handleError === 'function') {
@@ -282,15 +209,13 @@ function showDPValidationMessage(messageElement, nom, date, lieu, plongee, succe
       </div>
     `;
     messageElement.classList.add("dp-valide");
-    messageElement.style.display = 'block';
   } else {
     messageElement.innerHTML = `
       <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
-        ❌ Erreur lors de l'enregistrement : ${errorMsg}
+        ⌚ Erreur lors de l'enregistrement : ${errorMsg}
       </div>
     `;
     messageElement.classList.remove("dp-valide");
-    messageElement.style.display = 'block';
   }
 }
 
@@ -317,7 +242,7 @@ async function chargerHistoriqueDP() {
   
   const dpDatesSelect = document.getElementById("dp-dates");
   if (!dpDatesSelect) {
-    console.error("❌ Élément dp-dates non trouvé");
+    console.error("⌚ Élément dp-dates non trouvé");
     return;
   }
   
@@ -377,7 +302,7 @@ async function chargerHistoriqueDP() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur chargement historique DP:", error);
+    console.error("⌚ Erreur chargement historique DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement historique DP");
     }
@@ -390,7 +315,7 @@ function afficherInfoDP() {
   const historiqueInfo = document.getElementById("historique-info");
   
   if (!dpDatesSelect || !historiqueInfo) {
-    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
+    console.error("⌚ Éléments DOM manquants pour afficher les infos DP");
     return;
   }
   
@@ -404,14 +329,14 @@ function afficherInfoDP() {
   historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
   
   if (typeof db === 'undefined' || !db) {
-    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
+    historiqueInfo.innerHTML = '<p style="color: red;">⌚ Firebase non disponible</p>';
     return;
   }
   
   db.ref(`dpInfo/${selectedKey}`).once('value')
     .then(snapshot => {
       if (!snapshot.exists()) {
-        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
+        historiqueInfo.innerHTML = '<p style="color: red;">⌚ DP non trouvé</p>';
         return;
       }
       
@@ -452,187 +377,114 @@ function afficherInfoDP() {
       `;
     })
     .catch(error => {
-      console.error("❌ Erreur chargement DP:", error);
+      console.error("⌚ Erreur chargement DP:", error);
       if (typeof handleError === 'function') {
         handleError(error, "Chargement DP");
       }
-      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
+      historiqueInfo.innerHTML = `<p style="color: red;">⌚ Erreur : ${error.message}</p>`;
     });
 }
 
-// NOUVEAU : Restaurer le DP sélectionné avec vérification en boucle robuste ET SÉLECTEURS UNIFIÉS
-async function waitAndRestoreSession(dpData, maxRetries = 20) {
-  if (!dpData) {
-    console.error("❌ Données DP manquantes pour restauration");
-    return false;
-  }
-
-  console.log('🔄 Restauration de session DP avec retry intelligent...');
-
-  let retryCount = 0;
-
-  async function attemptSessionRestore() {
-    try {
-      retryCount++;
-      console.log(`🔄 Tentative ${retryCount}/${maxRetries}`);
-
-      // Attendre que les éléments essentiels soient prêts
-      await waitForDPElement(DP_SELECTORS.dp.select, 5000);
-      await waitForDPElement(DP_SELECTORS.palanquee.container, 8000);
-
-      const dpSelect = document.querySelector(DP_SELECTORS.dp.select);
-      const palanqueeElements = document.querySelectorAll(DP_SELECTORS.palanquee.container);
-      
-      console.log('📊 Vérification éléments session:', {
-        dpSelect: !!dpSelect,
-        dpOptions: dpSelect?.options.length || 0,
-        palanquees: palanqueeElements.length,
-        dpData: !!dpData
-      });
-      
-      // Vérifier si tous les éléments sont prêts
-      if (!dpSelect || dpSelect.options.length <= 1) {
-        throw new Error("Sélecteur DP pas encore chargé");
-      }
-
-      if (palanqueeElements.length === 0) {
-        throw new Error("Palanquées pas encore disponibles");
-      }
-      
-      console.log('✅ Éléments prêts, début de la restauration de session');
-      
-      // 1. RESTAURER LE DP SÉLECTIONNÉ
-      if (dpData.dp_selected_id) {
-        // Vérifier que l'option existe
-        const optionExists = Array.from(dpSelect.options).some(opt => opt.value === dpData.dp_selected_id);
-        if (optionExists) {
-          dpSelect.value = dpData.dp_selected_id;
-          dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log('⚡ DP sélectionné restauré:', dpData.dp_selected_text);
-        } else {
-          console.warn('⚠️ Option DP non trouvée:', dpData.dp_selected_id);
-        }
-      }
-      
-      // 2. RESTAURER LES DÉTAILS PALANQUÉES avec sélecteurs unifiés
-      if (dpData.palanquee_details && dpData.palanquee_details.length > 0) {
-        console.log(`📋 Restauration de ${dpData.palanquee_details.length} palanquées de session`);
-        
-        dpData.palanquee_details.forEach((details, index) => {
-          const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
-          
-          if (element) {
-            // Mapping unifié des champs avec DP_SELECTORS
-            const fieldMappings = [
-              { selector: DP_SELECTORS.palanquee.horaire, value: details.horaire, name: 'horaire' },
-              { selector: DP_SELECTORS.palanquee.profPrevue, value: details.profondeurPrevue, name: 'prof. prévue' },
-              { selector: DP_SELECTORS.palanquee.dureePrevue, value: details.dureePrevue, name: 'durée prévue' },
-              { selector: DP_SELECTORS.palanquee.profRealisee, value: details.profondeurRealisee, name: 'prof. réalisée' },
-              { selector: DP_SELECTORS.palanquee.dureeRealisee, value: details.dureeRealisee, name: 'durée réalisée' },
-              { selector: DP_SELECTORS.palanquee.paliers, value: details.paliers, name: 'paliers' }
-            ];
-            
-            fieldMappings.forEach(({ selector, value, name }) => {
-              const fieldElement = element.querySelector(selector);
-              if (fieldElement && value) {
-                fieldElement.value = value;
-                fieldElement.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log(`  ✅ ${name}: "${value}"`);
-              } else if (value) {
-                console.warn(`  ⚠️ ${name} non trouvé (${selector})`);
-              }
-            });
-          } else {
-            console.warn(`⚠️ Palanquée ${index} non trouvée`);
-          }
-        });
-        
-        console.log(`⚡ Détails palanquées restaurés: ${dpData.palanquee_details.length} palanquées`);
-      }
-
-      // 3. DÉCLENCHER LES ÉVÉNEMENTS DE CHANGEMENT SI FONCTION DISPONIBLE
-      if (typeof onDpSelectionChange === 'function') {
-        setTimeout(onDpSelectionChange, 500);
-      }
-
-      console.log("✅ Restauration de session terminée avec succès !");
-      return true;
-
-    } catch (error) {
-      console.warn(`⚠️ Tentative ${retryCount} échouée:`, error.message);
-      
-      if (retryCount >= maxRetries) {
-        console.error(`❌ Restauration de session échouée après ${maxRetries} tentatives`);
-        return false;
-      }
-      
-      // Délai progressif avant nouvelle tentative
-      const delay = Math.min(150 * retryCount, 2500);
-      console.log(`⏳ Nouvelle tentative dans ${delay}ms...`);
-      
-      return new Promise(resolve => {
-        setTimeout(async () => {
-          const result = await attemptSessionRestore();
-          resolve(result);
-        }, delay);
-      });
+// NOUVEAU : Restaurer le DP sélectionné avec vérification en boucle robuste
+function waitAndRestoreSession(dpData) {
+  const dpSelect = document.getElementById('dp-select');
+  const palanqueeElements = document.querySelectorAll('.palanquee');
+  
+  console.log('🔍 Vérification restauration session:', {
+    dpSelect: !!dpSelect,
+    dpOptions: dpSelect?.options.length || 0,
+    palanquees: palanqueeElements.length,
+    dpData: !!dpData
+  });
+  
+  // Vérifier si tous les éléments sont prêts
+  if (dpSelect && dpSelect.options.length > 1 && palanqueeElements.length > 0) {
+    console.log('✅ Éléments prêts, début de la restauration de session');
+    
+    // Restaurer le DP sélectionné
+    if (dpData.dp_selected_id) {
+      dpSelect.value = dpData.dp_selected_id;
+      console.log('⚡ DP sélectionné restauré instantanément:', dpData.dp_selected_text);
     }
+    
+    // Restaurer les détails palanquées
+    if (dpData.palanquee_details && dpData.palanquee_details.length > 0) {
+      console.log('📋 Restauration de', dpData.palanquee_details.length, 'palanquées de session');
+      
+      dpData.palanquee_details.forEach((details, index) => {
+        const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
+        
+        if (element) {
+          const fields = [
+            {selector: '.palanquee-horaire', value: details.horaire, name: 'horaire'},
+            {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue, name: 'prof. prévue'},
+            {selector: '.palanquee-duree-prevue', value: details.dureePrevue, name: 'durée prévue'},
+            {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee, name: 'prof. réalisée'},
+            {selector: '.palanquee-duree-realisee', value: details.dureeRealisee, name: 'durée réalisée'},
+            {selector: '.palanquee-paliers', value: details.paliers, name: 'paliers'}
+          ];
+          
+          fields.forEach(field => {
+            const fieldElement = element.querySelector(field.selector);
+            if (fieldElement && field.value) {
+              fieldElement.value = field.value;
+              console.log(`  ✅ ${field.name}: ${field.value}`);
+            } else if (field.value) {
+              console.warn(`  ⚠️ ${field.name} non trouvé (${field.selector})`);
+            }
+          });
+        } else {
+          console.warn(`⚠️ Palanquée ${index} non trouvée`);
+        }
+      });
+      
+      console.log('⚡ Détails palanquées restaurés instantanément:', dpData.palanquee_details.length, 'palanquées');
+    }
+    return; // Terminé !
   }
-
-  return await attemptSessionRestore();
+  
+  // Réessayer dans 100ms si pas encore prêt
+  console.log('⏳ Éléments pas encore prêts, nouvelle tentative dans 100ms...');
+  setTimeout(() => waitAndRestoreSession(dpData), 100);
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("⌚ Firebase non disponible");
       return;
     }
     
     const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
     if (!snapshot.exists()) {
-      alert("❌ DP non trouvé");
+      alert("⌚ DP non trouvé");
       return;
     }
     
     const dpData = snapshot.val();
     
-    // Charger les données dans l'interface avec sélecteurs unifiés
-    const dpElements = {
-      nom: document.querySelector(DP_SELECTORS.dp.nom),
-      niveau: document.querySelector(DP_SELECTORS.dp.niveau),
-      date: document.querySelector(DP_SELECTORS.dp.date),
-      lieu: document.querySelector(DP_SELECTORS.dp.lieu),
-      plongee: document.querySelector(DP_SELECTORS.dp.plongee) // CORRIGÉ
-    };
+    // Charger les données dans l'interface
+    const dpNomInput = document.getElementById("dp-nom");
+    const dpDateInput = document.getElementById("dp-date");
+    const dpLieuInput = document.getElementById("dp-lieu");
+    const dpPlongeeInput = document.getElementById("dp-plongee");
     
-    // Vérifier les éléments
-    const missingElements = Object.entries(dpElements)
-      .filter(([key, element]) => !element)
-      .map(([key]) => key);
-      
-    if (missingElements.length > 0) {
-      console.warn("⚠️ Éléments DP manquants:", missingElements);
-    }
-    
-    // Restaurer les valeurs
-    if (dpElements.nom) dpElements.nom.value = dpData.nom || "";
-    if (dpElements.niveau) dpElements.niveau.value = dpData.niveau || "";
-    if (dpElements.date) dpElements.date.value = dpData.date || "";
-    if (dpElements.lieu) dpElements.lieu.value = dpData.lieu || "";
-    if (dpElements.plongee) dpElements.plongee.value = dpData.plongee || "matin"; // CORRIGÉ
+    if (dpNomInput) dpNomInput.value = dpData.nom || "";
+    if (dpDateInput) dpDateInput.value = dpData.date || "";
+    if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
+    if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
     
     // NOUVEAU : Synchroniser avec le nouveau sélecteur DP avec vérification active
     if (dpData.nom || dpData.dp_selected_id) {
       console.log('🔄 Synchronisation du DP chargé:', dpData.nom);
       
       // Démarrer la vérification active pour restaurer avec dpData
-      await waitAndRestoreSession(dpData);
+      waitAndRestoreSession(dpData);
       
       // Alternative : synchronisation par nom si pas d'ID sauvegardé
       if (!dpData.dp_selected_id && dpData.nom) {
         setTimeout(() => {
-          const dpSelect = document.querySelector(DP_SELECTORS.dp.select);
+          const dpSelect = document.getElementById('dp-select');
           if (dpSelect && dpSelect.options.length > 1) {
             // Chercher l'option correspondante par nom de famille ou prénom
             for (let i = 0; i < dpSelect.options.length; i++) {
@@ -643,7 +495,6 @@ async function chargerDonneesDPSelectionne(dpKey) {
               
               if (option.text.includes(nomFamille) || (prenom && option.text.includes(prenom))) {
                 dpSelect.value = option.value;
-                dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 console.log('✅ DP synchronisé avec session:', option.text);
                 
                 // Déclencher l'événement de changement si la fonction existe
@@ -668,11 +519,11 @@ async function chargerDonneesDPSelectionne(dpKey) {
     console.log("✅ DP chargé:", dpData);
     
   } catch (error) {
-    console.error("❌ Erreur chargement DP:", error);
+    console.error("⌚ Erreur chargement DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement DP sélectionné");
     }
-    alert("❌ Erreur lors du chargement : " + error.message);
+    alert("⌚ Erreur lors du chargement : " + error.message);
   }
 }
 
@@ -683,7 +534,7 @@ async function supprimerDPSelectionne(dpKey) {
 
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("⌚ Firebase non disponible");
       return;
     }
 
@@ -701,11 +552,11 @@ async function supprimerDPSelectionne(dpKey) {
     console.log("✅ DP supprimé:", dpKey, "+ listes rafraîchies");
 
   } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
+    console.error("⌚ Erreur suppression DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Suppression DP");
     }
-    alert("❌ Erreur lors de la suppression : " + error.message);
+    alert("⌚ Erreur lors de la suppression : " + error.message);
   }
 }
 
@@ -713,7 +564,7 @@ async function supprimerDPSelectionne(dpKey) {
 async function populateSessionSelector() {
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
-    console.error("❌ Élément session-selector non trouvé");
+    console.error("⌚ Élément session-selector non trouvé");
     return;
   }
   
@@ -787,7 +638,7 @@ async function populateSessionSelector() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur chargement sessions:", error);
+    console.error("⌚ Erreur chargement sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement sessions");
     }
@@ -850,7 +701,7 @@ async function loadSessionFromSelector() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
+    console.error("⌚ Erreur chargement session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement session");
     }
@@ -926,7 +777,7 @@ function updateCurrentSessionDisplay(sessionKey, sessionText) {
     }
     
   } catch (error) {
-    console.error("❌ Erreur updateCurrentSessionDisplay:", error);
+    console.error("⌚ Erreur updateCurrentSessionDisplay:", error);
   }
 }
 
@@ -938,20 +789,20 @@ function clearCurrentSessionDisplay() {
       currentSessionDiv.style.display = "none";
     }
   } catch (error) {
-    console.error("❌ Erreur clearCurrentSessionDisplay:", error);
+    console.error("⌚ Erreur clearCurrentSessionDisplay:", error);
   }
 }
 
 // NOUVELLE FONCTION : Mettre à jour l'indicateur après sauvegarde
 function updateCurrentSessionAfterSave() {
   try {
-    const dpSelect = document.querySelector(DP_SELECTORS.dp.select);
+    const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect?.value ? 
       dpSelect.options[dpSelect.selectedIndex].text.replace(/\s*\([^)]*\)/, '') : 
-      document.querySelector(DP_SELECTORS.dp.nom)?.value?.trim();
-    const dpDate = document.querySelector(DP_SELECTORS.dp.date)?.value;
-    const dpLieu = document.querySelector(DP_SELECTORS.dp.lieu)?.value?.trim();
-    const dpPlongee = document.querySelector(DP_SELECTORS.dp.plongee)?.value; // CORRIGÉ
+      document.getElementById("dp-nom")?.value?.trim();
+    const dpDate = document.getElementById("dp-date")?.value;
+    const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+    const dpPlongee = document.getElementById("dp-plongee")?.value;
     
     if (dpNom && dpDate && dpLieu) {
       const sessionText = `${dpDate} - ${dpNom} - ${dpLieu} (${dpPlongee})`;
@@ -959,21 +810,21 @@ function updateCurrentSessionAfterSave() {
       updateCurrentSessionDisplay(sessionKey, sessionText);
     }
   } catch (error) {
-    console.error("❌ Erreur updateCurrentSessionAfterSave:", error);
+    console.error("⌚ Erreur updateCurrentSessionAfterSave:", error);
   }
 }
 
 // NOUVELLE FONCTION : Effacer le message de validation DP
 function clearDPValidationMessage() {
   try {
-    const dpMessage = document.querySelector(DP_SELECTORS.dp.message);
+    const dpMessage = document.getElementById("dp-message");
     if (dpMessage) {
       dpMessage.innerHTML = '';
       dpMessage.classList.remove("dp-valide");
       dpMessage.style.display = 'none';
     }
   } catch (error) {
-    console.error("❌ Erreur clearDPValidationMessage:", error);
+    console.error("⌚ Erreur clearDPValidationMessage:", error);
   }
 }
 
@@ -996,7 +847,7 @@ async function saveCurrentSession() {
       return false;
     }
   } catch (error) {
-    console.error("❌ Erreur sauvegarde session:", error);
+    console.error("⌚ Erreur sauvegarde session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Sauvegarde session");
     }
@@ -1011,7 +862,7 @@ async function populateSessionsCleanupList() {
   
   const cleanupList = document.getElementById("sessions-cleanup-list");
   if (!cleanupList) {
-    console.error("❌ Élément sessions-cleanup-list non trouvé");
+    console.error("⌚ Élément sessions-cleanup-list non trouvé");
     return;
   }
   
@@ -1047,7 +898,7 @@ async function populateSessionsCleanupList() {
     console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage`);
     
   } catch (error) {
-    console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+    console.error("⌚ Erreur chargement liste nettoyage sessions:", error);
     cleanupList.innerHTML = '<em>Erreur de chargement</em>';
   }
 }
@@ -1094,7 +945,7 @@ async function loadSessionsDirectly() {
     return sessionsList;
     
   } catch (error) {
-    console.error("❌ Erreur loadSessionsDirectly:", error);
+    console.error("⌚ Erreur loadSessionsDirectly:", error);
     return [];
   }
 }
@@ -1133,7 +984,7 @@ async function deleteSelectedSessions() {
   
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("⌚ Firebase non disponible");
       return;
     }
     
@@ -1153,8 +1004,8 @@ async function deleteSelectedSessions() {
     console.log(`✅ ${checkboxes.length} sessions supprimées + listes rafraîchies`);
     
   } catch (error) {
-    console.error("❌ Erreur suppression sessions:", error);
-    alert("❌ Erreur lors de la suppression : " + error.message);
+    console.error("⌚ Erreur suppression sessions:", error);
+    alert("⌚ Erreur lors de la suppression : " + error.message);
   }
 }
 
@@ -1177,7 +1028,7 @@ async function refreshAllLists() {
     console.log("✅ Toutes les listes rafraîchies");
     
   } catch (error) {
-    console.error("❌ Erreur rafraîchissement listes:", error);
+    console.error("⌚ Erreur rafraîchissement listes:", error);
   }
 }
 
@@ -1210,14 +1061,14 @@ async function refreshAllListsWithIndicator(buttonId = "refresh-sessions") {
     console.log("✅ Actualisation manuelle réussie avec indicateur");
     
   } catch (error) {
-    console.error("❌ Erreur actualisation manuelle:", error);
+    console.error("⌚ Erreur actualisation manuelle:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Actualisation manuelle");
     }
     
     // Indicateur d'erreur
     if (refreshBtn) {
-      refreshBtn.textContent = "❌ Erreur";
+      refreshBtn.textContent = "⌚ Erreur";
       refreshBtn.style.backgroundColor = "#dc3545";
       
       setTimeout(() => {
@@ -1244,7 +1095,7 @@ async function testFirebaseConnection() {
   try {
     console.log("📡 Test 1: Vérification connexion Firebase");
     console.log("Firebase connecté:", typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined');
-    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "❌ MANQUANTE");
+    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "⌚ MANQUANTE");
     
     if (typeof db !== 'undefined' && db) {
       console.log("📖 Test 2: Lecture /sessions");
@@ -1265,7 +1116,7 @@ async function testFirebaseConnection() {
     alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
     
   } catch (error) {
-    console.error("❌ Erreur test Firebase:", error);
+    console.error("⌚ Erreur test Firebase:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Test Firebase");
     }
@@ -1275,7 +1126,7 @@ async function testFirebaseConnection() {
 
 // ===== INITIALISATION APRÈS CONNEXION =====
 async function initializeAfterAuth() {
-  console.log("🔑 Initialisation après authentification...");
+  console.log("🔓 Initialisation après authentification...");
   
   try {
     // Charger toutes les données utilisateur
@@ -1290,27 +1141,27 @@ async function initializeAfterAuth() {
       await chargerHistoriqueDP();
       console.log("✅ Historique DP chargé après auth");
     } catch (error) {
-      console.error("❌ Erreur historique DP après auth:", error);
+      console.error("⌚ Erreur historique DP après auth:", error);
     }
     
     try {
       await populateSessionSelector();
       console.log("✅ Sélecteur sessions chargé après auth");
     } catch (error) {
-      console.error("❌ Erreur sélecteur sessions après auth:", error);
+      console.error("⌚ Erreur sélecteur sessions après auth:", error);
     }
     
     try {
       await populateSessionsCleanupList();
       console.log("✅ Liste nettoyage sessions chargée après auth");
     } catch (error) {
-      console.error("❌ Erreur liste sessions après auth:", error);
+      console.error("⌚ Erreur liste sessions après auth:", error);
     }
     
     console.log("✅ Initialisation complète après authentification terminée");
     
   } catch (error) {
-    console.error("❌ Erreur initialisation après auth:", error);
+    console.error("⌚ Erreur initialisation après auth:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Initialisation après authentification");
     }
@@ -1324,31 +1175,28 @@ function setupDPSessionsEventListeners() {
   try {
     // === VALIDATION DP ===
     const validerDPBtn = document.getElementById("valider-dp");
-    if (validerDPBtn && !validerDPBtn.hasAttribute('data-dp-listener-attached')) {
+    if (validerDPBtn) {
       validerDPBtn.addEventListener("click", async (e) => {
         e.preventDefault();
         await validateAndSaveDP();
       });
-      validerDPBtn.setAttribute('data-dp-listener-attached', 'true');
     }
 
     // === SESSIONS ===
     const loadSessionBtn = document.getElementById("load-session");
-    if (loadSessionBtn && !loadSessionBtn.hasAttribute('data-load-listener-attached')) {
+    if (loadSessionBtn) {
       loadSessionBtn.addEventListener("click", loadSessionFromSelector);
-      loadSessionBtn.setAttribute('data-load-listener-attached', 'true');
     }
 
     const refreshSessionsBtn = document.getElementById("refresh-sessions");
-    if (refreshSessionsBtn && !refreshSessionsBtn.hasAttribute('data-refresh-listener-attached')) {
+    if (refreshSessionsBtn) {
       refreshSessionsBtn.addEventListener("click", async () => {
         await refreshAllListsWithIndicator("refresh-sessions");
       });
-      refreshSessionsBtn.setAttribute('data-refresh-listener-attached', 'true');
     }
 
     const saveSessionBtn = document.getElementById("save-session");
-    if (saveSessionBtn && !saveSessionBtn.hasAttribute('data-save-listener-attached')) {
+    if (saveSessionBtn) {
       saveSessionBtn.addEventListener("click", async () => {
         const saveBtn = document.getElementById("save-session");
         
@@ -1375,7 +1223,7 @@ function setupDPSessionsEventListeners() {
           } else {
             // Indicateur d'erreur
             if (saveBtn) {
-              saveBtn.textContent = "❌ Erreur";
+              saveBtn.textContent = "⌚ Erreur";
               saveBtn.style.backgroundColor = "#dc3545";
               setTimeout(() => {
                 saveBtn.textContent = "Sauvegarder Session";
@@ -1385,9 +1233,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("❌ Erreur sauvegarde:", error);
+          console.error("⌚ Erreur sauvegarde:", error);
           if (saveBtn) {
-            saveBtn.textContent = "❌ Erreur";
+            saveBtn.textContent = "⌚ Erreur";
             saveBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               saveBtn.textContent = "Sauvegarder Session";
@@ -1405,34 +1253,30 @@ function setupDPSessionsEventListeners() {
           }
         }
       });
-      saveSessionBtn.setAttribute('data-save-listener-attached', 'true');
     }
 
     // === NETTOYAGE SESSIONS ===
     const selectAllSessionsBtn = document.getElementById("select-all-sessions");
-    if (selectAllSessionsBtn && !selectAllSessionsBtn.hasAttribute('data-select-all-listener-attached')) {
+    if (selectAllSessionsBtn) {
       selectAllSessionsBtn.addEventListener("click", () => {
         selectAllSessions(true);
       });
-      selectAllSessionsBtn.setAttribute('data-select-all-listener-attached', 'true');
     }
 
     const selectNoneSessionsBtn = document.getElementById("select-none-sessions");
-    if (selectNoneSessionsBtn && !selectNoneSessionsBtn.hasAttribute('data-select-none-listener-attached')) {
+    if (selectNoneSessionsBtn) {
       selectNoneSessionsBtn.addEventListener("click", () => {
         selectAllSessions(false);
       });
-      selectNoneSessionsBtn.setAttribute('data-select-none-listener-attached', 'true');
     }
 
     const deleteSelectedSessionsBtn = document.getElementById("delete-selected-sessions");
-    if (deleteSelectedSessionsBtn && !deleteSelectedSessionsBtn.hasAttribute('data-delete-listener-attached')) {
+    if (deleteSelectedSessionsBtn) {
       deleteSelectedSessionsBtn.addEventListener("click", deleteSelectedSessions);
-      deleteSelectedSessionsBtn.setAttribute('data-delete-listener-attached', 'true');
     }
 
     const refreshSessionsListBtn = document.getElementById("refresh-sessions-list");
-    if (refreshSessionsListBtn && !refreshSessionsListBtn.hasAttribute('data-refresh-list-listener-attached')) {
+    if (refreshSessionsListBtn) {
       refreshSessionsListBtn.addEventListener("click", async () => {
         const refreshBtn = document.getElementById("refresh-sessions-list");
         
@@ -1457,9 +1301,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("❌ Erreur actualisation liste:", error);
+          console.error("⌚ Erreur actualisation liste:", error);
           if (refreshBtn) {
-            refreshBtn.textContent = "❌ Erreur";
+            refreshBtn.textContent = "⌚ Erreur";
             refreshBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               refreshBtn.textContent = "Actualiser liste";
@@ -1476,75 +1320,36 @@ function setupDPSessionsEventListeners() {
           }
         }
       });
-      refreshSessionsListBtn.setAttribute('data-refresh-list-listener-attached', 'true');
     }
 
-    // Event listeners pour les checkboxes de nettoyage (délégation d'événement)
-    if (!document.hasAttribute('data-cleanup-listener-attached')) {
-      document.addEventListener('change', (e) => {
-        try {
-          if (e.target.classList.contains('session-cleanup-checkbox')) {
-            updateCleanupSelection();
-          }
-        } catch (error) {
-          console.error("❌ Erreur checkbox cleanup:", error);
-          if (typeof handleError === 'function') {
-            handleError(error, "Checkbox cleanup");
-          }
+    // Event listeners pour les checkboxes de nettoyage
+    document.addEventListener('change', (e) => {
+      try {
+        if (e.target.classList.contains('session-cleanup-checkbox')) {
+          updateCleanupSelection();
         }
-      });
-      document.setAttribute('data-cleanup-listener-attached', 'true');
-    }
+      } catch (error) {
+        console.error("⌚ Erreur checkbox cleanup:", error);
+        if (typeof handleError === 'function') {
+          handleError(error, "Checkbox cleanup");
+        }
+      }
+    });
 
     // === TEST FIREBASE ===
     const testFirebaseBtn = document.getElementById("test-firebase");
-    if (testFirebaseBtn && !testFirebaseBtn.hasAttribute('data-test-listener-attached')) {
+    if (testFirebaseBtn) {
       testFirebaseBtn.addEventListener("click", testFirebaseConnection);
-      testFirebaseBtn.setAttribute('data-test-listener-attached', 'true');
     }
     
     console.log("✅ Event listeners DP et Sessions configurés avec succès");
     
   } catch (error) {
-    console.error("❌ Erreur configuration event listeners DP/Sessions:", error);
+    console.error("⌚ Erreur configuration event listeners DP/Sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Configuration event listeners DP/Sessions");
     }
   }
-}
-
-// ===== FONCTION DE DIAGNOSTIC DES PALANQUÉES =====
-function diagnosticPalanquees() {
-  console.log('🔍 === DIAGNOSTIC PALANQUÉES SESSIONS (SÉLECTEURS UNIFIÉS) ===');
-  
-  const palanqueeElements = document.querySelectorAll(DP_SELECTORS.palanquee.container);
-  console.log(`📋 ${palanqueeElements.length} palanquées trouvées avec sélecteurs unifiés`);
-  
-  palanqueeElements.forEach((element, index) => {
-    console.log(`\n--- Session Palanquée ${index} ---`);
-    console.log('Élément:', element);
-    console.log('data-index:', element.dataset?.index);
-    
-    const fields = [
-      {selector: DP_SELECTORS.palanquee.horaire, name: 'Horaire'},
-      {selector: DP_SELECTORS.palanquee.profPrevue, name: 'Prof. prévue'},
-      {selector: DP_SELECTORS.palanquee.dureePrevue, name: 'Durée prévue'},
-      {selector: DP_SELECTORS.palanquee.profRealisee, name: 'Prof. réalisée'},
-      {selector: DP_SELECTORS.palanquee.dureeRealisee, name: 'Durée réalisée'},
-      {selector: DP_SELECTORS.palanquee.paliers, name: 'Paliers'}
-    ];
-    
-    fields.forEach(field => {
-      const fieldElement = element.querySelector(field.selector);
-      if (fieldElement) {
-        console.log(`  ✅ ${field.name}: "${fieldElement.value}" (${field.selector})`);
-      } else {
-        console.log(`  ❌ ${field.name}: NON TROUVÉ (${field.selector})`);
-      }
-    });
-  });
-  
-  console.log('=== FIN DIAGNOSTIC SESSIONS UNIFIÉES ===');
 }
 
 // ===== INITIALISATION =====
@@ -1558,7 +1363,7 @@ function initializeDPSessionsManager() {
     console.log("✅ Gestionnaire DP et Sessions initialisé");
     
   } catch (error) {
-    console.error("❌ Erreur initialisation gestionnaire DP/Sessions:", error);
+    console.error("⌚ Erreur initialisation gestionnaire DP/Sessions:", error);
   }
 }
 
@@ -1585,12 +1390,42 @@ window.updateCurrentSessionDisplay = updateCurrentSessionDisplay;
 window.clearCurrentSessionDisplay = clearCurrentSessionDisplay;
 window.updateCurrentSessionAfterSave = updateCurrentSessionAfterSave;
 window.clearDPValidationMessage = clearDPValidationMessage;
-window.waitAndRestoreSession = waitAndRestoreSession; // NOUVELLE EXPORT CORRIGÉE
-window.diagnosticPalanquees = diagnosticPalanquees;
+window.waitAndRestoreSession = waitAndRestoreSession; // NOUVELLE EXPORT
+window.diagnosticPalanquees = diagnosticPalanquees; // NOUVELLE EXPORT
 
-// Export des utilitaires pour cohérence
-window.waitForDPElement = waitForDPElement;
-window.verifyDPElements = verifyDPElements;
+// NOUVELLE FONCTION : Diagnostic des palanquées pour sessions
+function diagnosticPalanquees() {
+  console.log('🔍 === DIAGNOSTIC PALANQUÉES SESSIONS ===');
+  
+  const palanqueeElements = document.querySelectorAll('.palanquee');
+  console.log(`📋 ${palanqueeElements.length} palanquées trouvées`);
+  
+  palanqueeElements.forEach((element, index) => {
+    console.log(`\n--- Session Palanquée ${index} ---`);
+    console.log('Élément:', element);
+    console.log('data-index:', element.dataset?.index);
+    
+    const fields = [
+      {selector: '.palanquee-horaire', name: 'Horaire'},
+      {selector: '.palanquee-prof-prevue', name: 'Prof. prévue'},
+      {selector: '.palanquee-duree-prevue', name: 'Durée prévue'},
+      {selector: '.palanquee-prof-realisee', name: 'Prof. réalisée'},
+      {selector: '.palanquee-duree-realisee', name: 'Durée réalisée'},
+      {selector: '.palanquee-paliers', name: 'Paliers'}
+    ];
+    
+    fields.forEach(field => {
+      const fieldElement = element.querySelector(field.selector);
+      if (fieldElement) {
+        console.log(`  ✅ ${field.name}: "${fieldElement.value}" (${field.selector})`);
+      } else {
+        console.log(`  ❌ ${field.name}: NON TROUVÉ (${field.selector})`);
+      }
+    });
+  });
+  
+  console.log('=== FIN DIAGNOSTIC SESSIONS ===');
+}
 
 // Auto-initialisation
 if (document.readyState === 'loading') {
@@ -1599,4 +1434,4 @@ if (document.readyState === 'loading') {
   initializeDPSessionsManager();
 }
 
-console.log("🎯 Module DP et Sessions Manager chargé - Version 2.5.2 CORRIGÉE - Sélecteurs unifiés avec offline-manager");
+console.log("🎯 Module DP et Sessions Manager chargé - Toutes fonctionnalités DP/Sessions disponibles");
