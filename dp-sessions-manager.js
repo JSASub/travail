@@ -1,4 +1,4 @@
-// dp-sessions-manager.js - Gestion DP et Sessions (VERSION CORRIGÉE)
+// dp-sessions-manager.js - Gestion DP et Sessions (VERSION CORRIGÉE COMPLÈTE)
 
 // ===== CONFIGURATION SÉLECTEURS UNIFIÉE =====
 // Réutilise la même configuration que offline-manager pour cohérence
@@ -1599,4 +1599,4 @@ if (document.readyState === 'loading') {
   initializeDPSessionsManager();
 }
 
-console.log("🎯 Module DP et Sessions Manager chargé - Version 2.5.1 corrigée - Sélecteurs unifiés avec offline-manager");
+console.log("🎯 Module DP et Sessions Manager chargé - Version 2.5.2 CORRIGÉE - Sélecteurs unifiés avec offline-manager");

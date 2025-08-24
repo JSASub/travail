@@ -1,4 +1,4 @@
-// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence (VERSION CORRIGÉE)
+// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence (VERSION CORRIGÉE COMPLÈTE)
 
 // ===== VARIABLES GLOBALES =====
 let isOnline = false;
@@ -67,6 +67,67 @@ function verifyRequiredElements() {
   
   const missing = required.filter(selector => !document.querySelector(selector));
   return missing.length === 0 ? null : missing;
+}
+
+// ===== FONCTION LOADEMERGENCYBACKUP (DÉFINIE EN PREMIER) =====
+function loadEmergencyBackup() {
+  console.log("ℹ️ loadEmergencyBackup() => redirection vers waitAndRestoreEmergency()");
+  
+  // Si waitAndRestoreEmergency existe, l'utiliser
+  if (typeof waitAndRestoreEmergency === 'function') {
+    return waitAndRestoreEmergency();
+  }
+  
+  // Sinon, restauration basique
+  try {
+    const backupRaw = localStorage.getItem('jsas_last_backup') || 
+                      sessionStorage.getItem('jsas_emergency_backup');
+    
+    if (!backupRaw) {
+      console.log("ℹ️ Aucune sauvegarde d'urgence trouvée");
+      return false;
+    }
+    
+    const backupData = JSON.parse(backupRaw);
+    console.log("📦 Sauvegarde trouvée:", new Date(backupData.timestamp).toLocaleString());
+    
+    // Vérifier l'âge de la sauvegarde
+    const age = Date.now() - backupData.timestamp;
+    if (age > 24 * 60 * 60 * 1000) {
+      console.log("🗑️ Sauvegarde trop ancienne, nettoyage");
+      localStorage.removeItem('jsas_last_backup');
+      sessionStorage.removeItem('jsas_emergency_backup');
+      return false;
+    }
+    
+    // Restauration basique des métadonnées DP
+    if (backupData.metadata) {
+      const dpElements = {
+        nom: document.querySelector(SELECTORS.dp.nom),
+        niveau: document.querySelector(SELECTORS.dp.niveau),
+        date: document.querySelector(SELECTORS.dp.date),
+        lieu: document.querySelector(SELECTORS.dp.lieu),
+        plongee: document.querySelector(SELECTORS.dp.plongee)
+      };
+      
+      Object.entries(dpElements).forEach(([key, element]) => {
+        const value = backupData.metadata[`dp${key.charAt(0).toUpperCase()}${key.slice(1)}`];
+        if (element && value) {
+          element.value = value;
+          element.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log(`  ✅ DP ${key}: "${value}"`);
+        }
+      });
+      
+      console.log("✅ Métadonnées DP restaurées (mode basique)");
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur restauration basique:", error);
+    return false;
+  }
 }
 
 // ===== INDICATEUR DE STATUT =====
@@ -163,10 +224,14 @@ async function checkFirebaseConnection(){
       const wasOnline=isOnline; isOnline=connected; firebaseConnected=connected;
       updateConnectionIndicator(isOnline);
       if(!wasOnline && isOnline){
-        showNotification("🟢 Connexion rétablie ! Synchronisation...","success");
+        if (typeof showNotification === 'function') {
+          showNotification("🟢 Connexion rétablie ! Synchronisation...","success");
+        }
         await forceSyncToFirebase();
       }else if(wasOnline && !isOnline){
-        showNotification("🔴 Connexion perdue. Mode hors ligne activé.","warning");
+        if (typeof showNotification === 'function') {
+          showNotification("🔴 Connexion perdue. Mode hors ligne activé.","warning");
+        }
       }
     }
     return connected;
@@ -242,7 +307,7 @@ function emergencyLocalSave() {
     // Structure unifiée de sauvegarde d'urgence
     const emergencyData = {
       timestamp: Date.now(),
-      version: "2.5.1-fixed",
+      version: "2.5.2-fixed",
       userEmail: currentUser.email,
       metadata: dpMetadata,
       dpSelection: dpSelection,
@@ -500,31 +565,49 @@ function restoreEmergencyMetadata(metadata) {
 
 // ===== SYNCHRONISATION FORCÉE =====
 async function forceSyncToFirebase(){
-  if(!userAuthenticationCompleted || !currentUser){ showNotification("⚠️ Synchronisation impossible","warning"); return false; }
+  if(!userAuthenticationCompleted || !currentUser){ 
+    if (typeof showNotification === 'function') {
+      showNotification("⚠️ Synchronisation impossible","warning"); 
+    }
+    return false; 
+  }
   const syncBtn=document.getElementById('manual-sync-btn');
   const statusIcon=document.getElementById('status-icon');
   try{
     if(statusIcon) statusIcon.textContent='🔄';
     if(syncBtn){ syncBtn.textContent='⏳'; syncBtn.disabled=true; }
-    showNotification("🔄 Synchronisation en cours...","info");
+    if (typeof showNotification === 'function') {
+      showNotification("🔄 Synchronisation en cours...","info");
+    }
     const connected=await checkFirebaseConnection();
     if(!connected) throw new Error("Connexion Firebase indisponible");
     if(typeof syncToDatabase==='function'){ await syncToDatabase(); }
-    else{ await Promise.all([db.ref('plongeurs').set(plongeurs||[]), db.ref('palanquees').set(palanquees||[])]); if(typeof saveSessionData==='function') await saveSessionData(); }
+    else{ 
+      await Promise.all([
+        db.ref('plongeurs').set(plongeurs||[]), 
+        db.ref('palanquees').set(palanquees||[])
+      ]); 
+      if(typeof saveSessionData==='function') await saveSessionData(); 
+    }
     lastSyncTimestamp=Date.now(); offlineDataPending=false;
     sessionStorage.removeItem('jsas_emergency_backup');
-    showNotification("✅ Synchronisation réussie !","success");
+    if (typeof showNotification === 'function') {
+      showNotification("✅ Synchronisation réussie !","success");
+    }
     updateConnectionIndicator(true);
     return true;
-  }catch(e){ console.error("⏹ Erreur sync:",e); showNotification(`⏹ Échec sync : ${e.message}`,"error"); updateConnectionIndicator(false); return false; }
-  finally{ if(statusIcon) statusIcon.textContent=isOnline?'🟢':'🔴'; if(syncBtn){ syncBtn.textContent='🔄'; syncBtn.disabled=false; } }
-}
-
-// ===== FONCTIONS UTILITAIRES DE SAUVEGARDE =====
-function loadEmergencyBackup() {
-  // Cette fonction est maintenant intégrée dans waitAndRestoreEmergency
-  console.log("ℹ️ loadEmergencyBackup() => utilisez waitAndRestoreEmergency()");
-  return waitAndRestoreEmergency();
+  }catch(e){ 
+    console.error("⏹ Erreur sync:",e); 
+    if (typeof showNotification === 'function') {
+      showNotification(`⏹ Échec sync : ${e.message}`,"error");
+    }
+    updateConnectionIndicator(false); 
+    return false; 
+  }
+  finally{ 
+    if(statusIcon) statusIcon.textContent=isOnline?'🟢':'🔴'; 
+    if(syncBtn){ syncBtn.textContent='🔄'; syncBtn.disabled=false; } 
+  }
 }
 
 // ===== INITIALISATION =====
@@ -712,4 +795,4 @@ window.cleanupOfflineManager = cleanupOfflineManager;
 window.waitForElement = waitForElement;
 window.verifyRequiredElements = verifyRequiredElements;
 
-console.log("🎯 Gestionnaire offline chargé - Version 2.5.1 corrigée - Tous problèmes de restauration résolus");
+console.log("🎯 Gestionnaire offline chargé - Version 2.5.2 CORRIGÉE - Problème loadEmergencyBackup résolu");
