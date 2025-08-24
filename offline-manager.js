@@ -157,63 +157,126 @@ function restoreEmergencyMetadata(metadata){
 }
 
 // ===== RESTAURATION D'URGENCE =====
-function waitAndRestoreEmergency(){
-  const dpSelect=document.getElementById('dp-select');
-  const palanqueeElements=document.querySelectorAll('.palanquee');
-  if(dpSelect && dpSelect.options.length>1 && palanqueeElements.length>0){
-    const savedDpId=localStorage.getItem('emergency_dp_selected');
-    if(savedDpId){ dpSelect.value=savedDpId; if(typeof onDpSelectionChange==='function') onDpSelectionChange(); }
-    localStorage.removeItem('emergency_dp_selected'); localStorage.removeItem('emergency_dp_text');
+function waitAndRestoreEmergency() {
+  if (!userAuthenticationCompleted || !currentUser) return;
 
-    const savedDetails=localStorage.getItem('emergency_palanquee_details');
-    if(savedDetails){
-      try{
-        const palanqueeDetails=JSON.parse(savedDetails);
-        palanqueeDetails.forEach((details,index)=>{
-          const element=document.querySelector(`[data-index="${details.id}"]`)||palanqueeElements[index];
-          if(element){
-            const fields=[
-              {selector:'.palanquee-horaire',value:details.horaire},
-              {selector:'.palanquee-prof-prevue',value:details.profondeurPrevue},
-              {selector:'.palanquee-duree-prevue',value:details.dureePrevue},
-              {selector:'.palanquee-prof-realisee',value:details.profondeurRealisee},
-              {selector:'.palanquee-duree-realisee',value:details.dureeRealisee},
-              {selector:'.palanquee-paliers',value:details.paliers}
-            ];
-            fields.forEach(f=>{ const el=element.querySelector(f.selector); if(el && f.value){ el.value=f.value; el.dispatchEvent(new Event('change',{bubbles:true})); } });
+  const backupRaw = localStorage.getItem('jsas_last_backup');
+  if (!backupRaw) return;
+
+  const backupData = JSON.parse(backupRaw);
+
+  // Restaurer les métadonnées DP
+  const dpNom = document.getElementById("dp-nom");
+  const dpNiveau = document.getElementById("dp-niveau");
+  const dpDate = document.getElementById("dp-date");
+  const dpLieu = document.getElementById("dp-lieu");
+  const dpType = document.getElementById("dp-plongee");
+
+  if (dpNom) dpNom.value = backupData.metadata.dpNom || '';
+  if (dpNiveau) dpNiveau.value = backupData.metadata.dpNiveau || '';
+  if (dpDate) dpDate.value = backupData.metadata.dpDate || '';
+  if (dpLieu) dpLieu.value = backupData.metadata.dpLieu || '';
+  if (dpType) dpType.value = backupData.metadata.dpType || '';
+
+  // Restaurer les palanquées
+  backupData.palanquees.forEach((pDetail, index) => {
+    const element = document.querySelector(`[data-index="${pDetail.id}"]`);
+    if (!element) return;
+
+    const fields = [
+      {selector: '.palanquee-horaire', value: pDetail.horaire},
+      {selector: '.palanquee-prof-prevue', value: pDetail.profondeurPrevue},
+      {selector: '.palanquee-duree-prevue', value: pDetail.dureePrevue},
+      {selector: '.palanquee-prof-realisee', value: pDetail.profondeurRealisee},
+      {selector: '.palanquee-duree-realisee', value: pDetail.dureeRealisee},
+      {selector: '.palanquee-paliers', value: pDetail.paliers}
+    ];
+
+    fields.forEach(f => {
+      const el = element.querySelector(f.selector);
+      if (el && f.value) {
+        el.value = f.value;
+        el.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+    });
+
+    // Restaurer plongeurs
+    if (pDetail.plongeurs) {
+      pDetail.plongeurs.forEach((plongeurData, pIndex) => {
+        const plongeurEl = element.querySelectorAll('.plongeur')[pIndex];
+        if (!plongeurEl) return;
+        Object.keys(plongeurData).forEach(key => {
+          const input = plongeurEl.querySelector(`[name="${key}"]`);
+          if (input) {
+            input.value = plongeurData[key];
+            input.dispatchEvent(new Event('change', {bubbles: true}));
           }
         });
-        localStorage.removeItem('emergency_palanquee_details');
-      }catch(e){ console.error("❌ Erreur parsing détails:",e); }
+      });
     }
-    return;
-  }
-  setTimeout(waitAndRestoreEmergency,100);
+  });
+
+  console.log("🎉 Restauration d'urgence terminée");
+  localStorage.removeItem('jsas_last_backup');
+
+  // Synchronisation post-restauration
+  setTimeout(() => {
+    if (typeof syncToDatabase === 'function') syncToDatabase();
+  }, 500);
 }
 
-function loadEmergencyBackup(){
-  if(!userAuthenticationCompleted || !currentUser){ console.log("ℹ️ Utilisateur non authentifié"); return false; }
-  try{
-    let backupData=sessionStorage.getItem('jsas_emergency_backup')||localStorage.getItem('jsas_last_backup');
-    if(!backupData){ console.log("ℹ️ Aucune sauvegarde"); return false; }
-    const data=JSON.parse(backupData);
-    if(data.userEmail && data.userEmail!==currentUser.email){ sessionStorage.removeItem('jsas_emergency_backup'); localStorage.removeItem('jsas_last_backup'); return false; }
-    const confirmRestore=confirm(`🔄 Sauvegarde d'urgence trouvée du ${new Date(data.timestamp).toLocaleString('fr-FR')}\nVoulez-vous restaurer ?`);
-    if(confirmRestore){
-      if(Array.isArray(data.plongeurs)) plongeurs=data.plongeurs;
-      if(Array.isArray(data.palanquees)) palanquees=data.palanquees;
-      restoreEmergencyMetadata(data.metadata);
-      if(typeof renderPalanquees==='function') renderPalanquees();
-      if(typeof renderPlongeurs==='function') renderPlongeurs();
-      if(typeof updateAlertes==='function') updateAlertes();
-      if(typeof updateCompteurs==='function') updateCompteurs();
-      showNotification("✅ Sauvegarde d'urgence restaurée !","success");
-      setTimeout(waitAndRestoreEmergency,500);
-      offlineDataPending=true;
-      return true;
-    }
+function emergencyLocalSave() {
+  if (!userAuthenticationCompleted || !currentUser) return false;
+
+  try {
+    // Sauvegarde des plongeurs et palanquées
+    const backupData = {
+      timestamp: Date.now(),
+      userEmail: currentUser.email,
+      metadata: {
+        dpNom: document.getElementById("dp-nom")?.value || "",
+        dpNiveau: document.getElementById("dp-niveau")?.value || "",
+        dpDate: document.getElementById("dp-date")?.value || "",
+        dpLieu: document.getElementById("dp-lieu")?.value || "",
+        dpType: document.getElementById("dp-plongee")?.value || "matin",
+      },
+      palanquees: []
+    };
+
+    document.querySelectorAll('.palanquee').forEach((element, index) => {
+      const palanquee = {
+        id: element.dataset.index || index,
+        horaire: element.querySelector('.palanquee-horaire')?.value || '',
+        profondeurPrevue: element.querySelector('.palanquee-prof-prevue')?.value || '',
+        dureePrevue: element.querySelector('.palanquee-duree-prevue')?.value || '',
+        profondeurRealisee: element.querySelector('.palanquee-prof-realisee')?.value || '',
+        dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
+        paliers: element.querySelector('.palanquee-paliers')?.value || '',
+        plongeurs: []
+      };
+
+      element.querySelectorAll('.plongeur').forEach(plongeurEl => {
+        const plongeur = {};
+        plongeurEl.querySelectorAll('input, select, textarea').forEach(input => {
+          if (input.name) plongeur[input.name] = input.value;
+        });
+        palanquee.plongeurs.push(plongeur);
+      });
+
+      backupData.palanquees.push(palanquee);
+    });
+
+    // Sauvegarde dans localStorage
+    localStorage.setItem('jsas_last_backup', JSON.stringify(backupData));
+    offlineDataPending = true;
+    updateConnectionIndicator(isOnline);
+    console.log("💾 Sauvegarde d'urgence complète effectuée");
+    return true;
+
+  } catch (err) {
+    console.error("⌚ Erreur sauvegarde d'urgence :", err);
     return false;
-  }catch(e){ console.error("⌚ Erreur chargement:",e); alert("Erreur chargement sauvegarde d'urgence"); return false; }
+  }
 }
 
 // ===== SYNCHRONISATION FORCÉE =====
