@@ -218,6 +218,26 @@ if (dpSelect && dpSelect.value) {
   localStorage.setItem('emergency_dp_text', dpSelect.options[dpSelect.selectedIndex].text);
   console.log('💾 DP sélectionné sauvegardé:', dpSelect.options[dpSelect.selectedIndex].text);
 }
+////////
+// NOUVEAU : Sauvegarder les détails de plongée de toutes les palanquées
+const palanqueeDetails = [];
+const palanqueeElements = document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]'); 
+
+palanqueeElements.forEach((element, index) => {
+  const details = {
+    id: element.id || `palanquee-${index}`,
+    horaire: element.querySelector('.horaire, [name*="horaire"], #horaire')?.value || '',
+    profondeur_prevue: element.querySelector('.profondeur-prevue, [name*="prof-prev"], #prof-prev')?.value || '',
+    profondeur_effectuee: element.querySelector('.profondeur-effectuee, [name*="prof-eff"], #prof-eff')?.value || '',
+    temps_prevu: element.querySelector('.temps-prevu, [name*="temps-prev"], #temps-prev')?.value || '',
+    temps_effectue: element.querySelector('.temps-effectue, [name*="temps-eff"], #temps-eff')?.value || '',
+    paliers: element.querySelector('.paliers, [name*="palier"], #paliers')?.value || ''
+  };
+  palanqueeDetails.push(details);
+});
+
+localStorage.setItem('emergency_palanquee_details', JSON.stringify(palanqueeDetails));
+console.log('💾 Détails palanquées sauvegardés:', palanqueeDetails.length, 'palanquées');
 ////    
     console.log("✅ Sauvegarde d'urgence effectuée");
 
@@ -241,6 +261,41 @@ setTimeout(() => {
     localStorage.removeItem('emergency_dp_text');
   }
 }, 1000);
+////////
+// NOUVEAU : Restaurer les détails de plongée
+setTimeout(() => {
+  const savedDetails = localStorage.getItem('emergency_palanquee_details');
+  if (savedDetails) {
+    const palanqueeDetails = JSON.parse(savedDetails);
+    
+    palanqueeDetails.forEach((details, index) => {
+      const element = document.getElementById(details.id) || 
+                     document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]')[index];
+      
+      if (element) {
+        // Restaurer tous les champs
+        const fields = [
+          {selector: '.horaire, [name*="horaire"], #horaire', value: details.horaire},
+          {selector: '.profondeur-prevue, [name*="prof-prev"], #prof-prev', value: details.profondeur_prevue},
+          {selector: '.profondeur-effectuee, [name*="prof-eff"], #prof-eff', value: details.profondeur_effectuee},
+          {selector: '.temps-prevu, [name*="temps-prev"], #temps-prev', value: details.temps_prevu},
+          {selector: '.temps-effectue, [name*="temps-eff"], #temps-eff', value: details.temps_effectue},
+          {selector: '.paliers, [name*="palier"], #paliers', value: details.paliers}
+        ];
+        
+        fields.forEach(field => {
+          const fieldElement = element.querySelector(field.selector);
+          if (fieldElement && field.value) {
+            fieldElement.value = field.value;
+          }
+        });
+      }
+    });
+    
+    console.log('🔄 Détails palanquées restaurés:', palanqueeDetails.length, 'palanquées');
+    localStorage.removeItem('emergency_palanquee_details');
+  }
+}, 1500);
 ////
     
     // Marquer comme données pendantes si hors ligne
