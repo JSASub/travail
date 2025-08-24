@@ -239,6 +239,8 @@
 <!-- Scripts JavaScript modulaires - ORDRE CORRIGÉ -->
 <script src="config-firebase.js"></script>
 <!-- Attendre que Firebase soit initialisé AVANT dp-management -->
+<script src="offline-manager.js"></script>
+<script src="dp-management.js"></script>
 <script src="ui-interface.js"></script>
 <script src="render-dom.js"></script>
 <script src="pdf-manager.js"></script>
@@ -249,8 +251,6 @@
 <script src="offline-manager.js"></script>
 <script src="password-manager.js"></script>  
 <script src="dp-online-manager.js"></script>
-<!-- CHARGER dp-management EN DERNIER -->
-<script src="dp-management.js"></script>
 
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
 <div id="dp-modal">
