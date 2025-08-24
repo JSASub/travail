@@ -92,7 +92,25 @@ function initializeFirebase() {
         if (document.readyState === 'complete') {
           console.log("📄 Chargement des données après connexion...");
           await initializeAppData();
-		  initializeAfterAuth();
+		  //initializeAfterAuth();
+		  ////
+		  if (typeof window.initializeAfterAuth === 'function') {
+  window.initializeAfterAuth();
+} else {
+  console.log('⚠️ initializeAfterAuth non trouvée, initialisation alternative...');
+  
+  // Charger les données critiques manuellement
+  if (typeof chargerHistoriqueDP === 'function') {
+    setTimeout(() => chargerHistoriqueDP(), 1000);
+  }
+  if (typeof populateSessionSelector === 'function') {
+    setTimeout(() => populateSessionSelector(), 1500);
+  }
+  if (typeof populateSessionsCleanupList === 'function') {
+    setTimeout(() => populateSessionsCleanupList(), 2000);
+  }
+}
+////
         }
 	} else {
 	  console.log("❌ Utilisateur non connecté");
