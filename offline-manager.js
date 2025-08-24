@@ -240,9 +240,6 @@ function emergencyLocalSave() {
     console.log('💾 Détails palanquées sauvegardés:', palanqueeDetails.length, 'palanquées');
     
     console.log("✅ Sauvegarde d'urgence effectuée");
-
-    // NOUVEAU : Restauration d'urgence avec vérification active
-    waitAndRestoreEmergency();
     
     // Marquer comme données pendantes si hors ligne
     if (!isOnline) {
@@ -407,6 +404,11 @@ function loadEmergencyBackup() {
       if (typeof updateCompteurs === 'function') updateCompteurs();
       
       showNotification("✅ Sauvegarde d'urgence restaurée avec succès !", "success");
+      
+      // NOUVEAU : Restaurer aussi les détails des palanquées après rendu
+      setTimeout(() => {
+        waitAndRestoreEmergency();
+      }, 500);
       
       // Marquer comme données pendantes
       offlineDataPending = true;
@@ -611,6 +613,17 @@ function initializeOfflineManager() {
         loadEmergencyBackup();
       }
     }, 2000);
+    
+    // NOUVEAU : Restauration automatique silencieuse des détails palanquées
+    setTimeout(() => {
+      if (userAuthenticationCompleted && currentUser) {
+        const savedDetails = localStorage.getItem('emergency_palanquee_details');
+        if (savedDetails) {
+          console.log('🔄 Restauration automatique des détails palanquées...');
+          waitAndRestoreEmergency();
+        }
+      }
+    }, 3000);
     
     // Intercepter les modifications pour déclencher la sauvegarde d'urgence
     const originalSyncToDatabase = window.syncToDatabase;
