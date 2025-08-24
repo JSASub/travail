@@ -119,13 +119,13 @@ function showConnectionDetails() {
 • Statut : ${isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}
 • Dernière sync : ${lastSyncTimestamp ? new Date(lastSyncTimestamp).toLocaleString('fr-FR') : 'Jamais'}
 • Données pendantes : ${offlineDataPending ? '⚠️ Oui' : '✅ Non'}
-• Sauvegarde d'urgence : ${emergencySaveInterval ? '✅ Active' : '❌ Inactive'}
+• Sauvegarde d'urgence : ${emergencySaveInterval ? '✅ Active' : '⌚ Inactive'}
 
 📱 Capacités actuelles :
 • Édition : ✅ Disponible
 • Sauvegarde locale : ✅ Active
-• Sync Firebase : ${isOnline ? '✅ Disponible' : '❌ Indisponible'}
-• Partage temps réel : ${isOnline ? '✅ Actif' : '❌ Désactivé'}
+• Sync Firebase : ${isOnline ? '✅ Disponible' : '⌚ Indisponible'}
+• Partage temps réel : ${isOnline ? '✅ Actif' : '⌚ Désactivé'}
   `;
   
   alert(details);
@@ -177,7 +177,7 @@ async function checkFirebaseConnection() {
     return connected;
     
   } catch (error) {
-    console.error("❌ Erreur vérification connexion:", error);
+    console.error("⌚ Erreur vérification connexion:", error);
     isOnline = false;
     firebaseConnected = false;
     updateConnectionIndicator(false);
@@ -210,93 +210,39 @@ function emergencyLocalSave() {
     // Sauvegarder dans sessionStorage ET localStorage
     sessionStorage.setItem('jsas_emergency_backup', JSON.stringify(emergencyData));
     localStorage.setItem('jsas_last_backup', JSON.stringify(emergencyData));
-////
-// NOUVEAU : Sauvegarder aussi le DP sélectionné
-const dpSelect = document.getElementById('dp-select');
-if (dpSelect && dpSelect.value) {
-  localStorage.setItem('emergency_dp_selected', dpSelect.value);
-  localStorage.setItem('emergency_dp_text', dpSelect.options[dpSelect.selectedIndex].text);
-  console.log('💾 DP sélectionné sauvegardé:', dpSelect.options[dpSelect.selectedIndex].text);
-}
-////////
-// NOUVEAU : Sauvegarder les détails de plongée de toutes les palanquées
-const palanqueeDetails = [];
-const palanqueeElements = document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]'); 
 
-palanqueeElements.forEach((element, index) => {
-  const details = {
-    id: element.id || `palanquee-${index}`,
-    horaire: element.querySelector('.horaire, [name*="horaire"], #horaire')?.value || '',
-    profondeur_prevue: element.querySelector('.profondeur-prevue, [name*="prof-prev"], #prof-prev')?.value || '',
-    profondeur_effectuee: element.querySelector('.profondeur-effectuee, [name*="prof-eff"], #prof-eff')?.value || '',
-    temps_prevu: element.querySelector('.temps-prevu, [name*="temps-prev"], #temps-prev')?.value || '',
-    temps_effectue: element.querySelector('.temps-effectue, [name*="temps-eff"], #temps-eff')?.value || '',
-    paliers: element.querySelector('.paliers, [name*="palier"], #paliers')?.value || ''
-  };
-  palanqueeDetails.push(details);
-});
+    // NOUVEAU : Sauvegarder aussi le DP sélectionné
+    const dpSelect = document.getElementById('dp-select');
+    if (dpSelect && dpSelect.value) {
+      localStorage.setItem('emergency_dp_selected', dpSelect.value);
+      localStorage.setItem('emergency_dp_text', dpSelect.options[dpSelect.selectedIndex].text);
+      console.log('💾 DP sélectionné sauvegardé:', dpSelect.options[dpSelect.selectedIndex].text);
+    }
 
-localStorage.setItem('emergency_palanquee_details', JSON.stringify(palanqueeDetails));
-console.log('💾 Détails palanquées sauvegardés:', palanqueeDetails.length, 'palanquées');
-////    
+    // NOUVEAU : Sauvegarder les détails de plongée de toutes les palanquées
+    const palanqueeDetails = [];
+    const palanqueeElements = document.querySelectorAll('.palanquee'); 
+
+    palanqueeElements.forEach((element, index) => {
+      const details = {
+        id: element.dataset?.index || index,
+        horaire: element.querySelector('.palanquee-horaire')?.value || '',
+        profondeurPrevue: element.querySelector('.palanquee-prof-prevue')?.value || '',
+        dureePrevue: element.querySelector('.palanquee-duree-prevue')?.value || '',
+        profondeurRealisee: element.querySelector('.palanquee-prof-realisee')?.value || '',
+        dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
+        paliers: element.querySelector('.palanquee-paliers')?.value || ''
+      };
+      palanqueeDetails.push(details);
+    });
+
+    localStorage.setItem('emergency_palanquee_details', JSON.stringify(palanqueeDetails));
+    console.log('💾 Détails palanquées sauvegardés:', palanqueeDetails.length, 'palanquées');
+    
     console.log("✅ Sauvegarde d'urgence effectuée");
 
-//// NOUVEAU : Restaurer le DP sélectionné après sauvegarde d'urgence
-setTimeout(() => {
-  const savedDpId = localStorage.getItem('emergency_dp_selected');
-  if (savedDpId) {
-    const dpSelect = document.getElementById('dp-select');
-    if (dpSelect) {
-      dpSelect.value = savedDpId;
-      console.log('🔄 DP restauré après rechargement:', localStorage.getItem('emergency_dp_text'));
-      
-      // Déclencher l'événement de changement si la fonction existe
-      if (typeof onDpSelectionChange === 'function') {
-        onDpSelectionChange();
-      }
-    }
-    
-    // Nettoyer les données temporaires
-    localStorage.removeItem('emergency_dp_selected');
-    localStorage.removeItem('emergency_dp_text');
-  }
-}, 1000);
-////////
-// NOUVEAU : Restaurer les détails de plongée
-setTimeout(() => {
-  const savedDetails = localStorage.getItem('emergency_palanquee_details');
-  if (savedDetails) {
-    const palanqueeDetails = JSON.parse(savedDetails);
-    
-    palanqueeDetails.forEach((details, index) => {
-      const element = document.getElementById(details.id) || 
-                     document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]')[index];
-      
-      if (element) {
-        // Restaurer tous les champs
-        const fields = [
-          {selector: '.horaire, [name*="horaire"], #horaire', value: details.horaire},
-          {selector: '.profondeur-prevue, [name*="prof-prev"], #prof-prev', value: details.profondeur_prevue},
-          {selector: '.profondeur-effectuee, [name*="prof-eff"], #prof-eff', value: details.profondeur_effectuee},
-          {selector: '.temps-prevu, [name*="temps-prev"], #temps-prev', value: details.temps_prevu},
-          {selector: '.temps-effectue, [name*="temps-eff"], #temps-eff', value: details.temps_effectue},
-          {selector: '.paliers, [name*="palier"], #paliers', value: details.paliers}
-        ];
-        
-        fields.forEach(field => {
-          const fieldElement = element.querySelector(field.selector);
-          if (fieldElement && field.value) {
-            fieldElement.value = field.value;
-          }
-        });
-      }
-    });
-    
-    console.log('🔄 Détails palanquées restaurés:', palanqueeDetails.length, 'palanquées');
-    localStorage.removeItem('emergency_palanquee_details');
-  }
-}, 1500);
-////
+    // NOUVEAU : Restauration d'urgence avec vérification active
+    waitAndRestoreEmergency();
     
     // Marquer comme données pendantes si hors ligne
     if (!isOnline) {
@@ -307,9 +253,87 @@ setTimeout(() => {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur sauvegarde d'urgence:", error);
+    console.error("⌚ Erreur sauvegarde d'urgence:", error);
     return false;
   }
+}
+
+// NOUVEAU : Restauration d'urgence avec vérification en boucle robuste
+function waitAndRestoreEmergency() {
+  const dpSelect = document.getElementById('dp-select');
+  const palanqueeElements = document.querySelectorAll('.palanquee');
+  
+  console.log('🔍 Vérification restauration d\'urgence:', {
+    dpSelect: !!dpSelect,
+    dpOptions: dpSelect?.options.length || 0,
+    palanquees: palanqueeElements.length
+  });
+  
+  // Vérifier si tous les éléments sont prêts
+  if (dpSelect && dpSelect.options.length > 1 && palanqueeElements.length > 0) {
+    console.log('✅ Éléments prêts, début de la restauration d\'urgence');
+    
+    // Restaurer le DP d'urgence
+    const savedDpId = localStorage.getItem('emergency_dp_selected');
+    if (savedDpId) {
+      dpSelect.value = savedDpId;
+      console.log('⚡ DP restauré instantanément:', localStorage.getItem('emergency_dp_text'));
+      
+      // Déclencher l'événement de changement si la fonction existe
+      if (typeof onDpSelectionChange === 'function') {
+        onDpSelectionChange();
+      }
+      
+      localStorage.removeItem('emergency_dp_selected');
+      localStorage.removeItem('emergency_dp_text');
+    }
+    
+    // Restaurer les détails palanquées d'urgence
+    const savedDetails = localStorage.getItem('emergency_palanquee_details');
+    if (savedDetails) {
+      try {
+        const palanqueeDetails = JSON.parse(savedDetails);
+        console.log('📋 Restauration de', palanqueeDetails.length, 'palanquées d\'urgence');
+        
+        palanqueeDetails.forEach((details, index) => {
+          const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
+          
+          if (element) {
+            const fields = [
+              {selector: '.palanquee-horaire', value: details.horaire, name: 'horaire'},
+              {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue, name: 'prof. prévue'},
+              {selector: '.palanquee-duree-prevue', value: details.dureePrevue, name: 'durée prévue'},
+              {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee, name: 'prof. réalisée'},
+              {selector: '.palanquee-duree-realisee', value: details.dureeRealisee, name: 'durée réalisée'},
+              {selector: '.palanquee-paliers', value: details.paliers, name: 'paliers'}
+            ];
+            
+            fields.forEach(field => {
+              const fieldElement = element.querySelector(field.selector);
+              if (fieldElement && field.value) {
+                fieldElement.value = field.value;
+                console.log(`  ✅ ${field.name}: ${field.value}`);
+              } else if (field.value) {
+                console.warn(`  ⚠️ ${field.name} non trouvé (${field.selector})`);
+              }
+            });
+          } else {
+            console.warn(`⚠️ Palanquée ${index} non trouvée`);
+          }
+        });
+        
+        console.log('⚡ Détails d\'urgence restaurés instantanément:', palanqueeDetails.length, 'palanquées');
+        localStorage.removeItem('emergency_palanquee_details');
+      } catch (error) {
+        console.error('❌ Erreur parsing détails d\'urgence:', error);
+      }
+    }
+    return; // Terminé !
+  }
+  
+  // Réessayer dans 100ms si pas encore prêt
+  console.log('⏳ Éléments pas encore prêts, nouvelle tentative dans 100ms...');
+  setTimeout(waitAndRestoreEmergency, 100);
 }
 
 function loadEmergencyBackup() {
@@ -393,8 +417,8 @@ function loadEmergencyBackup() {
     return false;
     
   } catch (error) {
-    console.error("❌ Erreur chargement sauvegarde d'urgence:", error);
-    alert("❌ Erreur lors du chargement de la sauvegarde d'urgence");
+    console.error("⌚ Erreur chargement sauvegarde d'urgence:", error);
+    alert("⌚ Erreur lors du chargement de la sauvegarde d'urgence");
     return false;
   }
 }
@@ -457,8 +481,8 @@ async function forceSyncToFirebase() {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur synchronisation forcée:", error);
-    showNotification(`❌ Échec de synchronisation : ${error.message}`, "error");
+    console.error("⌚ Erreur synchronisation forcée:", error);
+    showNotification(`⌚ Échec de synchronisation : ${error.message}`, "error");
     updateConnectionIndicator(false);
     return false;
     
@@ -536,7 +560,7 @@ function showNotification(message, type = "info", duration = 4000) {
     }, duration);
     
   } catch (error) {
-    console.error("❌ Erreur notification:", error);
+    console.error("⌚ Erreur notification:", error);
     // Fallback vers alert
     alert(message);
   }
@@ -634,7 +658,7 @@ function initializeOfflineManager() {
     showNotification("🌐 Gestionnaire hors ligne activé", "info", 2000);
     
   } catch (error) {
-    console.error("❌ Erreur initialisation gestionnaire hors ligne:", error);
+    console.error("⌚ Erreur initialisation gestionnaire hors ligne:", error);
   }
 }
 
@@ -681,7 +705,7 @@ function cleanupOfflineManager() {
     console.log("🧹 Gestionnaire hors ligne nettoyé");
     
   } catch (error) {
-    console.error("❌ Erreur nettoyage gestionnaire hors ligne:", error);
+    console.error("⌚ Erreur nettoyage gestionnaire hors ligne:", error);
   }
 }
 
@@ -695,7 +719,7 @@ function showOfflineManagerPanel() {
   const stats = getOfflineStats();
   
   if (!stats) {
-    alert("❌ Impossible de récupérer les statistiques hors ligne");
+    alert("⌚ Impossible de récupérer les statistiques hors ligne");
     return;
   }
   
@@ -719,8 +743,8 @@ function showOfflineManagerPanel() {
 • Données pendantes : ${stats.pendingData ? '⚠️ Oui' : '✅ Non'}
 
 💾 Sauvegardes disponibles :
-• Session active : ${stats.hasSessionBackup ? '✅ Oui (' + formatAge(stats.sessionBackupAge) + ')' : '❌ Non'}
-• Sauvegarde locale : ${stats.hasLocalBackup ? '✅ Oui (' + formatAge(stats.localBackupAge) + ')' : '❌ Non'}
+• Session active : ${stats.hasSessionBackup ? '✅ Oui (' + formatAge(stats.sessionBackupAge) + ')' : '⌚ Non'}
+• Sauvegarde locale : ${stats.hasLocalBackup ? '✅ Oui (' + formatAge(stats.localBackupAge) + ')' : '⌚ Non'}
 
 🔧 Actions disponibles :
 [1] Synchroniser maintenant
@@ -763,11 +787,14 @@ function clearOfflineData() {
   try {
     sessionStorage.removeItem('jsas_emergency_backup');
     localStorage.removeItem('jsas_last_backup');
+    localStorage.removeItem('emergency_dp_selected');
+    localStorage.removeItem('emergency_dp_text');
+    localStorage.removeItem('emergency_palanquee_details');
     offlineDataPending = false;
     updateConnectionIndicator(isOnline);
     showNotification("🗑️ Données hors ligne effacées", "info");
   } catch (error) {
-    console.error("❌ Erreur nettoyage données hors ligne:", error);
+    console.error("⌚ Erreur nettoyage données hors ligne:", error);
   }
 }
 
@@ -786,7 +813,7 @@ function getOfflineStats() {
       pendingData: offlineDataPending
     };
   } catch (error) {
-    console.error("❌ Erreur stats hors ligne:", error);
+    console.error("⌚ Erreur stats hors ligne:", error);
     return null;
   }
 }
@@ -809,5 +836,41 @@ window.clearOfflineData = clearOfflineData;
 window.getOfflineStats = getOfflineStats;
 window.setUserAuthenticated = setUserAuthenticated; // NOUVELLE EXPORT
 window.showOfflineManagerPanel = showOfflineManagerPanel;
+window.waitAndRestoreEmergency = waitAndRestoreEmergency; // NOUVELLE EXPORT
+window.diagnosticPalanquees = diagnosticPalanquees; // NOUVELLE EXPORT
+
+// NOUVELLE FONCTION : Diagnostic des palanquées
+function diagnosticPalanquees() {
+  console.log('🔍 === DIAGNOSTIC PALANQUÉES ===');
+  
+  const palanqueeElements = document.querySelectorAll('.palanquee');
+  console.log(`📋 ${palanqueeElements.length} palanquées trouvées`);
+  
+  palanqueeElements.forEach((element, index) => {
+    console.log(`\n--- Palanquée ${index} ---`);
+    console.log('Élément:', element);
+    console.log('data-index:', element.dataset?.index);
+    
+    const fields = [
+      {selector: '.palanquee-horaire', name: 'Horaire'},
+      {selector: '.palanquee-prof-prevue', name: 'Prof. prévue'},
+      {selector: '.palanquee-duree-prevue', name: 'Durée prévue'},
+      {selector: '.palanquee-prof-realisee', name: 'Prof. réalisée'},
+      {selector: '.palanquee-duree-realisee', name: 'Durée réalisée'},
+      {selector: '.palanquee-paliers', name: 'Paliers'}
+    ];
+    
+    fields.forEach(field => {
+      const fieldElement = element.querySelector(field.selector);
+      if (fieldElement) {
+        console.log(`  ✅ ${field.name}: "${fieldElement.value}" (${field.selector})`);
+      } else {
+        console.log(`  ❌ ${field.name}: NON TROUVÉ (${field.selector})`);
+      }
+    });
+  });
+  
+  console.log('=== FIN DIAGNOSTIC ===');
+}
 
 console.log("📱 Module de gestion hors ligne chargé (version sécurisée)");

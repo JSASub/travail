@@ -52,6 +52,8 @@ async function validateAndSaveDP() {
     // Sauvegarder les détails de toutes les palanquées
     const palanqueeDetails = [];
     const palanqueeElements = document.querySelectorAll('.palanquee'); 
+    
+    console.log('💾 Sauvegarde session détails palanquées:', palanqueeElements.length, 'éléments trouvés');
 
     palanqueeElements.forEach((element, index) => {
       const details = {
@@ -63,6 +65,16 @@ async function validateAndSaveDP() {
         dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
         paliers: element.querySelector('.palanquee-paliers')?.value || ''
       };
+      
+      // Log des valeurs trouvées (seulement si non vides)
+      const nonEmptyFields = Object.entries(details).filter(([key, value]) => key !== 'id' && value !== '');
+      if (nonEmptyFields.length > 0) {
+        console.log(`  Session Palanquée ${index}:`, nonEmptyFields.reduce((obj, [key, value]) => {
+          obj[key] = value;
+          return obj;
+        }, {}));
+      }
+      
       palanqueeDetails.push(details);
     });
 
@@ -373,13 +385,22 @@ function afficherInfoDP() {
     });
 }
 
-// NOUVEAU : Restaurer le DP sélectionné avec vérification active
+// NOUVEAU : Restaurer le DP sélectionné avec vérification en boucle robuste
 function waitAndRestoreSession(dpData) {
   const dpSelect = document.getElementById('dp-select');
   const palanqueeElements = document.querySelectorAll('.palanquee');
   
-  // Vérifier si les éléments sont prêts
-  if (dpSelect && dpSelect.options.length > 1) {
+  console.log('🔍 Vérification restauration session:', {
+    dpSelect: !!dpSelect,
+    dpOptions: dpSelect?.options.length || 0,
+    palanquees: palanqueeElements.length,
+    dpData: !!dpData
+  });
+  
+  // Vérifier si tous les éléments sont prêts
+  if (dpSelect && dpSelect.options.length > 1 && palanqueeElements.length > 0) {
+    console.log('✅ Éléments prêts, début de la restauration de session');
+    
     // Restaurer le DP sélectionné
     if (dpData.dp_selected_id) {
       dpSelect.value = dpData.dp_selected_id;
@@ -387,26 +408,33 @@ function waitAndRestoreSession(dpData) {
     }
     
     // Restaurer les détails palanquées
-    if (dpData.palanquee_details && palanqueeElements.length > 0) {
+    if (dpData.palanquee_details && dpData.palanquee_details.length > 0) {
+      console.log('📋 Restauration de', dpData.palanquee_details.length, 'palanquées de session');
+      
       dpData.palanquee_details.forEach((details, index) => {
         const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
         
         if (element) {
           const fields = [
-            {selector: '.palanquee-horaire', value: details.horaire},
-            {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue},
-            {selector: '.palanquee-duree-prevue', value: details.dureePrevue},
-            {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee},
-            {selector: '.palanquee-duree-realisee', value: details.dureeRealisee},
-            {selector: '.palanquee-paliers', value: details.paliers}
+            {selector: '.palanquee-horaire', value: details.horaire, name: 'horaire'},
+            {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue, name: 'prof. prévue'},
+            {selector: '.palanquee-duree-prevue', value: details.dureePrevue, name: 'durée prévue'},
+            {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee, name: 'prof. réalisée'},
+            {selector: '.palanquee-duree-realisee', value: details.dureeRealisee, name: 'durée réalisée'},
+            {selector: '.palanquee-paliers', value: details.paliers, name: 'paliers'}
           ];
           
           fields.forEach(field => {
             const fieldElement = element.querySelector(field.selector);
             if (fieldElement && field.value) {
               fieldElement.value = field.value;
+              console.log(`  ✅ ${field.name}: ${field.value}`);
+            } else if (field.value) {
+              console.warn(`  ⚠️ ${field.name} non trouvé (${field.selector})`);
             }
           });
+        } else {
+          console.warn(`⚠️ Palanquée ${index} non trouvée`);
         }
       });
       
@@ -415,8 +443,9 @@ function waitAndRestoreSession(dpData) {
     return; // Terminé !
   }
   
-  // Réessayer dans 50ms si pas encore prêt
-  setTimeout(() => waitAndRestoreSession(dpData), 50);
+  // Réessayer dans 100ms si pas encore prêt
+  console.log('⏳ Éléments pas encore prêts, nouvelle tentative dans 100ms...');
+  setTimeout(() => waitAndRestoreSession(dpData), 100);
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
@@ -1362,6 +1391,41 @@ window.clearCurrentSessionDisplay = clearCurrentSessionDisplay;
 window.updateCurrentSessionAfterSave = updateCurrentSessionAfterSave;
 window.clearDPValidationMessage = clearDPValidationMessage;
 window.waitAndRestoreSession = waitAndRestoreSession; // NOUVELLE EXPORT
+window.diagnosticPalanquees = diagnosticPalanquees; // NOUVELLE EXPORT
+
+// NOUVELLE FONCTION : Diagnostic des palanquées pour sessions
+function diagnosticPalanquees() {
+  console.log('🔍 === DIAGNOSTIC PALANQUÉES SESSIONS ===');
+  
+  const palanqueeElements = document.querySelectorAll('.palanquee');
+  console.log(`📋 ${palanqueeElements.length} palanquées trouvées`);
+  
+  palanqueeElements.forEach((element, index) => {
+    console.log(`\n--- Session Palanquée ${index} ---`);
+    console.log('Élément:', element);
+    console.log('data-index:', element.dataset?.index);
+    
+    const fields = [
+      {selector: '.palanquee-horaire', name: 'Horaire'},
+      {selector: '.palanquee-prof-prevue', name: 'Prof. prévue'},
+      {selector: '.palanquee-duree-prevue', name: 'Durée prévue'},
+      {selector: '.palanquee-prof-realisee', name: 'Prof. réalisée'},
+      {selector: '.palanquee-duree-realisee', name: 'Durée réalisée'},
+      {selector: '.palanquee-paliers', name: 'Paliers'}
+    ];
+    
+    fields.forEach(field => {
+      const fieldElement = element.querySelector(field.selector);
+      if (fieldElement) {
+        console.log(`  ✅ ${field.name}: "${fieldElement.value}" (${field.selector})`);
+      } else {
+        console.log(`  ❌ ${field.name}: NON TROUVÉ (${field.selector})`);
+      }
+    });
+  });
+  
+  console.log('=== FIN DIAGNOSTIC SESSIONS ===');
+}
 
 // Auto-initialisation
 if (document.readyState === 'loading') {
