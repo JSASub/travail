@@ -157,39 +157,100 @@ function restoreEmergencyMetadata(metadata){
 }
 
 // ===== RESTAURATION D'URGENCE =====
-function waitAndRestoreEmergency(){
-  const dpSelect=document.getElementById('dp-select');
-  const palanqueeElements=document.querySelectorAll('.palanquee');
-  if(dpSelect && dpSelect.options.length>1 && palanqueeElements.length>0){
-    const savedDpId=localStorage.getItem('emergency_dp_selected');
-    if(savedDpId){ dpSelect.value=savedDpId; if(typeof onDpSelectionChange==='function') onDpSelectionChange(); }
-    localStorage.removeItem('emergency_dp_selected'); localStorage.removeItem('emergency_dp_text');
+function waitAndRestoreEmergency() {
+  const dpSelect = document.getElementById('dp-select');
+  const palanqueeElements = document.querySelectorAll('.palanquee');
 
-    const savedDetails=localStorage.getItem('emergency_palanquee_details');
-    if(savedDetails){
-      try{
-        const palanqueeDetails=JSON.parse(savedDetails);
-        palanqueeDetails.forEach((details,index)=>{
-          const element=document.querySelector(`[data-index="${details.id}"]`)||palanqueeElements[index];
-          if(element){
-            const fields=[
-              {selector:'.palanquee-horaire',value:details.horaire},
-              {selector:'.palanquee-prof-prevue',value:details.profondeurPrevue},
-              {selector:'.palanquee-duree-prevue',value:details.dureePrevue},
-              {selector:'.palanquee-prof-realisee',value:details.profondeurRealisee},
-              {selector:'.palanquee-duree-realisee',value:details.dureeRealisee},
-              {selector:'.palanquee-paliers',value:details.paliers}
-            ];
-            fields.forEach(f=>{ const el=element.querySelector(f.selector); if(el && f.value){ el.value=f.value; el.dispatchEvent(new Event('change',{bubbles:true})); } });
-          }
-        });
-        localStorage.removeItem('emergency_palanquee_details');
-      }catch(e){ console.error("❌ Erreur parsing détails:",e); }
-    }
+  // Vérifier si la sauvegarde d'urgence existe
+  const savedBackup = localStorage.getItem('jsas_last_backup');
+  if (!savedBackup) return;
+
+  const backupData = JSON.parse(savedBackup);
+
+  // Vérification si tous les éléments nécessaires sont présents
+  if (!dpSelect || dpSelect.options.length <= 1 || palanqueeElements.length === 0) {
+    console.log('⏳ Éléments pas encore prêts, nouvelle tentative dans 100ms...');
+    setTimeout(waitAndRestoreEmergency, 100);
     return;
   }
-  setTimeout(waitAndRestoreEmergency,100);
+
+  console.log('✅ Éléments prêts, début de la restauration d\'urgence');
+
+  // Restaurer le DP
+  if (backupData.metadata) {
+    const dpNom = document.getElementById("dp-nom");
+    const dpDate = document.getElementById("dp-date");
+    const dpLieu = document.getElementById("dp-lieu");
+    const dpPlongee = document.getElementById("dp-plongee");
+
+    if (dpNom) { dpNom.value = backupData.metadata.dp || ""; dpNom.dispatchEvent(new Event('change', {bubbles: true})); }
+    if (dpDate) { dpDate.value = backupData.metadata.date || ""; dpDate.dispatchEvent(new Event('change', {bubbles: true})); }
+    if (dpLieu) { dpLieu.value = backupData.metadata.lieu || ""; dpLieu.dispatchEvent(new Event('change', {bubbles: true})); }
+    if (dpPlongee) { dpPlongee.value = backupData.metadata.plongee || "matin"; dpPlongee.dispatchEvent(new Event('change', {bubbles: true})); }
+
+    if (dpSelect && backupData.metadata.dpId) {
+      dpSelect.value = backupData.metadata.dpId;
+      dpSelect.dispatchEvent(new Event('change', {bubbles: true}));
+    }
+  }
+
+  // Restaurer les palanquées et plongeurs
+  const savedDetails = localStorage.getItem('emergency_palanquee_details');
+  if (savedDetails) {
+    const palanqueeDetails = JSON.parse(savedDetails);
+    palanqueeDetails.forEach((details, index) => {
+      const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
+      if (!element) return;
+
+      // Restaurer les champs de la palanquée
+      const fields = [
+        {selector: '.palanquee-horaire', value: details.horaire},
+        {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue},
+        {selector: '.palanquee-duree-prevue', value: details.dureePrevue},
+        {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee},
+        {selector: '.palanquee-duree-realisee', value: details.dureeRealisee},
+        {selector: '.palanquee-paliers', value: details.paliers}
+      ];
+      fields.forEach(f => {
+        const el = element.querySelector(f.selector);
+        if (el && f.value) {
+          el.value = f.value;
+          el.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+      });
+
+      // Restaurer les plongeurs individuels
+      if (details.plongeurs && details.plongeurs.length) {
+        details.plongeurs.forEach(plongeurData => {
+          let plongeurEl = element.querySelector(`[data-id="${plongeurData.id}"]`);
+          if (plongeurEl) {
+            Object.keys(plongeurData).forEach(key => {
+              const input = plongeurEl.querySelector(`.${key}`);
+              if (input) {
+                input.value = plongeurData[key];
+                input.dispatchEvent(new Event('change', {bubbles: true}));
+              }
+            });
+          } else {
+            console.warn(`Plongeur ${plongeurData.nom} introuvable dans la palanquée ${details.id}`);
+          }
+        });
+      }
+    });
+
+    console.log('🎉 Restauration des palanquées et plongeurs terminée');
+    localStorage.removeItem('emergency_palanquee_details');
+
+    // Synchronisation post-restauration pour sauvegarder les valeurs restaurées
+    setTimeout(() => {
+      if (typeof syncToDatabase === 'function') {
+        console.log('🔄 Synchronisation post-restauration...');
+        syncToDatabase();
+      }
+    }, 1000);
+  }
 }
+
 
 function loadEmergencyBackup(){
   if(!userAuthenticationCompleted || !currentUser){ console.log("ℹ️ Utilisateur non authentifié"); return false; }
