@@ -795,174 +795,452 @@ window.cleanupOfflineManager = cleanupOfflineManager;
 window.waitForElement = waitForElement;
 window.verifyRequiredElements = verifyRequiredElements;
 ////
-// ===== PERSISTANCE SIMPLE DU NOM DP (F5) =====
+// ===== PERSISTANCE F5 FORCE BRUTE - TOUS LES CHAMPS =====
+// Sauvegarde TOUS les champs de saisie sans exception
 // À ajouter à la fin de offline-manager.js
 
-// Sauvegarder le nom du DP automatiquement
-function saveDPName() {
-  try {
-    const dpNom = document.querySelector(SELECTORS.dp.nom)?.value?.trim();
-    const dpSelect = document.querySelector(SELECTORS.dp.select);
-    
-    if (dpNom) {
-      sessionStorage.setItem('jsas_dp_nom_f5', JSON.stringify({
-        nom: dpNom,
-        timestamp: Date.now()
-      }));
-    }
-    
-    // Sauvegarder aussi la sélection si disponible
-    if (dpSelect && dpSelect.value) {
-      sessionStorage.setItem('jsas_dp_select_f5', JSON.stringify({
-        value: dpSelect.value,
-        text: dpSelect.options[dpSelect.selectedIndex]?.text || '',
-        timestamp: Date.now()
-      }));
-    }
-    
-  } catch (error) {
-    console.error('❌ Erreur sauvegarde nom DP:', error);
-  }
-}
+let bruteForceActive = true;
+let bruteForceTimeout = null;
+const BRUTE_FORCE_KEY = 'jsas_brute_force_f5';
 
-// Restaurer le nom du DP après F5
-async function restoreDPName() {
-  try {
-    // Attendre que les éléments soient prêts
-    await waitForElement(SELECTORS.dp.nom, 5000);
-    
-    // Restaurer le nom DP
-    const storedName = sessionStorage.getItem('jsas_dp_nom_f5');
-    if (storedName) {
-      const { nom, timestamp } = JSON.parse(storedName);
-      
-      // Vérifier que ce n'est pas trop ancien (1 heure max)
-      if (Date.now() - timestamp < 60 * 60 * 1000) {
-        const dpNomInput = document.querySelector(SELECTORS.dp.nom);
-        if (dpNomInput && !dpNomInput.value.trim()) {
-          dpNomInput.value = nom;
-          console.log('📥 Nom DP restauré après F5:', nom);
-          
-          if (typeof showNotification === 'function') {
-            showNotification(`📥 Nom DP restauré: ${nom}`, "info");
-          }
-        }
-      } else {
-        // Nettoyer si trop ancien
-        sessionStorage.removeItem('jsas_dp_nom_f5');
-      }
-    }
-    
-    // Restaurer la sélection DP
-    const storedSelect = sessionStorage.getItem('jsas_dp_select_f5');
-    if (storedSelect) {
-      const { value, text, timestamp } = JSON.parse(storedSelect);
-      
-      if (Date.now() - timestamp < 60 * 60 * 1000) {
-        // Attendre un peu plus pour que les options soient chargées
-        setTimeout(() => {
-          const dpSelect = document.querySelector(SELECTORS.dp.select);
-          if (dpSelect && dpSelect.options.length > 1) {
-            const optionExists = Array.from(dpSelect.options).some(opt => opt.value === value);
-            if (optionExists && !dpSelect.value) {
-              dpSelect.value = value;
-              dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
-              console.log('📥 Sélection DP restaurée après F5:', text);
-            }
-          }
-        }, 2000);
-      } else {
-        sessionStorage.removeItem('jsas_dp_select_f5');
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ Erreur restauration nom DP:', error);
-  }
-}
-
-// Attacher les event listeners pour sauvegarder automatiquement
-function setupDPNamePersistence() {
-  try {
-    // Surveiller le champ nom DP
-    const dpNomInput = document.querySelector(SELECTORS.dp.nom);
-    if (dpNomInput && !dpNomInput.hasAttribute('data-f5-persistence')) {
-      let saveTimeout = null;
-      
-      const saveWithDelay = () => {
-        if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveDPName, 1000); // Sauver après 1s d'inactivité
-      };
-      
-      dpNomInput.addEventListener('input', saveWithDelay);
-      dpNomInput.addEventListener('change', saveWithDelay);
-      dpNomInput.setAttribute('data-f5-persistence', 'true');
-      console.log('✅ Persistance nom DP configurée');
-    }
-    
-    // Surveiller le sélecteur DP
-    const dpSelect = document.querySelector(SELECTORS.dp.select);
-    if (dpSelect && !dpSelect.hasAttribute('data-f5-persistence')) {
-      dpSelect.addEventListener('change', saveDPName);
-      dpSelect.setAttribute('data-f5-persistence', 'true');
-      console.log('✅ Persistance sélection DP configurée');
-    }
-    
-  } catch (error) {
-    console.error('❌ Erreur configuration persistance nom DP:', error);
-  }
-}
-
-// Modifier l'initialisation existante pour ajouter la persistance
-const originalInitOffline = window.initializeOfflineManager;
-window.initializeOfflineManager = function() {
-  // Appeler la fonction originale
-  if (originalInitOffline) originalInitOffline();
+// ===== DIAGNOSTIC COMPLET DE TOUS LES CHAMPS =====
+function scanAllInputFields() {
+  console.log('🔍 === SCAN COMPLET DE TOUS LES CHAMPS ===');
   
-  // Ajouter la persistance du nom DP
-  if (userAuthenticationCompleted && currentUser) {
-    console.log('🔧 Ajout de la persistance du nom DP...');
+  const allFields = [];
+  
+  // 1. TOUS les inputs
+  const inputs = document.querySelectorAll('input');
+  console.log(`📝 ${inputs.length} inputs trouvés:`);
+  
+  inputs.forEach((input, index) => {
+    const fieldInfo = {
+      type: 'input',
+      index: index,
+      element: input,
+      tag: input.tagName,
+      id: input.id || '',
+      name: input.name || '',
+      type_attr: input.type || '',
+      value: input.value || '',
+      placeholder: input.placeholder || '',
+      className: input.className || '',
+      // Créer un sélecteur unique
+      selector: input.id ? `#${input.id}` : 
+                input.name ? `input[name="${input.name}"]` : 
+                `input:nth-of-type(${index + 1})`
+    };
     
-    setTimeout(() => {
-      setupDPNamePersistence();
-    }, 1500);
+    allFields.push(fieldInfo);
     
-    setTimeout(() => {
-      restoreDPName();
-    }, 3000);
-  }
-};
-
-// Restauration immédiate au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
-  // Attendre un peu que tout soit initialisé
-  setTimeout(() => {
-    if (userAuthenticationCompleted && currentUser) {
-      restoreDPName();
-      setupDPNamePersistence();
+    // Log détaillé seulement pour les champs avec contenu ou identifiants
+    if (fieldInfo.value || fieldInfo.id || fieldInfo.name || 
+        fieldInfo.placeholder.includes('nom') || fieldInfo.placeholder.includes('DP') ||
+        fieldInfo.placeholder.includes('date') || fieldInfo.type_attr === 'date') {
+      console.log(`  [${index}] 🎯`, fieldInfo);
     }
-  }, 5000);
+  });
+  
+  // 2. TOUS les selects
+  const selects = document.querySelectorAll('select');
+  console.log(`📋 ${selects.length} selects trouvés:`);
+  
+  selects.forEach((select, index) => {
+    const fieldInfo = {
+      type: 'select',
+      index: index,
+      element: select,
+      tag: select.tagName,
+      id: select.id || '',
+      name: select.name || '',
+      value: select.value || '',
+      selectedText: select.selectedIndex >= 0 ? select.options[select.selectedIndex]?.text : '',
+      optionsCount: select.options.length,
+      className: select.className || '',
+      selector: select.id ? `#${select.id}` : 
+                select.name ? `select[name="${select.name}"]` : 
+                `select:nth-of-type(${index + 1})`
+    };
+    
+    allFields.push(fieldInfo);
+    
+    if (fieldInfo.value || fieldInfo.id || fieldInfo.name) {
+      console.log(`  [${index}] 📋`, fieldInfo);
+    }
+  });
+  
+  // 3. TOUS les textareas
+  const textareas = document.querySelectorAll('textarea');
+  console.log(`📄 ${textareas.length} textareas trouvés:`);
+  
+  textareas.forEach((textarea, index) => {
+    const fieldInfo = {
+      type: 'textarea',
+      index: index,
+      element: textarea,
+      tag: textarea.tagName,
+      id: textarea.id || '',
+      name: textarea.name || '',
+      value: textarea.value || '',
+      placeholder: textarea.placeholder || '',
+      className: textarea.className || '',
+      selector: textarea.id ? `#${textarea.id}` : 
+                textarea.name ? `textarea[name="${textarea.name}"]` : 
+                `textarea:nth-of-type(${index + 1})`
+    };
+    
+    allFields.push(fieldInfo);
+    
+    if (fieldInfo.value || fieldInfo.id || fieldInfo.name) {
+      console.log(`  [${index}] 📄`, fieldInfo);
+    }
+  });
+  
+  console.log(`\n🎯 RÉSUMÉ: ${allFields.length} champs au total`);
+  console.log('=== FIN SCAN ===\n');
+  
+  return allFields;
+}
+
+// ===== SAUVEGARDE FORCE BRUTE =====
+function saveBruteForceF5() {
+  if (!bruteForceActive) return false;
+  
+  try {
+    console.log('💾 Sauvegarde force brute de TOUS les champs...');
+    
+    const allFields = scanAllInputFields();
+    const savedData = {
+      timestamp: Date.now(),
+      version: 'brute-force-v1.0',
+      fields: []
+    };
+    
+    let savedCount = 0;
+    
+    allFields.forEach(fieldInfo => {
+      // Sauvegarder seulement les champs avec du contenu
+      if (fieldInfo.value && fieldInfo.value.trim()) {
+        const savedField = {
+          selector: fieldInfo.selector,
+          id: fieldInfo.id,
+          name: fieldInfo.name,
+          value: fieldInfo.value,
+          type: fieldInfo.type,
+          type_attr: fieldInfo.type_attr || '',
+          selectedText: fieldInfo.selectedText || ''
+        };
+        
+        savedData.fields.push(savedField);
+        savedCount++;
+        
+        console.log(`  💾 [${savedCount}] ${fieldInfo.type} sauvegardé:`, {
+          selector: savedField.selector,
+          value: savedField.value.substring(0, 30) + (savedField.value.length > 30 ? '...' : '')
+        });
+      }
+    });
+    
+    if (savedCount > 0) {
+      sessionStorage.setItem(BRUTE_FORCE_KEY, JSON.stringify(savedData));
+      console.log(`✅ ${savedCount} champs sauvegardés en force brute`);
+      
+      // Notification discrète
+      if (typeof showNotification === 'function') {
+        showNotification(`💾 ${savedCount} champs auto-sauvegardés`, "info");
+      }
+      
+      return true;
+    } else {
+      console.log('ℹ️ Aucun champ avec contenu à sauvegarder');
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde force brute:', error);
+    return false;
+  }
+}
+
+// ===== RESTAURATION FORCE BRUTE =====
+async function restoreBruteForceF5() {
+  try {
+    console.log('📥 Restauration force brute...');
+    
+    const storedData = sessionStorage.getItem(BRUTE_FORCE_KEY);
+    if (!storedData) {
+      console.log('ℹ️ Aucune sauvegarde force brute trouvée');
+      return false;
+    }
+    
+    const data = JSON.parse(storedData);
+    console.log(`📦 Sauvegarde force brute trouvée: ${data.fields.length} champs`);
+    
+    // Vérifier l'âge (max 2 heures)
+    const age = Date.now() - data.timestamp;
+    if (age > 2 * 60 * 60 * 1000) {
+      console.log('🗑️ Sauvegarde force brute trop ancienne');
+      sessionStorage.removeItem(BRUTE_FORCE_KEY);
+      return false;
+    }
+    
+    // Attendre un peu que la page soit prête
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    let restoredCount = 0;
+    const restoredFields = [];
+    
+    // Tentative de restauration pour chaque champ sauvegardé
+    for (const fieldData of data.fields) {
+      try {
+        let element = null;
+        
+        // Essayer différentes méthodes pour trouver l'élément
+        const searchMethods = [
+          () => document.querySelector(fieldData.selector),
+          () => fieldData.id ? document.getElementById(fieldData.id) : null,
+          () => fieldData.name ? document.querySelector(`[name="${fieldData.name}"]`) : null,
+          () => fieldData.name ? document.querySelector(`input[name="${fieldData.name}"]`) : null,
+          () => fieldData.name ? document.querySelector(`select[name="${fieldData.name}"]`) : null,
+          () => fieldData.name ? document.querySelector(`textarea[name="${fieldData.name}"]`) : null
+        ];
+        
+        for (const method of searchMethods) {
+          element = method();
+          if (element) break;
+        }
+        
+        if (element) {
+          // Vérifier si le champ est vide ou contient une valeur par défaut
+          const isEmpty = !element.value || 
+                         element.value.trim() === '' ||
+                         element.value === 'Nom du DP' ||
+                         element.value === 'Sélectionnez...' ||
+                         element.value === '--';
+          
+          if (isEmpty) {
+            // Restaurer la valeur
+            element.value = fieldData.value;
+            
+            // Déclencher les événements
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            element.dispatchEvent(new Event('blur', { bubbles: true }));
+            
+            restoredCount++;
+            restoredFields.push({
+              selector: fieldData.selector,
+              value: fieldData.value.substring(0, 20) + (fieldData.value.length > 20 ? '...' : '')
+            });
+            
+            console.log(`  ✅ [${restoredCount}] Restauré ${fieldData.selector}: "${fieldData.value}"`);
+            
+            // Petit délai entre les restaurations
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } else {
+            console.log(`  ⚠️ Champ déjà rempli ${fieldData.selector}: "${element.value}"`);
+          }
+        } else {
+          console.log(`  ❌ Élément non trouvé: ${fieldData.selector}`);
+        }
+        
+      } catch (fieldError) {
+        console.error(`❌ Erreur restauration champ ${fieldData.selector}:`, fieldError);
+      }
+    }
+    
+    if (restoredCount > 0) {
+      console.log(`🎉 ${restoredCount} champs restaurés avec succès !`);
+      
+      // Notification utilisateur
+      if (typeof showNotification === 'function') {
+        showNotification(`📥 ${restoredCount} champs restaurés automatiquement`, "success");
+      }
+      
+      // Nettoyer la sauvegarde après succès
+      sessionStorage.removeItem(BRUTE_FORCE_KEY);
+      
+      // Log détaillé des champs restaurés
+      console.log('📋 Champs restaurés:', restoredFields);
+      
+      return true;
+    } else {
+      console.log('ℹ️ Aucun champ restauré (probablement déjà remplis)');
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur restauration force brute:', error);
+    return false;
+  }
+}
+
+// ===== SURVEILLANCE FORCE BRUTE =====
+function setupBruteForceListeners() {
+  console.log('🎛️ Configuration surveillance force brute...');
+  
+  // Surveiller TOUS les changements dans TOUS les inputs, selects, textareas
+  const saveWithDelay = (event) => {
+    if (bruteForceTimeout) {
+      clearTimeout(bruteForceTimeout);
+    }
+    
+    bruteForceTimeout = setTimeout(() => {
+      saveBruteForceF5();
+    }, 1000); // 1 seconde après le dernier changement
+  };
+  
+  // Event delegation pour capturer tous les changements
+  document.addEventListener('input', saveWithDelay, true);
+  document.addEventListener('change', saveWithDelay, true);
+  
+  // Aussi surveiller les nouveaux éléments ajoutés dynamiquement
+  const observer = new MutationObserver(() => {
+    // Redéclencher la surveillance si de nouveaux éléments sont ajoutés
+    clearTimeout(bruteForceTimeout);
+    bruteForceTimeout = setTimeout(() => {
+      saveBruteForceF5();
+    }, 1500);
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  console.log('✅ Surveillance force brute active sur TOUS les champs');
+}
+
+// ===== FONCTIONS UTILITAIRES =====
+function getBruteForceStats() {
+  try {
+    const storedData = sessionStorage.getItem(BRUTE_FORCE_KEY);
+    if (!storedData) {
+      return { hasSave: false };
+    }
+    
+    const data = JSON.parse(storedData);
+    const age = Date.now() - data.timestamp;
+    
+    return {
+      hasSave: true,
+      fieldsCount: data.fields.length,
+      age: Math.round(age / 1000),
+      ageFormatted: age < 60000 ? `${Math.round(age/1000)}s` : `${Math.round(age/60000)}min`,
+      version: data.version,
+      timestamp: new Date(data.timestamp).toLocaleString('fr-FR'),
+      fields: data.fields.map(f => ({
+        selector: f.selector,
+        value: f.value.substring(0, 20) + (f.value.length > 20 ? '...' : '')
+      }))
+    };
+    
+  } catch (error) {
+    return { hasSave: false, error: error.message };
+  }
+}
+
+function showBruteForceStats() {
+  const stats = getBruteForceStats();
+  
+  let message = `📊 Statistiques Force Brute F5 :\n\n`;
+  
+  if (stats.hasSave) {
+    message += `💾 Sauvegarde : ✅ ${stats.fieldsCount} champs\n`;
+    message += `⏰ Âge : ${stats.ageFormatted}\n`;
+    message += `📅 Créée le : ${stats.timestamp}\n\n`;
+    message += `📋 Champs sauvegardés :\n`;
+    
+    stats.fields.forEach((field, index) => {
+      message += `  ${index + 1}. ${field.selector}: "${field.value}"\n`;
+    });
+  } else {
+    message += `💾 Sauvegarde : ❌ Aucune\n\n`;
+    message += `ℹ️ Remplissez des champs et ils seront\nsauvegardés automatiquement.`;
+    
+    if (stats.error) {
+      message += `\n\n❌ Erreur : ${stats.error}`;
+    }
+  }
+  
+  alert(message);
+  console.log('📊 Stats force brute:', stats);
+}
+
+function clearBruteForceData() {
+  sessionStorage.removeItem(BRUTE_FORCE_KEY);
+  console.log('🗑️ Données force brute effacées');
+  
+  if (typeof showNotification === 'function') {
+    showNotification("🗑️ Sauvegarde F5 effacée", "info");
+  }
+}
+
+// ===== TEST COMPLET FORCE BRUTE =====
+function testBruteForceComplete() {
+  console.log('🧪 === TEST COMPLET FORCE BRUTE ===');
+  
+  // 1. Scan de tous les champs
+  console.log('1. Scan complet...');
+  const allFields = scanAllInputFields();
+  
+  // 2. Test de sauvegarde
+  console.log('2. Test sauvegarde...');
+  const saved = saveBruteForceF5();
+  console.log(`Sauvegarde: ${saved ? 'Réussie' : 'Aucune donnée'}`);
+  
+  // 3. Voir les stats
+  console.log('3. Statistiques...');
+  const stats = getBruteForceStats();
+  console.log('Stats:', stats);
+  
+  // 4. Test de restauration
+  setTimeout(() => {
+    console.log('4. Test restauration dans 3 secondes...');
+    restoreBruteForceF5().then(result => {
+      console.log(`Restauration: ${result ? 'Réussie' : 'Échec'}`);
+      console.log('=== FIN TEST FORCE BRUTE ===');
+    });
+  }, 3000);
+}
+
+// ===== INTÉGRATION =====
+// Remplacer complètement les fonctions F5 existantes
+window.saveCompleteSessionF5 = saveBruteForceF5;
+window.restoreCompleteSessionF5 = restoreBruteForceF5;
+
+// Initialisation force brute
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    console.log('🚀 Initialisation force brute F5...');
+    setupBruteForceListeners();
+    
+    // Restauration automatique après chargement
+    setTimeout(() => {
+      restoreBruteForceF5();
+    }, 2000);
+    
+  }, 1000);
 });
 
-// Sauvegarde avant fermeture/refresh
+// Sauvegarde avant fermeture
 window.addEventListener('beforeunload', () => {
-  if (userAuthenticationCompleted && currentUser) {
-    saveDPName();
+  if (bruteForceActive) {
+    saveBruteForceF5();
   }
 });
 
-// Export des fonctions utiles
-window.saveDPName = saveDPName;
-window.restoreDPName = restoreDPName;
-window.clearDPNamePersistence = () => {
-  sessionStorage.removeItem('jsas_dp_nom_f5');
-  sessionStorage.removeItem('jsas_dp_select_f5');
-  console.log('🗑️ Persistance nom DP effacée');
-};
+// ===== EXPORTS =====
+window.scanAllInputFields = scanAllInputFields;
+window.saveBruteForceF5 = saveBruteForceF5;
+window.restoreBruteForceF5 = restoreBruteForceF5;
+window.setupBruteForceListeners = setupBruteForceListeners;
+window.getBruteForceStats = getBruteForceStats;
+window.showBruteForceStats = showBruteForceStats;
+window.clearBruteForceData = clearBruteForceData;
+window.testBruteForceComplete = testBruteForceComplete;
 
-console.log("🔧 Persistance du nom DP activée - Conservé lors des F5 !");
-
-////
+console.log("💪 Persistance FORCE BRUTE F5 activée - Surveille et sauvegarde TOUS les champs !");
 
 ////
 console.log("🎯 Gestionnaire offline chargé - Version 2.5.2 CORRIGÉE - Problème loadEmergencyBackup résolu");
