@@ -51,17 +51,17 @@ async function validateAndSaveDP() {
 
     // Sauvegarder les détails de toutes les palanquées
     const palanqueeDetails = [];
-    const palanqueeElements = document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]'); 
+    const palanqueeElements = document.querySelectorAll('.palanquee'); 
 
     palanqueeElements.forEach((element, index) => {
       const details = {
-        id: element.id || `palanquee-${index}`,
-        horaire: element.querySelector('.horaire, [name*="horaire"], #horaire')?.value || '',
-        profondeur_prevue: element.querySelector('.profondeur-prevue, [name*="prof-prev"], #prof-prev')?.value || '',
-        profondeur_effectuee: element.querySelector('.profondeur-effectuee, [name*="prof-eff"], #prof-eff')?.value || '',
-        temps_prevu: element.querySelector('.temps-prevu, [name*="temps-prev"], #temps-prev')?.value || '',
-        temps_effectue: element.querySelector('.temps-effectue, [name*="temps-eff"], #temps-eff')?.value || '',
-        paliers: element.querySelector('.paliers, [name*="palier"], #paliers')?.value || ''
+        id: element.dataset?.index || index,
+        horaire: element.querySelector('.palanquee-horaire')?.value || '',
+        profondeurPrevue: element.querySelector('.palanquee-prof-prevue')?.value || '',
+        dureePrevue: element.querySelector('.palanquee-duree-prevue')?.value || '',
+        profondeurRealisee: element.querySelector('.palanquee-prof-realisee')?.value || '',
+        dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
+        paliers: element.querySelector('.palanquee-paliers')?.value || ''
       };
       palanqueeDetails.push(details);
     });
@@ -376,7 +376,7 @@ function afficherInfoDP() {
 // NOUVEAU : Restaurer le DP sélectionné avec vérification active
 function waitAndRestoreSession(dpData) {
   const dpSelect = document.getElementById('dp-select');
-  const palanqueeElements = document.querySelectorAll('.palanquee-card, .palanquee, [class*="palanquee"]');
+  const palanqueeElements = document.querySelectorAll('.palanquee');
   
   // Vérifier si les éléments sont prêts
   if (dpSelect && dpSelect.options.length > 1) {
@@ -389,16 +389,16 @@ function waitAndRestoreSession(dpData) {
     // Restaurer les détails palanquées
     if (dpData.palanquee_details && palanqueeElements.length > 0) {
       dpData.palanquee_details.forEach((details, index) => {
-        const element = document.getElementById(details.id) || palanqueeElements[index];
+        const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
         
         if (element) {
           const fields = [
-            {selector: '.horaire, [name*="horaire"], #horaire', value: details.horaire},
-            {selector: '.profondeur-prevue, [name*="prof-prev"], #prof-prev', value: details.profondeur_prevue},
-            {selector: '.profondeur-effectuee, [name*="prof-eff"], #prof-eff', value: details.profondeur_effectuee},
-            {selector: '.temps-prevu, [name*="temps-prev"], #temps-prev', value: details.temps_prevu},
-            {selector: '.temps-effectue, [name*="temps-eff"], #temps-eff', value: details.temps_effectue},
-            {selector: '.paliers, [name*="palier"], #paliers', value: details.paliers}
+            {selector: '.palanquee-horaire', value: details.horaire},
+            {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue},
+            {selector: '.palanquee-duree-prevue', value: details.dureePrevue},
+            {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee},
+            {selector: '.palanquee-duree-realisee', value: details.dureeRealisee},
+            {selector: '.palanquee-paliers', value: details.paliers}
           ];
           
           fields.forEach(field => {
