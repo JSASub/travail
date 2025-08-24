@@ -420,15 +420,7 @@ async function chargerDonneesDPSelectionne(dpKey) {
     
     // NOUVEAU : Effacer le message de validation DP précédent
     clearDPValidationMessage();
- ////
-    // NOUVEAU : Forcer la synchronisation automatique après chargement
-    setTimeout(() => {
-      if (typeof window.forceAutoSync === 'function') {
-        window.forceAutoSync();
-        console.log('🔄 Synchronisation automatique forcée après chargement');
-      }
-    }, 700);
-////	
+    
     alert("✅ Données DP chargées avec succès !");
     console.log("✅ DP chargé:", dpData);
     
@@ -455,7 +447,7 @@ async function populateSessionSelector() {
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
     console.error("❌ Élément session-selector non trouvé");
-    //return;
+    return;
   }
   
   // Vider le sélecteur
@@ -534,7 +526,7 @@ async function populateSessionSelector() {
     }
     sessionSelector.innerHTML += '<option disabled>Erreur de chargement</option>';
   }
-
+}
 
 async function loadSessionFromSelector() {
   const loadBtn = document.getElementById("load-session");
