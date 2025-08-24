@@ -455,7 +455,7 @@ async function populateSessionSelector() {
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
     console.error("❌ Élément session-selector non trouvé");
-    return;
+    //return;
   }
   
   // Vider le sélecteur
