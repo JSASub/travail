@@ -210,26 +210,37 @@ function emergencyLocalSave() {
     // Sauvegarder dans sessionStorage ET localStorage
     sessionStorage.setItem('jsas_emergency_backup', JSON.stringify(emergencyData));
     localStorage.setItem('jsas_last_backup', JSON.stringify(emergencyData));
-    
+////
+// NOUVEAU : Sauvegarder aussi le DP sélectionné
+const dpSelect = document.getElementById('dp-select');
+if (dpSelect && dpSelect.value) {
+  localStorage.setItem('emergency_dp_selected', dpSelect.value);
+  localStorage.setItem('emergency_dp_text', dpSelect.options[dpSelect.selectedIndex].text);
+  console.log('💾 DP sélectionné sauvegardé:', dpSelect.options[dpSelect.selectedIndex].text);
+}
+////    
     console.log("✅ Sauvegarde d'urgence effectuée");
 
 //// NOUVEAU : Restaurer le DP sélectionné après sauvegarde d'urgence
 setTimeout(() => {
-  const dpNomInput = document.getElementById('dp-nom');
-  if (dpNomInput && dpNomInput.value) {
+  const savedDpId = localStorage.getItem('emergency_dp_selected');
+  if (savedDpId) {
     const dpSelect = document.getElementById('dp-select');
     if (dpSelect) {
-      // Chercher le DP correspondant dans la liste
-      for (let i = 0; i < dpSelect.options.length; i++) {
-        if (dpSelect.options[i].text.includes(dpNomInput.value.split(' ')[0])) {
-          dpSelect.value = dpSelect.options[i].value;
-          console.log('🔄 DP restauré après sauvegarde d\'urgence:', dpSelect.options[i].text);
-          break;
-        }
+      dpSelect.value = savedDpId;
+      console.log('🔄 DP restauré après rechargement:', localStorage.getItem('emergency_dp_text'));
+      
+      // Déclencher l'événement de changement si la fonction existe
+      if (typeof onDpSelectionChange === 'function') {
+        onDpSelectionChange();
       }
     }
+    
+    // Nettoyer les données temporaires
+    localStorage.removeItem('emergency_dp_selected');
+    localStorage.removeItem('emergency_dp_text');
   }
-}, 500);
+}, 1000);
 ////
     
     // Marquer comme données pendantes si hors ligne
