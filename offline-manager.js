@@ -794,5 +794,172 @@ window.cleanupOfflineManager = cleanupOfflineManager;
 // Export des utilitaires pour compatibilité
 window.waitForElement = waitForElement;
 window.verifyRequiredElements = verifyRequiredElements;
+////
+// ===== PERSISTANCE SIMPLE DU NOM DP (F5) =====
+// À ajouter à la fin de offline-manager.js
 
+// Sauvegarder le nom du DP automatiquement
+function saveDPName() {
+  try {
+    const dpNom = document.querySelector(SELECTORS.dp.nom)?.value?.trim();
+    const dpSelect = document.querySelector(SELECTORS.dp.select);
+    
+    if (dpNom) {
+      sessionStorage.setItem('jsas_dp_nom_f5', JSON.stringify({
+        nom: dpNom,
+        timestamp: Date.now()
+      }));
+    }
+    
+    // Sauvegarder aussi la sélection si disponible
+    if (dpSelect && dpSelect.value) {
+      sessionStorage.setItem('jsas_dp_select_f5', JSON.stringify({
+        value: dpSelect.value,
+        text: dpSelect.options[dpSelect.selectedIndex]?.text || '',
+        timestamp: Date.now()
+      }));
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde nom DP:', error);
+  }
+}
+
+// Restaurer le nom du DP après F5
+async function restoreDPName() {
+  try {
+    // Attendre que les éléments soient prêts
+    await waitForElement(SELECTORS.dp.nom, 5000);
+    
+    // Restaurer le nom DP
+    const storedName = sessionStorage.getItem('jsas_dp_nom_f5');
+    if (storedName) {
+      const { nom, timestamp } = JSON.parse(storedName);
+      
+      // Vérifier que ce n'est pas trop ancien (1 heure max)
+      if (Date.now() - timestamp < 60 * 60 * 1000) {
+        const dpNomInput = document.querySelector(SELECTORS.dp.nom);
+        if (dpNomInput && !dpNomInput.value.trim()) {
+          dpNomInput.value = nom;
+          console.log('📥 Nom DP restauré après F5:', nom);
+          
+          if (typeof showNotification === 'function') {
+            showNotification(`📥 Nom DP restauré: ${nom}`, "info");
+          }
+        }
+      } else {
+        // Nettoyer si trop ancien
+        sessionStorage.removeItem('jsas_dp_nom_f5');
+      }
+    }
+    
+    // Restaurer la sélection DP
+    const storedSelect = sessionStorage.getItem('jsas_dp_select_f5');
+    if (storedSelect) {
+      const { value, text, timestamp } = JSON.parse(storedSelect);
+      
+      if (Date.now() - timestamp < 60 * 60 * 1000) {
+        // Attendre un peu plus pour que les options soient chargées
+        setTimeout(() => {
+          const dpSelect = document.querySelector(SELECTORS.dp.select);
+          if (dpSelect && dpSelect.options.length > 1) {
+            const optionExists = Array.from(dpSelect.options).some(opt => opt.value === value);
+            if (optionExists && !dpSelect.value) {
+              dpSelect.value = value;
+              dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('📥 Sélection DP restaurée après F5:', text);
+            }
+          }
+        }, 2000);
+      } else {
+        sessionStorage.removeItem('jsas_dp_select_f5');
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur restauration nom DP:', error);
+  }
+}
+
+// Attacher les event listeners pour sauvegarder automatiquement
+function setupDPNamePersistence() {
+  try {
+    // Surveiller le champ nom DP
+    const dpNomInput = document.querySelector(SELECTORS.dp.nom);
+    if (dpNomInput && !dpNomInput.hasAttribute('data-f5-persistence')) {
+      let saveTimeout = null;
+      
+      const saveWithDelay = () => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveDPName, 1000); // Sauver après 1s d'inactivité
+      };
+      
+      dpNomInput.addEventListener('input', saveWithDelay);
+      dpNomInput.addEventListener('change', saveWithDelay);
+      dpNomInput.setAttribute('data-f5-persistence', 'true');
+      console.log('✅ Persistance nom DP configurée');
+    }
+    
+    // Surveiller le sélecteur DP
+    const dpSelect = document.querySelector(SELECTORS.dp.select);
+    if (dpSelect && !dpSelect.hasAttribute('data-f5-persistence')) {
+      dpSelect.addEventListener('change', saveDPName);
+      dpSelect.setAttribute('data-f5-persistence', 'true');
+      console.log('✅ Persistance sélection DP configurée');
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur configuration persistance nom DP:', error);
+  }
+}
+
+// Modifier l'initialisation existante pour ajouter la persistance
+const originalInitOffline = window.initializeOfflineManager;
+window.initializeOfflineManager = function() {
+  // Appeler la fonction originale
+  if (originalInitOffline) originalInitOffline();
+  
+  // Ajouter la persistance du nom DP
+  if (userAuthenticationCompleted && currentUser) {
+    console.log('🔧 Ajout de la persistance du nom DP...');
+    
+    setTimeout(() => {
+      setupDPNamePersistence();
+    }, 1500);
+    
+    setTimeout(() => {
+      restoreDPName();
+    }, 3000);
+  }
+};
+
+// Restauration immédiate au chargement de la page
+document.addEventListener('DOMContentLoaded', () => {
+  // Attendre un peu que tout soit initialisé
+  setTimeout(() => {
+    if (userAuthenticationCompleted && currentUser) {
+      restoreDPName();
+      setupDPNamePersistence();
+    }
+  }, 5000);
+});
+
+// Sauvegarde avant fermeture/refresh
+window.addEventListener('beforeunload', () => {
+  if (userAuthenticationCompleted && currentUser) {
+    saveDPName();
+  }
+});
+
+// Export des fonctions utiles
+window.saveDPName = saveDPName;
+window.restoreDPName = restoreDPName;
+window.clearDPNamePersistence = () => {
+  sessionStorage.removeItem('jsas_dp_nom_f5');
+  sessionStorage.removeItem('jsas_dp_select_f5');
+  console.log('🗑️ Persistance nom DP effacée');
+};
+
+console.log("🔧 Persistance du nom DP activée - Conservé lors des F5 !");
+////
 console.log("🎯 Gestionnaire offline chargé - Version 2.5.2 CORRIGÉE - Problème loadEmergencyBackup résolu");
