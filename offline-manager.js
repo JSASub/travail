@@ -211,7 +211,26 @@ function emergencyLocalSave() {
     sessionStorage.setItem('jsas_emergency_backup', JSON.stringify(emergencyData));
     localStorage.setItem('jsas_last_backup', JSON.stringify(emergencyData));
     
-    console.log("💾 Sauvegarde d'urgence effectuée");
+    console.log("✅ Sauvegarde d'urgence effectuée");
+
+//// NOUVEAU : Restaurer le DP sélectionné après sauvegarde d'urgence
+setTimeout(() => {
+  const dpNomInput = document.getElementById('dp-nom');
+  if (dpNomInput && dpNomInput.value) {
+    const dpSelect = document.getElementById('dp-select');
+    if (dpSelect) {
+      // Chercher le DP correspondant dans la liste
+      for (let i = 0; i < dpSelect.options.length; i++) {
+        if (dpSelect.options[i].text.includes(dpNomInput.value.split(' ')[0])) {
+          dpSelect.value = dpSelect.options[i].value;
+          console.log('🔄 DP restauré après sauvegarde d\'urgence:', dpSelect.options[i].text);
+          break;
+        }
+      }
+    }
+  }
+}, 500);
+////
     
     // Marquer comme données pendantes si hors ligne
     if (!isOnline) {
