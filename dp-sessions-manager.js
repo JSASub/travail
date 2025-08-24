@@ -534,7 +534,7 @@ async function populateSessionSelector() {
     }
     sessionSelector.innerHTML += '<option disabled>Erreur de chargement</option>';
   }
-}
+
 
 async function loadSessionFromSelector() {
   const loadBtn = document.getElementById("load-session");
