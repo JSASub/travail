@@ -435,15 +435,6 @@ async function chargerDonneesDPSelectionne(dpKey) {
 
 // ===== GESTION DES SESSIONS =====
 async function populateSessionSelector() {
- //// 
-  console.log("📋 Chargement des sessions disponibles...");
-    const selector = document.getElementById('session-selector');
-  if (selector) {
-    selector.innerHTML = ''; // ← VIDER D'ABORD
-    // ... puis ajouter les options
-  }
-}
-////
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
     console.error("❌ Élément session-selector non trouvé");
@@ -740,14 +731,6 @@ async function saveCurrentSession() {
 
 // ===== NETTOYAGE DES SESSIONS =====
 async function populateSessionsCleanupList() {
-  ////
-    const list = document.getElementById('cleanup-list');
-  if (list) {
-    list.innerHTML = ''; // ← VIDER D'ABORD
-    // ... puis ajouter les éléments
-  }
-}
-////
 console.log("🧹 Chargement de la liste de nettoyage des sessions...");
   
   const cleanupList = document.getElementById("sessions-cleanup-list");
