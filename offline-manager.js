@@ -620,10 +620,56 @@ function initializeOfflineManager() {
         const savedDetails = localStorage.getItem('emergency_palanquee_details');
         if (savedDetails) {
           console.log('🔄 Restauration automatique des détails palanquées...');
-          waitAndRestoreEmergency();
+          // Utiliser la même logique qui fonctionne manuellement
+          (() => {
+            const details = localStorage.getItem('emergency_palanquee_details');
+            if (details) {
+              console.log('📋 Restauration auto - Données trouvées');
+              
+              const palanqueeDetails = JSON.parse(details);
+              const palanqueeElements = document.querySelectorAll('.palanquee');
+              
+              console.log('📊 Auto - Palanquées à restaurer:', palanqueeDetails.length);
+              console.log('📊 Auto - Palanquées sur la page:', palanqueeElements.length);
+              
+              if (palanqueeElements.length > 0) {
+                palanqueeDetails.forEach((detailsItem, index) => {
+                  const element = palanqueeElements[index];
+                  
+                  if (element) {
+                    const fields = [
+                      {selector: '.palanquee-horaire', value: detailsItem.horaire, name: 'horaire'},
+                      {selector: '.palanquee-prof-prevue', value: detailsItem.profondeurPrevue, name: 'prof. prévue'},
+                      {selector: '.palanquee-duree-prevue', value: detailsItem.dureePrevue, name: 'durée prévue'},
+                      {selector: '.palanquee-prof-realisee', value: detailsItem.profondeurRealisee, name: 'prof. réalisée'},
+                      {selector: '.palanquee-duree-realisee', value: detailsItem.dureeRealisee, name: 'durée réalisée'},
+                      {selector: '.palanquee-paliers', value: detailsItem.paliers, name: 'paliers'}
+                    ];
+                    
+                    fields.forEach(field => {
+                      if (field.value) {
+                        const fieldElement = element.querySelector(field.selector);
+                        if (fieldElement) {
+                          fieldElement.value = field.value;
+                          console.log(`✅ Auto - ${field.name} restauré: ${field.value}`);
+                        }
+                      }
+                    });
+                  }
+                });
+                
+                // Nettoyer après restauration réussie
+                localStorage.removeItem('emergency_palanquee_details');
+                console.log('🧹 Données de restauration nettoyées');
+              } else {
+                console.log('⚠️ Auto - Aucune palanquée trouvée, réessai dans 2s...');
+                setTimeout(arguments.callee, 2000);
+              }
+            }
+          })();
         }
       }
-    }, 3000);
+    }, 5000);
     
     // Intercepter les modifications pour déclencher la sauvegarde d'urgence
     const originalSyncToDatabase = window.syncToDatabase;
@@ -851,6 +897,20 @@ window.setUserAuthenticated = setUserAuthenticated; // NOUVELLE EXPORT
 window.showOfflineManagerPanel = showOfflineManagerPanel;
 window.waitAndRestoreEmergency = waitAndRestoreEmergency; // NOUVELLE EXPORT
 window.diagnosticPalanquees = diagnosticPalanquees; // NOUVELLE EXPORT
+window.forceRestoreDetails = forceRestoreDetails; // NOUVELLE EXPORT
+
+// NOUVELLE FONCTION : Forcer la restauration des détails
+function forceRestoreDetails() {
+  console.log('🔧 Restauration forcée des détails...');
+  
+  const savedDetails = localStorage.getItem('emergency_palanquee_details');
+  if (savedDetails) {
+    console.log('📋 Données trouvées, lancement restauration...');
+    waitAndRestoreEmergency();
+  } else {
+    console.log('❌ Aucune donnée sauvegardée à restaurer');
+  }
+}
 
 // NOUVELLE FONCTION : Diagnostic des palanquées
 function diagnosticPalanquees() {
