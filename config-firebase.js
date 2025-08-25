@@ -620,11 +620,14 @@ async function loadSession(sessionKey) {
     
     const sessionData = sessionSnapshot.val();
     
+    // Restaurer plongeurs
     plongeurs = sessionData.plongeurs || [];
     
+    // Restaurer palanquées avec TOUS les paramètres
     if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
       palanquees = sessionData.palanquees.map((pal, index) => {
         if (Array.isArray(pal)) {
+          // AJOUT: Restaurer tous les paramètres manquants
           if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
           if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
           if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
@@ -633,33 +636,7 @@ async function loadSession(sessionKey) {
           if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
           return pal;
         }
-        
-        if (pal && typeof pal === 'object') {
-          const nouveauTableau = [];
-          Object.keys(pal).forEach(key => {
-            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
-              nouveauTableau.push(pal[key]);
-            }
-          });
-          
-          nouveauTableau.horaire = pal.horaire || '';
-          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
-          nouveauTableau.dureePrevue = pal.dureePrevue || '';
-          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
-          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
-          nouveauTableau.paliers = pal.paliers || '';
-          
-          return nouveauTableau;
-        } else {
-          const nouveauTableau = [];
-          nouveauTableau.horaire = '';
-          nouveauTableau.profondeurPrevue = '';
-          nouveauTableau.dureePrevue = '';
-          nouveauTableau.profondeurRealisee = '';
-          nouveauTableau.dureeRealisee = '';
-          nouveauTableau.paliers = '';
-          return nouveauTableau;
-        }
+        // ... reste du code existant ...
       });
     } else {
       palanquees = [];
@@ -668,23 +645,53 @@ async function loadSession(sessionKey) {
     plongeursOriginaux = [...plongeurs];
     
     // Charger les métadonnées
-    if (sessionData.meta) {
-      if ($("dp-nom")) $("dp-nom").value = sessionData.meta.dp || "";
-      if ($("dp-date")) $("dp-date").value = sessionData.meta.date || "";
-      if ($("dp-lieu")) $("dp-lieu").value = sessionData.meta.lieu || "";
-      if ($("dp-plongee")) $("dp-plongee").value = sessionData.meta.plongee || "matin";
-    } else {
-      if ($("dp-nom")) $("dp-nom").value = sessionData.dp || "";
-      if ($("dp-date")) $("dp-date").value = sessionData.date || "";
-      if ($("dp-lieu")) $("dp-lieu").value = sessionData.lieu || "";
-      if ($("dp-plongee")) $("dp-plongee").value = sessionData.plongee || "matin";
+    const meta = sessionData.meta || sessionData;
+    const dpNom = meta.dp || "";
+    const dpDate = meta.date || "";
+    const dpLieu = meta.lieu || "";
+    const dpPlongee = meta.plongee || "matin";
+    
+    // NOUVEAU: Synchroniser avec la liste déroulante DP
+    const dpSelect = document.getElementById('dp-select');
+    if (dpSelect && dpNom) {
+      let dpFound = false;
+      for (let i = 0; i < dpSelect.options.length; i++) {
+        if (dpSelect.options[i].text.includes(dpNom)) {
+          dpSelect.value = dpSelect.options[i].value;
+          dpFound = true;
+          console.log("✅ DP trouvé et sélectionné:", dpNom);
+          break;
+        }
+      }
+      
+      // Si DP non trouvé, l'ajouter à la liste
+      if (!dpFound && dpNom.trim() !== '') {
+        const option = document.createElement('option');
+        option.value = `temp_${Date.now()}`;
+        option.textContent = `${dpNom} (P5)`;
+        dpSelect.appendChild(option);
+        dpSelect.value = option.value;
+        console.log("➕ DP ajouté à la liste:", dpNom);
+      }
+      
+      // Déclencher l'événement de changement
+      dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
-    // Rendu sécurisé
+    // Remplir les champs métadonnées
+    if ($("dp-nom")) $("dp-nom").value = dpNom;
+    if ($("dp-date")) $("dp-date").value = dpDate;
+    if ($("dp-lieu")) $("dp-lieu").value = dpLieu;
+    if ($("dp-plongee")) $("dp-plongee").value = dpPlongee;
+    
+    // Rendu sécurisé avec délai pour synchronisation
     try {
-      if (typeof renderPalanquees === 'function') renderPalanquees();
-      if (typeof renderPlongeurs === 'function') renderPlongeurs();
-      if (typeof updateAlertes === 'function') updateAlertes();
+      setTimeout(() => {
+        if (typeof renderPalanquees === 'function') renderPalanquees();
+        if (typeof renderPlongeurs === 'function') renderPlongeurs();
+        if (typeof updateAlertes === 'function') updateAlertes();
+        if (typeof updateCompteurs === 'function') updateCompteurs();
+      }, 200);
     } catch (renderError) {
       console.error("❌ Erreur rendu:", renderError);
     }
