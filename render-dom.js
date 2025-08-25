@@ -45,6 +45,9 @@ function renderPlongeurs() {
   }
 }
 
+// render-dom.js - Fonction renderPalanquees complète et sécurisée
+// Remplace la fonction existante dans render-dom.js
+
 function renderPalanquees() {
   console.log("🎨 Rendu des palanquées avec correction automatique...");
   
@@ -386,6 +389,80 @@ function renderPalanquees() {
   }
 }
 
+// === FONCTIONS DE MANIPULATION DES PALANQUÉES (si pas déjà définies) ===
+
+if (typeof deletePalanquee !== 'function') {
+  window.deletePalanquee = function(index) {
+    if (confirm(`Supprimer la palanquée ${index + 1} ?\n\nLes plongeurs seront remis dans la liste principale.`)) {
+      // Remettre les plongeurs dans la liste principale
+      if (palanquees[index] && Array.isArray(palanquees[index])) {
+        palanquees[index].forEach(plongeur => {
+          if (plongeur && plongeur.nom) {
+            plongeurs.push(plongeur);
+            if (typeof plongeursOriginaux !== 'undefined' && Array.isArray(plongeursOriginaux)) {
+              plongeursOriginaux.push(plongeur);
+            }
+          }
+        });
+      }
+      
+      // Supprimer la palanquée
+      palanquees.splice(index, 1);
+      
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
+      }
+    }
+  };
+}
+
+if (typeof returnPlongeurToMainList !== 'function') {
+  window.returnPlongeurToMainList = function(palanqueeIndex, plongeurIndex) {
+    if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+      const plongeur = palanquees[palanqueeIndex].splice(plongeurIndex, 1)[0];
+      
+      if (typeof plongeurs !== 'undefined' && Array.isArray(plongeurs)) {
+        plongeurs.push(plongeur);
+      }
+      if (typeof plongeursOriginaux !== 'undefined' && Array.isArray(plongeursOriginaux)) {
+        plongeursOriginaux.push(plongeur);
+      }
+      
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
+      }
+    }
+  };
+}
+
+if (typeof updatePlongeurPrerogatives !== 'function') {
+  window.updatePlongeurPrerogatives = function(palanqueeIndex, plongeurIndex, newValue) {
+    if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+      palanquees[palanqueeIndex][plongeurIndex].pre = newValue.trim();
+      
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
+      }
+    }
+  };
+}
+
+if (typeof updatePalanqueeDetail !== 'function') {
+  window.updatePalanqueeDetail = function(palanqueeIndex, property, newValue) {
+    if (palanquees[palanqueeIndex]) {
+      palanquees[palanqueeIndex][property] = newValue;
+      
+      if (typeof syncToDatabase === 'function') {
+        syncToDatabase();
+      }
+    }
+  };
+}
+
+console.log("🎨 Fonction renderPalanquees complète chargée avec correction automatique et alertes de sécurité");
+
+// Export pour usage global
+window.renderPalanquees = renderPalanquees;
 // === FONCTIONS DE MANIPULATION DES PALANQUÉES (si pas déjà définies) ===
 
 if (typeof deletePalanquee !== 'function') {
