@@ -25,14 +25,14 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* Alternative pour cibler spécifiquement les alertes palanquées */
 .alert-section.palanquee-alerts,
 div[style*="position: fixed"]:has(.alert-title) {
-    top: 58px !important;
+    top: 62px !important;
 }
 
 /* Version responsive pour mobile */
 @media (max-width: 768px) {
     .alert-section,
     .lock-notifications {
-        top: 68px !important; /* Un peu plus bas sur mobile */
+        top: 72px !important; /* Un peu plus bas sur mobile */
         right: 10px !important;
         left: 10px !important;
         max-width: none !important;
