@@ -14,6 +14,31 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 /* STYLES AMÉLIORÉS POUR LES ALERTES */
+
+/* Déplacer la fenêtre d'alerte de 10mm vers le bas */
+.alert-section,
+.lock-notifications,
+[class*="alert"][style*="position: fixed"] {
+    top: 58px !important; /* Au lieu de 20px */
+}
+
+/* Alternative pour cibler spécifiquement les alertes palanquées */
+.alert-section.palanquee-alerts,
+div[style*="position: fixed"]:has(.alert-title) {
+    top: 58px !important;
+}
+
+/* Version responsive pour mobile */
+@media (max-width: 768px) {
+    .alert-section,
+    .lock-notifications {
+        top: 68px !important; /* Un peu plus bas sur mobile */
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none !important;
+    }
+}
+        
 .alert-section {
   position: fixed;
   top: 20px;
