@@ -5,17 +5,6 @@
 // Validation et enregistrement des informations DP
 async function validateAndSaveDP() {
   try {
-    // NOUVEAU : Synchroniser automatiquement le champ dp-nom avec le sélecteur
-    const dpSelect = document.getElementById("dp-select");
-    const dpNomInput = document.getElementById("dp-nom");
-    
-    if (dpSelect && dpSelect.value && dpNomInput) {
-      const selectedOption = dpSelect.options[dpSelect.selectedIndex];
-      const dpName = selectedOption.text.replace(/\s*\([^)]*\)/, '');
-      dpNomInput.value = dpName;
-      console.log('🔄 Synchronisation auto dp-nom:', dpName);
-    }
-    
     const dpNom = document.getElementById("dp-nom")?.value?.trim();
     const dpDate = document.getElementById("dp-date")?.value;
     const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
@@ -42,51 +31,18 @@ async function validateAndSaveDP() {
       validated: true
     };
     
-    // NOUVEAU : Inclure le DP sélectionné et détails palanquées
-    const dpSelect2 = document.getElementById('dp-select');
-    if (dpSelect2 && dpSelect2.value) {
-      dpInfo.dp_selected_id = dpSelect2.value;
-      dpInfo.dp_selected_text = dpSelect2.options[dpSelect2.selectedIndex].text;
-    }
-
-    // Sauvegarder les détails de toutes les palanquées
-    const palanqueeDetails = [];
-    const palanqueeElements = document.querySelectorAll('.palanquee'); 
-    
-    console.log('💾 Sauvegarde session détails palanquées:', palanqueeElements.length, 'éléments trouvés');
-
-    palanqueeElements.forEach((element, index) => {
-      const details = {
-        id: element.dataset?.index || index,
-        horaire: element.querySelector('.palanquee-horaire')?.value || '',
-        profondeurPrevue: element.querySelector('.palanquee-prof-prevue')?.value || '',
-        dureePrevue: element.querySelector('.palanquee-duree-prevue')?.value || '',
-        profondeurRealisee: element.querySelector('.palanquee-prof-realisee')?.value || '',
-        dureeRealisee: element.querySelector('.palanquee-duree-realisee')?.value || '',
-        paliers: element.querySelector('.palanquee-paliers')?.value || ''
-      };
-      
-      // Log des valeurs trouvées (seulement si non vides)
-      const nonEmptyFields = Object.entries(details).filter(([key, value]) => key !== 'id' && value !== '');
-      if (nonEmptyFields.length > 0) {
-        console.log(`  Session Palanquée ${index}:`, nonEmptyFields.reduce((obj, [key, value]) => {
-          obj[key] = value;
-          return obj;
-        }, {}));
-      }
-      
-      palanqueeDetails.push(details);
-    });
-
-    dpInfo.palanquee_details = palanqueeDetails;
-    console.log('💾 DP + détails palanquées inclus dans la sauvegarde');
-    
     // Sauvegarder dans Firebase si disponible
     if (typeof db !== 'undefined' && db) {
       try {
         const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
         await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
         console.log("✅ Informations DP sauvegardées dans Firebase");
+        
+        // NOUVEAU : Sauvegarder également la session complète
+        if (typeof saveSessionData === 'function') {
+          await saveSessionData();
+          console.log("✅ Session complète sauvegardée");
+        }
         
         // NOUVEAU : Mettre à jour l'indicateur de session courante
         updateCurrentSessionAfterSave();
@@ -118,7 +74,7 @@ async function validateAndSaveDP() {
     return true;
     
   } catch (error) {
-    console.error("⌚ Erreur validation DP:", error);
+    console.error("❌ Erreur validation DP:", error);
     
     const dpMessage = document.getElementById("dp-message");
     showDPValidationMessage(dpMessage, "", "", "", "", false, error.message);
@@ -212,7 +168,7 @@ function showDPValidationMessage(messageElement, nom, date, lieu, plongee, succe
   } else {
     messageElement.innerHTML = `
       <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
-        ⌚ Erreur lors de l'enregistrement : ${errorMsg}
+        ❌ Erreur lors de l'enregistrement : ${errorMsg}
       </div>
     `;
     messageElement.classList.remove("dp-valide");
@@ -242,7 +198,7 @@ async function chargerHistoriqueDP() {
   
   const dpDatesSelect = document.getElementById("dp-dates");
   if (!dpDatesSelect) {
-    console.error("⌚ Élément dp-dates non trouvé");
+    console.error("❌ Élément dp-dates non trouvé");
     return;
   }
   
@@ -302,7 +258,7 @@ async function chargerHistoriqueDP() {
     }
     
   } catch (error) {
-    console.error("⌚ Erreur chargement historique DP:", error);
+    console.error("❌ Erreur chargement historique DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement historique DP");
     }
@@ -315,7 +271,7 @@ function afficherInfoDP() {
   const historiqueInfo = document.getElementById("historique-info");
   
   if (!dpDatesSelect || !historiqueInfo) {
-    console.error("⌚ Éléments DOM manquants pour afficher les infos DP");
+    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
     return;
   }
   
@@ -329,14 +285,14 @@ function afficherInfoDP() {
   historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
   
   if (typeof db === 'undefined' || !db) {
-    historiqueInfo.innerHTML = '<p style="color: red;">⌚ Firebase non disponible</p>';
+    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
     return;
   }
   
   db.ref(`dpInfo/${selectedKey}`).once('value')
     .then(snapshot => {
       if (!snapshot.exists()) {
-        historiqueInfo.innerHTML = '<p style="color: red;">⌚ DP non trouvé</p>';
+        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
         return;
       }
       
@@ -366,7 +322,7 @@ function afficherInfoDP() {
           <div style="margin-top: 15px;">
             <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
                     style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-              📥 Charger dans l'interface
+              🔥 Charger dans l'interface
             </button>
             <button onclick="supprimerDPSelectionne('${selectedKey}')" 
                     style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
@@ -377,87 +333,24 @@ function afficherInfoDP() {
       `;
     })
     .catch(error => {
-      console.error("⌚ Erreur chargement DP:", error);
+      console.error("❌ Erreur chargement DP:", error);
       if (typeof handleError === 'function') {
         handleError(error, "Chargement DP");
       }
-      historiqueInfo.innerHTML = `<p style="color: red;">⌚ Erreur : ${error.message}</p>`;
+      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
     });
-}
-
-// NOUVEAU : Restaurer le DP sélectionné avec vérification en boucle robuste
-function waitAndRestoreSession(dpData) {
-  const dpSelect = document.getElementById('dp-select');
-  const palanqueeElements = document.querySelectorAll('.palanquee');
-  
-  console.log('🔍 Vérification restauration session:', {
-    dpSelect: !!dpSelect,
-    dpOptions: dpSelect?.options.length || 0,
-    palanquees: palanqueeElements.length,
-    dpData: !!dpData
-  });
-  
-  // Vérifier si tous les éléments sont prêts
-  if (dpSelect && dpSelect.options.length > 1 && palanqueeElements.length > 0) {
-    console.log('✅ Éléments prêts, début de la restauration de session');
-    
-    // Restaurer le DP sélectionné
-    if (dpData.dp_selected_id) {
-      dpSelect.value = dpData.dp_selected_id;
-      console.log('⚡ DP sélectionné restauré instantanément:', dpData.dp_selected_text);
-    }
-    
-    // Restaurer les détails palanquées
-    if (dpData.palanquee_details && dpData.palanquee_details.length > 0) {
-      console.log('📋 Restauration de', dpData.palanquee_details.length, 'palanquées de session');
-      
-      dpData.palanquee_details.forEach((details, index) => {
-        const element = document.querySelector(`[data-index="${details.id}"]`) || palanqueeElements[index];
-        
-        if (element) {
-          const fields = [
-            {selector: '.palanquee-horaire', value: details.horaire, name: 'horaire'},
-            {selector: '.palanquee-prof-prevue', value: details.profondeurPrevue, name: 'prof. prévue'},
-            {selector: '.palanquee-duree-prevue', value: details.dureePrevue, name: 'durée prévue'},
-            {selector: '.palanquee-prof-realisee', value: details.profondeurRealisee, name: 'prof. réalisée'},
-            {selector: '.palanquee-duree-realisee', value: details.dureeRealisee, name: 'durée réalisée'},
-            {selector: '.palanquee-paliers', value: details.paliers, name: 'paliers'}
-          ];
-          
-          fields.forEach(field => {
-            const fieldElement = element.querySelector(field.selector);
-            if (fieldElement && field.value) {
-              fieldElement.value = field.value;
-              console.log(`  ✅ ${field.name}: ${field.value}`);
-            } else if (field.value) {
-              console.warn(`  ⚠️ ${field.name} non trouvé (${field.selector})`);
-            }
-          });
-        } else {
-          console.warn(`⚠️ Palanquée ${index} non trouvée`);
-        }
-      });
-      
-      console.log('⚡ Détails palanquées restaurés instantanément:', dpData.palanquee_details.length, 'palanquées');
-    }
-    return; // Terminé !
-  }
-  
-  // Réessayer dans 100ms si pas encore prêt
-  console.log('⏳ Éléments pas encore prêts, nouvelle tentative dans 100ms...');
-  setTimeout(() => waitAndRestoreSession(dpData), 100);
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("⌚ Firebase non disponible");
+      alert("❌ Firebase non disponible");
       return;
     }
     
     const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
     if (!snapshot.exists()) {
-      alert("⌚ DP non trouvé");
+      alert("❌ DP non trouvé");
       return;
     }
     
@@ -474,44 +367,6 @@ async function chargerDonneesDPSelectionne(dpKey) {
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
     if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
     
-    // NOUVEAU : Synchroniser avec le nouveau sélecteur DP avec vérification active
-    if (dpData.nom || dpData.dp_selected_id) {
-      console.log('🔄 Synchronisation du DP chargé:', dpData.nom);
-      
-      // Démarrer la vérification active pour restaurer avec dpData
-      waitAndRestoreSession(dpData);
-      
-      // Alternative : synchronisation par nom si pas d'ID sauvegardé
-      if (!dpData.dp_selected_id && dpData.nom) {
-        setTimeout(() => {
-          const dpSelect = document.getElementById('dp-select');
-          if (dpSelect && dpSelect.options.length > 1) {
-            // Chercher l'option correspondante par nom de famille ou prénom
-            for (let i = 0; i < dpSelect.options.length; i++) {
-              const option = dpSelect.options[i];
-              const nomParts = dpData.nom.split(' ');
-              const nomFamille = nomParts[0]; // AGUIRRE
-              const prenom = nomParts[1] || ''; // Raoul
-              
-              if (option.text.includes(nomFamille) || (prenom && option.text.includes(prenom))) {
-                dpSelect.value = option.value;
-                console.log('✅ DP synchronisé avec session:', option.text);
-                
-                // Déclencher l'événement de changement si la fonction existe
-                if (typeof onDpSelectionChange === 'function') {
-                  onDpSelectionChange();
-                }
-                
-                // Désactiver le choix automatique pour respecter le chargement de session
-                window.userOverrideDP = true;
-                break;
-              }
-            }
-          }
-        }, 100);
-      }
-    }
-    
     // NOUVEAU : Effacer le message de validation DP précédent
     clearDPValidationMessage();
     
@@ -519,52 +374,54 @@ async function chargerDonneesDPSelectionne(dpKey) {
     console.log("✅ DP chargé:", dpData);
     
   } catch (error) {
-    console.error("⌚ Erreur chargement DP:", error);
+    console.error("❌ Erreur chargement DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement DP sélectionné");
     }
-    alert("⌚ Erreur lors du chargement : " + error.message);
+    alert("❌ Erreur lors du chargement : " + error.message);
   }
 }
 
 async function supprimerDPSelectionne(dpKey) {
   const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
-
+  
   if (!confirmation) return;
-
+  
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("⌚ Firebase non disponible");
+      alert("❌ Firebase non disponible");
       return;
     }
-
+    
     await db.ref(`dpInfo/${dpKey}`).remove();
     alert("✅ DP supprimé avec succès !");
-
+    
     // Recharger l'historique
     await chargerHistoriqueDP();
-
+    
     // Rafraîchir les listes si la fonction existe
     if (typeof refreshAllLists === 'function') {
       await refreshAllLists();
     }
-
+    
     console.log("✅ DP supprimé:", dpKey, "+ listes rafraîchies");
-
+    
   } catch (error) {
-    console.error("⌚ Erreur suppression DP:", error);
+    console.error("❌ Erreur suppression DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Suppression DP");
     }
-    alert("⌚ Erreur lors de la suppression : " + error.message);
+    alert("❌ Erreur lors de la suppression : " + error.message);
   }
 }
 
 // ===== GESTION DES SESSIONS =====
 async function populateSessionSelector() {
+  console.log("📋 Chargement des sessions disponibles...");
+  
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
-    console.error("⌚ Élément session-selector non trouvé");
+    console.error("❌ Élément session-selector non trouvé");
     return;
   }
   
@@ -638,7 +495,7 @@ async function populateSessionSelector() {
     }
     
   } catch (error) {
-    console.error("⌚ Erreur chargement sessions:", error);
+    console.error("❌ Erreur chargement sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement sessions");
     }
@@ -701,7 +558,7 @@ async function loadSessionFromSelector() {
     }
     
   } catch (error) {
-    console.error("⌚ Erreur chargement session:", error);
+    console.error("❌ Erreur chargement session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement session");
     }
@@ -769,7 +626,7 @@ function updateCurrentSessionDisplay(sessionKey, sessionText) {
           font-size: 11px;
           cursor: pointer;
           margin-left: auto;
-        " title="Effacer l'indicateur">✖</button>
+        " title="Effacer l'indicateur">✕</button>
       `;
       currentSessionDiv.style.display = "flex";
     } else {
@@ -777,7 +634,7 @@ function updateCurrentSessionDisplay(sessionKey, sessionText) {
     }
     
   } catch (error) {
-    console.error("⌚ Erreur updateCurrentSessionDisplay:", error);
+    console.error("❌ Erreur updateCurrentSessionDisplay:", error);
   }
 }
 
@@ -789,17 +646,14 @@ function clearCurrentSessionDisplay() {
       currentSessionDiv.style.display = "none";
     }
   } catch (error) {
-    console.error("⌚ Erreur clearCurrentSessionDisplay:", error);
+    console.error("❌ Erreur clearCurrentSessionDisplay:", error);
   }
 }
 
 // NOUVELLE FONCTION : Mettre à jour l'indicateur après sauvegarde
 function updateCurrentSessionAfterSave() {
   try {
-    const dpSelect = document.getElementById("dp-select");
-    const dpNom = dpSelect?.value ? 
-      dpSelect.options[dpSelect.selectedIndex].text.replace(/\s*\([^)]*\)/, '') : 
-      document.getElementById("dp-nom")?.value?.trim();
+    const dpNom = document.getElementById("dp-nom")?.value?.trim();
     const dpDate = document.getElementById("dp-date")?.value;
     const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
     const dpPlongee = document.getElementById("dp-plongee")?.value;
@@ -810,7 +664,7 @@ function updateCurrentSessionAfterSave() {
       updateCurrentSessionDisplay(sessionKey, sessionText);
     }
   } catch (error) {
-    console.error("⌚ Erreur updateCurrentSessionAfterSave:", error);
+    console.error("❌ Erreur updateCurrentSessionAfterSave:", error);
   }
 }
 
@@ -824,7 +678,7 @@ function clearDPValidationMessage() {
       dpMessage.style.display = 'none';
     }
   } catch (error) {
-    console.error("⌚ Erreur clearDPValidationMessage:", error);
+    console.error("❌ Erreur clearDPValidationMessage:", error);
   }
 }
 
@@ -847,7 +701,7 @@ async function saveCurrentSession() {
       return false;
     }
   } catch (error) {
-    console.error("⌚ Erreur sauvegarde session:", error);
+    console.error("❌ Erreur sauvegarde session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Sauvegarde session");
     }
@@ -862,11 +716,10 @@ async function populateSessionsCleanupList() {
   
   const cleanupList = document.getElementById("sessions-cleanup-list");
   if (!cleanupList) {
-    console.error("⌚ Élément sessions-cleanup-list non trouvé");
+    console.error("❌ Élément sessions-cleanup-list non trouvé");
     return;
   }
   
-  // Vider la liste d'abord
   cleanupList.innerHTML = '<em>Chargement des sessions...</em>';
   
   try {
@@ -898,7 +751,7 @@ async function populateSessionsCleanupList() {
     console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage`);
     
   } catch (error) {
-    console.error("⌚ Erreur chargement liste nettoyage sessions:", error);
+    console.error("❌ Erreur chargement liste nettoyage sessions:", error);
     cleanupList.innerHTML = '<em>Erreur de chargement</em>';
   }
 }
@@ -945,7 +798,7 @@ async function loadSessionsDirectly() {
     return sessionsList;
     
   } catch (error) {
-    console.error("⌚ Erreur loadSessionsDirectly:", error);
+    console.error("❌ Erreur loadSessionsDirectly:", error);
     return [];
   }
 }
@@ -984,7 +837,7 @@ async function deleteSelectedSessions() {
   
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("⌚ Firebase non disponible");
+      alert("❌ Firebase non disponible");
       return;
     }
     
@@ -1004,8 +857,8 @@ async function deleteSelectedSessions() {
     console.log(`✅ ${checkboxes.length} sessions supprimées + listes rafraîchies`);
     
   } catch (error) {
-    console.error("⌚ Erreur suppression sessions:", error);
-    alert("⌚ Erreur lors de la suppression : " + error.message);
+    console.error("❌ Erreur suppression sessions:", error);
+    alert("❌ Erreur lors de la suppression : " + error.message);
   }
 }
 
@@ -1028,7 +881,7 @@ async function refreshAllLists() {
     console.log("✅ Toutes les listes rafraîchies");
     
   } catch (error) {
-    console.error("⌚ Erreur rafraîchissement listes:", error);
+    console.error("❌ Erreur rafraîchissement listes:", error);
   }
 }
 
@@ -1061,14 +914,14 @@ async function refreshAllListsWithIndicator(buttonId = "refresh-sessions") {
     console.log("✅ Actualisation manuelle réussie avec indicateur");
     
   } catch (error) {
-    console.error("⌚ Erreur actualisation manuelle:", error);
+    console.error("❌ Erreur actualisation manuelle:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Actualisation manuelle");
     }
     
     // Indicateur d'erreur
     if (refreshBtn) {
-      refreshBtn.textContent = "⌚ Erreur";
+      refreshBtn.textContent = "❌ Erreur";
       refreshBtn.style.backgroundColor = "#dc3545";
       
       setTimeout(() => {
@@ -1095,7 +948,7 @@ async function testFirebaseConnection() {
   try {
     console.log("📡 Test 1: Vérification connexion Firebase");
     console.log("Firebase connecté:", typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined');
-    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "⌚ MANQUANTE");
+    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "❌ MANQUANTE");
     
     if (typeof db !== 'undefined' && db) {
       console.log("📖 Test 2: Lecture /sessions");
@@ -1116,7 +969,7 @@ async function testFirebaseConnection() {
     alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
     
   } catch (error) {
-    console.error("⌚ Erreur test Firebase:", error);
+    console.error("❌ Erreur test Firebase:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Test Firebase");
     }
@@ -1126,7 +979,7 @@ async function testFirebaseConnection() {
 
 // ===== INITIALISATION APRÈS CONNEXION =====
 async function initializeAfterAuth() {
-  console.log("🔓 Initialisation après authentification...");
+  console.log("🔐 Initialisation après authentification...");
   
   try {
     // Charger toutes les données utilisateur
@@ -1141,27 +994,27 @@ async function initializeAfterAuth() {
       await chargerHistoriqueDP();
       console.log("✅ Historique DP chargé après auth");
     } catch (error) {
-      console.error("⌚ Erreur historique DP après auth:", error);
+      console.error("❌ Erreur historique DP après auth:", error);
     }
     
     try {
       await populateSessionSelector();
       console.log("✅ Sélecteur sessions chargé après auth");
     } catch (error) {
-      console.error("⌚ Erreur sélecteur sessions après auth:", error);
+      console.error("❌ Erreur sélecteur sessions après auth:", error);
     }
     
     try {
       await populateSessionsCleanupList();
       console.log("✅ Liste nettoyage sessions chargée après auth");
     } catch (error) {
-      console.error("⌚ Erreur liste sessions après auth:", error);
+      console.error("❌ Erreur liste sessions après auth:", error);
     }
     
     console.log("✅ Initialisation complète après authentification terminée");
     
   } catch (error) {
-    console.error("⌚ Erreur initialisation après auth:", error);
+    console.error("❌ Erreur initialisation après auth:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Initialisation après authentification");
     }
@@ -1223,7 +1076,7 @@ function setupDPSessionsEventListeners() {
           } else {
             // Indicateur d'erreur
             if (saveBtn) {
-              saveBtn.textContent = "⌚ Erreur";
+              saveBtn.textContent = "❌ Erreur";
               saveBtn.style.backgroundColor = "#dc3545";
               setTimeout(() => {
                 saveBtn.textContent = "Sauvegarder Session";
@@ -1233,9 +1086,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("⌚ Erreur sauvegarde:", error);
+          console.error("❌ Erreur sauvegarde:", error);
           if (saveBtn) {
-            saveBtn.textContent = "⌚ Erreur";
+            saveBtn.textContent = "❌ Erreur";
             saveBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               saveBtn.textContent = "Sauvegarder Session";
@@ -1301,9 +1154,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("⌚ Erreur actualisation liste:", error);
+          console.error("❌ Erreur actualisation liste:", error);
           if (refreshBtn) {
-            refreshBtn.textContent = "⌚ Erreur";
+            refreshBtn.textContent = "❌ Erreur";
             refreshBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               refreshBtn.textContent = "Actualiser liste";
@@ -1329,7 +1182,7 @@ function setupDPSessionsEventListeners() {
           updateCleanupSelection();
         }
       } catch (error) {
-        console.error("⌚ Erreur checkbox cleanup:", error);
+        console.error("❌ Erreur checkbox cleanup:", error);
         if (typeof handleError === 'function') {
           handleError(error, "Checkbox cleanup");
         }
@@ -1345,7 +1198,7 @@ function setupDPSessionsEventListeners() {
     console.log("✅ Event listeners DP et Sessions configurés avec succès");
     
   } catch (error) {
-    console.error("⌚ Erreur configuration event listeners DP/Sessions:", error);
+    console.error("❌ Erreur configuration event listeners DP/Sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Configuration event listeners DP/Sessions");
     }
@@ -1363,7 +1216,7 @@ function initializeDPSessionsManager() {
     console.log("✅ Gestionnaire DP et Sessions initialisé");
     
   } catch (error) {
-    console.error("⌚ Erreur initialisation gestionnaire DP/Sessions:", error);
+    console.error("❌ Erreur initialisation gestionnaire DP/Sessions:", error);
   }
 }
 
@@ -1390,42 +1243,6 @@ window.updateCurrentSessionDisplay = updateCurrentSessionDisplay;
 window.clearCurrentSessionDisplay = clearCurrentSessionDisplay;
 window.updateCurrentSessionAfterSave = updateCurrentSessionAfterSave;
 window.clearDPValidationMessage = clearDPValidationMessage;
-window.waitAndRestoreSession = waitAndRestoreSession; // NOUVELLE EXPORT
-window.diagnosticPalanquees = diagnosticPalanquees; // NOUVELLE EXPORT
-
-// NOUVELLE FONCTION : Diagnostic des palanquées pour sessions
-function diagnosticPalanquees() {
-  console.log('🔍 === DIAGNOSTIC PALANQUÉES SESSIONS ===');
-  
-  const palanqueeElements = document.querySelectorAll('.palanquee');
-  console.log(`📋 ${palanqueeElements.length} palanquées trouvées`);
-  
-  palanqueeElements.forEach((element, index) => {
-    console.log(`\n--- Session Palanquée ${index} ---`);
-    console.log('Élément:', element);
-    console.log('data-index:', element.dataset?.index);
-    
-    const fields = [
-      {selector: '.palanquee-horaire', name: 'Horaire'},
-      {selector: '.palanquee-prof-prevue', name: 'Prof. prévue'},
-      {selector: '.palanquee-duree-prevue', name: 'Durée prévue'},
-      {selector: '.palanquee-prof-realisee', name: 'Prof. réalisée'},
-      {selector: '.palanquee-duree-realisee', name: 'Durée réalisée'},
-      {selector: '.palanquee-paliers', name: 'Paliers'}
-    ];
-    
-    fields.forEach(field => {
-      const fieldElement = element.querySelector(field.selector);
-      if (fieldElement) {
-        console.log(`  ✅ ${field.name}: "${fieldElement.value}" (${field.selector})`);
-      } else {
-        console.log(`  ❌ ${field.name}: NON TROUVÉ (${field.selector})`);
-      }
-    });
-  });
-  
-  console.log('=== FIN DIAGNOSTIC SESSIONS ===');
-}
 
 // Auto-initialisation
 if (document.readyState === 'loading') {

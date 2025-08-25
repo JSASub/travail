@@ -98,9 +98,6 @@
       <button type="button" id="delete-dp-btn" class="dp-btn dp-btn-delete" title="Supprimer le DP" disabled>
         🗑️ <span>Supprimer</span>
       </button>
-	  <button type="button" id="auto-sync-btn" class="dp-btn dp-btn-sync" title="Réactiver synchronisation automatique">
-      🔄 <span>Auto</span>
-      </button>
     </div>
   </label>
   <label>Date : <input type="date" id="dp-date" /></label>
@@ -236,22 +233,20 @@
 
   </div> <!-- Fin main-app -->
 
-<!-- Scripts JavaScript modulaires - ORDRE CORRIGÉ -->
-<script src="config-firebase.js"></script>
-<!-- Attendre que Firebase soit initialisé AVANT dp-management -->
-<script src="ui-interface.js"></script>
-<script src="render-dom.js"></script>
-<script src="pdf-manager.js"></script>
-<script src="plongeurs-manager.js"></script>
-<script src="dp-sessions-manager.js"></script>
-<script src="main-core.js"></script>
-<script src="simple-lock-system.js"></script>
-<script src="offline-manager.js"></script>
-<script src="password-manager.js"></script>  
-<script src="dp-online-manager.js"></script>
-<!-- CHARGER dp-management EN DERNIER -->
-<script src="dp-management.js"></script>
-
+  <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
+  <script src="config-firebase.js"></script>
+  <script src="ui-interface.js"></script>
+  <script src="render-dom.js"></script>
+  <script src="pdf-manager.js"></script>
+  <script src="plongeurs-manager.js"></script>
+  <script src="dp-sessions-manager.js"></script>
+  <script src="main-core.js"></script>
+  <script src="simple-lock-system.js"></script>
+  <script src="offline-manager.js"></script>
+  <script src="password-manager.js"></script>  
+  <script src="dp-online-manager.js"></script>
+  <!-- NOUVEAU MODULE DE GESTION DES DP -->
+  <script src="dp-management.js"></script>
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
 <div id="dp-modal">
   <div class="dp-modal-content">

@@ -207,6 +207,56 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: #545b62 !important;
 }
 
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  #meta-info label:first-child > div {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  #dp-select {
+    min-width: unset;
+    width: 100%;
+  }
+  
+  .dp-management-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  #dp-modal > div {
+    margin: 20px;
+    width: calc(100% - 40px);
+    max-width: none;
+  }
+  
+  #dp-modal button {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Très petit écran */
+@media (max-width: 480px) {
+  #meta-info label:first-child > div {
+    gap: 8px;
+  }
+  
+  .dp-management-btn {
+    font-size: 11px;
+    padding: 8px;
+  }
+  
+  #dp-modal > div {
+    margin: 10px;
+    width: calc(100% - 20px);
+    padding: 20px;
+  }
+}
+
 /* Animation pour le changement de DP */
 #dp-select.dp-changed {
   border-color: #28a745;
@@ -292,7 +342,39 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   margin-bottom: 1px;
 }
 
-/* Boutons de gestion DP - Nouveaux styles */
+
+/* ===== STYLES POUR LA GESTION AUTOMATISÉE DES DP ===== */
+
+/* Conteneur principal de sélection DP */
+#meta-info label:first-child {
+  position: relative;
+}
+
+#meta-info label:first-child > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Liste déroulante DP */
+#dp-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+#dp-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Boutons de gestion DP */
 .dp-btn {
   padding: 8px 12px;
   border: none;
@@ -530,6 +612,66 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   border: 1px solid #bee5eb;
 }
 
+/* Responsive design */
+@media (max-width: 768px) {
+  #meta-info label:first-child > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  #dp-select {
+    min-width: auto;
+    margin-bottom: 8px;
+  }
+  
+  /* Boutons DP en responsive */
+  #meta-info label:first-child > div {
+    gap: 6px;
+  }
+  
+  .dp-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .dp-btn span {
+    display: none; /* Masquer le texte sur mobile pour garder juste les icônes */
+  }
+  
+  .dp-modal-content {
+    margin: 5% auto;
+    width: 95%;
+  }
+  
+  .dp-modal-footer {
+    flex-direction: column-reverse;
+  }
+  
+  .dp-modal-footer .dp-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .dp-modal-footer .dp-btn span {
+    display: inline; /* Réafficher le texte dans la modal */
+  }
+  
+  .dp-notification {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dp-btn {
+    padding: 8px 6px;
+    font-size: 14px; /* Icônes plus grandes sur très petit écran */
+  }
+}
+
 /* États de validation */
 .dp-form-group input.error {
   border-color: #dc3545;
@@ -567,15 +709,8 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   }
 }
 
-.dp-btn-sync {
-  background: linear-gradient(135deg, #6c757d, #495057);
-  color: white;
-  border: 1px solid #495057;
-}
 
-.dp-btn-sync:not(:disabled):hover {
-  background: linear-gradient(135deg, #495057, #343a40);
-}
+
 /* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
 .dp-status-indicator {
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
@@ -764,7 +899,7 @@ button:hover {
   background-color: #f8f9fa;
   border-radius: 5px;
   transition: all 0.3s ease;
-  position: relative;
+  position: relative; /* IMPORTANT pour les indicateurs de verrous */
 }
 
 .palanquee-title {
@@ -776,7 +911,7 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
+  position: relative; /* Pour positionner les indicateurs de verrous */
 }
 
 .palanquee[data-alert="true"] {
@@ -1108,26 +1243,6 @@ background: #28a745 !important;
   flex-wrap: wrap;
 }
 
-/* Ligne pour horaire seul */
-.detail-row.horaire-row {
-  justify-content: flex-start;
-}
-
-/* Ligne pour profondeur + durée prévues */
-.detail-row.prevue-row {
-  justify-content: flex-start;
-}
-
-/* Ligne pour profondeur + durée réalisées */
-.detail-row.realisee-row {
-  justify-content: flex-start;
-}
-
-/* Ligne pour paliers seul */
-.detail-row.paliers-row {
-  flex-wrap: nowrap;
-}
-
 .detail-row label {
   font-size: 12px;
   font-weight: bold;
@@ -1152,7 +1267,21 @@ background: #28a745 !important;
 
 .palanquee-horaire {
   width: 100px;
-  background-color: #fff3e0;
+}
+
+.palanquee-paliers {
+  width: auto;
+  text-align: left;
+  background-color: #f0f8f0;
+  min-width: 200px;
+}
+
+.paliers-row {
+  flex-wrap: nowrap;
+}
+
+.paliers-row input {
+  flex: 1;
 }
 
 .palanquee-prof-prevue,
@@ -1165,12 +1294,8 @@ background: #28a745 !important;
   background-color: #f3e5f5;
 }
 
-.palanquee-paliers {
-  width: auto;
-  text-align: left;
-  background-color: #f0f8f0;
-  min-width: 200px;
-  flex: 1;
+.palanquee-horaire {
+  background-color: #fff3e0;
 }
 
 .detail-row input:focus {
@@ -1204,211 +1329,8 @@ background: #28a745 !important;
   100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
 }
 
-header div[style*="margin-top: 5px"] h2 {
-  margin-top: 13px !important; /* 5px + 8mm ≈ 13px */
-}
-
-header h2 {
-  margin-top: 8mm !important;
-}
-
-header div h2 {
-  margin-top: 8 !important;
-}
-
-/* ===== RESPONSIVE DESIGN AMÉLIORÉ POUR MOBILE - DISPOSITION HORIZONTALE ===== */
+/* Responsive pour les détails */
 @media (max-width: 768px) {
-  #meta-info label:first-child > div {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  #dp-select {
-    min-width: auto;
-    width: 100%;
-    margin-bottom: 10px;
-  }
-  
-  /* Conteneur des boutons DP - disposition horizontale forcée */
-  #meta-info label:first-child > div {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* Ligne des boutons en horizontal */
-  .dp-buttons-row {
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    width: 100%;
-  }
-  
-  /* Boutons DP optimisés pour mobile horizontal */
-  .dp-btn {
-    flex: 1;
-    min-width: 0;
-    justify-content: center;
-    align-items: center;
-    padding: 12px 8px;
-    font-size: 12px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-  
-  /* Affichage du texte complet sur mobile */
-  .dp-btn span {
-    display: inline !important;
-    font-size: 11px;
-    font-weight: 600;
-    margin-left: 4px;
-  }
-  
-  /* Icônes redimensionnées */
-  .dp-btn::before {
-    font-size: 14px;
-  }
-  
-  /* Ajustements pour écrans moyens (tablettes) */
-  @media (max-width: 600px) and (min-width: 481px) {
-    .dp-btn {
-      padding: 10px 6px;
-      font-size: 11px;
-    }
-    
-    .dp-btn span {
-      font-size: 10px;
-    }
-  }
-  
-  /* Très petits écrans - garde l'horizontal mais avec texte abrégé */
-  @media (max-width: 480px) {
-    .dp-btn {
-      padding: 10px 4px;
-      font-size: 10px;
-    }
-    
-    .dp-btn span {
-      font-size: 9px;
-    }
-    
-    /* Abréviations pour très petits écrans */
-    .dp-btn-add span { content: "Nouv."; }
-    .dp-btn-edit span { content: "Modif."; }
-    .dp-btn-delete span { content: "Suppr."; }
-  }
-  
-  /* Responsive pour les détails - 2 paramètres par ligne */
-  .detail-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-  
-  /* Ligne horaire - reste seule */
-  .detail-row.horaire-row {
-    justify-content: flex-start;
-  }
-  
-  /* Ligne prévue - prof + durée côte à côte */
-  .detail-row.prevue-row {
-    justify-content: space-between;
-  }
-  
-  /* Ligne réalisée - prof + durée côte à côte */
-  .detail-row.realisee-row {
-    justify-content: space-between;
-  }
-  
-  /* Ligne paliers - reste seule et prend toute la largeur */
-  .detail-row.paliers-row {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-  }
-  
-  .palanquee-horaire {
-    width: 120px;
-    max-width: 150px;
-  }
-  
-  .palanquee-prof-prevue,
-  .palanquee-duree-prevue,
-  .palanquee-prof-realisee,
-  .palanquee-duree-realisee {
-    width: 100px;
-    max-width: 120px;
-    flex: 0 0 auto;
-  }
-  
-  .palanquee-paliers {
-    width: 100%;
-    flex: 1;
-  }
-  
-  /* Pour très petits écrans - garde le 2 par 2 mais ajuste les tailles */
-  @media (max-width: 480px) {
-    .detail-row {
-      gap: 10px;
-    }
-    
-    .palanquee-horaire {
-      width: 100px;
-    }
-    
-    .palanquee-prof-prevue,
-    .palanquee-duree-prevue,
-    .palanquee-prof-realisee,
-    .palanquee-duree-realisee {
-      width: 80px;
-      font-size: 11px;
-    }
-    
-    .detail-row label {
-      font-size: 11px;
-    }
-  }
-  
-  /* Modal et notifications restent inchangés */
-  .dp-modal-content {
-    margin: 5% auto;
-    width: 95%;
-  }
-  
-  .dp-modal-footer {
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-  
-  .dp-modal-footer .dp-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 14px;
-    font-size: 14px;
-    flex-direction: row;
-    min-height: auto;
-  }
-  
-  .dp-modal-footer .dp-btn span {
-    display: inline !important;
-    font-size: 14px;
-  }
-  
-  .dp-modal-footer .dp-btn::before {
-    display: inline;
-    margin-right: 6px;
-  }
-  
-  .dp-notification {
-    right: 10px;
-    left: 10px;
-    max-width: none;
-    font-size: 13px;
-  }
-  
-  /* Responsive pour les détails */
   .detail-row {
     flex-direction: column;
     align-items: flex-start;
@@ -1452,4 +1374,15 @@ header div h2 {
     gap: 5px;
     text-align: center;
   }
+}
+
+header div[style*="margin-top: 5px"] h2 {
+  margin-top: 13px !important; /* 5px + 8mm ≈ 13px */
+}
+
+header h2 {
+  margin-top: 8mm !important;
+}
+header div h2 {
+  margin-top: 8 !important;
 }

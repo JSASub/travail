@@ -178,89 +178,89 @@ function checkAllAlerts() {
     }
     
     palanquees.forEach((palanquee, idx) => {
-      if (!Array.isArray(palanquee.plongeurs)) {
-        console.warn(`⚠️ palanquee ${idx} n'a pas de tableau plongeurs`);
+      if (!Array.isArray(palanquee)) {
+        console.warn(`⚠️ palanquee ${idx} n'est pas un tableau`);
         return;
       }
       
-      const plongeurs = palanquee.plongeurs;
-
-      // === RÈGLES EXISTANTES (plongeurs) ===
-      const n1s = plongeurs.filter(p => p && p.niveau === "N1");
-      const plgOr = plongeurs.filter(p => p && p.niveau === "Plg.Or");
-      const plgAr = plongeurs.filter(p => p && p.niveau === "Plg.Ar");
-      const plgBr = plongeurs.filter(p => p && p.niveau === "Plg.Br");
-      const debutants = plongeurs.filter(p => p && ["Déb.", "débutant", "Déb"].includes(p.niveau));
-      const gps = plongeurs.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
-      const autonomes = plongeurs.filter(p => p && ["N2", "N3"].includes(p.niveau));
+      // Classification des plongeurs selon les nouvelles règles
+      const n1s = palanquee.filter(p => p && p.niveau === "N1");
+      const plgOr = palanquee.filter(p => p && p.niveau === "Plg.Or");
+      const plgAr = palanquee.filter(p => p && p.niveau === "Plg.Ar");
+      const plgBr = palanquee.filter(p => p && p.niveau === "Plg.Br");
+      const debutants = palanquee.filter(p => p && ["Déb.", "débutant", "Déb"].includes(p.niveau));
+      const gps = palanquee.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4", "GP"].includes(p.niveau));
+      const autonomes = palanquee.filter(p => p && ["N2", "N3"].includes(p.niveau));
       
-      if (plongeurs.length > 5) {
-        alertes.push(`Palanquée ${idx + 1}: Plus de 5 plongeurs (${plongeurs.length})`);
+      // RÈGLES GÉNÉRALES
+      if (palanquee.length > 5) {
+        alertes.push(`Palanquée ${idx + 1}: Plus de 5 plongeurs (${palanquee.length})`);
       }
-      if (plongeurs.length <= 1) {
-        alertes.push(`Palanquée ${idx + 1}: Palanquée de ${plongeurs.length} plongeur(s)`);
+      
+      if (palanquee.length <= 1) {
+        alertes.push(`Palanquée ${idx + 1}: Palanquée de ${palanquee.length} plongeur(s)`);
       }
-      if (plgBr.length > 0 && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: Bronze sans GP`);
+      
+      // NOUVELLES RÈGLES POUR LES PLONGEURS BRONZE
+      if (plgBr.length > 0) {
+        if (gps.length === 0) {
+          alertes.push(`Palanquée ${idx + 1}: Plongeur(s) Bronze sans Guide de Palanquée (GP/E2/E3/E4)`);
+        }
+        if (plgBr.length > 2) {
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 plongeurs Bronze autorisés (${plgBr.length})`);
+        }
       }
-      if (plgBr.length > 2) {
-        alertes.push(`Palanquée ${idx + 1}: Plus de 2 Bronze (${plgBr.length})`);
+      
+      // NOUVELLES RÈGLES POUR LES PLONGEURS ARGENT
+      if (plgAr.length > 0) {
+        if (gps.length === 0) {
+          alertes.push(`Palanquée ${idx + 1}: Plongeur(s) Argent sans Guide de Palanquée (GP/E2/E3/E4)`);
+        }
+        if (plgAr.length > 2) {
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 plongeurs Argent autorisés (${plgAr.length})`);
+        }
       }
-      if (plgAr.length > 0 && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: Argent sans GP`);
-      }
-      if (plgAr.length > 2) {
-        alertes.push(`Palanquée ${idx + 1}: Plus de 2 Argent (${plgAr.length})`);
-      }
+      
+      // NOUVELLES RÈGLES POUR LES PLONGEURS OR (considérés comme N1)
       const totalN1etOr = n1s.length + plgOr.length;
       if (totalN1etOr > 0 && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: N1/Or sans GP`);
+        alertes.push(`Palanquée ${idx + 1}: N1/Plongeur Or sans Guide de Palanquée`);
       }
+      
+      // RÈGLES POUR LES DÉBUTANTS
       if (debutants.length > 0 && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: Débutants sans GP`);
+        alertes.push(`Palanquée ${idx + 1}: Débutant(s) sans Guide de Palanquée`);
       }
+      
+      // RÈGLES POUR LES AUTONOMES
       if (autonomes.length > 3) {
-        alertes.push(`Palanquée ${idx + 1}: Plus de 3 autonomes (${autonomes.length})`);
+        alertes.push(`Palanquée ${idx + 1}: Plus de 3 plongeurs autonomes (${autonomes.length})`);
       }
-      if ((plongeurs.length === 4 || plongeurs.length === 5) && gps.length === 0) {
-        alertes.push(`Palanquée ${idx + 1}: ${plongeurs.length} plongeurs sans GP`);
+      
+      // RÈGLE EFFECTIF AVEC GP
+      if ((palanquee.length === 4 || palanquee.length === 5) && gps.length === 0) {
+        alertes.push(`Palanquée ${idx + 1}: ${palanquee.length} plongeurs sans Guide de Palanquée`);
       }
+      
+      // RÈGLES SPÉCIFIQUES JEUNES PLONGEURS (mélange avec adultes)
       const jeunesPlongeurs = plgBr.length + plgAr.length + plgOr.length;
       const plongeursAdultes = n1s.length + autonomes.length + debutants.length;
+      
       if (jeunesPlongeurs > 0 && plongeursAdultes > 0) {
-        if (plongeurs.length > 3) {
-          alertes.push(`Palanquée ${idx + 1}: Trop de plongeurs avec jeunes (max 3)`);
+        // Effectif maximal palanquée avec enfants : 3 plongeurs dont 2 enfants max
+        if (palanquee.length > 3) {
+          alertes.push(`Palanquée ${idx + 1}: Effectif trop important avec jeunes plongeurs (max 3, actuel ${palanquee.length})`);
         }
         if (jeunesPlongeurs > 2) {
-          alertes.push(`Palanquée ${idx + 1}: Plus de 2 jeunes autorisés (${jeunesPlongeurs})`);
+          alertes.push(`Palanquée ${idx + 1}: Plus de 2 jeunes plongeurs autorisés avec adultes (${jeunesPlongeurs})`);
         }
       }
-      if (jeunesPlongeurs > 0 && plongeursAdultes === 0 && gps.length > 0 && plongeurs.length > 3) {
-        alertes.push(`Palanquée ${idx + 1}: Trop d'enfants avec GP (max 3)`);
-      }
-
-      // === NOUVELLES RÈGLES (paramètres plongée) ===
-      const params = palanquee.parametres || {};
       
-      if (!params.horaire) {
-        alertes.push(`Palanquée ${idx + 1}: Horaire non défini`);
-      }
-      if (params.profondeurPrevue && params.profondeurPrevue > 40) {
-        alertes.push(`Palanquée ${idx + 1}: Profondeur prévue > 40m`);
-      }
-      if (params.tempsPrevu && params.tempsPrevu > 60) {
-        alertes.push(`Palanquée ${idx + 1}: Temps prévu > 60min`);
-      }
-      if (params.profondeurEffectuee && params.profondeurPrevue &&
-          params.profondeurEffectuee > params.profondeurPrevue + 5) {
-        alertes.push(`Palanquée ${idx + 1}: Profondeur effectuée dépasse prévue (+5m)`);
-      }
-      if (params.tempsEffectue && params.tempsPrevu &&
-          params.tempsEffectue > params.tempsPrevu + 10) {
-        alertes.push(`Palanquée ${idx + 1}: Temps effectué dépasse prévu (+10min)`);
-      }
-      if (!params.palier) {
-        alertes.push(`Palanquée ${idx + 1}: Palier non renseigné`);
+      // RÈGLES POUR PALANQUÉE UNIQUEMENT JEUNES PLONGEURS
+      if (jeunesPlongeurs > 0 && plongeursAdultes === 0 && gps.length > 0) {
+        if (palanquee.length > 3) { // 2 enfants + 1 GP
+          alertes.push(`Palanquée ${idx + 1}: Effectif trop important pour palanquée jeunes (max 3 avec GP, actuel ${palanquee.length})`);
+        }
       }
     });
     
