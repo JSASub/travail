@@ -25,7 +25,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* Alternative pour cibler spécifiquement les alertes palanquées */
 .alert-section.palanquee-alerts,
 div[style*="position: fixed"]:has(.alert-title) {
-    top: 77px !important;
+    top: 200px !important;
 }
 
 
@@ -33,7 +33,7 @@ div[style*="position: fixed"]:has(.alert-title) {
 /* STYLES AMÉLIORÉS POUR LES ALERTES */
 .alert-section {
   position: fixed;
-  top: 77px; /* ← Changer de 20px à 77px */
+  top: 80px; /* ← Changer de 20px à 77px */
   right: 20px;
   max-width: 350px;
   z-index: 1000;
