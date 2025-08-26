@@ -1,5 +1,30 @@
 // main-core.js - Fichier principal allégé (remplace main-complete.js)
-
+// Fonction pour récupérer le nom du DP sélectionné
+function getSelectedDPName() {
+  const dpSelect = document.getElementById('dp-select');
+  
+  if (!dpSelect || !dpSelect.value) {
+    console.warn("⚠️ Aucun DP sélectionné");
+    return "";
+  }
+  
+  if (typeof DP_LIST !== 'undefined') {
+    const selectedDP = DP_LIST.find(dp => dp.id === dpSelect.value);
+    if (selectedDP) {
+      console.log("✅ DP sélectionné:", selectedDP.nom);
+      return selectedDP.nom;
+    }
+  }
+  
+  const selectedOption = dpSelect.options[dpSelect.selectedIndex];
+  if (selectedOption && selectedOption.text !== "-- Choisir un DP --") {
+    const nom = selectedOption.text.split(' (')[0];
+    console.log("✅ DP extrait:", nom);
+    return nom;
+  }
+  
+  return "";
+}
 // Mode production - logs réduits
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
