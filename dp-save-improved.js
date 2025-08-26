@@ -6,13 +6,25 @@
 async function saveSessionData() {
   console.log("💾 Sauvegarde session...");
   
-  const dpNom = document.getElementById("dp-nom")?.value?.trim();
+  // CORRECTION : Utiliser la fonction pour récupérer le DP
+  const dpNom = getSelectedDPName();  // Au lieu de document.getElementById("dp-nom")
   const dpDate = document.getElementById("dp-date")?.value;
   const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
   const dpPlongee = document.getElementById("dp-plongee")?.value;
   
-  if (!dpNom || !dpDate || !dpPlongee) {
-    console.warn("⚠️ Informations DP incomplètes");
+  // Vérifications
+  if (!dpNom) {
+    alert("⚠️ Veuillez sélectionner un Directeur de Plongée dans la liste");
+    return false;
+  }
+  
+  if (!dpDate || !dpLieu) {
+    alert("⚠️ Veuillez remplir la date et le lieu");
+    return false;
+  }
+  
+  if (!dpPlongee) {
+    alert("⚠️ Veuillez sélectionner le type de plongée");
     return false;
   }
   
@@ -21,9 +33,11 @@ async function saveSessionData() {
     return false;
   }
   
+  console.log("✅ DP:", dpNom, "Date:", dpDate, "Lieu:", dpLieu);
+  
   const dpKey = dpNom.split(' ')[0].substring(0, 8);
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
-  
+    
   console.log("📍 Clé de session:", sessionKey);
   
   // Préparer les palanquées avec leurs paramètres
