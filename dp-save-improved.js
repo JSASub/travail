@@ -2,10 +2,10 @@
 // Ce code remplace/améliore la fonction saveSessionData existante
 
 // Fonction améliorée qui remplace saveSessionData()
+// Version corrigée de saveSessionData qui structure correctement les données
 async function saveSessionData() {
-  console.log("🚀 === DÉBUT SAUVEGARDE COMPLÈTE ===");
+  console.log("🚀 === SAUVEGARDE AVEC PARAMÈTRES CORRECTS ===");
   
-  // Utiliser la fonction $ existante ou document.getElementById
   const $ = (id) => document.getElementById(id);
   
   const dpNom = $("dp-nom")?.value?.trim();
@@ -13,27 +13,63 @@ async function saveSessionData() {
   const dpLieu = $("dp-lieu")?.value?.trim();
   const dpPlongee = $("dp-plongee")?.value;
   
-  // Vérifier les données obligatoires
   if (!dpNom || !dpDate || !dpPlongee) {
-    console.warn("⚠️ Données incomplètes - sauvegarde annulée");
+    console.warn("⚠️ Données incomplètes");
     return false;
   }
   
-  // Vérifier Firebase
   if (!db || !firebaseConnected) {
     console.error("❌ Firebase non disponible");
-    // Sauvegarde locale de secours
     sauvegardeLocaleSecours();
     return false;
   }
   
-  // Créer la clé unique
   const dpKey = dpNom.split(' ')[0].substring(0, 8);
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
   
-  // Compiler TOUTES les données
+  // === STRUCTURE CORRIGÉE DES PALANQUÉES ===
+  // Chaque palanquée devient un objet avec ses plongeurs et ses paramètres
+  const palanqueesStructurees = (palanquees || []).map((palanquee, index) => {
+    // Extraire les paramètres stockés sur l'array
+    const parametres = {
+      horaire: palanquee.horaire || '',
+      profondeurPrevue: palanquee.profondeurPrevue || '',
+      dureePrevue: palanquee.dureePrevue || '',
+      profondeurRealisee: palanquee.profondeurRealisee || '',
+      dureeRealisee: palanquee.dureeRealisee || '',
+      paliers: palanquee.paliers || ''
+    };
+    
+    // Extraire les plongeurs (éléments du tableau)
+    const plongeursList = [];
+    for (let i = 0; i < palanquee.length; i++) {
+      if (palanquee[i] && palanquee[i].nom) {
+        plongeursList.push({
+          nom: palanquee[i].nom,
+          niveau: palanquee[i].niveau || '',
+          pre: palanquee[i].pre || ''
+        });
+      }
+    }
+    
+    // Retourner une structure objet propre
+    return {
+      numero: index + 1,
+      plongeurs: plongeursList,
+      parametres: parametres,
+      stats: {
+        nombrePlongeurs: plongeursList.length,
+        hasGP: plongeursList.some(p => ["N4", "E2", "E3", "E4", "GP"].includes(p.niveau)),
+        hasN1: plongeursList.some(p => p.niveau === "N1"),
+        hasAutonomes: plongeursList.some(p => ["N2", "N3"].includes(p.niveau))
+      }
+    };
+  });
+  
+  console.log("📊 Palanquées structurées:", palanqueesStructurees);
+  
+  // Compiler toutes les données
   const sessionData = {
-    // Métadonnées complètes
     meta: {
       dp: dpNom,
       date: dpDate,
@@ -41,57 +77,37 @@ async function saveSessionData() {
       plongee: dpPlongee,
       timestamp: Date.now(),
       sessionKey: sessionKey,
-      sauvegardePalier: true,
-      version: "2.0"
+      version: "3.0" // Nouvelle version avec structure corrigée
     },
     
-    // Données des plongeurs
+    // Plongeurs non assignés
     plongeurs: plongeurs || [],
     
-    // Palanquées avec toutes leurs propriétés
-    palanquees: (palanquees || []).map((pal, index) => {
-      const palanqueeComplete = [...pal];
-      // S'assurer que toutes les propriétés sont présentes
-      palanqueeComplete.numero = index + 1;
-      palanqueeComplete.horaire = pal.horaire || '';
-      palanqueeComplete.profondeurPrevue = pal.profondeurPrevue || '';
-      palanqueeComplete.dureePrevue = pal.dureePrevue || '';
-      palanqueeComplete.profondeurRealisee = pal.profondeurRealisee || '';
-      palanqueeComplete.dureeRealisee = pal.dureeRealisee || '';
-      palanqueeComplete.paliers = pal.paliers || '';
-      return palanqueeComplete;
-    }),
+    // Palanquées avec structure corrigée
+    palanquees: palanqueesStructurees,
     
-    // Statistiques détaillées
+    // Statistiques globales
     stats: {
       totalPlongeurs: (plongeurs?.length || 0) + 
-                     (palanquees?.reduce((total, pal) => total + (Array.isArray(pal) ? pal.length : 0), 0) || 0),
-      nombrePalanquees: palanquees?.length || 0,
+                     palanqueesStructurees.reduce((total, pal) => 
+                       total + (pal.plongeurs?.length || 0), 0),
+      nombrePalanquees: palanqueesStructurees.length,
       plongeursNonAssignes: plongeurs?.length || 0,
-      heureValidation: new Date().toLocaleTimeString('fr-FR'),
-      dateComplete: new Date().toISOString()
+      heureValidation: new Date().toLocaleTimeString('fr-FR')
     }
   };
   
-  console.log("📊 Données à sauvegarder:", {
-    sessionKey: sessionKey,
-    plongeurs: sessionData.stats.totalPlongeurs,
-    palanquees: sessionData.stats.nombrePalanquees
-  });
-  
   try {
-    // === SAUVEGARDES MULTIPLES POUR REDONDANCE ===
-    
+    // Sauvegardes multiples
     const sauvegardes = [];
     
-    // 1. Sauvegarde principale dans /sessions/
+    // 1. Sauvegarde principale
     sauvegardes.push(
       db.ref(`sessions/${sessionKey}`).set(sessionData)
-        .then(() => console.log("✅ Session principale sauvegardée"))
-        .catch(err => console.error("❌ Erreur session principale:", err))
+        .then(() => console.log("✅ Session sauvegardée avec paramètres"))
     );
     
-    // 2. Sauvegarde des infos DP
+    // 2. Infos DP
     const dpInfo = {
       nom: dpNom,
       date: dpDate,
@@ -105,67 +121,127 @@ async function saveSessionData() {
     sauvegardes.push(
       db.ref(`dpInfo/${sessionKey}`).set(dpInfo)
         .then(() => console.log("✅ Infos DP sauvegardées"))
-        .catch(err => console.error("❌ Erreur infos DP:", err))
     );
     
-    // 3. Historique par date
+    // 3. Historique
     const dateFormatee = dpDate.replace(/-/g, '_');
     sauvegardes.push(
-      db.ref(`historique/${dateFormatee}/${sessionKey}`).set({
-        ...sessionData,
-        archiveDate: new Date().toISOString()
-      })
+      db.ref(`historique/${dateFormatee}/${sessionKey}`).set(sessionData)
         .then(() => console.log("✅ Historique sauvegardé"))
-        .catch(err => console.error("❌ Erreur historique:", err))
     );
     
-    // 4. Backup horodaté
-    const backupKey = `${sessionKey}_${Date.now()}`;
-    sauvegardes.push(
-      db.ref(`backups/${backupKey}`).set(sessionData)
-        .then(() => console.log("✅ Backup créé"))
-        .catch(err => console.error("❌ Erreur backup:", err))
-    );
+    await Promise.allSettled(sauvegardes);
     
-    // Attendre toutes les sauvegardes
-    const resultats = await Promise.allSettled(sauvegardes);
-    
-    // Compter les succès
-    const succes = resultats.filter(r => r.status === 'fulfilled').length;
-    const total = resultats.length;
-    
-    console.log(`📈 Résultat: ${succes}/${total} sauvegardes réussies`);
-    
-    if (succes === 0) {
-      throw new Error("Aucune sauvegarde n'a réussi");
-    }
-    
-    // === VÉRIFICATION D'INTÉGRITÉ ===
+    // Vérification
     const verification = await db.ref(`sessions/${sessionKey}`).once('value');
-    if (verification.exists()) {
-      console.log("✅ Vérification: données correctement sauvegardées");
-      
-      // Sauvegarde locale additionnelle
-      sauvegardeLocaleSecours(sessionData, sessionKey);
-      
-      // Afficher la confirmation
-      afficherConfirmation(sessionKey, sessionData.stats);
-      
-      return true;
-    } else {
-      console.warn("⚠️ Vérification échouée mais backup réussi");
-      return true;
+    const donneesSauvees = verification.val();
+    
+    // Vérifier que les paramètres sont bien sauvés
+    if (donneesSauvees?.palanquees?.[0]?.parametres) {
+      console.log("✅ Paramètres vérifiés:", donneesSauvees.palanquees[0].parametres);
     }
+    
+    afficherConfirmation(sessionKey, sessionData.stats);
+    return true;
     
   } catch (error) {
-    console.error("❌ ERREUR lors de la sauvegarde:", error);
-    
-    // Tentative de sauvegarde locale
+    console.error("❌ Erreur:", error);
     sauvegardeLocaleSecours(sessionData, sessionKey);
+    return false;
+  }
+}
+
+// === FONCTION POUR CHARGER UNE SESSION AVEC LA NOUVELLE STRUCTURE ===
+async function loadSession(sessionKey) {
+  try {
+    if (!db) {
+      alert("Base de données non disponible");
+      return false;
+    }
     
-    // Notification d'erreur
-    showNotification(`⚠️ Erreur Firebase: ${error.message}\nDonnées sauvegardées localement`, "warning");
+    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!sessionSnapshot.exists()) {
+      alert("Session non trouvée");
+      return false;
+    }
     
+    const sessionData = sessionSnapshot.val();
+    
+    // Charger les plongeurs non assignés
+    plongeurs = sessionData.plongeurs || [];
+    
+    // Reconstituer les palanquées avec leurs paramètres
+    if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+      palanquees = sessionData.palanquees.map((palData) => {
+        let palanqueeArray;
+        
+        // Gérer l'ancienne structure (compatibilité)
+        if (Array.isArray(palData)) {
+          palanqueeArray = [...palData];
+        }
+        // Nouvelle structure avec objet
+        else if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+          palanqueeArray = [...palData.plongeurs];
+          
+          // Restaurer les paramètres sur l'array
+          if (palData.parametres) {
+            palanqueeArray.horaire = palData.parametres.horaire || '';
+            palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || '';
+            palanqueeArray.dureePrevue = palData.parametres.dureePrevue || '';
+            palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || '';
+            palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || '';
+            palanqueeArray.paliers = palData.parametres.paliers || '';
+          }
+        }
+        // Structure non reconnue
+        else {
+          palanqueeArray = [];
+        }
+        
+        // S'assurer que les propriétés existent
+        if (!palanqueeArray.hasOwnProperty('horaire')) palanqueeArray.horaire = '';
+        if (!palanqueeArray.hasOwnProperty('profondeurPrevue')) palanqueeArray.profondeurPrevue = '';
+        if (!palanqueeArray.hasOwnProperty('dureePrevue')) palanqueeArray.dureePrevue = '';
+        if (!palanqueeArray.hasOwnProperty('profondeurRealisee')) palanqueeArray.profondeurRealisee = '';
+        if (!palanqueeArray.hasOwnProperty('dureeRealisee')) palanqueeArray.dureeRealisee = '';
+        if (!palanqueeArray.hasOwnProperty('paliers')) palanqueeArray.paliers = '';
+        
+        return palanqueeArray;
+      });
+    } else {
+      palanquees = [];
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
+    // Restaurer les métadonnées
+    const $ = (id) => document.getElementById(id);
+    if (sessionData.meta) {
+      if ($("dp-nom")) $("dp-nom").value = sessionData.meta.dp || "";
+      if ($("dp-date")) $("dp-date").value = sessionData.meta.date || "";
+      if ($("dp-lieu")) $("dp-lieu").value = sessionData.meta.lieu || "";
+      if ($("dp-plongee")) $("dp-plongee").value = sessionData.meta.plongee || "matin";
+    }
+    
+    // Rafraîchir l'affichage
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+    console.log("✅ Session chargée avec paramètres:", sessionKey);
+    
+    // Afficher les paramètres récupérés pour vérification
+    palanquees.forEach((pal, i) => {
+      if (pal.horaire || pal.profondeurPrevue || pal.dureePrevue) {
+        console.log(`📊 Palanquée ${i+1} - Horaire: ${pal.horaire}, Prof: ${pal.profondeurPrevue}m, Durée: ${pal.dureePrevue}min`);
+      }
+    });
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur chargement session:", error);
+    alert("Erreur lors du chargement : " + error.message);
     return false;
   }
 }
@@ -184,19 +260,9 @@ function sauvegardeLocaleSecours(data, key) {
     };
     
     const sessionKey = key || `urgence_${Date.now()}`;
-    
-    // Sauvegarder dans localStorage
     localStorage.setItem(`session_${sessionKey}`, JSON.stringify(sauvegardeData));
     
-    // Garder un historique des 10 dernières sessions
-    let historique = JSON.parse(localStorage.getItem('sessions_historique') || '[]');
-    if (!historique.includes(sessionKey)) {
-      historique.unshift(sessionKey);
-      historique = historique.slice(0, 10);
-      localStorage.setItem('sessions_historique', JSON.stringify(historique));
-    }
-    
-    console.log("💾 Sauvegarde locale effectuée:", sessionKey);
+    console.log("💾 Sauvegarde locale effectuée");
     return true;
     
   } catch (error) {
@@ -218,28 +284,21 @@ function afficherConfirmation(sessionKey, stats) {
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
       margin: 10px 0;
-      animation: slideIn 0.3s ease-out;
     ">
-      <h4 style="margin: 0 0 10px 0;">✅ SESSION SAUVEGARDÉE AVEC SUCCÈS</h4>
+      <h4 style="margin: 0 0 10px 0;">✅ SESSION COMPLÈTE SAUVEGARDÉE</h4>
       <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 4px;">
         <small>
-          📍 Session: ${sessionKey}<br>
-          👥 ${stats.totalPlongeurs} plongeurs au total<br>
-          🏊 ${stats.nombrePalanquees} palanquées formées<br>
-          ⏰ Sauvegardée à ${stats.heureValidation}
+          📍 ${sessionKey}<br>
+          👥 ${stats.totalPlongeurs} plongeurs<br>
+          🏊 ${stats.nombrePalanquees} palanquées avec paramètres<br>
+          ⏰ ${stats.heureValidation}
         </small>
-      </div>
-      <div style="margin-top: 8px; font-size: 0.85em; opacity: 0.9;">
-        💾 Données sauvegardées dans Firebase (4 emplacements)<br>
-        📱 Backup local créé
       </div>
     </div>
   `;
   
   dpMessage.style.display = 'block';
-  dpMessage.classList.add("dp-valide");
   
-  // Masquer après 8 secondes
   setTimeout(() => {
     dpMessage.style.opacity = '0';
     setTimeout(() => {
@@ -249,151 +308,4 @@ function afficherConfirmation(sessionKey, stats) {
   }, 8000);
 }
 
-// === AMÉLIORATION DU BOUTON VALIDER-DP ===
-document.addEventListener('DOMContentLoaded', function() {
-  const validerDPBtn = document.getElementById('valider-dp');
-  
-  if (validerDPBtn) {
-    // Remplacer l'event listener existant
-    validerDPBtn.removeEventListener('click', validerDPBtn.onclick);
-    
-    validerDPBtn.addEventListener('click', async function(e) {
-      e.preventDefault();
-      
-      console.log("🎯 Validation DP déclenchée");
-      
-      // Validation des champs
-      const dpNom = document.getElementById("dp-nom")?.value?.trim();
-      const dpDate = document.getElementById("dp-date")?.value;
-      const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
-      
-      if (!dpNom || !dpDate || !dpLieu) {
-        alert("⚠️ Veuillez remplir tous les champs DP (nom, date, lieu)");
-        return;
-      }
-      
-      // Animation du bouton
-      validerDPBtn.disabled = true;
-      validerDPBtn.innerHTML = '⏳ Sauvegarde en cours...';
-      validerDPBtn.style.backgroundColor = '#6c757d';
-      
-      try {
-        // Sauvegarder toutes les données
-        const success = await saveSessionData();
-        
-        if (success) {
-          // Synchronisation additionnelle
-          if (typeof syncToDatabase === 'function') {
-            setTimeout(syncToDatabase, 500);
-          }
-          
-          // Rafraîchir les listes
-          if (typeof refreshAllLists === 'function') {
-            setTimeout(refreshAllLists, 1000);
-          }
-          
-          // Succès visuel
-          validerDPBtn.innerHTML = '✅ Sauvegardé !';
-          validerDPBtn.style.backgroundColor = '#28a745';
-          
-          setTimeout(() => {
-            validerDPBtn.disabled = false;
-            validerDPBtn.innerHTML = 'Sauvegarder Session + DP';
-            validerDPBtn.style.backgroundColor = '';
-          }, 3000);
-          
-        } else {
-          throw new Error("Échec de la sauvegarde");
-        }
-        
-      } catch (error) {
-        console.error("❌ Erreur:", error);
-        
-        // Erreur visuelle
-        validerDPBtn.innerHTML = '❌ Erreur !';
-        validerDPBtn.style.backgroundColor = '#dc3545';
-        
-        alert(`Erreur lors de la sauvegarde:\n${error.message}`);
-        
-        setTimeout(() => {
-          validerDPBtn.disabled = false;
-          validerDPBtn.innerHTML = 'Sauvegarder Session + DP';
-          validerDPBtn.style.backgroundColor = '';
-        }, 2000);
-      }
-    });
-  }
-});
-
-// === FONCTION UTILITAIRE POUR LES NOTIFICATIONS ===
-function showNotification(message, type = 'info') {
-  // Utiliser la fonction existante si disponible
-  if (typeof window.showNotification === 'function') {
-    window.showNotification(message, type);
-    return;
-  }
-  
-  // Sinon créer une notification simple
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    border-radius: 5px;
-    z-index: 10000;
-    animation: slideInRight 0.3s ease-out;
-    max-width: 300px;
-  `;
-  
-  const colors = {
-    success: '#28a745',
-    error: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8'
-  };
-  
-  notification.style.backgroundColor = colors[type] || colors.info;
-  notification.style.color = type === 'warning' ? '#000' : '#fff';
-  notification.textContent = message;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    setTimeout(() => notification.remove(), 300);
-  }, 4000);
-}
-
-// === STYLE CSS À AJOUTER ===
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateY(-20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  .dp-valide {
-    animation: slideIn 0.3s ease-out;
-  }
-`;
-document.head.appendChild(style);
-
-console.log("✅ Système de sauvegarde amélioré chargé");
+console.log("✅ Système de sauvegarde des paramètres corrigé");
