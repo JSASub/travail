@@ -4,71 +4,67 @@
 // Fonction améliorée qui remplace saveSessionData()
 // Version corrigée de saveSessionData qui structure correctement les données
 async function saveSessionData() {
-  console.log("🚀 === SAUVEGARDE AVEC PARAMÈTRES CORRECTS ===");
+  console.log("💾 Sauvegarde session...");
   
-  const $ = (id) => document.getElementById(id);
+  const dpNom = document.getElementById("dp-nom")?.value?.trim();
+  const dpDate = document.getElementById("dp-date")?.value;
+  const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+  const dpPlongee = document.getElementById("dp-plongee")?.value;
   
-  const dpNom = $("dp-nom")?.value?.trim();
-  const dpDate = $("dp-date")?.value;
-  const dpLieu = $("dp-lieu")?.value?.trim();
-  const dpPlongee = $("dp-plongee")?.value;
-  
+  // Vérifications de base
   if (!dpNom || !dpDate || !dpPlongee) {
-    console.warn("⚠️ Données incomplètes");
+    console.warn("⚠️ Informations DP incomplètes");
     return false;
   }
   
-  if (!db || !firebaseConnected) {
+  if (!db) {
     console.error("❌ Firebase non disponible");
-    sauvegardeLocaleSecours();
     return false;
   }
   
+  // Créer la clé de session
   const dpKey = dpNom.split(' ')[0].substring(0, 8);
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
   
-  // === STRUCTURE CORRIGÉE DES PALANQUÉES ===
-  // Chaque palanquée devient un objet avec ses plongeurs et ses paramètres
-  const palanqueesStructurees = (palanquees || []).map((palanquee, index) => {
-    // Extraire les paramètres stockés sur l'array
-    const parametres = {
-      horaire: palanquee.horaire || '',
-      profondeurPrevue: palanquee.profondeurPrevue || '',
-      dureePrevue: palanquee.dureePrevue || '',
-      profondeurRealisee: palanquee.profondeurRealisee || '',
-      dureeRealisee: palanquee.dureeRealisee || '',
-      paliers: palanquee.paliers || ''
-    };
-    
-    // Extraire les plongeurs (éléments du tableau)
-    const plongeursList = [];
-    for (let i = 0; i < palanquee.length; i++) {
-      if (palanquee[i] && palanquee[i].nom) {
-        plongeursList.push({
-          nom: palanquee[i].nom,
-          niveau: palanquee[i].niveau || '',
-          pre: palanquee[i].pre || ''
-        });
-      }
-    }
-    
-    // Retourner une structure objet propre
-    return {
-      numero: index + 1,
-      plongeurs: plongeursList,
-      parametres: parametres,
-      stats: {
-        nombrePlongeurs: plongeursList.length,
-        hasGP: plongeursList.some(p => ["N4", "E2", "E3", "E4", "GP"].includes(p.niveau)),
-        hasN1: plongeursList.some(p => p.niveau === "N1"),
-        hasAutonomes: plongeursList.some(p => ["N2", "N3"].includes(p.niveau))
-      }
-    };
-  });
+  console.log("📍 Clé de session:", sessionKey);
   
-  console.log("📊 Palanquées structurées:", palanqueesStructurees);
+  // Préparer les palanquées avec leurs paramètres
+  // IMPORTANT: On crée une copie pour ne pas modifier l'original
+  const palanqueesData = [];
   
-  // Compiler toutes les données
+  if (palanquees && Array.isArray(palanquees)) {
+    palanquees.forEach((pal, index) => {
+      // Créer un objet pour stocker la palanquée
+      const palanqueeObj = {
+        index: index,
+        plongeurs: [],
+        // Capturer les paramètres s'ils existent
+        parametres: {
+          horaire: pal.horaire || "",
+          profondeurPrevue: pal.profondeurPrevue || "",
+          dureePrevue: pal.dureePrevue || "",
+          profondeurRealisee: pal.profondeurRealisee || "",
+          dureeRealisee: pal.dureeRealisee || "",
+          paliers: pal.paliers || ""
+        }
+      };
+      
+      // Copier les plongeurs
+      for (let i = 0; i < pal.length; i++) {
+        if (pal[i] && pal[i].nom) {
+          palanqueeObj.plongeurs.push({
+            nom: pal[i].nom,
+            niveau: pal[i].niveau || "",
+            pre: pal[i].pre || ""
+          });
+        }
+      }
+      
+      palanqueesData.push(palanqueeObj);
+    });
+  }
+  
+  // Créer l'objet de session complet
   const sessionData = {
     meta: {
       dp: dpNom,
@@ -76,151 +72,136 @@ async function saveSessionData() {
       lieu: dpLieu || "Non défini",
       plongee: dpPlongee,
       timestamp: Date.now(),
-      sessionKey: sessionKey,
-      version: "3.0" // Nouvelle version avec structure corrigée
+      sessionKey: sessionKey
     },
-    
-    // Plongeurs non assignés
     plongeurs: plongeurs || [],
-    
-    // Palanquées avec structure corrigée
-    palanquees: palanqueesStructurees,
-    
-    // Statistiques globales
+    palanquees: palanqueesData,
     stats: {
       totalPlongeurs: (plongeurs?.length || 0) + 
-                     palanqueesStructurees.reduce((total, pal) => 
-                       total + (pal.plongeurs?.length || 0), 0),
-      nombrePalanquees: palanqueesStructurees.length,
-      plongeursNonAssignes: plongeurs?.length || 0,
-      heureValidation: new Date().toLocaleTimeString('fr-FR')
+                     palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0),
+      nombrePalanquees: palanqueesData.length,
+      plongeursNonAssignes: plongeurs?.length || 0
     }
   };
   
+  console.log("📊 Données à sauvegarder:", {
+    sessionKey: sessionKey,
+    nbPlongeurs: sessionData.stats.totalPlongeurs,
+    nbPalanquees: sessionData.stats.nombrePalanquees
+  });
+  
   try {
-    // Sauvegardes multiples
-    const sauvegardes = [];
+    // Sauvegarde principale
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée");
     
-    // 1. Sauvegarde principale
-    sauvegardes.push(
-      db.ref(`sessions/${sessionKey}`).set(sessionData)
-        .then(() => console.log("✅ Session sauvegardée avec paramètres"))
-    );
-    
-    // 2. Infos DP
+    // Sauvegarde des infos DP
     const dpInfo = {
       nom: dpNom,
       date: dpDate,
       lieu: dpLieu,
       plongee: dpPlongee,
       timestamp: Date.now(),
-      validated: true,
-      stats: sessionData.stats
+      validated: true
     };
     
-    sauvegardes.push(
-      db.ref(`dpInfo/${sessionKey}`).set(dpInfo)
-        .then(() => console.log("✅ Infos DP sauvegardées"))
-    );
+    await db.ref(`dpInfo/${sessionKey}`).set(dpInfo);
+    console.log("✅ Infos DP sauvegardées");
     
-    // 3. Historique
-    const dateFormatee = dpDate.replace(/-/g, '_');
-    sauvegardes.push(
-      db.ref(`historique/${dateFormatee}/${sessionKey}`).set(sessionData)
-        .then(() => console.log("✅ Historique sauvegardé"))
-    );
-    
-    await Promise.allSettled(sauvegardes);
-    
-    // Vérification
-    const verification = await db.ref(`sessions/${sessionKey}`).once('value');
-    const donneesSauvees = verification.val();
-    
-    // Vérifier que les paramètres sont bien sauvés
-    if (donneesSauvees?.palanquees?.[0]?.parametres) {
-      console.log("✅ Paramètres vérifiés:", donneesSauvees.palanquees[0].parametres);
+    // Afficher la confirmation
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = `
+        <div style="
+          background: #28a745;
+          color: white;
+          padding: 10px;
+          border-radius: 5px;
+          margin: 10px 0;
+        ">
+          ✅ Session sauvegardée : ${sessionKey}<br>
+          <small>${sessionData.stats.totalPlongeurs} plongeurs, ${sessionData.stats.nombrePalanquees} palanquées</small>
+        </div>
+      `;
+      dpMessage.style.display = 'block';
+      
+      setTimeout(() => {
+        dpMessage.style.display = 'none';
+      }, 5000);
     }
     
-    afficherConfirmation(sessionKey, sessionData.stats);
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur:", error);
-    sauvegardeLocaleSecours(sessionData, sessionKey);
+    console.error("❌ Erreur de sauvegarde:", error);
+    alert(`Erreur lors de la sauvegarde:\n${error.message}`);
     return false;
   }
 }
 
-// === FONCTION POUR CHARGER UNE SESSION AVEC LA NOUVELLE STRUCTURE ===
+// Fonction pour charger une session (compatible avec la nouvelle structure)
 async function loadSession(sessionKey) {
+  console.log("📥 Chargement session:", sessionKey);
+  
   try {
     if (!db) {
-      alert("Base de données non disponible");
+      alert("Firebase non disponible");
       return false;
     }
     
-    const sessionSnapshot = await db.ref(`sessions/${sessionKey}`).once('value');
-    if (!sessionSnapshot.exists()) {
+    const snapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!snapshot.exists()) {
       alert("Session non trouvée");
       return false;
     }
     
-    const sessionData = sessionSnapshot.val();
+    const sessionData = snapshot.val();
+    console.log("📊 Données chargées:", sessionData);
     
-    // Charger les plongeurs non assignés
+    // Restaurer les plongeurs
     plongeurs = sessionData.plongeurs || [];
     
-    // Reconstituer les palanquées avec leurs paramètres
+    // Restaurer les palanquées avec leurs paramètres
+    palanquees = [];
+    
     if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
-      palanquees = sessionData.palanquees.map((palData) => {
-        let palanqueeArray;
+      sessionData.palanquees.forEach((palData) => {
+        const palanqueeArray = [];
         
-        // Gérer l'ancienne structure (compatibilité)
-        if (Array.isArray(palData)) {
-          palanqueeArray = [...palData];
-        }
-        // Nouvelle structure avec objet
-        else if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
-          palanqueeArray = [...palData.plongeurs];
-          
-          // Restaurer les paramètres sur l'array
-          if (palData.parametres) {
-            palanqueeArray.horaire = palData.parametres.horaire || '';
-            palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || '';
-            palanqueeArray.dureePrevue = palData.parametres.dureePrevue || '';
-            palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || '';
-            palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || '';
-            palanqueeArray.paliers = palData.parametres.paliers || '';
-          }
-        }
-        // Structure non reconnue
-        else {
-          palanqueeArray = [];
+        // Restaurer les plongeurs
+        if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+          palData.plongeurs.forEach(p => {
+            palanqueeArray.push(p);
+          });
         }
         
-        // S'assurer que les propriétés existent
-        if (!palanqueeArray.hasOwnProperty('horaire')) palanqueeArray.horaire = '';
-        if (!palanqueeArray.hasOwnProperty('profondeurPrevue')) palanqueeArray.profondeurPrevue = '';
-        if (!palanqueeArray.hasOwnProperty('dureePrevue')) palanqueeArray.dureePrevue = '';
-        if (!palanqueeArray.hasOwnProperty('profondeurRealisee')) palanqueeArray.profondeurRealisee = '';
-        if (!palanqueeArray.hasOwnProperty('dureeRealisee')) palanqueeArray.dureeRealisee = '';
-        if (!palanqueeArray.hasOwnProperty('paliers')) palanqueeArray.paliers = '';
+        // Restaurer les paramètres sur l'array
+        if (palData.parametres) {
+          palanqueeArray.horaire = palData.parametres.horaire || "";
+          palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
+          palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
+          palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
+          palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
+          palanqueeArray.paliers = palData.parametres.paliers || "";
+        }
         
-        return palanqueeArray;
+        palanquees.push(palanqueeArray);
       });
-    } else {
-      palanquees = [];
     }
     
     plongeursOriginaux = [...plongeurs];
     
-    // Restaurer les métadonnées
-    const $ = (id) => document.getElementById(id);
+    // Restaurer les infos DP
     if (sessionData.meta) {
-      if ($("dp-nom")) $("dp-nom").value = sessionData.meta.dp || "";
-      if ($("dp-date")) $("dp-date").value = sessionData.meta.date || "";
-      if ($("dp-lieu")) $("dp-lieu").value = sessionData.meta.lieu || "";
-      if ($("dp-plongee")) $("dp-plongee").value = sessionData.meta.plongee || "matin";
+      const dpNom = document.getElementById("dp-nom");
+      const dpDate = document.getElementById("dp-date");
+      const dpLieu = document.getElementById("dp-lieu");
+      const dpPlongee = document.getElementById("dp-plongee");
+      
+      if (dpNom) dpNom.value = sessionData.meta.dp || "";
+      if (dpDate) dpDate.value = sessionData.meta.date || "";
+      if (dpLieu) dpLieu.value = sessionData.meta.lieu || "";
+      if (dpPlongee) dpPlongee.value = sessionData.meta.plongee || "matin";
     }
     
     // Rafraîchir l'affichage
@@ -228,84 +209,73 @@ async function loadSession(sessionKey) {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    console.log("✅ Session chargée avec paramètres:", sessionKey);
+    console.log("✅ Session chargée avec succès");
     
-    // Afficher les paramètres récupérés pour vérification
+    // Vérifier les paramètres
     palanquees.forEach((pal, i) => {
-      if (pal.horaire || pal.profondeurPrevue || pal.dureePrevue) {
-        console.log(`📊 Palanquée ${i+1} - Horaire: ${pal.horaire}, Prof: ${pal.profondeurPrevue}m, Durée: ${pal.dureePrevue}min`);
+      if (pal.horaire || pal.profondeurPrevue) {
+        console.log(`Palanquée ${i+1}: Horaire=${pal.horaire}, Prof=${pal.profondeurPrevue}m`);
       }
     });
     
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
-    alert("Erreur lors du chargement : " + error.message);
+    console.error("❌ Erreur de chargement:", error);
+    alert(`Erreur lors du chargement:\n${error.message}`);
     return false;
   }
 }
 
-// === FONCTION DE SAUVEGARDE LOCALE ===
-function sauvegardeLocaleSecours(data, key) {
-  try {
-    const sauvegardeData = data || {
-      timestamp: Date.now(),
-      dp: document.getElementById("dp-nom")?.value || "Inconnu",
-      date: document.getElementById("dp-date")?.value || new Date().toISOString(),
-      lieu: document.getElementById("dp-lieu")?.value || "Non défini",
-      plongee: document.getElementById("dp-plongee")?.value || "matin",
-      plongeurs: plongeurs || [],
-      palanquees: palanquees || []
-    };
+// Attacher au bouton existant
+document.addEventListener('DOMContentLoaded', function() {
+  const validerBtn = document.getElementById('valider-dp');
+  
+  if (validerBtn) {
+    // Supprimer les anciens listeners
+    const newBtn = validerBtn.cloneNode(true);
+    validerBtn.parentNode.replaceChild(newBtn, validerBtn);
     
-    const sessionKey = key || `urgence_${Date.now()}`;
-    localStorage.setItem(`session_${sessionKey}`, JSON.stringify(sauvegardeData));
-    
-    console.log("💾 Sauvegarde locale effectuée");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Erreur sauvegarde locale:", error);
-    return false;
+    // Ajouter le nouveau listener
+    newBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      console.log("🎯 Clic sur Valider DP");
+      
+      // Désactiver le bouton
+      newBtn.disabled = true;
+      newBtn.textContent = "Sauvegarde...";
+      
+      try {
+        const success = await saveSessionData();
+        
+        if (success) {
+          newBtn.textContent = "✅ Sauvegardé !";
+          
+          // Synchroniser si la fonction existe
+          if (typeof syncToDatabase === 'function') {
+            setTimeout(syncToDatabase, 500);
+          }
+          
+          setTimeout(() => {
+            newBtn.disabled = false;
+            newBtn.textContent = "Sauvegarder Session + DP";
+          }, 2000);
+        } else {
+          throw new Error("Échec de la sauvegarde");
+        }
+        
+      } catch (error) {
+        console.error("Erreur:", error);
+        newBtn.textContent = "❌ Erreur";
+        
+        setTimeout(() => {
+          newBtn.disabled = false;
+          newBtn.textContent = "Sauvegarder Session + DP";
+        }, 2000);
+      }
+    });
   }
-}
+});
 
-// === AFFICHAGE DE LA CONFIRMATION ===
-function afficherConfirmation(sessionKey, stats) {
-  const dpMessage = document.getElementById("dp-message");
-  if (!dpMessage) return;
-  
-  dpMessage.innerHTML = `
-    <div style="
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-      margin: 10px 0;
-    ">
-      <h4 style="margin: 0 0 10px 0;">✅ SESSION COMPLÈTE SAUVEGARDÉE</h4>
-      <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 4px;">
-        <small>
-          📍 ${sessionKey}<br>
-          👥 ${stats.totalPlongeurs} plongeurs<br>
-          🏊 ${stats.nombrePalanquees} palanquées avec paramètres<br>
-          ⏰ ${stats.heureValidation}
-        </small>
-      </div>
-    </div>
-  `;
-  
-  dpMessage.style.display = 'block';
-  
-  setTimeout(() => {
-    dpMessage.style.opacity = '0';
-    setTimeout(() => {
-      dpMessage.style.display = 'none';
-      dpMessage.style.opacity = '1';
-    }, 500);
-  }, 8000);
-}
-
-console.log("✅ Système de sauvegarde des paramètres corrigé");
+console.log("✅ Système de sauvegarde simplifié chargé");
