@@ -154,7 +154,346 @@ function showAuthError(message) {
     errorDiv.style.display = "block";
   }
 }
+//
+// ===== CORRECTION DE LA RÉCUPÉRATION DU NOM DU DP =====
 
+// Fonction pour récupérer le nom du DP sélectionné
+function getSelectedDPName() {
+  const dpSelect = document.getElementById('dp-select');
+  
+  if (!dpSelect || !dpSelect.value) {
+    console.warn("⚠️ Aucun DP sélectionné");
+    return "";
+  }
+  
+  // Récupérer le DP depuis la liste
+  if (typeof DP_LIST !== 'undefined') {
+    const selectedDP = DP_LIST.find(dp => dp.id === dpSelect.value);
+    if (selectedDP) {
+      console.log("✅ DP sélectionné:", selectedDP.nom);
+      return selectedDP.nom;
+    }
+  }
+  
+  // Fallback : extraire le nom depuis le texte de l'option
+  const selectedOption = dpSelect.options[dpSelect.selectedIndex];
+  if (selectedOption && selectedOption.text !== "-- Choisir un DP --") {
+    const nom = selectedOption.text.split(' (')[0]; // Enlever "(niveau)"
+    console.log("✅ DP extrait:", nom);
+    return nom;
+  }
+  
+  console.warn("⚠️ Impossible de récupérer le nom du DP");
+  return "";
+}
+
+// Version corrigée de saveSessionData
+async function saveSessionData() {
+  console.log("💾 Sauvegarde session avec DP correct...");
+  
+  // CORRECTION : Récupérer le nom du DP depuis le select
+  const dpNom = getSelectedDPName();
+  const dpDate = document.getElementById("dp-date")?.value;
+  const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
+  const dpPlongee = document.getElementById("dp-plongee")?.value;
+  
+  // Vérification stricte
+  if (!dpNom) {
+    alert("⚠️ Veuillez sélectionner un Directeur de Plongée dans la liste");
+    return false;
+  }
+  
+  if (!dpDate || !dpLieu) {
+    alert("⚠️ Veuillez remplir la date et le lieu");
+    return false;
+  }
+  
+  if (!db || !firebaseConnected) {
+    console.error("❌ Firebase non disponible");
+    return false;
+  }
+  
+  console.log("📋 Informations DP:", { dpNom, dpDate, dpLieu, dpPlongee });
+  
+  // Créer la clé avec le VRAI nom du DP
+  const dpKey = dpNom.split(' ')[0].substring(0, 8);
+  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  
+  console.log("🔑 Clé de session:", sessionKey);
+  
+  // Préparer les palanquées
+  const palanqueesData = [];
+  
+  if (palanquees && Array.isArray(palanquees)) {
+    palanquees.forEach((pal, index) => {
+      const palanqueeObj = {
+        index: index,
+        plongeurs: [],
+        parametres: {
+          horaire: pal.horaire || "",
+          profondeurPrevue: pal.profondeurPrevue || "",
+          dureePrevue: pal.dureePrevue || "",
+          profondeurRealisee: pal.profondeurRealisee || "",
+          dureeRealisee: pal.dureeRealisee || "",
+          paliers: pal.paliers || ""
+        }
+      };
+      
+      for (let i = 0; i < pal.length; i++) {
+        if (pal[i] && pal[i].nom) {
+          palanqueeObj.plongeurs.push({
+            nom: pal[i].nom,
+            niveau: pal[i].niveau || "",
+            pre: pal[i].pre || ""
+          });
+        }
+      }
+      
+      palanqueesData.push(palanqueeObj);
+    });
+  }
+  
+  const sessionData = {
+    meta: {
+      dp: dpNom,  // Le VRAI nom du DP sélectionné
+      date: dpDate,
+      lieu: dpLieu || "Non défini",
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      sessionKey: sessionKey
+    },
+    plongeurs: plongeurs || [],
+    palanquees: palanqueesData,
+    stats: {
+      totalPlongeurs: (plongeurs?.length || 0) + 
+                     palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0),
+      nombrePalanquees: palanqueesData.length,
+      plongeursNonAssignes: plongeurs?.length || 0
+    }
+  };
+  
+  try {
+    // Sauvegarder dans Firebase
+    await db.ref(`sessions/${sessionKey}`).set(sessionData);
+    console.log("✅ Session sauvegardée avec DP:", dpNom);
+    
+    // Sauvegarder les infos DP
+    await db.ref(`dpInfo/${sessionKey}`).set({
+      nom: dpNom,
+      date: dpDate,
+      lieu: dpLieu,
+      plongee: dpPlongee,
+      timestamp: Date.now(),
+      validated: true
+    });
+    
+    // Affichage de confirmation
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = `
+        <div style="
+          background: #28a745;
+          color: white;
+          padding: 12px;
+          border-radius: 5px;
+          margin: 10px 0;
+        ">
+          ✅ <strong>Session sauvegardée avec succès!</strong><br>
+          📋 DP: ${dpNom}<br>
+          🔑 Session: ${sessionKey}<br>
+          👥 ${sessionData.stats.totalPlongeurs} plongeurs, ${sessionData.stats.nombrePalanquees} palanquées
+        </div>
+      `;
+      dpMessage.style.display = 'block';
+      
+      setTimeout(() => {
+        dpMessage.style.display = 'none';
+      }, 6000);
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur:", error);
+    alert(`Erreur lors de la sauvegarde:\n${error.message}`);
+    return false;
+  }
+}
+
+// Fonction pour charger une session
+async function loadSession(sessionKey) {
+  console.log("📥 Chargement session:", sessionKey);
+  
+  try {
+    if (!db) {
+      alert("Firebase non disponible");
+      return false;
+    }
+    
+    const snapshot = await db.ref(`sessions/${sessionKey}`).once('value');
+    if (!snapshot.exists()) {
+      alert("Session non trouvée");
+      return false;
+    }
+    
+    const sessionData = snapshot.val();
+    
+    // Restaurer les plongeurs
+    plongeurs = sessionData.plongeurs || [];
+    
+    // Restaurer les palanquées
+    palanquees = [];
+    
+    if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+      sessionData.palanquees.forEach((palData) => {
+        const palanqueeArray = [];
+        
+        if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+          palData.plongeurs.forEach(p => {
+            palanqueeArray.push(p);
+          });
+        }
+        
+        if (palData.parametres) {
+          palanqueeArray.horaire = palData.parametres.horaire || "";
+          palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
+          palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
+          palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
+          palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
+          palanqueeArray.paliers = palData.parametres.paliers || "";
+        }
+        
+        palanquees.push(palanqueeArray);
+      });
+    }
+    
+    plongeursOriginaux = [...plongeurs];
+    
+    // Restaurer les infos DP
+    if (sessionData.meta) {
+      // Trouver et sélectionner le DP dans la liste
+      const dpSelect = document.getElementById("dp-select");
+      if (dpSelect && DP_LIST) {
+        const dp = DP_LIST.find(d => d.nom === sessionData.meta.dp);
+        if (dp) {
+          dpSelect.value = dp.id;
+          console.log("✅ DP sélectionné:", dp.nom);
+        }
+      }
+      
+      // Restaurer les autres champs
+      const dpDate = document.getElementById("dp-date");
+      const dpLieu = document.getElementById("dp-lieu");
+      const dpPlongee = document.getElementById("dp-plongee");
+      
+      if (dpDate) dpDate.value = sessionData.meta.date || "";
+      if (dpLieu) dpLieu.value = sessionData.meta.lieu || "";
+      if (dpPlongee) dpPlongee.value = sessionData.meta.plongee || "matin";
+    }
+    
+    // Rafraîchir l'affichage
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+    console.log("✅ Session chargée - DP:", sessionData.meta?.dp);
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur:", error);
+    alert(`Erreur lors du chargement:\n${error.message}`);
+    return false;
+  }
+}
+
+// Écouter les changements de sélection du DP
+document.addEventListener('DOMContentLoaded', function() {
+  const dpSelect = document.getElementById('dp-select');
+  
+  if (dpSelect) {
+    dpSelect.addEventListener('change', function() {
+      const dpNom = getSelectedDPName();
+      console.log("🔄 DP changé:", dpNom);
+      
+      // Afficher visuellement le DP sélectionné
+      const dpStatus = document.querySelector('.dp-status-indicator');
+      if (dpStatus && dpNom) {
+        const statusContent = dpStatus.querySelector('.dp-status-content');
+        if (statusContent) {
+          statusContent.innerHTML = `<strong>DP actuel:</strong> ${dpNom}`;
+        }
+      }
+    });
+  }
+  
+  // Remplacer le listener du bouton de validation
+  const validerBtn = document.getElementById('valider-dp');
+  if (validerBtn) {
+    const newBtn = validerBtn.cloneNode(true);
+    validerBtn.parentNode.replaceChild(newBtn, validerBtn);
+    
+    newBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      // Vérifier qu'un DP est sélectionné
+      const dpNom = getSelectedDPName();
+      if (!dpNom) {
+        alert("⚠️ Veuillez sélectionner un Directeur de Plongée");
+        return;
+      }
+      
+      newBtn.disabled = true;
+      newBtn.textContent = "⏳ Sauvegarde...";
+      
+      try {
+        const success = await saveSessionData();
+        
+        if (success) {
+          newBtn.textContent = "✅ Sauvegardé !";
+          
+          if (typeof syncToDatabase === 'function') {
+            setTimeout(syncToDatabase, 500);
+          }
+          
+          setTimeout(() => {
+            newBtn.disabled = false;
+            newBtn.textContent = "Sauvegarder Session + DP";
+          }, 3000);
+        } else {
+          throw new Error("Échec de la sauvegarde");
+        }
+        
+      } catch (error) {
+        console.error("Erreur:", error);
+        newBtn.textContent = "❌ Erreur";
+        
+        setTimeout(() => {
+          newBtn.disabled = false;
+          newBtn.textContent = "Sauvegarder Session + DP";
+        }, 2000);
+      }
+    });
+  }
+});
+
+// Fonction de test
+function testDPSelection() {
+  const dpNom = getSelectedDPName();
+  console.log("DP sélectionné:", dpNom);
+  
+  if (!dpNom) {
+    console.warn("⚠️ Aucun DP sélectionné - Sélectionnez-en un dans la liste");
+  } else {
+    console.log("✅ DP prêt pour sauvegarde:", dpNom);
+  }
+  
+  return dpNom;
+}
+
+console.log("✅ Système de récupération du DP corrigé");
+console.log("💡 Testez avec: testDPSelection()");
+//
 function handleError(error, context = "Application") {
   console.error(`❌ Erreur ${context}:`, error);
   
@@ -599,338 +938,7 @@ async function handleDrop(e) {
     dragData = null;
   }
 }
-////
-// ===== SAUVEGARDE COMPLÈTE DES DONNÉES DP AU PALIER =====
-// Fonction principale pour sauvegarder TOUTES les données lors de la validation au palier
 
-async function sauvegarderToutesLesDonneesDpAuPalier() {
-  console.log("🚀 === DÉBUT SAUVEGARDE COMPLÈTE AU PALIER ===");
-  
-  try {
-    // Vérifier la connexion Firebase
-    if (!db || !firebaseConnected) {
-      throw new Error("Firebase non connecté - Impossible de sauvegarder");
-    }
-    
-    // 1. RÉCUPÉRER TOUTES LES INFORMATIONS DU DP
-    const dpInfo = {
-      nom: document.getElementById("dp-nom")?.value?.trim() || "",
-      date: document.getElementById("dp-date")?.value || "",
-      lieu: document.getElementById("dp-lieu")?.value?.trim() || "",
-      plongee: document.getElementById("dp-plongee")?.value || "matin",
-      timestamp: Date.now(),
-      validated: true,
-      validatedAt: new Date().toISOString()
-    };
-    
-    // Validation des données obligatoires
-    if (!dpInfo.nom || !dpInfo.date || !dpInfo.lieu) {
-      throw new Error("Informations DP incomplètes (nom, date ou lieu manquant)");
-    }
-    
-    // 2. CRÉER LA CLÉ UNIQUE DE SESSION
-    const dpKey = dpInfo.nom.split(' ')[0].substring(0, 8);
-    const sessionKey = `${dpInfo.date}_${dpKey}_${dpInfo.plongee}`;
-    console.log("📍 Clé de session:", sessionKey);
-    
-    // 3. COMPILER TOUTES LES DONNÉES DE LA SESSION
-    const sessionCompleteData = {
-      // Métadonnées de la session
-      meta: {
-        ...dpInfo,
-        sessionKey: sessionKey,
-        dpEmail: getDpEmail(dpInfo.nom), // Fonction pour récupérer l'email du DP
-        sauvegardeAuPalier: true
-      },
-      
-      // Plongeurs non assignés
-      plongeurs: plongeurs || [],
-      
-      // Palanquées formées avec leurs paramètres
-      palanquees: (palanquees || []).map((palanquee, index) => {
-        // S'assurer que toutes les propriétés sont présentes
-        const palanqueeComplete = [...palanquee];
-        palanqueeComplete.numero = index + 1;
-        palanqueeComplete.horaire = palanquee.horaire || '';
-        palanqueeComplete.profondeurPrevue = palanquee.profondeurPrevue || '';
-        palanqueeComplete.dureePrevue = palanquee.dureePrevue || '';
-        palanqueeComplete.profondeurRealisee = palanquee.profondeurRealisee || '';
-        palanqueeComplete.dureeRealisee = palanquee.dureeRealisee || '';
-        palanqueeComplete.paliers = palanquee.paliers || '';
-        return palanqueeComplete;
-      }),
-      
-      // Statistiques de la session
-      stats: {
-        totalPlongeurs: (plongeurs?.length || 0) + 
-                       (palanquees?.reduce((total, pal) => total + (pal.length || 0), 0) || 0),
-        nombrePalanquees: palanquees?.length || 0,
-        plongeursNonAssignes: plongeurs?.length || 0,
-        heureValidation: new Date().toLocaleTimeString('fr-FR')
-      },
-      
-      // Données de sécurité
-      securite: {
-        dpCertifie: dpInfo.nom,
-        lieuSecurise: dpInfo.lieu,
-        conditionsMeteo: document.getElementById("conditions-meteo")?.value || "Non renseigné",
-        telephoneSecours: document.getElementById("tel-secours")?.value || "15 ou 112"
-      }
-    };
-    
-    // 4. SAUVEGARDER DANS PLUSIEURS ENDROITS POUR REDONDANCE
-    console.log("💾 Sauvegarde multiple en cours...");
-    
-    const sauvegardes = [];
-    
-    // Sauvegarde principale dans /sessions/
-    sauvegardes.push(
-      db.ref(`sessions/${sessionKey}`).set(sessionCompleteData)
-        .then(() => console.log("✅ Sauvegarde principale réussie"))
-    );
-    
-    // Sauvegarde des infos DP dans /dpInfo/
-    sauvegardes.push(
-      db.ref(`dpInfo/${sessionKey}`).set(dpInfo)
-        .then(() => console.log("✅ Infos DP sauvegardées"))
-    );
-    
-    // Sauvegarde d'historique dans /historique/
-    sauvegardes.push(
-      db.ref(`historique/${dpInfo.date}/${sessionKey}`).set({
-        ...sessionCompleteData,
-        archivedAt: Date.now()
-      }).then(() => console.log("✅ Historique sauvegardé"))
-    );
-    
-    // Sauvegarde de backup dans /backups/
-    const backupKey = `backup_${Date.now()}_${sessionKey}`;
-    sauvegardes.push(
-      db.ref(`backups/${backupKey}`).set(sessionCompleteData)
-        .then(() => console.log("✅ Backup créé"))
-    );
-    
-    // Mise à jour de la liste des sessions du DP
-    if (dpInfo.nom) {
-      const dpListKey = dpInfo.nom.replace(/[.#$/[\]]/g, '_');
-      sauvegardes.push(
-        db.ref(`dpSessions/${dpListKey}/${sessionKey}`).set({
-          date: dpInfo.date,
-          lieu: dpInfo.lieu,
-          plongee: dpInfo.plongee,
-          stats: sessionCompleteData.stats
-        }).then(() => console.log("✅ Session ajoutée à la liste du DP"))
-      );
-    }
-    
-    // 5. ATTENDRE QUE TOUTES LES SAUVEGARDES SOIENT TERMINÉES
-    await Promise.all(sauvegardes);
-    
-    // 6. VÉRIFICATION DE L'INTÉGRITÉ
-    console.log("🔍 Vérification de l'intégrité des données...");
-    const verification = await db.ref(`sessions/${sessionKey}`).once('value');
-    
-    if (!verification.exists()) {
-      throw new Error("Échec de la vérification - Les données n'ont pas été sauvegardées");
-    }
-    
-    const donneesSauvegardees = verification.val();
-    const integrite = {
-      dpCorrect: donneesSauvegardees.meta?.nom === dpInfo.nom,
-      plongeursCorrect: donneesSauvegardees.plongeurs?.length === plongeurs?.length,
-      palanqueesCorrect: donneesSauvegardees.palanquees?.length === palanquees?.length,
-      statsCorrect: donneesSauvegardees.stats !== undefined
-    };
-    
-    if (!Object.values(integrite).every(v => v)) {
-      console.warn("⚠️ Problème d'intégrité détecté:", integrite);
-    }
-    
-    // 7. SAUVEGARDE LOCALE DE SECOURS
-    try {
-      const sauvegardeLocale = {
-        sessionKey,
-        data: sessionCompleteData,
-        savedAt: Date.now()
-      };
-      
-      // Sauvegarder dans localStorage
-      localStorage.setItem(`session_${sessionKey}`, JSON.stringify(sauvegardeLocale));
-      
-      // Garder un historique des 10 dernières sessions
-      let historiqueLocal = JSON.parse(localStorage.getItem('sessions_history') || '[]');
-      historiqueLocal.unshift(sessionKey);
-      historiqueLocal = historiqueLocal.slice(0, 10);
-      localStorage.setItem('sessions_history', JSON.stringify(historiqueLocal));
-      
-      console.log("✅ Sauvegarde locale de secours effectuée");
-    } catch (localError) {
-      console.warn("⚠️ Impossible de sauvegarder localement:", localError.message);
-    }
-    
-    // 8. AFFICHAGE DE LA CONFIRMATION
-    afficherConfirmationSauvegarde(sessionKey, sessionCompleteData.stats);
-    
-    // 9. LOG COMPLET POUR AUDIT
-    console.log("📊 === RÉSUMÉ DE LA SAUVEGARDE ===");
-    console.log("🔑 Session:", sessionKey);
-    console.log("👤 DP:", dpInfo.nom);
-    console.log("📅 Date:", new Date(dpInfo.date).toLocaleDateString('fr-FR'));
-    console.log("📍 Lieu:", dpInfo.lieu);
-    console.log("🏊 Plongée:", dpInfo.plongee);
-    console.log("👥 Total plongeurs:", sessionCompleteData.stats.totalPlongeurs);
-    console.log("🎯 Palanquées:", sessionCompleteData.stats.nombrePalanquees);
-    console.log("✅ === SAUVEGARDE COMPLÈTE RÉUSSIE ===");
-    
-    return {
-      success: true,
-      sessionKey,
-      stats: sessionCompleteData.stats,
-      timestamp: Date.now()
-    };
-    
-  } catch (error) {
-    console.error("❌ ERREUR CRITIQUE lors de la sauvegarde:", error);
-    
-    // Tentative de sauvegarde d'urgence
-    try {
-      await sauvegardeUrgence();
-    } catch (urgenceError) {
-      console.error("❌ Échec de la sauvegarde d'urgence:", urgenceError);
-    }
-    
-    // Notification d'erreur à l'utilisateur
-    alert(`⚠️ ERREUR DE SAUVEGARDE !\n\n${error.message}\n\nLes données ont été sauvegardées localement par sécurité.`);
-    
-    return {
-      success: false,
-      error: error.message,
-      timestamp: Date.now()
-    };
-  }
-}
-
-// ===== FONCTION AUXILIAIRE : Récupérer l'email du DP =====
-function getDpEmail(dpNom) {
-  if (!dpNom || !DP_LIST) return "";
-  
-  const dp = DP_LIST.find(d => d.nom === dpNom);
-  return dp?.email || "";
-}
-
-// ===== FONCTION AUXILIAIRE : Afficher la confirmation =====
-function afficherConfirmationSauvegarde(sessionKey, stats) {
-  const dpMessage = document.getElementById("dp-message");
-  if (dpMessage) {
-    dpMessage.innerHTML = `
-      <div style="
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        animation: slideIn 0.5s ease-out;
-      ">
-        <h3 style="margin: 0 0 10px 0;">✅ SAUVEGARDE COMPLÈTE RÉUSSIE</h3>
-        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px;">
-          <p style="margin: 5px 0;"><strong>Session :</strong> ${sessionKey}</p>
-          <p style="margin: 5px 0;"><strong>Plongeurs :</strong> ${stats.totalPlongeurs}</p>
-          <p style="margin: 5px 0;"><strong>Palanquées :</strong> ${stats.nombrePalanquees}</p>
-          <p style="margin: 5px 0;"><strong>Heure :</strong> ${stats.heureValidation}</p>
-        </div>
-        <p style="margin: 10px 0 0 0; font-size: 0.9em; opacity: 0.9;">
-          💾 Données sauvegardées dans Firebase et en local
-        </p>
-      </div>
-    `;
-    dpMessage.style.display = 'block';
-    
-    // Masquer le message après 10 secondes
-    setTimeout(() => {
-      dpMessage.style.display = 'none';
-    }, 10000);
-  }
-}
-
-// ===== FONCTION AUXILIAIRE : Sauvegarde d'urgence =====
-async function sauvegardeUrgence() {
-  const urgenceData = {
-    timestamp: Date.now(),
-    dp: document.getElementById("dp-nom")?.value || "Inconnu",
-    date: document.getElementById("dp-date")?.value || new Date().toISOString(),
-    lieu: document.getElementById("dp-lieu")?.value || "Non défini",
-    plongee: document.getElementById("dp-plongee")?.value || "matin",
-    plongeurs: plongeurs || [],
-    palanquees: palanquees || [],
-    urgence: true
-  };
-  
-  // Sauvegarder dans localStorage
-  localStorage.setItem('sauvegarde_urgence', JSON.stringify(urgenceData));
-  console.log("🆘 Sauvegarde d'urgence effectuée dans localStorage");
-  
-  // Si possible, essayer IndexedDB
-  if ('indexedDB' in window) {
-    const request = indexedDB.open('PlongeeDB', 1);
-    request.onsuccess = (event) => {
-      const db = event.target.result;
-      const transaction = db.transaction(['urgence'], 'readwrite');
-      const store = transaction.objectStore('urgence');
-      store.add(urgenceData);
-      console.log("🆘 Sauvegarde d'urgence dans IndexedDB");
-    };
-  }
-}
-
-// ===== ATTACHER LA FONCTION AU BOUTON DE VALIDATION =====
-document.addEventListener('DOMContentLoaded', function() {
-  // Remplacer ou améliorer le bouton de validation existant
-  const validerBtn = document.getElementById('valider-dp-btn');
-  if (validerBtn) {
-    validerBtn.addEventListener('click', async function(e) {
-      e.preventDefault();
-      
-      // Désactiver le bouton pendant la sauvegarde
-      validerBtn.disabled = true;
-      validerBtn.textContent = "⏳ Sauvegarde en cours...";
-      
-      try {
-        const resultat = await sauvegarderToutesLesDonneesDpAuPalier();
-        
-        if (resultat.success) {
-          validerBtn.textContent = "✅ Sauvegardé !";
-          validerBtn.style.backgroundColor = "#28a745";
-          
-          // Réactiver après 3 secondes
-          setTimeout(() => {
-            validerBtn.disabled = false;
-            validerBtn.textContent = "📱 Valider au Palier";
-            validerBtn.style.backgroundColor = "";
-          }, 3000);
-        } else {
-          validerBtn.textContent = "❌ Erreur";
-          validerBtn.style.backgroundColor = "#dc3545";
-          validerBtn.disabled = false;
-        }
-      } catch (error) {
-        console.error("Erreur lors de la validation:", error);
-        validerBtn.textContent = "❌ Erreur";
-        validerBtn.disabled = false;
-      }
-    });
-  }
-});
-
-// ===== EXPORT DES FONCTIONS =====
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    sauvegarderToutesLesDonneesDpAuPalier,
-    getDpEmail,
-    afficherConfirmationSauvegarde,
-    sauvegardeUrgence
-  };
-}
-////
 // ===== EVENT HANDLERS SÉCURISÉS =====
 function setupEventListeners() {
   console.log("🎛️ Configuration des event listeners sécurisés...");
