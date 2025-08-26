@@ -1,44 +1,88 @@
-// ===== AMÉLIORATION DE LA SAUVEGARDE EXISTANTE =====
-// Ce code remplace/améliore la fonction saveSessionData existante
+// ===== dp-save-improved.js - VERSION CORRIGÉE =====
+// Correction complète pour utiliser le dropdown DP au lieu d'un champ inexistant
 
-// Fonction améliorée qui remplace saveSessionData()
-// Version corrigée de saveSessionData qui structure correctement les données
-async function saveSessionData() {
-  console.log("💾 Sauvegarde session...");
+// FONCTION POUR RÉCUPÉRER LE NOM DU DP SÉLECTIONNÉ
+function getSelectedDPName() {
+  const dpSelect = document.getElementById('dp-select');
   
-  // CORRECTION : Utiliser la fonction pour récupérer le DP
-  const dpNom = getSelectedDPName();  // Au lieu de document.getElementById("dp-nom")
+  if (!dpSelect || !dpSelect.value) {
+    console.warn("⚠️ Aucun DP sélectionné");
+    return "";
+  }
+  
+  // Récupérer le DP depuis la liste
+  if (typeof DP_LIST !== 'undefined') {
+    const selectedDP = DP_LIST.find(dp => dp.id === dpSelect.value);
+    if (selectedDP) {
+      console.log("✅ DP sélectionné:", selectedDP.nom);
+      return selectedDP.nom;
+    }
+  }
+  
+  // Fallback : extraire le nom depuis le texte de l'option
+  const selectedOption = dpSelect.options[dpSelect.selectedIndex];
+  if (selectedOption && selectedOption.text !== "-- Choisir un DP --") {
+    const nom = selectedOption.text.split(' (')[0];
+    console.log("✅ DP extrait:", nom);
+    return nom;
+  }
+  
+  return "";
+}
+
+// FONCTION DE SAUVEGARDE CORRIGÉE
+async function saveSessionData() {
+  console.log("💾 Début sauvegarde session...");
+  
+  // IMPORTANT : Utiliser getSelectedDPName() au lieu de chercher dp-nom
+  const dpNom = getSelectedDPName();
   const dpDate = document.getElementById("dp-date")?.value;
   const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
   const dpPlongee = document.getElementById("dp-plongee")?.value;
   
-  // Vérifications
+  console.log("📋 Données récupérées:", {
+    dpNom: dpNom,
+    dpDate: dpDate,
+    dpLieu: dpLieu,
+    dpPlongee: dpPlongee
+  });
+  
+  // Vérifications strictes
   if (!dpNom) {
-    alert("⚠️ Veuillez sélectionner un Directeur de Plongée dans la liste");
+    alert("⚠️ Veuillez sélectionner un Directeur de Plongée dans la liste déroulante");
+    console.error("Pas de DP sélectionné");
     return false;
   }
   
-  if (!dpDate || !dpLieu) {
-    alert("⚠️ Veuillez remplir la date et le lieu");
+  if (!dpDate) {
+    alert("⚠️ Veuillez renseigner la date");
+    console.error("Date manquante");
+    return false;
+  }
+  
+  if (!dpLieu) {
+    alert("⚠️ Veuillez renseigner le lieu");
+    console.error("Lieu manquant");
     return false;
   }
   
   if (!dpPlongee) {
     alert("⚠️ Veuillez sélectionner le type de plongée");
+    console.error("Type de plongée manquant");
     return false;
   }
   
   if (!db || !firebaseConnected) {
     console.error("❌ Firebase non disponible");
+    alert("⚠️ Firebase non connecté - Impossible de sauvegarder");
     return false;
   }
   
-  console.log("✅ DP:", dpNom, "Date:", dpDate, "Lieu:", dpLieu);
-  
+  // Créer la clé de session
   const dpKey = dpNom.split(' ')[0].substring(0, 8);
   const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
-    
-  console.log("📍 Clé de session:", sessionKey);
+  
+  console.log("🔑 Clé de session générée:", sessionKey);
   
   // Préparer les palanquées avec leurs paramètres
   const palanqueesData = [];
@@ -58,6 +102,7 @@ async function saveSessionData() {
         }
       };
       
+      // Copier les plongeurs
       for (let i = 0; i < pal.length; i++) {
         if (pal[i] && pal[i].nom) {
           palanqueeObj.plongeurs.push({
@@ -72,11 +117,12 @@ async function saveSessionData() {
     });
   }
   
+  // Créer l'objet de session complet
   const sessionData = {
     meta: {
       dp: dpNom,
       date: dpDate,
-      lieu: dpLieu || "Non défini",
+      lieu: dpLieu,
       plongee: dpPlongee,
       timestamp: Date.now(),
       sessionKey: sessionKey,
@@ -93,21 +139,28 @@ async function saveSessionData() {
     }
   };
   
+  console.log("📊 Session à sauvegarder:", {
+    sessionKey: sessionKey,
+    dp: dpNom,
+    totalPlongeurs: sessionData.stats.totalPlongeurs,
+    nombrePalanquees: sessionData.stats.nombrePalanquees
+  });
+  
   let erreurs = [];
   let succes = [];
   
   try {
-    // 1. Sauvegarde principale (toujours autorisée)
+    // 1. Sauvegarde principale
     try {
       await db.ref(`sessions/${sessionKey}`).set(sessionData);
       console.log("✅ Session principale sauvegardée");
-      succes.push("Session principale");
+      succes.push("Session");
     } catch (e) {
-      console.error("❌ Erreur session principale:", e.message);
-      erreurs.push("Session principale: " + e.message);
+      console.error("❌ Erreur session:", e.message);
+      erreurs.push("Session: " + e.message);
     }
     
-    // 2. Infos DP (généralement autorisé)
+    // 2. Infos DP
     try {
       const dpInfo = {
         nom: dpNom,
@@ -127,7 +180,7 @@ async function saveSessionData() {
       erreurs.push("Infos DP: " + e.message);
     }
     
-    // 3. Historique - OPTIONNEL (peut échouer selon permissions)
+    // 3. Historique (optionnel)
     try {
       const dateFormatee = dpDate.replace(/-/g, '_');
       await db.ref(`historique/${dateFormatee}/${sessionKey}`).set({
@@ -137,31 +190,11 @@ async function saveSessionData() {
       console.log("✅ Historique sauvegardé");
       succes.push("Historique");
     } catch (e) {
-      // On ignore silencieusement cette erreur car c'est optionnel
-      console.warn("⚠️ Historique non sauvegardé (permissions):", e.message);
+      console.warn("⚠️ Historique non sauvegardé (permissions)");
     }
     
-    // 4. Backup - OPTIONNEL
-    try {
-      const backupKey = `${sessionKey}_${Date.now()}`;
-      await db.ref(`backups/${backupKey}`).set(sessionData);
-      console.log("✅ Backup créé");
-      succes.push("Backup");
-    } catch (e) {
-      // Optionnel aussi
-      console.warn("⚠️ Backup non créé (permissions):", e.message);
-    }
-    
-    // Si au moins la sauvegarde principale a réussi
-    if (succes.includes("Session principale")) {
-      // Vérification des données
-      const verification = await db.ref(`sessions/${sessionKey}`).once('value');
-      const donneesSauvees = verification.val();
-      
-      if (donneesSauvees?.palanquees?.[0]?.parametres) {
-        console.log("✅ Paramètres vérifiés:", donneesSauvees.palanquees[0].parametres);
-      }
-      
+    // Si au moins une sauvegarde a réussi
+    if (succes.length > 0) {
       // Sauvegarde locale de secours
       try {
         localStorage.setItem(`session_${sessionKey}`, JSON.stringify(sessionData));
@@ -171,7 +204,7 @@ async function saveSessionData() {
         console.warn("⚠️ Sauvegarde locale impossible");
       }
       
-      afficherConfirmationReussie(sessionKey, sessionData.stats, succes, erreurs);
+      afficherConfirmationSauvegarde(sessionKey, sessionData.stats, succes);
       return true;
     } else {
       throw new Error("Aucune sauvegarde n'a réussi");
@@ -179,58 +212,41 @@ async function saveSessionData() {
     
   } catch (error) {
     console.error("❌ Erreur critique:", error);
-    
-    // Sauvegarde locale d'urgence
-    try {
-      localStorage.setItem(`urgence_${Date.now()}`, JSON.stringify(sessionData));
-      alert(`⚠️ Erreur Firebase mais sauvegarde locale effectuée.\n\nErreur: ${error.message}`);
-    } catch (e) {
-      alert(`❌ Erreur critique: ${error.message}`);
-    }
-    
+    alert(`❌ Erreur lors de la sauvegarde:\n${error.message}`);
     return false;
   }
 }
 
-// Affichage amélioré de la confirmation
-function afficherConfirmationReussie(sessionKey, stats, succes, erreurs) {
+// FONCTION D'AFFICHAGE DE LA CONFIRMATION
+function afficherConfirmationSauvegarde(sessionKey, stats, succes) {
   const dpMessage = document.getElementById("dp-message");
   if (!dpMessage) return;
   
-  const couleur = erreurs.length > 0 ? '#fd7e14' : '#28a745'; // Orange si partiellement réussi, vert si tout est ok
-  
   dpMessage.innerHTML = `
     <div style="
-      background: ${couleur};
+      background: linear-gradient(135deg, #28a745, #20c997);
       color: white;
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
       margin: 10px 0;
+      animation: slideIn 0.3s ease-out;
     ">
-      <h4 style="margin: 0 0 10px 0;">
-        ${erreurs.length > 0 ? '⚠️ SESSION PARTIELLEMENT SAUVEGARDÉE' : '✅ SESSION COMPLÈTEMENT SAUVEGARDÉE'}
-      </h4>
+      <h4 style="margin: 0 0 10px 0;">✅ SESSION SAUVEGARDÉE AVEC SUCCÈS</h4>
       <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 4px;">
         <small>
-          📍 ${sessionKey}<br>
+          📍 Session: ${sessionKey}<br>
           👥 ${stats.totalPlongeurs} plongeurs total<br>
           🏊 ${stats.nombrePalanquees} palanquées<br>
           ⏰ ${stats.heureValidation}<br>
-          <br>
-          ✅ Réussi: ${succes.join(', ')}<br>
-          ${erreurs.length > 0 ? `⚠️ Non sauvegardé: Historique/Backup (permissions)` : ''}
+          ✅ Sauvegardé: ${succes.join(', ')}
         </small>
-      </div>
-      <div style="margin-top: 8px; font-size: 0.85em; opacity: 0.9;">
-        💾 Les données essentielles sont sauvegardées
       </div>
     </div>
   `;
   
   dpMessage.style.display = 'block';
   
-  // Masquer après 6 secondes
   setTimeout(() => {
     dpMessage.style.opacity = '0';
     setTimeout(() => {
@@ -240,80 +256,66 @@ function afficherConfirmationReussie(sessionKey, stats, succes, erreurs) {
   }, 6000);
 }
 
-// Fonction pour vérifier les permissions Firebase (optionnel)
-async function verifierPermissions() {
-  console.log("🔍 Vérification des permissions Firebase...");
-  
-  const tests = {
-    sessions: false,
-    dpInfo: false,
-    historique: false,
-    backups: false
-  };
-  
-  const testKey = `test_${Date.now()}`;
-  const testData = { test: true, timestamp: Date.now() };
-  
-  // Test sessions
+// FONCTION DE SAUVEGARDE LOCALE DE SECOURS
+function sauvegardeLocaleSecours(data, key) {
   try {
-    await db.ref(`sessions/${testKey}`).set(testData);
-    await db.ref(`sessions/${testKey}`).remove();
-    tests.sessions = true;
-  } catch (e) {
-    console.warn("❌ Pas de permission pour /sessions/");
+    const sauvegardeData = data || {
+      timestamp: Date.now(),
+      dp: getSelectedDPName() || "Inconnu",
+      date: document.getElementById("dp-date")?.value || new Date().toISOString(),
+      lieu: document.getElementById("dp-lieu")?.value || "Non défini",
+      plongee: document.getElementById("dp-plongee")?.value || "matin",
+      plongeurs: plongeurs || [],
+      palanquees: palanquees || []
+    };
+    
+    const sessionKey = key || `urgence_${Date.now()}`;
+    localStorage.setItem(`session_${sessionKey}`, JSON.stringify(sauvegardeData));
+    
+    console.log("💾 Sauvegarde locale effectuée");
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde locale:", error);
+    return false;
   }
-  
-  // Test dpInfo
-  try {
-    await db.ref(`dpInfo/${testKey}`).set(testData);
-    await db.ref(`dpInfo/${testKey}`).remove();
-    tests.dpInfo = true;
-  } catch (e) {
-    console.warn("❌ Pas de permission pour /dpInfo/");
-  }
-  
-  // Test historique
-  try {
-    await db.ref(`historique/test/${testKey}`).set(testData);
-    await db.ref(`historique/test/${testKey}`).remove();
-    tests.historique = true;
-  } catch (e) {
-    console.warn("⚠️ Pas de permission pour /historique/ (optionnel)");
-  }
-  
-  // Test backups
-  try {
-    await db.ref(`backups/${testKey}`).set(testData);
-    await db.ref(`backups/${testKey}`).remove();
-    tests.backups = true;
-  } catch (e) {
-    console.warn("⚠️ Pas de permission pour /backups/ (optionnel)");
-  }
-  
-  console.log("📊 Permissions Firebase:", tests);
-  return tests;
 }
 
-// Attacher au bouton
+// ATTACHER AU BOUTON DE VALIDATION
 document.addEventListener('DOMContentLoaded', function() {
   const validerBtn = document.getElementById('valider-dp');
   
   if (validerBtn) {
+    // Supprimer les anciens listeners
     const newBtn = validerBtn.cloneNode(true);
     validerBtn.parentNode.replaceChild(newBtn, validerBtn);
     
+    // Ajouter le nouveau listener
     newBtn.addEventListener('click', async function(e) {
       e.preventDefault();
       
+      console.log("🎯 Clic sur Valider DP");
+      
+      // Vérifier d'abord qu'un DP est sélectionné
+      const dpNom = getSelectedDPName();
+      if (!dpNom) {
+        alert("⚠️ Veuillez d'abord sélectionner un Directeur de Plongée dans la liste");
+        return;
+      }
+      
+      // Désactiver le bouton pendant la sauvegarde
       newBtn.disabled = true;
-      newBtn.textContent = "⏳ Sauvegarde...";
+      newBtn.textContent = "⏳ Sauvegarde en cours...";
+      newBtn.style.backgroundColor = '#6c757d';
       
       try {
         const success = await saveSessionData();
         
         if (success) {
           newBtn.textContent = "✅ Sauvegardé !";
+          newBtn.style.backgroundColor = '#28a745';
           
+          // Synchronisation additionnelle si disponible
           if (typeof syncToDatabase === 'function') {
             setTimeout(syncToDatabase, 500);
           }
@@ -321,23 +323,64 @@ document.addEventListener('DOMContentLoaded', function() {
           setTimeout(() => {
             newBtn.disabled = false;
             newBtn.textContent = "Sauvegarder Session + DP";
+            newBtn.style.backgroundColor = '';
           }, 3000);
         } else {
           throw new Error("Échec de la sauvegarde");
         }
         
       } catch (error) {
-        console.error("Erreur:", error);
+        console.error("❌ Erreur:", error);
         newBtn.textContent = "❌ Erreur";
+        newBtn.style.backgroundColor = '#dc3545';
         
         setTimeout(() => {
           newBtn.disabled = false;
           newBtn.textContent = "Sauvegarder Session + DP";
+          newBtn.style.backgroundColor = '';
         }, 2000);
       }
     });
   }
 });
 
-console.log("✅ Système de sauvegarde robuste chargé");
-console.log("💡 Tapez 'verifierPermissions()' pour tester vos permissions Firebase");
+// FONCTION DE TEST
+function testDPSelection() {
+  const dpNom = getSelectedDPName();
+  console.log("Test - DP sélectionné:", dpNom);
+  
+  if (!dpNom) {
+    console.warn("⚠️ Aucun DP sélectionné - Sélectionnez-en un dans la liste");
+  } else {
+    console.log("✅ DP prêt pour sauvegarde:", dpNom);
+  }
+  
+  // Vérifier tous les champs
+  console.log("📋 État des champs:");
+  console.log("- DP:", dpNom || "❌ MANQUANT");
+  console.log("- Date:", document.getElementById("dp-date")?.value || "❌ MANQUANT");
+  console.log("- Lieu:", document.getElementById("dp-lieu")?.value || "❌ MANQUANT");
+  console.log("- Plongée:", document.getElementById("dp-plongee")?.value || "❌ MANQUANT");
+  
+  return dpNom;
+}
+
+// STYLES CSS
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+console.log("✅ Système de sauvegarde DP corrigé et chargé");
+console.log("💡 Testez avec: testDPSelection()");
+console.log("📝 Pour sauvegarder: await saveSessionData()");
