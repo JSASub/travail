@@ -17,7 +17,13 @@ let palanquees = [];
 let plongeursOriginaux = [];
 let currentSort = 'none';
 let firebaseConnected = false;
+// Variables globales existantes...
 let pageLoadTime = Date.now();
+
+// CORRECTION IMMÉDIATE
+window.dpSelected = "DP_TEMPORAIRE";
+console.log("Variable dpSelected créée:", window.dpSelected);
+
 
 // Firebase instances
 let app, db, auth;
