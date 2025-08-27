@@ -31,13 +31,13 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* Version responsive pour mobile */
 /* STYLES AMÉLIORÉS POUR LES ALERTES - VERSION UNIQUE */
 .alert-section {
-  top: 120px !important; /* Force la valeur */
+  top: 100px !important; /* Force la valeur */
 }
 
 /* Desktop spécifique */
 @media (min-width: 769px) {
     .alert-section {
-        top: 150px !important; /* Valeur pour desktop seulement */
+        top: 100px !important; /* Valeur pour desktop seulement */
     }
 }
 
