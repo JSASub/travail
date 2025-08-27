@@ -29,19 +29,10 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 
 /* Version responsive pour mobile */
-@media (max-width: 768px) {
-    .alert-section,
-    .lock-notifications {
-        top: 80px !important; /* Un peu plus bas sur mobile */
-        right: 10px !important;
-        left: 10px !important;
-        max-width: none !important;
-    }
-}
-        
+/* STYLES AMÉLIORÉS POUR LES ALERTES - VERSION UNIQUE */
 .alert-section {
   position: fixed;
-  top: 90px;
+  top: 120px; /* Ajustez cette valeur selon vos besoins */
   right: 20px;
   max-width: 350px;
   z-index: 1000;
@@ -50,6 +41,16 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 15px;
   border-left: 4px solid #dc3545;
+}
+
+/* Version responsive pour mobile */
+@media (max-width: 768px) {
+    .alert-section {
+        top: 80px !important;
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none !important;
+    }
 }
 
 .alert-hidden {
