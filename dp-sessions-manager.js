@@ -863,27 +863,7 @@ async function deleteSelectedSessions() {
 }
 
 // ===== RAFRAÎCHISSEMENT AUTOMATIQUE =====
-async function refreshAllLists() {
-  console.log("🔄 Rafraîchissement automatique des listes...");
-  
-  try {
-    // Rafraîchir l'historique DP
-    if (typeof chargerHistoriqueDP === 'function') {
-      await chargerHistoriqueDP();
-    }
-    
-    // Rafraîchir le sélecteur de sessions
-    await populateSessionSelector();
-    
-    // Rafraîchir les listes de nettoyage
-    await populateSessionsCleanupList();
-    
-    console.log("✅ Toutes les listes rafraîchies");
-    
-  } catch (error) {
-    console.error("❌ Erreur rafraîchissement listes:", error);
-  }
-}
+saveSessionData
 
 // NOUVELLE FONCTION : Rafraîchissement avec indicateur visuel
 async function refreshAllListsWithIndicator(buttonId = "refresh-sessions") {
