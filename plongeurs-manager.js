@@ -453,7 +453,12 @@ function setupPlongeursEventListeners() {
           const pre = preInput.value.trim();
           
           // Validation
-          const validation = validatePlongeur(nom, niveau, pre);
+          if (typeof validatePlongeur !== 'function') {
+			console.error("validatePlongeur n'existe pas !");
+			return;
+		   =}
+		  const validation = validatePlongeur(nom, niveau, pre);
+		  
           if (!validation.valid) {
             alert("Erreurs de validation :\n" + validation.errors.join('\n'));
             return;
