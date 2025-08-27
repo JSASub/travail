@@ -31,16 +31,14 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* Version responsive pour mobile */
 /* STYLES AMÉLIORÉS POUR LES ALERTES - VERSION UNIQUE */
 .alert-section {
-  position: fixed;
-  top: 120px; /* Ajustez cette valeur selon vos besoins */
-  right: 20px;
-  max-width: 350px;
-  z-index: 1000;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 15px;
-  border-left: 4px solid #dc3545;
+  top: 120px !important; /* Force la valeur */
+}
+
+/* Desktop spécifique */
+@media (min-width: 769px) {
+    .alert-section {
+        top: 150px !important; /* Valeur pour desktop seulement */
+    }
 }
 
 /* Version responsive pour mobile */
