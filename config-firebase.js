@@ -1,4 +1,4 @@
-// config-firebase.js - Configuration Firebase et services de base (VERSION ULTRA-SÉCURISÉE)
+// config-firebase.js - Configuration Firebase et services de base (VERSION CORRIGÉE)
 
 // Configuration Firebase
 const firebaseConfig = {
@@ -25,7 +25,7 @@ let app, db, auth;
 // État d'authentification
 let currentUser = null;
 
-// Variables pour le système de verrous - INITIALISÉES PROPREMENT
+// Variables pour le système de verrous
 let palanqueeLocks = {};
 let currentlyEditingPalanquee = null;
 let lockTimers = {};
@@ -49,8 +49,45 @@ function addSafeEventListener(elementId, event, callback) {
     element.addEventListener(event, callback);
     return true;
   } else {
-    console.warn(`⚠️ Élément '${elementId}' non trouvé - event listener ignoré`);
+    console.warn(`Élément '${elementId}' non trouvé - event listener ignoré`);
     return false;
+  }
+}
+
+// FONCTION UTILITAIRE CORRIGÉE pour récupérer le nom du DP
+function getCurrentDPName() {
+  const dpSelect = $("dp-select");
+  if (dpSelect && dpSelect.selectedIndex > 0) {
+    const selectedText = dpSelect.options[dpSelect.selectedIndex].text.trim();
+    // Définir dpSelected globalement pour compatibilité
+    window.dpSelected = selectedText;
+    return selectedText;
+  }
+  
+  // Fallback vers dpSelected si elle existe déjà
+  if (typeof window.dpSelected !== 'undefined' && window.dpSelected) {
+    return window.dpSelected;
+  }
+  
+  return null;
+}
+
+// Initialiser dpSelected quand le select change
+function initializeDPSelectedWatcher() {
+  const dpSelect = $("dp-select");
+  if (dpSelect) {
+    dpSelect.addEventListener('change', function() {
+      const newDPName = getCurrentDPName();
+      console.log("DP sélectionné:", newDPName || "Aucun");
+      
+      // Mettre à jour dpInfo si nouveau DP sélectionné
+      if (newDPName) {
+        dpInfo.nom = newDPName;
+      }
+    });
+    
+    // Définir la valeur initiale
+    getCurrentDPName();
   }
 }
 
@@ -61,19 +98,21 @@ function initializeFirebase() {
     db = firebase.database();
     auth = firebase.auth();
     
-    console.log("✅ Firebase initialisé");
+    console.log("Firebase initialisé");
+    
+    // Initialiser le watcher DP
+    initializeDPSelectedWatcher();
     
     // Écouter les changements d'authentification
     auth.onAuthStateChanged(async (user) => {
       if (user) {
-        console.log("✅ Utilisateur connecté:", user.email);
+        console.log("Utilisateur connecté:", user.email);
         currentUser = user;
-		
-		if (typeof setOnlineUsersManagerActive === 'function') {
-			setOnlineUsersManagerActive(true);
-		}
         
-        // NOUVELLE LIGNE : Activer le gestionnaire hors ligne
+        if (typeof setOnlineUsersManagerActive === 'function') {
+          setOnlineUsersManagerActive(true);
+        }
+        
         if (typeof setUserAuthenticated === 'function') {
           setUserAuthenticated(true);
         }
@@ -90,37 +129,35 @@ function initializeFirebase() {
         
         // Charger les données si ready
         if (document.readyState === 'complete') {
-          console.log("📄 Chargement des données après connexion...");
+          console.log("Chargement des données après connexion...");
           await initializeAppData();
-		  initializeAfterAuth();
+          initializeAfterAuth();
         }
-	} else {
-	  console.log("❌ Utilisateur non connecté");
-	  currentUser = null;
-	  lockSystemInitialized = false;
-  
-	  // NOUVELLE LIGNE : Nettoyer le système de verrous EN PREMIER
-	  if (typeof cleanupLockSystem === 'function') {
-		  cleanupLockSystem();
-	  }
- 
-	  // NOUVELLE LIGNE : Désactiver le gestionnaire des utilisateurs en ligne EN PREMIER
-	  if (typeof setOnlineUsersManagerActive === 'function') {
-		  setOnlineUsersManagerActive(false);
-	  }
- 
-	  // NOUVELLE LIGNE : Désactiver le gestionnaire hors ligne
-	  if (typeof setUserAuthenticated === 'function') {
-		  setUserAuthenticated(false);
-		 }
- 
-	  showAuthContainer();
-	 }
+      } else {
+        console.log("Utilisateur non connecté");
+        currentUser = null;
+        lockSystemInitialized = false;
+        window.dpSelected = null;
+        
+        if (typeof cleanupLockSystem === 'function') {
+          cleanupLockSystem();
+        }
+        
+        if (typeof setOnlineUsersManagerActive === 'function') {
+          setOnlineUsersManagerActive(false);
+        }
+        
+        if (typeof setUserAuthenticated === 'function') {
+          setUserAuthenticated(false);
+        }
+        
+        showAuthContainer();
+      }
     });
     
     return true;
   } catch (error) {
-    console.error("❌ Erreur initialisation Firebase:", error);
+    console.error("Erreur initialisation Firebase:", error);
     return false;
   }
 }
@@ -132,13 +169,13 @@ function initializeLockSystemSafe() {
     return;
   }
   
-  console.log("🔒 Initialisation du système de verrouillage DP...");
+  console.log("Initialisation du système de verrouillage DP...");
   
   try {
-    // Déterminer le niveau de l'utilisateur
-    const dpNomField = $("dp-nom");
-    if (dpNomField && dpNomField.value) {
-      dpInfo.nom = dpNomField.value;
+    // Déterminer le nom du DP depuis le select
+    const dpNom = getCurrentDPName();
+    if (dpNom) {
+      dpInfo.nom = dpNom;
     }
     
     // Marquer comme en ligne
@@ -151,10 +188,10 @@ function initializeLockSystemSafe() {
     window.addEventListener('beforeunload', cleanupOnExitSafe);
     
     lockSystemInitialized = true;
-    console.log("✅ Système de verrouillage initialisé pour:", dpInfo);
+    console.log("Système de verrouillage initialisé pour:", dpInfo);
     
   } catch (error) {
-    console.error("❌ Erreur initialisation système de verrouillage:", error);
+    console.error("Erreur initialisation système de verrouillage:", error);
     lockSystemInitialized = false;
   }
 }
@@ -163,7 +200,7 @@ function markDPOnlineSafe() {
   if (!currentUser || !db) return;
   
   try {
-    const dpNom = $("dp-nom")?.value || currentUser.email;
+    const dpNom = getCurrentDPName() || currentUser.email;
     const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
     
     dpOnlineRef.set({
@@ -176,7 +213,7 @@ function markDPOnlineSafe() {
     
     dpOnlineRef.onDisconnect().remove();
   } catch (error) {
-    console.error("❌ Erreur marquage DP en ligne:", error);
+    console.error("Erreur marquage DP en ligne:", error);
   }
 }
 
@@ -188,13 +225,12 @@ function listenToLocksSafe() {
     locksRef.on('value', (snapshot) => {
       palanqueeLocks = snapshot.val() || {};
       
-      // Mettre à jour l'UI seulement si la fonction existe
       if (typeof updatePalanqueeLockUI === 'function') {
         updatePalanqueeLockUI();
       }
     });
   } catch (error) {
-    console.error("❌ Erreur écoute verrous:", error);
+    console.error("Erreur écoute verrous:", error);
   }
 }
 
@@ -211,7 +247,7 @@ async function acquirePalanqueeLockSafe(palanqueeIndex) {
       if (currentLock === null) {
         return {
           userId: currentUser.uid,
-          userName: dpInfo.nom || currentUser.email,
+          userName: dpInfo.nom || getCurrentDPName() || currentUser.email,
           niveau: dpInfo.niveau,
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           palanqueeIndex: palanqueeIndex
@@ -224,10 +260,9 @@ async function acquirePalanqueeLockSafe(palanqueeIndex) {
     });
     
     if (result.committed) {
-      console.log(`🔒 Verrou acquis pour palanquée ${palanqueeIndex}`);
+      console.log(`Verrou acquis pour palanquée ${palanqueeIndex}`);
       currentlyEditingPalanquee = palanqueeIndex;
       
-      // Auto-libération avec vérification
       if (!lockTimers[palanqueeId]) {
         lockTimers[palanqueeId] = setTimeout(() => {
           releasePalanqueeLockSafe(palanqueeIndex);
@@ -246,7 +281,7 @@ async function acquirePalanqueeLockSafe(palanqueeIndex) {
         try {
           await lockRef.set({
             userId: currentUser.uid,
-            userName: dpInfo.nom || currentUser.email,
+            userName: dpInfo.nom || getCurrentDPName() || currentUser.email,
             niveau: dpInfo.niveau,
             timestamp: firebase.database.ServerValue.TIMESTAMP,
             palanqueeIndex: palanqueeIndex,
@@ -256,14 +291,14 @@ async function acquirePalanqueeLockSafe(palanqueeIndex) {
           currentlyEditingPalanquee = palanqueeIndex;
           return true;
         } catch (forceError) {
-          console.error("❌ Erreur forçage verrou:", forceError);
+          console.error("Erreur forçage verrou:", forceError);
           return false;
         }
       }
       return false;
     }
     
-    console.error("❌ Erreur lors de la prise de verrou:", error);
+    console.error("Erreur lors de la prise de verrou:", error);
     return false;
   }
   
@@ -277,18 +312,17 @@ async function releasePalanqueeLockSafe(palanqueeIndex) {
   
   try {
     await db.ref(`palanquee_locks/${palanqueeId}`).remove();
-    console.log(`🔓 Verrou libéré pour palanquée ${palanqueeIndex}`);
+    console.log(`Verrou libéré pour palanquée ${palanqueeIndex}`);
     
     currentlyEditingPalanquee = null;
     
-    // Nettoyer le timer en sécurité
     if (lockTimers && lockTimers[palanqueeId]) {
       clearTimeout(lockTimers[palanqueeId]);
       delete lockTimers[palanqueeId];
     }
     
   } catch (error) {
-    console.error("❌ Erreur lors de la libération du verrou:", error);
+    console.error("Erreur lors de la libération du verrou:", error);
   }
 }
 
@@ -298,19 +332,17 @@ function cleanupOnExitSafe() {
       releasePalanqueeLockSafe(currentlyEditingPalanquee);
     }
     
-    // Nettoyer tous les timers
     if (lockTimers) {
       Object.values(lockTimers).forEach(timer => {
         if (timer) clearTimeout(timer);
       });
     }
     
-    // Marquer comme hors ligne
     if (currentUser && db) {
       db.ref(`dp_online/${currentUser.uid}`).remove();
     }
   } catch (error) {
-    console.error("❌ Erreur nettoyage sortie:", error);
+    console.error("Erreur nettoyage sortie:", error);
   }
 }
 
@@ -379,29 +411,29 @@ async function testFirebaseConnection() {
     });
     
     await connectedPromise;
-    console.log(firebaseConnected ? "✅ Firebase connecté" : "⚠️ Firebase déconnecté");
+    console.log(firebaseConnected ? "Firebase connecté" : "Firebase déconnecté");
     return true;
     
   } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
+    console.error("Test Firebase échoué:", error.message);
     firebaseConnected = false;
-    return true; // Continue en mode dégradé
+    return true;
   }
 }
 
 async function loadFromFirebase() {
   try {
-    console.log("🔥 Chargement des données depuis Firebase...");
+    console.log("Chargement des données depuis Firebase...");
     
     if (!db) {
-      console.warn("⚠️ DB non disponible");
+      console.warn("DB non disponible");
       return;
     }
     
     const plongeursSnapshot = await db.ref('plongeurs').once('value');
     if (plongeursSnapshot.exists()) {
       plongeurs = plongeursSnapshot.val() || [];
-      console.log("✅ Plongeurs chargés:", plongeurs.length);
+      console.log("Plongeurs chargés:", plongeurs.length);
     }
     
     const palanqueesSnapshot = await db.ref('palanquees').once('value');
@@ -418,7 +450,7 @@ async function loadFromFirebase() {
           if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
           return pal;
         } else if (pal && typeof pal === 'object') {
-          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+          console.log(`Correction palanquée ${index + 1}: conversion objet vers tableau`);
           
           const nouveauTableau = [];
           Object.keys(pal).forEach(key => {
@@ -434,11 +466,10 @@ async function loadFromFirebase() {
           nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
           nouveauTableau.paliers = pal.paliers || '';
           
-          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+          console.log(`Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
           return nouveauTableau;
         }
         
-        // Palanquée vide par défaut
         const nouveauTableau = [];
         nouveauTableau.horaire = '';
         nouveauTableau.profondeurPrevue = '';
@@ -454,23 +485,21 @@ async function loadFromFirebase() {
     
     plongeursOriginaux = [...plongeurs];
     
-    // Rendu sécurisé
     if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
   } catch (error) {
-    console.error("❌ Erreur chargement Firebase:", error);
+    console.error("Erreur chargement Firebase:", error);
   }
 }
 
 // Sauvegarde sécurisée
 async function syncToDatabase() {
-  console.log("💾 Synchronisation Firebase...");
+  console.log("Synchronisation Firebase...");
   
   plongeursOriginaux = [...plongeurs];
   
-  // Rendu sécurisé
   if (typeof renderPalanquees === 'function') renderPalanquees();
   if (typeof renderPlongeurs === 'function') renderPlongeurs();
   if (typeof updateAlertes === 'function') updateAlertes();
@@ -483,22 +512,29 @@ async function syncToDatabase() {
       ]);
       
       await saveSessionData();
-      console.log("✅ Sauvegarde Firebase réussie");
+      console.log("Sauvegarde Firebase réussie");
       
     } catch (error) {
-      console.error("❌ Erreur sync Firebase:", error.message);
+      console.error("Erreur sync Firebase:", error.message);
     }
   } else {
-    console.warn("⚠️ Firebase non connecté, données non sauvegardées");
+    console.warn("Firebase non connecté, données non sauvegardées");
   }
 }
 
+// FONCTION SAVESESSIONDATA CORRIGÉE
 async function saveSessionData() {
-  const dpNom = $("dp-nom")?.value?.trim();
+  const dpNom = getCurrentDPName();
   const dpDate = $("dp-date")?.value;
   const dpPlongee = $("dp-plongee")?.value;
   
   if (!dpNom || !dpDate || !dpPlongee || !db) {
+    console.warn("Erreur sauvegarde session: données manquantes", {
+      dpNom: dpNom || "manquant",
+      dpDate: dpDate || "manquant", 
+      dpPlongee: dpPlongee || "manquant",
+      db: !!db
+    });
     return;
   }
   
@@ -525,9 +561,9 @@ async function saveSessionData() {
   
   try {
     await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée avec succès:", sessionKey);
+    console.log("Session sauvegardée avec succès:", sessionKey);
   } catch (error) {
-    console.error("❌ Erreur sauvegarde session:", error);
+    console.error("Erreur sauvegarde session:", error);
   }
 }
 
@@ -599,12 +635,12 @@ async function loadAvailableSessions() {
     return sessionsList;
     
   } catch (error) {
-    console.error("❌ Erreur chargement sessions:", error);
+    console.error("Erreur chargement sessions:", error);
     return [];
   }
 }
 
-// Charger une session spécifique
+// FONCTION loadSession CORRIGÉE
 async function loadSession(sessionKey) {
   try {
     if (!db) {
@@ -620,14 +656,11 @@ async function loadSession(sessionKey) {
     
     const sessionData = sessionSnapshot.val();
     
-    // Restaurer plongeurs
     plongeurs = sessionData.plongeurs || [];
     
-    // Restaurer palanquées avec TOUS les paramètres
     if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
       palanquees = sessionData.palanquees.map((pal, index) => {
         if (Array.isArray(pal)) {
-          // AJOUT: Restaurer tous les paramètres manquants
           if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
           if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
           if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
@@ -636,7 +669,7 @@ async function loadSession(sessionKey) {
           if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
           return pal;
         }
-        // ... reste du code existant ...
+        return pal;
       });
     } else {
       palanquees = [];
@@ -644,47 +677,45 @@ async function loadSession(sessionKey) {
     
     plongeursOriginaux = [...plongeurs];
     
-    // Charger les métadonnées
     const meta = sessionData.meta || sessionData;
     const dpNom = meta.dp || "";
     const dpDate = meta.date || "";
     const dpLieu = meta.lieu || "";
     const dpPlongee = meta.plongee || "matin";
     
-    // NOUVEAU: Synchroniser avec la liste déroulante DP
-    const dpSelect = document.getElementById('dp-select');
+    // CORRECTION: Synchroniser avec la liste déroulante DP
+    const dpSelect = $("dp-select");
     if (dpSelect && dpNom) {
       let dpFound = false;
       for (let i = 0; i < dpSelect.options.length; i++) {
         if (dpSelect.options[i].text.includes(dpNom)) {
           dpSelect.value = dpSelect.options[i].value;
           dpFound = true;
-          console.log("✅ DP trouvé et sélectionné:", dpNom);
+          console.log("DP trouvé et sélectionné:", dpNom);
           break;
         }
       }
       
-      // Si DP non trouvé, l'ajouter à la liste
       if (!dpFound && dpNom.trim() !== '') {
         const option = document.createElement('option');
         option.value = `temp_${Date.now()}`;
         option.textContent = `${dpNom} (P5)`;
         dpSelect.appendChild(option);
         dpSelect.value = option.value;
-        console.log("➕ DP ajouté à la liste:", dpNom);
+        console.log("DP ajouté à la liste:", dpNom);
       }
       
-      // Déclencher l'événement de changement
       dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
-    // Remplir les champs métadonnées
-    if ($("dp-nom")) $("dp-nom").value = dpNom;
+    // Remplir les autres champs (CORRECTION: ne plus utiliser dp-nom)
     if ($("dp-date")) $("dp-date").value = dpDate;
     if ($("dp-lieu")) $("dp-lieu").value = dpLieu;
     if ($("dp-plongee")) $("dp-plongee").value = dpPlongee;
     
-    // Rendu sécurisé avec délai pour synchronisation
+    // Définir dpSelected
+    window.dpSelected = dpNom;
+    
     try {
       setTimeout(() => {
         if (typeof renderPalanquees === 'function') renderPalanquees();
@@ -693,14 +724,14 @@ async function loadSession(sessionKey) {
         if (typeof updateCompteurs === 'function') updateCompteurs();
       }, 200);
     } catch (renderError) {
-      console.error("❌ Erreur rendu:", renderError);
+      console.error("Erreur rendu:", renderError);
     }
     
-    console.log("✅ Session chargée avec succès:", sessionKey);
+    console.log("Session chargée avec succès:", sessionKey);
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
+    console.error("Erreur chargement session:", error);
     alert("Erreur lors du chargement de la session : " + error.message);
     return false;
   }
