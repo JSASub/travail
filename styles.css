@@ -19,7 +19,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 .alert-section,
 .lock-notifications,
 [class*="alert"][style*="position: fixed"] {
-    top: 58px !important; /* Au lieu de 20px */
+    top: 108px !important; /* Au lieu de 20px */
 }
 
 /* Alternative pour cibler spécifiquement les alertes palanquées */
