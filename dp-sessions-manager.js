@@ -1,7 +1,8 @@
 // dp-sessions-manager.js - Gestion DP et Sessions (extrait de main-complete.js)
 
 // ===== GESTION DU DIRECTEUR DE PLONGÉE =====
-
+window.checkRequiredElements = checkRequiredElements;
+window.refreshAllLists = refreshAllLists;
 // Validation et enregistrement des informations DP
 async function validateAndSaveDP() {
   try {
