@@ -44,7 +44,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* Version responsive pour mobile */
 @media (max-width: 768px) {
     .alert-section {
-        top: 75px !important;
+        top: 80px !important;
         right: 10px !important;
         left: 10px !important;
         max-width: none !important;
