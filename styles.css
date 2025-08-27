@@ -58,7 +58,7 @@ div[style*="position: fixed"]:has(.alert-title) {
         
 .alert-section {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
   max-width: 350px;
   z-index: 1000;
