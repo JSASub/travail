@@ -438,6 +438,10 @@ async function rafraichirToutesLesListes() {
 
 // VERSION AMÉLIORÉE de saveSessionData avec rafraîchissement automatique
 async function saveSessionDataAvecRefresh() {
+  if (!dpSelected) {
+    console.log("ℹ️ Pas de DP sélectionné, saut de la sauvegarde de session");
+    return;
+  }
   console.log("💾 Début sauvegarde session avec rafraîchissement...");
   
   const dpNom = getSelectedDPName();
