@@ -76,7 +76,7 @@ div[style*="position: fixed"]:has(.alert-title) {
 .alert-title {
   font-weight: bold;
   color: #dc3545;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   font-size: 1.1em;
 }
 
