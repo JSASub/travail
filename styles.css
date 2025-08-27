@@ -35,7 +35,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 /* Desktop spécifique */
-@media (min-width: 769px) {
+@media (min-width: 768px) {
     .alert-section {
         top: 100px !important; /* Valeur pour desktop seulement */
     }
