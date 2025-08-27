@@ -14,23 +14,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 /* STYLES AMÉLIORÉS POUR LES ALERTES */
-
-/* Déplacer la fenêtre d'alerte de 10mm vers le bas */
-.alert-section,
-.lock-notifications,
-[class*="alert"][style*="position: fixed"] {
-    top: 108px !important; /* Au lieu de 20px */
-}
-
-/* Alternative pour cibler spécifiquement les alertes palanquées */
-.alert-section.palanquee-alerts,
-div[style*="position: fixed"]:has(.alert-title) {
-    top: 200px !important;
-}
-
-
-
-/* STYLES AMÉLIORÉS POUR LES ALERTES */
 .alert-section {
   position: fixed;
   top: 100px; /* ← Changer de 20px à 77px */
