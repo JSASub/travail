@@ -693,8 +693,19 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     font-size: 12px;
   }
   
+  @media (max-width: 768px) {
+  .dp-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 15px;
+    font-size: 14px;
+    gap: 8px;
+  }
+  
   .dp-btn span {
-    display: none; /* Masquer le texte sur mobile pour garder juste les icônes */
+    display: inline !important; /* Forcer l'affichage du texte */
+    font-size: 14px;
+    font-weight: 500;
   }
   
   .dp-modal-content {
