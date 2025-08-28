@@ -283,18 +283,55 @@ function loadEmergencyBackup() {
       }
       
       // Restaurer les métadonnées
-      if (data.metadata) {
-        const dpNom = document.getElementById("dp-nom");
-        const dpDate = document.getElementById("dp-date");
-        const dpLieu = document.getElementById("dp-lieu");
-        const dpPlongee = document.getElementById("dp-plongee");
-        
-        if (dpNom) dpNom.value = data.metadata.dp || "";
-        if (dpDate) dpDate.value = data.metadata.date || "";
-        if (dpLieu) dpLieu.value = data.metadata.lieu || "";
-        if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
+	  if (data.metadata) {
+       const dpNomSauvegarde = data.metadata.dp;
+
+	  // Restaurer le DP dans le sélecteur
+       const dpSelect = document.getElementById("dp-select");
+      if (dpSelect && dpNomSauvegarde) {
+      // Chercher l'option correspondante
+      let dpTrouve = false;
+      for (let i = 0; i < dpSelect.options.length; i++) {
+          if (dpSelect.options[i].text.includes(dpNomSauvegarde.split(' ')[0])) {
+	        dpSelect.selectedIndex = i;
+	        dpSelect.value = dpSelect.options[i].value;
+	        dpTrouve = true;
+	        console.log("DP restauré dans le sélecteur:", dpNomSauvegarde);
+	      break;
+         }
       }
-      
+
+      // Si DP pas trouvé, l'ajouter temporairement
+      if (!dpTrouve && dpNomSauvegarde.trim() !== '') {
+        const option = document.createElement('option');
+        option.value = `restored_${Date.now()}`;
+        option.textContent = `${dpNomSauvegarde} (Restauré)`;
+        dpSelect.appendChild(option);
+        dpSelect.value = option.value;
+        console.log("DP ajouté temporairement:", dpNomSauvegarde);
+      }
+
+      // Déclencher l'événement de changement
+      dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Mettre à jour dpSelected
+      window.dpSelected = dpNomSauvegarde;
+    }
+
+    // Restaurer les autres champs
+    const dpDate = document.getElementById("dp-date");
+    const dpLieu = document.getElementById("dp-lieu");
+    const dpPlongee = document.getElementById("dp-plongee");
+
+    if (dpDate) dpDate.value = data.metadata.date || "";
+    if (dpLieu) dpLieu.value = data.metadata.lieu || "";
+    if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
+    }
+
+
+
+
+
       // Re-rendre l'interface
       if (typeof renderPalanquees === 'function') renderPalanquees();
       if (typeof renderPlongeurs === 'function') renderPlongeurs();
