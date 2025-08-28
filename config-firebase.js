@@ -734,6 +734,18 @@ async function loadSession(sessionKey) {
     }
     
     console.log("Session chargée avec succès:", sessionKey);
+	setTimeout(() => {
+  const dpSelect = document.getElementById("dp-select");
+  const editBtn = document.getElementById("edit-dp-btn");
+  const deleteBtn = document.getElementById("delete-dp-btn");
+  
+  if (dpSelect && dpSelect.value && dpSelect.value !== "") {
+    if (editBtn) editBtn.disabled = false;
+    if (deleteBtn) deleteBtn.disabled = false;
+    console.log("Boutons DP activés après chargement session");
+  }
+}, 500); // Délai pour s'assurer que tout est chargé
+
     return true;
     
   } catch (error) {
