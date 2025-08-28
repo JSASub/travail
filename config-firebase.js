@@ -222,7 +222,7 @@ function markDPOnlineSafe() {
     console.error("Erreur marquage DP en ligne:", error);
   }
 }
-	
+
 function listenToLocksSafe() {
   if (!db) return;
   
