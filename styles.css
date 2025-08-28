@@ -181,7 +181,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     min-width: unset !important;
   }
   
-  /* Boutons alignés horizontalement */
+  /* Boutons alignés horizontalement - Optimisé iPhone */
   #add-dp-btn,
   #dp-add-btn,
   #edit-dp-btn,
@@ -189,14 +189,15 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   #delete-dp-btn,
   #dp-delete-btn {
     display: inline-block !important;
-    width: calc(33.33% - 4px) !important;
-    margin: 0 2px !important;
-    padding: 10px 4px !important;
-    font-size: 12px !important;
+    width: calc(32% - 2px) !important;
+    margin: 0 1px !important;
+    padding: 8px 2px !important;
+    font-size: 11px !important;
     vertical-align: top !important;
     text-align: center !important;
     box-sizing: border-box !important;
     white-space: nowrap !important;
+    line-height: 1.2 !important;
   }
   
   /* Forcer l'affichage du texte sur mobile */
@@ -207,7 +208,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   #delete-dp-btn span,
   #dp-delete-btn span {
     display: inline !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     font-weight: 600 !important;
   }
   
