@@ -167,6 +167,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 /* Correction mobile pour les boutons DP */
+/* 
 @media (max-width: 768px) {
   .dp-management-btn {
     width: 100% !important;
@@ -199,28 +200,47 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     clip: none !important;
   }
 }
+*/
 
+/* RAJOUT CE MATIN*/
 @media (max-width: 768px) {
-  /* Forcer les boutons DP en ligne horizontale */
   #meta-info label:first-child > div {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
   
-  #dp-select {
+  /* Container pour les boutons DP */
+  .dp-buttons-container {
+    display: flex;
+    flex-direction: row !important;
+    gap: 8px;
+    justify-content: space-between;
     width: 100%;
-    order: 1;
   }
   
-  /* Container des boutons en ligne */
-  .dp-management-btn {
-    order: 2;
-    flex: 1 1 32%;
-    max-width: calc(33.33% - 5px);
-    margin: 2px;
-    padding: 8px 4px;
-    font-size: 11px;
+  /* Boutons DP en ligne sur mobile */
+  .dp-management-btn,
+  .dp-btn,
+  #dp-add-btn,
+  #dp-edit-btn, 
+  #dp-delete-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  
+  /* S'assurer que le container des boutons reste horizontal */
+  #meta-info label:first-child > div .dp-management-btn:not(:last-child) {
+    margin-right: 0;
   }
 }
+/* FIN RAJOUT*/
+
 
 /* Modal DP */
 #dp-modal {
