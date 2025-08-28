@@ -205,47 +205,47 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 /* 3 boutons Nouveau, Modifier et Supprimer*/
 @media (max-width: 768px) {
   #meta-info label:first-child > div {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
     gap: 10px;
   }
   
-  /* Sélecteur DP occupe toute la largeur */
+  /* Sélecteur DP prend toute la largeur */
   #dp-select {
     width: 100%;
-    order: 1;
+    min-width: unset;
   }
   
-  /* Container pour les 3 boutons DP en ligne */
-  .dp-management-btn,
-  .dp-btn,
-  #dp-add-btn,
-  #dp-edit-btn, 
-  #dp-delete-btn {
-    order: 2;
-    flex: 1 1 32%;
-    max-width: calc(33.33% - 5px);
-    min-width: 80px;
-    padding: 10px 4px;
-    font-size: 11px;
-    margin: 2px;
+  /* Container invisible pour grouper les boutons horizontalement */
+  #dp-add-btn, #dp-edit-btn, #dp-delete-btn {
+    display: inline-block;
+    width: calc(33.33% - 4px);
+    margin: 1px;
+    padding: 8px 4px;
+    font-size: 10px;
     text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
+    vertical-align: top;
+    box-sizing: border-box;
   }
   
-  /* Forcer l'affichage du texte dans les boutons */
-  .dp-management-btn span,
-  .dp-btn span,
-  #dp-add-btn span,
-  #dp-edit-btn span,
-  #dp-delete-btn span {
-    display: inline !important;
-    font-size: 10px !important;
+  /* Alternative: utiliser float si inline-block ne marche pas */
+  /*
+  #dp-add-btn, #dp-edit-btn, #dp-delete-btn {
+    float: left;
+    width: 33.33%;
+    margin: 0;
+    padding: 8px 4px;
+    font-size: 10px;
+    text-align: center;
+    box-sizing: border-box;
   }
+  
+  #meta-info label:first-child > div::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  */
 }
 /* FIN 3 boutons*/
 
