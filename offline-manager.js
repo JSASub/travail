@@ -193,20 +193,32 @@ function emergencyLocalSave() {
   }
 
   try {
-    const emergencyData = {
-      timestamp: Date.now(),
-      plongeurs: plongeurs || [],
-      palanquees: palanquees || [],
-	  metadata: {
-		dp: window.dpSelected || getCurrentDPName() || (function() {
-		const dpSelect = document.getElementById("dp-select");
-		return dpSelect && dpSelect.selectedIndex > 0 ? 
-		dpSelect.options[dpSelect.selectedIndex].text.trim() : "";
-		})(),
-		date: document.getElementById("dp-date")?.value || "",
-		lieu: document.getElementById("dp-lieu")?.value || "",
-		plongee: document.getElementById("dp-plongee")?.value || "matin"
-	 },
+   const emergencyData = {
+  timestamp: Date.now(),
+  plongeurs: plongeurs || [],
+  palanquees: (palanquees || []).map(pal => {
+    // Sauvegarder les plongeurs ET tous les paramètres
+    const palanqueeComplete = {
+      plongeurs: [],
+      parametres: {
+        horaire: pal.horaire || "",
+        profondeurPrevue: pal.profondeurPrevue || "",
+        dureePrevue: pal.dureePrevue || "",
+        profondeurRealisee: pal.profondeurRealisee || "",
+        dureeRealisee: pal.dureeRealisee || "",
+        paliers: pal.paliers || ""
+      }
+    };
+    
+    // Copier les plongeurs
+    for (let i = 0; i < pal.length; i++) {
+      if (pal[i] && pal[i].nom) {
+        palanqueeComplete.plongeurs.push(pal[i]);
+      }
+    }
+    
+    return palanqueeComplete;
+  }),
       version: "2.5.0-offline",
       userEmail: currentUser.email // Ajouter l'email de l'utilisateur pour sécurité
     };
@@ -279,8 +291,44 @@ function loadEmergencyBackup() {
       }
       
       if (Array.isArray(data.palanquees)) {
-        palanquees = data.palanquees;
-      }
+  palanquees = data.palanquees.map(palData => {
+    const palanqueeArray = [];
+    
+    // Restaurer les plongeurs
+    if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+      palData.plongeurs.forEach(plongeur => {
+        palanqueeArray.push(plongeur);
+      });
+    } else if (Array.isArray(palData)) {
+      // Ancien format (compatibilité)
+      palData.forEach(plongeur => {
+        if (plongeur && plongeur.nom) {
+          palanqueeArray.push(plongeur);
+        }
+      });
+    }
+    
+    // Restaurer TOUS les paramètres
+    if (palData.parametres) {
+      palanqueeArray.horaire = palData.parametres.horaire || "";
+      palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
+      palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
+      palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
+      palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
+      palanqueeArray.paliers = palData.parametres.paliers || "";
+    } else {
+      // Valeurs par défaut si pas de paramètres sauvegardés
+      palanqueeArray.horaire = palData.horaire || "";
+      palanqueeArray.profondeurPrevue = palData.profondeurPrevue || "";
+      palanqueeArray.dureePrevue = palData.dureePrevue || "";
+      palanqueeArray.profondeurRealisee = palData.profondeurRealisee || "";
+      palanqueeArray.dureeRealisee = palData.dureeRealisee || "";
+      palanqueeArray.paliers = palData.paliers || "";
+    }
+    
+    return palanqueeArray;
+  });
+}
       
       // Restaurer les métadonnées
 	  if (data.metadata) {
