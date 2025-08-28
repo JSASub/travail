@@ -166,67 +166,80 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   box-shadow: none !important;
 }
 
-/* Correction mobile pour les boutons DP */
-/* 
+/* SOLUTION AMÉLIORÉE POUR LES BOUTONS DP MOBILE */
 @media (max-width: 768px) {
-  .dp-management-btn {
-    width: 100% !important;
-    justify-content: center !important;
-    padding: 12px 15px !important;
-    font-size: 14px !important;
-    gap: 8px !important;
-  }
-  
-  /* Forcer l'affichage de tous les textes dans les boutons DP */
-  .dp-management-btn span,
-  .dp-management-btn .text,
-  #dp-add-btn span,
-  #dp-edit-btn span,
-  #dp-delete-btn span {
-    display: inline !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    font-size: 14px !important;
-  }
-  
-  /* Au cas où les textes seraient cachés par des classes Bootstrap */
-  .dp-management-btn .d-none,
-  .dp-management-btn .sr-only,
-  .dp-management-btn .visually-hidden {
-    display: inline !important;
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    clip: none !important;
-  }
-}
-*/
-
-/* 3 boutons Nouveau, Modifier et Supprimer*/
-@media (max-width: 768px) {
+  /* Container principal */
   #meta-info label:first-child > div {
     display: block !important;
   }
   
+  /* Select en haut sur toute la largeur */
   #dp-select {
     display: block !important;
     width: 100% !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 12px !important;
+    min-width: unset !important;
   }
   
+  /* Boutons alignés horizontalement */
+  #add-dp-btn,
   #dp-add-btn,
+  #edit-dp-btn,
   #dp-edit-btn, 
+  #delete-dp-btn,
   #dp-delete-btn {
     display: inline-block !important;
-    width: 32% !important;
-    margin: 0 0.5% !important;
-    padding: 8px 2px !important;
-    font-size: 10px !important;
+    width: calc(33.33% - 4px) !important;
+    margin: 0 2px !important;
+    padding: 10px 4px !important;
+    font-size: 12px !important;
     vertical-align: top !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Forcer l'affichage du texte sur mobile */
+  #add-dp-btn span,
+  #dp-add-btn span,
+  #edit-dp-btn span,
+  #dp-edit-btn span,
+  #delete-dp-btn span,
+  #dp-delete-btn span {
+    display: inline !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Clearfix pour assurer l'alignement */
+  #meta-info label:first-child > div::after {
+    content: "";
+    display: table;
+    clear: both;
   }
 }
-/* FIN 3 boutons*/
 
+/* Très petit mobile */
+@media (max-width: 480px) {
+  #add-dp-btn,
+  #dp-add-btn,
+  #edit-dp-btn,
+  #dp-edit-btn, 
+  #delete-dp-btn,
+  #dp-delete-btn {
+    padding: 8px 2px !important;
+    font-size: 11px !important;
+  }
+  
+  #add-dp-btn span,
+  #dp-add-btn span,
+  #edit-dp-btn span,
+  #dp-edit-btn span,
+  #delete-dp-btn span,
+  #dp-delete-btn span {
+    font-size: 10px !important;
+  }
+}
 
 /* Modal DP */
 #dp-modal {
@@ -293,7 +306,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: #545b62 !important;
 }
 
-/* Responsive pour mobile */
+/* Responsive pour mobile - Section générale */
 @media (max-width: 768px) {
   #meta-info label:first-child > div {
     flex-direction: column;
@@ -428,39 +441,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   margin-bottom: 1px;
 }
 
-
-/* ===== STYLES POUR LA GESTION AUTOMATISÉE DES DP ===== */
-
-/* Conteneur principal de sélection DP */
-#meta-info label:first-child {
-  position: relative;
-}
-
-#meta-info label:first-child > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Liste déroulante DP */
-#dp-select {
-  flex: 1;
-  min-width: 200px;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background: white;
-}
-
-#dp-select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-/* Boutons de gestion DP */
+/* Styles pour les boutons DP - Version consolidée */
 .dp-btn {
   padding: 8px 12px;
   border: none;
@@ -520,7 +501,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: linear-gradient(135deg, #c82333, #d91a72);
 }
 
-/* Modal DP */
+/* Modal DP - Version complète */
 #dp-modal {
   display: none;
   position: fixed;
@@ -697,116 +678,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   color: #0c5460;
   border: 1px solid #bee5eb;
 }
-
-/* Responsive design */
-@media (max-width: 768px) {
-  #meta-info label:first-child > div {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  #dp-select {
-    min-width: auto;
-    margin-bottom: 8px;
-  }
-  
-  /* Boutons DP en responsive */
-  #meta-info label:first-child > div {
-    gap: 6px;
-  }
-  
-  .dp-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-  
-  @media (max-width: 768px) {
-  .dp-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 12px 15px;
-    font-size: 14px;
-    gap: 8px;
-  }
-  
-  .dp-btn span {
-    display: inline !important; /* Forcer l'affichage du texte */
-    font-size: 14px;
-    font-weight: 500;
-  }
-  }
-  .dp-modal-content {
-    margin: 5% auto;
-    width: 95%;
-  }
-  
-  .dp-modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .dp-modal-footer .dp-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .dp-modal-footer .dp-btn span {
-    display: inline; /* Réafficher le texte dans la modal */
-  }
-  
-  .dp-notification {
-    right: 10px;
-    left: 10px;
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .dp-btn {
-    padding: 8px 6px;
-    font-size: 14px; /* Icônes plus grandes sur très petit écran */
-  }
-}
-
-/* États de validation */
-.dp-form-group input.error {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
-}
-
-.dp-form-group input.success {
-  border-color: #28a745;
-  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
-}
-
-/* Loading state pour les boutons */
-.dp-btn.loading {
-  position: relative;
-  color: transparent;
-}
-
-.dp-btn.loading::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -8px 0 0 -8px;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
 
 /* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
 .dp-status-indicator {
@@ -1480,6 +1351,7 @@ header div[style*="margin-top: 5px"] h2 {
 header h2 {
   margin-top: 8mm !important;
 }
+
 header div h2 {
   margin-top: 8 !important;
 }
