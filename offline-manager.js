@@ -331,52 +331,81 @@ function loadEmergencyBackup() {
 }
       
       // Restaurer les métadonnées
-	  if (data.metadata) {
-       const dpNomSauvegarde = data.metadata.dp;
-
-	  // Restaurer le DP dans le sélecteur
-       const dpSelect = document.getElementById("dp-select");
-      if (dpSelect && dpNomSauvegarde) {
-      // Chercher l'option correspondante
-      let dpTrouve = false;
-      for (let i = 0; i < dpSelect.options.length; i++) {
-          if (dpSelect.options[i].text.includes(dpNomSauvegarde.split(' ')[0])) {
-	        dpSelect.selectedIndex = i;
-	        dpSelect.value = dpSelect.options[i].value;
-	        dpTrouve = true;
-	        console.log("DP restauré dans le sélecteur:", dpNomSauvegarde);
-	      break;
-         }
+if (data.metadata) {
+  const dpNomSauvegarde = data.metadata.dp;
+  console.log("🔍 Tentative restauration DP:", dpNomSauvegarde);
+  
+  // Restaurer les autres champs AVANT le DP
+  const dpDate = document.getElementById("dp-date");
+  const dpLieu = document.getElementById("dp-lieu");
+  const dpPlongee = document.getElementById("dp-plongee");
+  
+  if (dpDate) dpDate.value = data.metadata.date || "";
+  if (dpLieu) dpLieu.value = data.metadata.lieu || "";
+  if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
+  
+  // Restaurer le DP avec délai pour éviter les conflits
+  if (dpNomSauvegarde) {
+    setTimeout(() => {
+      const dpSelect = document.getElementById("dp-select");
+      console.log("🔍 DP Select trouvé:", !!dpSelect);
+      
+      if (dpSelect) {
+        console.log("🔍 Options disponibles:", Array.from(dpSelect.options).map(opt => opt.text));
+        
+        // Méthode 1: Recherche exacte
+        let dpTrouve = false;
+        for (let i = 0; i < dpSelect.options.length; i++) {
+          if (dpSelect.options[i].text.trim() === dpNomSauvegarde.trim()) {
+            dpSelect.selectedIndex = i;
+            dpTrouve = true;
+            console.log("✅ DP trouvé - match exact:", dpNomSauvegarde);
+            break;
+          }
+        }
+        
+        // Méthode 2: Recherche par nom de famille si méthode 1 échoue
+        if (!dpTrouve) {
+          const nomFamille = dpNomSauvegarde.split(' ')[0];
+          for (let i = 0; i < dpSelect.options.length; i++) {
+            if (dpSelect.options[i].text.includes(nomFamille)) {
+              dpSelect.selectedIndex = i;
+              dpTrouve = true;
+              console.log("✅ DP trouvé - match partiel:", dpNomSauvegarde, "->", dpSelect.options[i].text);
+              break;
+            }
+          }
+        }
+        
+        // Si toujours pas trouvé, forcer l'ajout
+        if (!dpTrouve && dpNomSauvegarde.trim() !== '') {
+          console.log("⚠️ DP non trouvé, création d'une option temporaire");
+          const option = document.createElement('option');
+          option.value = `restored_${Date.now()}`;
+          option.textContent = `${dpNomSauvegarde} (Restauré)`;
+          option.style.color = '#ff6600';
+          dpSelect.appendChild(option);
+          dpSelect.selectedIndex = dpSelect.options.length - 1;
+          dpTrouve = true;
+        }
+        
+        if (dpTrouve) {
+          // FORCER la mise à jour visuelle
+          dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          window.dpSelected = dpNomSauvegarde;
+          
+          // Vérification finale
+          setTimeout(() => {
+            console.log("🔍 État final - DP sélectionné:", dpSelect.selectedIndex, dpSelect.options[dpSelect.selectedIndex]?.text);
+            console.log("🔍 État final - window.dpSelected:", window.dpSelected);
+          }, 100);
+        } else {
+          console.log("❌ Impossible de restaurer le DP:", dpNomSauvegarde);
+        }
       }
-
-      // Si DP pas trouvé, l'ajouter temporairement
-      if (!dpTrouve && dpNomSauvegarde.trim() !== '') {
-        const option = document.createElement('option');
-        option.value = `restored_${Date.now()}`;
-        option.textContent = `${dpNomSauvegarde} (Restauré)`;
-        dpSelect.appendChild(option);
-        dpSelect.value = option.value;
-        console.log("DP ajouté temporairement:", dpNomSauvegarde);
-      }
-
-      // Déclencher l'événement de changement
-      dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-      // Mettre à jour dpSelected
-      window.dpSelected = dpNomSauvegarde;
-    }
-
-    // Restaurer les autres champs
-    const dpDate = document.getElementById("dp-date");
-    const dpLieu = document.getElementById("dp-lieu");
-    const dpPlongee = document.getElementById("dp-plongee");
-
-    if (dpDate) dpDate.value = data.metadata.date || "";
-    if (dpLieu) dpLieu.value = data.metadata.lieu || "";
-    if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
-    }
-
-
+    }, 250); // Délai pour laisser le DOM se stabiliser
+  }
+}
 
 
 
