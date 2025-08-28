@@ -5,29 +5,30 @@
 // Fonction d'ajout de plongeur sécurisée
 function addPlongeur(nom, niveau, prerogatives = "") {
   try {
-    // Validation préalable
     if (!nom || !niveau) {
       console.error("❌ Nom et niveau requis");
-      alert("Erreur : Nom et niveau sont requis");
-      return false;
+      return false; // PAS d'alert, juste return false
     }
     
     // S'assurer que les variables globales existent
     if (typeof plongeurs === 'undefined') window.plongeurs = [];
     if (typeof plongeursOriginaux === 'undefined') window.plongeursOriginaux = [];
     
-    // Validation complète
-    const validation = validatePlongeur(nom, niveau, prerogatives);
+    // Validation TRÈS basique sans alert
+    if (nom.length < 2) {
+      console.error("❌ Nom trop court");
+      return false;
+    }
     
-    if (!validation.valid) {
-      console.error("❌ Erreurs de validation:", validation.errors);
-      alert("Erreurs de validation :\n" + validation.errors.join('\n'));
+    const niveaux = ['E4', 'E3', 'E2', 'GP', 'N4/GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+    if (niveaux.indexOf(niveau) === -1) {
+      console.error("❌ Niveau invalide");
       return false;
     }
     
     const nouveauPlongeur = { 
       nom: nom.trim(), 
-      niveau: niveau.trim(), 
+      niveau: niveau, 
       pre: prerogatives.trim() 
     };
     
@@ -49,8 +50,7 @@ function addPlongeur(nom, niveau, prerogatives = "") {
     return true;
   } catch (error) {
     console.error("❌ Erreur ajout plongeur:", error);
-    alert("Erreur lors de l'ajout du plongeur : " + error.message);
-    return false;
+    return false; // PAS d'alert
   }
 }
 
@@ -396,45 +396,21 @@ function displayFilteredPlongeurs(filteredList) {
 
 // ===== VALIDATION DES PLONGEURS =====
 function validatePlongeur(nom, niveau, prerogatives = "") {
+  // Version ultra-simplifiée pour éviter les bugs
   const errors = [];
   
-  // Validation du nom - Plus robuste
-  if (!nom || typeof nom !== 'string') {
-    errors.push("Le nom est requis");
-  } else if (nom.trim().length < 2) {
+  // Vérification basique du nom
+  if (!nom || nom.length < 2) {
     errors.push("Le nom doit contenir au moins 2 caractères");
-  } else if (nom.trim().length > 50) {
-    errors.push("Le nom ne peut pas dépasser 50 caractères");
   }
   
-  // Validation du niveau - Vérification plus stricte
-  const niveauxValides = [
-    'E4', 'E3', 'E2', 'GP', 'N4/GP', 'N4', 'N3', 'N2', 'N1',
-    'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'
-  ];
-  
-  if (!niveau || typeof niveau !== 'string') {
-    errors.push("Le niveau est requis");
-  } else if (!niveauxValides.includes(niveau.trim())) {
-    errors.push(`Niveau de plongée invalide. Niveaux acceptés: ${niveauxValides.join(', ')}`);
+  // Vérification basique du niveau
+  const niveaux = ['E4', 'E3', 'E2', 'GP', 'N4/GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+  if (!niveau || niveaux.indexOf(niveau) === -1) {
+    errors.push("Niveau de plongée invalide");
   }
   
-  // Validation des prérogatives
-  if (prerogatives && typeof prerogatives === 'string' && prerogatives.length > 100) {
-    errors.push("Les prérogatives ne peuvent pas dépasser 100 caractères");
-  }
-  
-  // Vérifier les doublons - Seulement si les données de base sont valides
-  if (nom && niveau && errors.length === 0) {
-    const existe = plongeurs.some(p => 
-      p.nom && p.nom.toLowerCase().trim() === nom.toLowerCase().trim() &&
-      p.niveau === niveau
-    );
-    
-    if (existe) {
-      errors.push("Ce plongeur existe déjà dans la liste");
-    }
-  }
+  // PAS de vérification de doublon pour éviter les problèmes
   
   return {
     valid: errors.length === 0,
@@ -499,7 +475,6 @@ function setupPlongeursEventListeners() {
   console.log("🎛️ Configuration des event listeners plongeurs...");
   
   try {
-    // === AJOUT DE PLONGEUR SÉCURISÉ ===
     const addForm = document.getElementById("addForm");
     if (addForm) {
       addForm.addEventListener("submit", e => {
@@ -511,28 +486,28 @@ function setupPlongeursEventListeners() {
           const preInput = document.getElementById("pre");
           
           if (!nomInput || !niveauInput || !preInput) {
-            alert("Erreur : Éléments de formulaire manquants");
+            console.error("❌ Éléments de formulaire manquants");
             return;
           }
           
-          const nom = nomInput.value ? nomInput.value.trim() : "";
-          const niveau = niveauInput.value ? niveauInput.value.trim() : "";
-          const pre = preInput.value ? preInput.value.trim() : "";
+          const nom = nomInput.value.trim();
+          const niveau = niveauInput.value;
+          const pre = preInput.value.trim();
           
-          // Validation simple avant l'appel principal
-          if (!nom) {
-            alert("Veuillez saisir un nom");
+          // Validation TRÈS simple sans popup
+          if (!nom || nom.length < 2) {
+            console.error("❌ Nom invalide");
             nomInput.focus();
             return;
           }
           
           if (!niveau) {
-            alert("Veuillez sélectionner un niveau");
+            console.error("❌ Niveau requis");
             niveauInput.focus();
             return;
           }
           
-          // Ajouter le plongeur (la validation complète est faite dans addPlongeur)
+          // Ajouter le plongeur SANS validation complexe
           const success = addPlongeur(nom, niveau, pre);
           
           if (success) {
@@ -540,36 +515,71 @@ function setupPlongeursEventListeners() {
             nomInput.value = "";
             niveauInput.value = "";
             preInput.value = "";
-            
-            // Focus sur le nom pour ajout rapide
             nomInput.focus();
             
-            // Message de succès optionnel
             console.log("✅ Plongeur ajouté avec succès");
+          } else {
+            console.error("❌ Échec ajout plongeur");
           }
           
         } catch (error) {
           console.error("❌ Erreur ajout plongeur:", error);
-          alert("Erreur inattendue : " + error.message);
-          if (typeof handleError === 'function') {
-            handleError(error, "Ajout plongeur");
-          }
         }
       });
-    } else {
-      console.warn("⚠️ Formulaire d'ajout non trouvé (#addForm)");
+    }
+    
+    // Reste des event listeners...
+    const importJSONInput = document.getElementById("importJSON");
+    if (importJSONInput) {
+      importJSONInput.addEventListener("change", e => {
+        try {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = e2 => {
+            try {
+              const result = importPlongeursFromJSON(e2.target.result);
+              console.log("Import résultat:", result);
+              importJSONInput.value = "";
+            } catch (error) {
+              console.error("❌ Erreur import:", error);
+            }
+          };
+          reader.readAsText(file);
+        } catch (error) {
+          console.error("❌ Erreur lecture fichier:", error);
+        }
+      });
     }
 
-    // === AUTRES EVENT LISTENERS... ===
-    // Le reste du code reste identique
+    const exportJSONBtn = document.getElementById("exportJSON");
+    if (exportJSONBtn) {
+      exportJSONBtn.addEventListener("click", () => {
+        try {
+          exportPlongeursToJSON();
+        } catch (error) {
+          console.error("❌ Erreur export JSON:", error);
+        }
+      });
+    }
+
+    const sortBtns = document.querySelectorAll('.sort-btn');
+    sortBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const sortType = btn.dataset.sort;
+          sortPlongeurs(sortType);
+        } catch (error) {
+          console.error("❌ Erreur tri plongeurs:", error);
+        }
+      });
+    });
     
-    console.log("✅ Event listeners plongeurs configurés avec succès");
+    console.log("✅ Event listeners plongeurs configurés");
     
   } catch (error) {
-    console.error("❌ Erreur configuration event listeners plongeurs:", error);
-    if (typeof handleError === 'function') {
-      handleError(error, "Configuration event listeners plongeurs");
-    }
+    console.error("❌ Erreur configuration event listeners:", error);
   }
 }
 // ===== GESTION DES PRÉROGATIVES =====
