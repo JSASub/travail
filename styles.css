@@ -199,6 +199,29 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
     clip: none !important;
   }
 }
+
+@media (max-width: 768px) {
+  /* Forcer les boutons DP en ligne horizontale */
+  #meta-info label:first-child > div {
+    flex-wrap: wrap;
+  }
+  
+  #dp-select {
+    width: 100%;
+    order: 1;
+  }
+  
+  /* Container des boutons en ligne */
+  .dp-management-btn {
+    order: 2;
+    flex: 1 1 32%;
+    max-width: calc(33.33% - 5px);
+    margin: 2px;
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+}
+
 /* Modal DP */
 #dp-modal {
   animation: fadeInModal 0.3s ease;
