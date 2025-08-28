@@ -439,7 +439,7 @@ function updateOnlineUsersWindow() {
         month: '2-digit'
       }) : 'Heure inconnue';
     
-    const userName = user.nom || user.email.split('@')[0];
+    const userName = user.email;
     const userLevel = user.niveau || 'Utilisateur';
     
     html += `
