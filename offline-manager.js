@@ -1,4 +1,4 @@
-// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence (VERSION CORRIGÉE)
+// offline-manager.js - Gestionnaire de connectivité et sauvegarde d'urgence
 
 // ===== VARIABLES GLOBALES =====
 let isOnline = false;
@@ -6,18 +6,14 @@ let lastSyncTimestamp = null;
 let emergencySaveInterval = null;
 let connectionCheckInterval = null;
 let offlineDataPending = false;
-
-// NOUVELLE VARIABLE GLOBALE pour bloquer les propositions tant que pas connecté
 let userAuthenticationCompleted = false;
 
 // ===== INDICATEUR DE STATUT =====
 function createConnectionIndicator() {
-  // Ne pas créer l'indicateur si l'utilisateur n'est pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     return null;
   }
 
-  // Supprimer l'ancien indicateur s'il existe
   const existingIndicator = document.getElementById('connection-indicator');
   if (existingIndicator) {
     existingIndicator.remove();
@@ -43,7 +39,6 @@ function createConnectionIndicator() {
     user-select: none;
   `;
   
-  // Ajouter un bouton de sync manuel
   indicator.innerHTML = `
     <span id="status-icon">🔄</span>
     <span id="status-text">Vérification...</span>
@@ -60,20 +55,17 @@ function createConnectionIndicator() {
   
   document.body.appendChild(indicator);
   
-  // Event listener pour sync manuel
   document.getElementById('manual-sync-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     forceSyncToFirebase();
   });
   
-  // Click sur l'indicateur pour afficher des détails
   indicator.addEventListener('click', showConnectionDetails);
   
   return indicator;
 }
 
 function updateConnectionIndicator(online, details = '') {
-  // Ne pas mettre à jour si l'utilisateur n'est pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     return;
   }
@@ -101,7 +93,6 @@ function updateConnectionIndicator(online, details = '') {
     if (syncBtn) syncBtn.style.display = 'block';
   }
   
-  // Afficher l'état des données pendantes
   if (offlineDataPending && !online) {
     statusText.textContent = 'Hors ligne - Données à synchroniser';
     statusIcon.textContent = '⚠️';
@@ -109,7 +100,6 @@ function updateConnectionIndicator(online, details = '') {
 }
 
 function showConnectionDetails() {
-  // Ne pas afficher les détails si l'utilisateur n'est pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     return;
   }
@@ -133,7 +123,6 @@ function showConnectionDetails() {
 
 // ===== VÉRIFICATION DE CONNEXION =====
 async function checkFirebaseConnection() {
-  // Ne pas vérifier la connexion si l'utilisateur n'est pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     return false;
   }
@@ -144,7 +133,6 @@ async function checkFirebaseConnection() {
       return false;
     }
     
-    // Test rapide de connexion
     const testPromise = new Promise((resolve) => {
       const timeout = setTimeout(() => resolve(false), 3000);
       
@@ -187,49 +175,72 @@ async function checkFirebaseConnection() {
 
 // ===== SAUVEGARDE D'URGENCE =====
 function emergencyLocalSave() {
-  // NOUVELLE VÉRIFICATION : Ne pas sauvegarder si pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     return false;
   }
 
   try {
-   const emergencyData = {
-  timestamp: Date.now(),
-  plongeurs: plongeurs || [],
-  palanquees: (palanquees || []).map(pal => {
-    // Sauvegarder les plongeurs ET tous les paramètres
-    const palanqueeComplete = {
-      plongeurs: [],
-      parametres: {
-        horaire: pal.horaire || "",
-        profondeurPrevue: pal.profondeurPrevue || "",
-        dureePrevue: pal.dureePrevue || "",
-        profondeurRealisee: pal.profondeurRealisee || "",
-        dureeRealisee: pal.dureeRealisee || "",
-        paliers: pal.paliers || ""
+    // Récupérer le DP sélectionné avec plusieurs méthodes
+    const getDPSelected = () => {
+      // Méthode 1: variable globale
+      if (window.dpSelected) {
+        return window.dpSelected;
       }
+      
+      // Méthode 2: fonction getCurrentDPName si elle existe
+      if (typeof getCurrentDPName === 'function') {
+        const dpName = getCurrentDPName();
+        if (dpName) return dpName;
+      }
+      
+      // Méthode 3: sélecteur HTML
+      const dpSelect = document.getElementById("dp-select");
+      if (dpSelect && dpSelect.selectedIndex > 0) {
+        return dpSelect.options[dpSelect.selectedIndex].text.trim();
+      }
+      
+      return "";
     };
-    
-    // Copier les plongeurs
-    for (let i = 0; i < pal.length; i++) {
-      if (pal[i] && pal[i].nom) {
-        palanqueeComplete.plongeurs.push(pal[i]);
-      }
-    }
-    
-    return palanqueeComplete;
-  }),
+
+    const emergencyData = {
+      timestamp: Date.now(),
+      plongeurs: plongeurs || [],
+      palanquees: (palanquees || []).map(pal => {
+        const palanqueeComplete = {
+          plongeurs: [],
+          parametres: {
+            horaire: pal.horaire || "",
+            profondeurPrevue: pal.profondeurPrevue || "",
+            dureePrevue: pal.dureePrevue || "",
+            profondeurRealisee: pal.profondeurRealisee || "",
+            dureeRealisee: pal.dureeRealisee || "",
+            paliers: pal.paliers || ""
+          }
+        };
+        
+        for (let i = 0; i < pal.length; i++) {
+          if (pal[i] && pal[i].nom) {
+            palanqueeComplete.plongeurs.push(pal[i]);
+          }
+        }
+        
+        return palanqueeComplete;
+      }),
+      metadata: {
+        dp: getDPSelected(),
+        date: document.getElementById("dp-date")?.value || "",
+        lieu: document.getElementById("dp-lieu")?.value || "",
+        plongee: document.getElementById("dp-plongee")?.value || "matin"
+      },
       version: "2.5.0-offline",
-      userEmail: currentUser.email // Ajouter l'email de l'utilisateur pour sécurité
+      userEmail: currentUser.email
     };
     
-    // Sauvegarder dans sessionStorage ET localStorage
     sessionStorage.setItem('jsas_emergency_backup', JSON.stringify(emergencyData));
     localStorage.setItem('jsas_last_backup', JSON.stringify(emergencyData));
     
-    console.log("💾 Sauvegarde d'urgence effectuée");
+    console.log("💾 Sauvegarde d'urgence effectuée - DP:", emergencyData.metadata.dp);
     
-    // Marquer comme données pendantes si hors ligne
     if (!isOnline) {
       offlineDataPending = true;
       updateConnectionIndicator(false);
@@ -244,14 +255,12 @@ function emergencyLocalSave() {
 }
 
 function loadEmergencyBackup() {
-  // NOUVELLE VÉRIFICATION CRITIQUE : Ne pas proposer de restauration si pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     console.log("ℹ️ Utilisateur non authentifié - pas de proposition de restauration");
     return false;
   }
 
   try {
-    // Essayer sessionStorage en premier, puis localStorage
     let backupData = sessionStorage.getItem('jsas_emergency_backup');
     if (!backupData) {
       backupData = localStorage.getItem('jsas_last_backup');
@@ -265,10 +274,8 @@ function loadEmergencyBackup() {
     const data = JSON.parse(backupData);
     const backupDate = new Date(data.timestamp).toLocaleString('fr-FR');
     
-    // NOUVELLE VÉRIFICATION : Vérifier que la sauvegarde appartient au bon utilisateur
     if (data.userEmail && data.userEmail !== currentUser.email) {
       console.log("⚠️ Sauvegarde d'un autre utilisateur détectée - ignorée");
-      // Nettoyer les sauvegardes d'autres utilisateurs
       sessionStorage.removeItem('jsas_emergency_backup');
       localStorage.removeItem('jsas_last_backup');
       return false;
@@ -291,177 +298,110 @@ function loadEmergencyBackup() {
       }
       
       if (Array.isArray(data.palanquees)) {
-  palanquees = data.palanquees.map(palData => {
-    const palanqueeArray = [];
-    
-    // Restaurer les plongeurs
-    if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
-      palData.plongeurs.forEach(plongeur => {
-        palanqueeArray.push(plongeur);
-      });
-    } else if (Array.isArray(palData)) {
-      // Ancien format (compatibilité)
-      palData.forEach(plongeur => {
-        if (plongeur && plongeur.nom) {
-          palanqueeArray.push(plongeur);
-        }
-      });
-    }
-    
-    // Restaurer TOUS les paramètres
-    if (palData.parametres) {
-      palanqueeArray.horaire = palData.parametres.horaire || "";
-      palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
-      palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
-      palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
-      palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
-      palanqueeArray.paliers = palData.parametres.paliers || "";
-    } else {
-      // Valeurs par défaut si pas de paramètres sauvegardés
-      palanqueeArray.horaire = palData.horaire || "";
-      palanqueeArray.profondeurPrevue = palData.profondeurPrevue || "";
-      palanqueeArray.dureePrevue = palData.dureePrevue || "";
-      palanqueeArray.profondeurRealisee = palData.profondeurRealisee || "";
-      palanqueeArray.dureeRealisee = palData.dureeRealisee || "";
-      palanqueeArray.paliers = palData.paliers || "";
-    }
-    
-    return palanqueeArray;
-  });
-}
-      
-      // Restaurer les métadonnées
-// Restaurer les métadonnées - VERSION AVEC ATTENTE FIREBASE
-// Restaurer les métadonnées - VERSION DEBUG INTENSIVE
-if (data.metadata) {
-  const dpNomSauvegarde = data.metadata.dp;
-  console.log("🔍 [DEBUG] Restauration DP demandée:", dpNomSauvegarde);
-  
-  // Restaurer les autres champs d'abord
-  const dpDate = document.getElementById("dp-date");
-  const dpLieu = document.getElementById("dp-lieu");
-  const dpPlongee = document.getElementById("dp-plongee");
-  
-  if (dpDate) dpDate.value = data.metadata.date || "";
-  if (dpLieu) dpLieu.value = data.metadata.lieu || "";
-  if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
-  
-  if (dpNomSauvegarde) {
-    // Fonction de debug du sélecteur
-    const debugSelector = () => {
-      const dpSelect = document.getElementById("dp-select");
-      console.log("🔍 [DEBUG] État sélecteur:");
-      console.log("  - Element trouvé:", !!dpSelect);
-      console.log("  - Nombre d'options:", dpSelect?.options.length);
-      console.log("  - Index sélectionné:", dpSelect?.selectedIndex);
-      console.log("  - Valeur sélectionnée:", dpSelect?.value);
-      console.log("  - Texte sélectionné:", dpSelect?.options[dpSelect?.selectedIndex]?.text);
-      console.log("  - window.dpSelected:", window.dpSelected);
-      
-      if (dpSelect) {
-        console.log("  - Toutes les options:");
-        Array.from(dpSelect.options).forEach((opt, i) => {
-          console.log(`    [${i}] "${opt.text}" (value: ${opt.value})`);
+        palanquees = data.palanquees.map(palData => {
+          const palanqueeArray = [];
+          
+          if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+            palData.plongeurs.forEach(plongeur => {
+              palanqueeArray.push(plongeur);
+            });
+          } else if (Array.isArray(palData)) {
+            palData.forEach(plongeur => {
+              if (plongeur && plongeur.nom) {
+                palanqueeArray.push(plongeur);
+              }
+            });
+          }
+          
+          if (palData.parametres) {
+            palanqueeArray.horaire = palData.parametres.horaire || "";
+            palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
+            palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
+            palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
+            palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
+            palanqueeArray.paliers = palData.parametres.paliers || "";
+          } else {
+            palanqueeArray.horaire = palData.horaire || "";
+            palanqueeArray.profondeurPrevue = palData.profondeurPrevue || "";
+            palanqueeArray.dureePrevue = palData.dureePrevue || "";
+            palanqueeArray.profondeurRealisee = palData.profondeurRealisee || "";
+            palanqueeArray.dureeRealisee = palData.dureeRealisee || "";
+            palanqueeArray.paliers = palData.paliers || "";
+          }
+          
+          return palanqueeArray;
         });
       }
-    };
-    
-    console.log("🔍 [DEBUG] État AVANT restauration:");
-    debugSelector();
-    
-    // Attendre et restaurer avec surveillance
-    let tentatives = 0;
-    const maxTentatives = 50; // 10 secondes max
-    
-    const tenterRestauration = () => {
-      tentatives++;
-      const dpSelect = document.getElementById("dp-select");
       
-      console.log(`🔍 [DEBUG] Tentative ${tentatives}/${maxTentatives}`);
-      
-      if (!dpSelect || dpSelect.options.length <= 1) {
-        if (tentatives < maxTentatives) {
-          setTimeout(tenterRestauration, 200);
-        } else {
-          console.log("❌ [DEBUG] Abandon - DP non chargés après", maxTentatives * 200, "ms");
+      // Restaurer les métadonnées avec patience pour le DP
+      if (data.metadata) {
+        const dpDate = document.getElementById("dp-date");
+        const dpLieu = document.getElementById("dp-lieu");
+        const dpPlongee = document.getElementById("dp-plongee");
+        
+        if (dpDate) dpDate.value = data.metadata.date || "";
+        if (dpLieu) dpLieu.value = data.metadata.lieu || "";
+        if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
+        
+        // Restaurer le DP avec attente
+        const dpNomSauvegarde = data.metadata.dp;
+        if (dpNomSauvegarde) {
+          console.log("🔄 Restauration du DP:", dpNomSauvegarde);
+          
+          const restaurerDP = () => {
+            const dpSelect = document.getElementById("dp-select");
+            
+            if (!dpSelect || dpSelect.options.length <= 1) {
+              setTimeout(restaurerDP, 300);
+              return;
+            }
+            
+            let dpTrouve = false;
+            
+            // Recherche exacte d'abord
+            for (let i = 0; i < dpSelect.options.length; i++) {
+              if (dpSelect.options[i].text.trim() === dpNomSauvegarde.trim()) {
+                dpSelect.selectedIndex = i;
+                dpSelect.value = dpSelect.options[i].value;
+                window.dpSelected = dpNomSauvegarde;
+                dpTrouve = true;
+                console.log("✅ DP restauré (exact):", dpNomSauvegarde);
+                break;
+              }
+            }
+            
+            // Recherche partielle si exact échoue
+            if (!dpTrouve) {
+              const nomFamille = dpNomSauvegarde.split(' ')[0];
+              for (let i = 0; i < dpSelect.options.length; i++) {
+                if (dpSelect.options[i].text.includes(nomFamille)) {
+                  dpSelect.selectedIndex = i;
+                  dpSelect.value = dpSelect.options[i].value;
+                  window.dpSelected = dpNomSauvegarde;
+                  dpTrouve = true;
+                  console.log("✅ DP restauré (partiel):", nomFamille);
+                  break;
+                }
+              }
+            }
+            
+            if (dpTrouve) {
+              dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+              dpSelect.dispatchEvent(new Event('input', { bubbles: true }));
+              
+              // Vérification finale
+              setTimeout(() => {
+                console.log("🎯 DP final:", dpSelect.options[dpSelect.selectedIndex]?.text);
+              }, 500);
+            } else {
+              console.log("❌ DP non trouvé:", dpNomSauvegarde);
+            }
+          };
+          
+          // Délai pour laisser le DOM et Firebase se stabiliser
+          setTimeout(restaurerDP, 1000);
         }
-        return;
       }
-      
-      console.log("🔍 [DEBUG] Début de restauration - DP disponibles:", dpSelect.options.length);
-      
-      // Sauvegarder l'état avant modification
-      const indexAvant = dpSelect.selectedIndex;
-      
-      // Tentative de restauration
-      let dpTrouve = false;
-      let indexTrouve = -1;
-      
-      for (let i = 0; i < dpSelect.options.length; i++) {
-        const optionText = dpSelect.options[i].text.trim();
-        console.log(`🔍 [DEBUG] Comparaison: "${optionText}" vs "${dpNomSauvegarde}"`);
-        
-        if (optionText === dpNomSauvegarde.trim()) {
-          indexTrouve = i;
-          dpTrouve = true;
-          console.log("✅ [DEBUG] Match exact trouvé à l'index", i);
-          break;
-        }
-      }
-      
-      if (!dpTrouve) {
-        const nomFamille = dpNomSauvegarde.split(' ')[0];
-        console.log("🔍 [DEBUG] Recherche partielle avec:", nomFamille);
-        
-        for (let i = 0; i < dpSelect.options.length; i++) {
-          if (dpSelect.options[i].text.includes(nomFamille)) {
-            indexTrouve = i;
-            dpTrouve = true;
-            console.log("✅ [DEBUG] Match partiel trouvé à l'index", i);
-            break;
-          }
-        }
-      }
-      
-      if (dpTrouve) {
-        console.log("🎯 [DEBUG] Application de la sélection index:", indexTrouve);
-        
-        // Appliquer la sélection
-        dpSelect.selectedIndex = indexTrouve;
-        dpSelect.value = dpSelect.options[indexTrouve].value;
-        window.dpSelected = dpNomSauvegarde;
-        
-        console.log("🔍 [DEBUG] État APRÈS sélection:");
-        debugSelector();
-        
-        // Déclencher les événements
-        console.log("🔍 [DEBUG] Déclenchement des événements...");
-        dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        dpSelect.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        // Vérification avec délai
-        setTimeout(() => {
-          console.log("🔍 [DEBUG] État FINAL après événements:");
-          debugSelector();
-        }, 500);
-        
-        // Vérification périodique pour détecter si quelque chose remet à zéro
-        setTimeout(() => {
-          console.log("🔍 [DEBUG] État après 2 secondes:");
-          debugSelector();
-        }, 2000);
-        
-      } else {
-        console.log("❌ [DEBUG] DP non trouvé:", dpNomSauvegarde);
-      }
-    };
-    
-    // Lancer la tentative
-    setTimeout(tenterRestauration, 500); // Petit délai initial
-  }
-}
-
-
 
       // Re-rendre l'interface
       if (typeof renderPalanquees === 'function') renderPalanquees();
@@ -471,7 +411,6 @@ if (data.metadata) {
       
       showNotification("✅ Sauvegarde d'urgence restaurée avec succès !", "success");
       
-      // Marquer comme données pendantes
       offlineDataPending = true;
       
       return true;
@@ -488,7 +427,6 @@ if (data.metadata) {
 
 // ===== SYNCHRONISATION FORCÉE =====
 async function forceSyncToFirebase() {
-  // Ne pas synchroniser si l'utilisateur n'est pas authentifié
   if (!userAuthenticationCompleted || !currentUser) {
     showNotification("⚠️ Synchronisation impossible - utilisateur non connecté", "warning");
     return false;
@@ -498,7 +436,6 @@ async function forceSyncToFirebase() {
   const statusIcon = document.getElementById('status-icon');
   
   try {
-    // Animation de synchronisation
     if (statusIcon) statusIcon.textContent = '🔄';
     if (syncBtn) {
       syncBtn.textContent = '⏳';
@@ -507,34 +444,28 @@ async function forceSyncToFirebase() {
     
     showNotification("🔄 Synchronisation en cours...", "info");
     
-    // Vérifier la connexion d'abord
     const connected = await checkFirebaseConnection();
     
     if (!connected) {
       throw new Error("Connexion Firebase indisponible");
     }
     
-    // Effectuer la synchronisation
     if (typeof syncToDatabase === 'function') {
       await syncToDatabase();
     } else {
-      // Synchronisation manuelle si la fonction n'existe pas
       await Promise.all([
         db.ref('plongeurs').set(plongeurs || []),
         db.ref('palanquees').set(palanquees || [])
       ]);
       
-      // Sauvegarder la session si les métadonnées sont remplies
       if (typeof saveSessionData === 'function') {
         await saveSessionData();
       }
     }
     
-    // Mettre à jour les timestamps
     lastSyncTimestamp = Date.now();
     offlineDataPending = false;
     
-    // Nettoyer les sauvegardes d'urgence après sync réussie
     sessionStorage.removeItem('jsas_emergency_backup');
     
     showNotification("✅ Synchronisation réussie !", "success");
@@ -550,7 +481,6 @@ async function forceSyncToFirebase() {
     return false;
     
   } finally {
-    // Restaurer l'interface
     if (statusIcon) statusIcon.textContent = isOnline ? '🟢' : '🔴';
     if (syncBtn) {
       syncBtn.textContent = '🔄';
@@ -559,7 +489,7 @@ async function forceSyncToFirebase() {
   }
 }
 
-// ===== NOTIFICATIONS AMÉLIORÉES =====
+// ===== NOTIFICATIONS =====
 function showNotification(message, type = "info", duration = 4000) {
   try {
     let container = document.getElementById("offline-notifications");
@@ -609,12 +539,10 @@ function showNotification(message, type = "info", duration = 4000) {
     
     container.appendChild(notification);
     
-    // Animation d'entrée
     setTimeout(() => {
       notification.style.transform = 'translateX(0)';
     }, 10);
     
-    // Auto-suppression
     setTimeout(() => {
       if (notification.parentElement) {
         notification.style.transform = 'translateX(100%)';
@@ -624,7 +552,6 @@ function showNotification(message, type = "info", duration = 4000) {
     
   } catch (error) {
     console.error("❌ Erreur notification:", error);
-    // Fallback vers alert
     alert(message);
   }
 }
@@ -644,51 +571,41 @@ function initializeOfflineManager() {
   console.log("🌐 Initialisation du gestionnaire hors ligne...");
   
   try {
-    // NOUVELLE VÉRIFICATION : Ne s'initialiser que si l'utilisateur est authentifié
     if (!userAuthenticationCompleted || !currentUser) {
       console.log("ℹ️ Utilisateur non authentifié - gestionnaire hors ligne en attente");
       return;
     }
 
-    // Créer l'indicateur de connexion
     createConnectionIndicator();
     
-    // Vérification initiale de la connexion
     checkFirebaseConnection();
     
-    // Vérifications périodiques de connexion (toutes les 10 secondes)
     if (connectionCheckInterval) {
       clearInterval(connectionCheckInterval);
     }
     connectionCheckInterval = setInterval(checkFirebaseConnection, 10000);
     
-    // Sauvegarde d'urgence automatique (toutes les 30 secondes)
     if (emergencySaveInterval) {
       clearInterval(emergencySaveInterval);
     }
     emergencySaveInterval = setInterval(emergencyLocalSave, 30000);
     
-    // MODIFICATION : Proposer de restaurer une sauvegarde d'urgence seulement après authentification
     setTimeout(() => {
       if (userAuthenticationCompleted && currentUser) {
         loadEmergencyBackup();
       }
     }, 2000);
     
-    // Intercepter les modifications pour déclencher la sauvegarde d'urgence
     const originalSyncToDatabase = window.syncToDatabase;
     if (originalSyncToDatabase) {
       window.syncToDatabase = async function() {
-        // Sauvegarde d'urgence immédiate (seulement si authentifié)
         if (userAuthenticationCompleted && currentUser) {
           emergencyLocalSave();
         }
         
         try {
-          // Appeler la fonction originale
           const result = await originalSyncToDatabase.apply(this, arguments);
           
-          // Si la sync réussit, mettre à jour le statut
           lastSyncTimestamp = Date.now();
           offlineDataPending = false;
           updateConnectionIndicator(isOnline);
@@ -700,18 +617,15 @@ function initializeOfflineManager() {
           offlineDataPending = true;
           updateConnectionIndicator(false);
           
-          // Ne pas propager l'erreur pour éviter de casser l'application
           return false;
         }
       };
     }
     
-    // Nettoyage à la fermeture
     window.addEventListener('beforeunload', () => {
       if (emergencySaveInterval) clearInterval(emergencySaveInterval);
       if (connectionCheckInterval) clearInterval(connectionCheckInterval);
       
-      // Sauvegarde finale (seulement si authentifié)
       if (userAuthenticationCompleted && currentUser) {
         emergencyLocalSave();
       }
@@ -725,25 +639,21 @@ function initializeOfflineManager() {
   }
 }
 
-// ===== NOUVELLE FONCTION : Marquer l'utilisateur comme authentifié =====
+// ===== CONTRÔLE UTILISATEUR =====
 function setUserAuthenticated(authenticated = true) {
   userAuthenticationCompleted = authenticated;
   
   if (authenticated && currentUser) {
     console.log("✅ Utilisateur authentifié - activation du gestionnaire hors ligne");
-    // Initialiser le gestionnaire hors ligne maintenant que l'utilisateur est connecté
     initializeOfflineManager();
   } else {
     console.log("ℹ️ Utilisateur déconnecté - désactivation du gestionnaire hors ligne");
-    // Nettoyer le gestionnaire hors ligne
     cleanupOfflineManager();
   }
 }
 
-// ===== NOUVELLE FONCTION : Nettoyage du gestionnaire =====
 function cleanupOfflineManager() {
   try {
-    // Arrêter les intervalles
     if (emergencySaveInterval) {
       clearInterval(emergencySaveInterval);
       emergencySaveInterval = null;
@@ -754,13 +664,11 @@ function cleanupOfflineManager() {
       connectionCheckInterval = null;
     }
     
-    // Supprimer l'indicateur de connexion
     const indicator = document.getElementById('connection-indicator');
     if (indicator) {
       indicator.remove();
     }
     
-    // Réinitialiser les variables
     isOnline = false;
     lastSyncTimestamp = null;
     offlineDataPending = false;
@@ -769,79 +677,6 @@ function cleanupOfflineManager() {
     
   } catch (error) {
     console.error("❌ Erreur nettoyage gestionnaire hors ligne:", error);
-  }
-}
-
-// ===== PANNEAU DE GESTION HORS LIGNE =====
-function showOfflineManagerPanel() {
-  if (!userAuthenticationCompleted || !currentUser) {
-    alert("⚠️ Vous devez être connecté pour accéder au gestionnaire hors ligne");
-    return;
-  }
-
-  const stats = getOfflineStats();
-  
-  if (!stats) {
-    alert("❌ Impossible de récupérer les statistiques hors ligne");
-    return;
-  }
-  
-  const formatAge = (ms) => {
-    if (!ms) return "Jamais";
-    const minutes = Math.floor(ms / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days}j ${hours % 24}h`;
-    if (hours > 0) return `${hours}h ${minutes % 60}m`;
-    return `${minutes}m`;
-  };
-  
-  const panelContent = `
-🌐 GESTIONNAIRE HORS LIGNE
-
-📊 État actuel :
-• Connexion : ${stats.isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}
-• Dernière sync : ${stats.lastSync ? new Date(stats.lastSync).toLocaleString('fr-FR') : 'Jamais'}
-• Données pendantes : ${stats.pendingData ? '⚠️ Oui' : '✅ Non'}
-
-💾 Sauvegardes disponibles :
-• Session active : ${stats.hasSessionBackup ? '✅ Oui (' + formatAge(stats.sessionBackupAge) + ')' : '❌ Non'}
-• Sauvegarde locale : ${stats.hasLocalBackup ? '✅ Oui (' + formatAge(stats.localBackupAge) + ')' : '❌ Non'}
-
-🔧 Actions disponibles :
-[1] Synchroniser maintenant
-[2] Charger sauvegarde d'urgence
-[3] Effacer données hors ligne
-[4] Forcer sauvegarde locale
-[Annuler]
-  `;
-  
-  const choice = prompt(panelContent + "\nChoisissez une action (1-4) :");
-  
-  switch(choice) {
-    case '1':
-      forceSyncToFirebase();
-      break;
-      
-    case '2':
-      loadEmergencyBackup();
-      break;
-      
-    case '3':
-      if (confirm("⚠️ Effacer toutes les données hors ligne ?\n\nCette action est irréversible !")) {
-        clearOfflineData();
-      }
-      break;
-      
-    case '4':
-      emergencyLocalSave();
-      showNotification("💾 Sauvegarde locale forcée effectuée", "success");
-      break;
-      
-    default:
-      // Annulation - ne rien faire
-      break;
   }
 }
 
@@ -878,23 +713,19 @@ function getOfflineStats() {
   }
 }
 
-// ===== INITIALISATION MODIFIÉE =====
-// Ne plus attendre automatiquement - l'initialisation se fera via setUserAuthenticated()
-function waitForInitialization() {
-  // Cette fonction est maintenant vide - l'initialisation est contrôlée manuellement
-  console.log("ℹ️ Gestionnaire hors ligne en attente de l'authentification utilisateur");
-}
-
-// Commencer l'attente (mais ne rien faire automatiquement)
-waitForInitialization();
-
-// Export des fonctions pour usage global
+// ===== EXPORTS GLOBAUX =====
 window.forceSyncToFirebase = forceSyncToFirebase;
 window.emergencyLocalSave = emergencyLocalSave;
 window.loadEmergencyBackup = loadEmergencyBackup;
 window.clearOfflineData = clearOfflineData;
 window.getOfflineStats = getOfflineStats;
-window.setUserAuthenticated = setUserAuthenticated; // NOUVELLE EXPORT
-window.showOfflineManagerPanel = showOfflineManagerPanel;
+window.setUserAuthenticated = setUserAuthenticated;
+window.showOfflineManagerPanel = () => {
+  if (!userAuthenticationCompleted || !currentUser) {
+    alert("⚠️ Vous devez être connecté pour accéder au gestionnaire hors ligne");
+    return;
+  }
+  console.log("📱 Panneau de gestion hors ligne disponible via console");
+};
 
-console.log("📱 Module de gestion hors ligne chargé (version sécurisée)");
+console.log("📱 Module de gestion hors ligne chargé (version complète)");
