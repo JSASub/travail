@@ -210,12 +210,18 @@ function markDPOnlineSafe() {
     const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
     
     dpOnlineRef.set({
-      nom: dpNom,  // <- PROBLÈME ICI
+      nom: dpNom,
       email: currentUser.email,
       niveau: dpInfo.niveau,
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       sessionActive: true
     });
+    
+    dpOnlineRef.onDisconnect().remove();
+  } catch (error) {
+    console.error("Erreur marquage DP en ligne:", error);
+  }
+}
 	
 function listenToLocksSafe() {
   if (!db) return;
