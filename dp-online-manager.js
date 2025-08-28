@@ -1,11 +1,10 @@
-// dp-online-manager.js - Gestionnaire des utilisateurs connectés (VERSION CORRIGÉE)
+// dp-online-manager.js - Gestionnaire des utilisateurs connectés
 
 // ===== VARIABLES GLOBALES =====
 let onlineUsersData = {};
 let onlineUsersWindow = null;
 let onlineUsersInterval = null;
-let isUserAuthenticated = false;
-let searchTimeout = null; // NOUVEAU: Timeout de sécurité
+let isUserAuthenticated = false; // NOUVEAU : Flag d'authentification local
 
 // ===== ÉCOUTEUR DES UTILISATEURS EN LIGNE =====
 function initializeOnlineUsersListener() {
@@ -17,11 +16,13 @@ function initializeOnlineUsersListener() {
   console.log("👥 Initialisation de l'écoute des utilisateurs connectés...");
 
   try {
+    // NOUVEAU : Marquer comme authentifié
     isUserAuthenticated = true;
     
     const onlineRef = db.ref('dp_online');
     
     onlineRef.on('value', (snapshot) => {
+      // NOUVEAU : Vérifier si on est toujours authentifié
       if (!isUserAuthenticated || !currentUser) {
         console.log("🚫 Utilisateur déconnecté - ignore les mises à jour");
         return;
@@ -30,21 +31,18 @@ function initializeOnlineUsersListener() {
       onlineUsersData = snapshot.val() || {};
       console.log(`👥 ${Object.keys(onlineUsersData).length} utilisateur(s) connecté(s)`);
       
-      // NOUVEAU: Nettoyer le timeout si les données arrivent
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-        searchTimeout = null;
-      }
-      
       // Mettre à jour la fenêtre si elle est ouverte
       if (onlineUsersWindow && !onlineUsersWindow.closed) {
         updateOnlineUsersWindow();
       }
       
+      // Mettre à jour l'indicateur dans l'interface principale
       updateOnlineUsersIndicator();
     });
 
+    // IMPORTANT : Stocker la référence pour pouvoir la nettoyer
     window.onlineUsersRef = onlineRef;
+    
     console.log("✅ Écoute des utilisateurs connectés initialisée");
     
   } catch (error) {
@@ -54,7 +52,9 @@ function initializeOnlineUsersListener() {
 
 // ===== INDICATEUR DANS L'INTERFACE PRINCIPALE =====
 function updateOnlineUsersIndicator() {
+  // NOUVEAU : Vérifier l'authentification avant de créer/mettre à jour
   if (!isUserAuthenticated || !currentUser) {
+    // Supprimer l'indicateur si on n'est pas authentifié
     const indicator = document.getElementById('online-users-indicator');
     if (indicator) {
       indicator.remove();
@@ -65,6 +65,7 @@ function updateOnlineUsersIndicator() {
   let indicator = document.getElementById('online-users-indicator');
   
   if (!indicator) {
+    // Créer l'indicateur s'il n'existe pas
     indicator = document.createElement('div');
     indicator.id = 'online-users-indicator';
     indicator.style.cssText = `
@@ -85,7 +86,7 @@ function updateOnlineUsersIndicator() {
       user-select: none;
     `;
     
-    indicator.addEventListener('click', openOnlineUsersWindowSafe); // CORRIGÉ: Fonction sécurisée
+    indicator.addEventListener('click', openOnlineUsersWindow);
     indicator.addEventListener('mouseenter', () => {
       indicator.style.transform = 'scale(1.05)';
       indicator.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -99,6 +100,7 @@ function updateOnlineUsersIndicator() {
   }
 
   const userCount = Object.keys(onlineUsersData).length;
+  const otherUsers = userCount - 1; // Exclure soi-même
   
   if (userCount <= 1) {
     indicator.innerHTML = '👤 Vous seul';
@@ -115,38 +117,14 @@ function updateOnlineUsersIndicator() {
   indicator.title = `Cliquer pour voir qui est connecté (${userCount} utilisateur${userCount > 1 ? 's' : ''})`;
 }
 
-// ===== FONCTION SÉCURISÉE POUR OUVRIR LA FENÊTRE =====
-function openOnlineUsersWindowSafe() {
+// ===== FENÊTRE DES UTILISATEURS CONNECTÉS =====
+function openOnlineUsersWindow() {
+  // NOUVEAU : Vérifier l'authentification avant d'ouvrir
   if (!isUserAuthenticated || !currentUser) {
     alert("⚠️ Vous devez être connecté pour voir les utilisateurs en ligne");
     return;
   }
 
-  // Éviter les clics multiples
-  if (searchTimeout) {
-    console.log("Recherche déjà en cours...");
-    return;
-  }
-
-  console.log("🔍 Début recherche utilisateurs connectés...");
-
-  // NOUVEAU: Timeout de sécurité de 8 secondes
-  searchTimeout = setTimeout(() => {
-    console.error("⏰ Timeout: La recherche des utilisateurs connectés a pris trop de temps");
-    handleSearchTimeout();
-  }, 8000);
-
-  // Essayer d'ouvrir la fenêtre
-  try {
-    openOnlineUsersWindow();
-  } catch (error) {
-    console.error("❌ Erreur ouverture fenêtre:", error);
-    handleSearchError(error);
-  }
-}
-
-// ===== FENÊTRE DES UTILISATEURS CONNECTÉS (ORIGINALE MODIFIÉE) =====
-function openOnlineUsersWindow() {
   if (onlineUsersWindow && !onlineUsersWindow.closed) {
     onlineUsersWindow.focus();
     return;
@@ -168,11 +146,11 @@ function openOnlineUsersWindow() {
   onlineUsersWindow = window.open('', 'OnlineUsers', windowFeatures);
   
   if (!onlineUsersWindow) {
-    handleSearchError(new Error('Impossible d\'ouvrir la fenêtre popup'));
+    alert('❌ Impossible d\'ouvrir la fenêtre. Veuillez autoriser les pop-ups.');
     return;
   }
 
-  // Contenu initial avec message de chargement amélioré
+  // Contenu initial de la fenêtre
   onlineUsersWindow.document.write(`
     <!DOCTYPE html>
     <html lang="fr">
@@ -309,22 +287,6 @@ function openOnlineUsersWindow() {
           100% { opacity: 1; }
         }
         
-        .loading-spinner {
-          display: inline-block;
-          width: 20px;
-          height: 20px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #007bff;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin-right: 10px;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
         .footer {
           background: #f8f9fa;
           padding: 15px 20px;
@@ -360,20 +322,6 @@ function openOnlineUsersWindow() {
           color: #999;
         }
         
-        .error-state {
-          text-align: center;
-          padding: 40px 20px;
-          background: #f8d7da;
-          border: 1px solid #f5c6cb;
-          border-radius: 10px;
-          color: #721c24;
-        }
-        
-        .error-state h3 {
-          margin-bottom: 10px;
-          color: #721c24;
-        }
-        
         /* Scrollbar personnalisée */
         .content::-webkit-scrollbar {
           width: 6px;
@@ -402,12 +350,8 @@ function openOnlineUsersWindow() {
         </div>
         <div class="content" id="users-content">
           <div class="empty-state">
-            <div class="loading-spinner"></div>
-            <h3>🔄 Recherche en cours...</h3>
+            <h3>🔄 Chargement...</h3>
             <p>Récupération des utilisateurs connectés...</p>
-            <p style="font-size: 12px; color: #999; margin-top: 10px;">
-              Timeout automatique dans 8 secondes si aucune donnée n'arrive
-            </p>
           </div>
         </div>
         <div class="footer">
@@ -423,42 +367,24 @@ function openOnlineUsersWindow() {
 
   onlineUsersWindow.document.close();
   
-  // CORRIGÉ: Attendre plus longtemps et vérifier les données
+  // Mettre à jour immédiatement
   setTimeout(() => {
-    updateOnlineUsersWindowSafe();
-  }, 1000); // Augmenté à 1 seconde
+    updateOnlineUsersWindow();
+  }, 500);
 
   // Nettoyer quand la fenêtre se ferme
   onlineUsersWindow.addEventListener('beforeunload', () => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
     onlineUsersWindow = null;
   });
 
   console.log("✅ Fenêtre des utilisateurs connectés ouverte");
 }
 
-// ===== MISE À JOUR SÉCURISÉE DE LA FENÊTRE =====
-function updateOnlineUsersWindowSafe() {
-  try {
-    updateOnlineUsersWindow();
-    
-    // NOUVEAU: Nettoyer le timeout si la mise à jour réussit
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
-  } catch (error) {
-    console.error("❌ Erreur mise à jour fenêtre:", error);
-    handleSearchError(error);
-  }
-}
-
-// ===== MISE À JOUR DE LA FENÊTRE (MODIFIÉE) =====
+// ===== MISE À JOUR DE LA FENÊTRE =====
 function updateOnlineUsersWindow() {
+  // NOUVEAU : Vérifier l'authentification
   if (!isUserAuthenticated || !currentUser) {
+    // Fermer la fenêtre si on n'est plus authentifié
     if (onlineUsersWindow && !onlineUsersWindow.closed) {
       onlineUsersWindow.close();
     }
@@ -473,7 +399,6 @@ function updateOnlineUsersWindow() {
   const lastUpdateDiv = onlineUsersWindow.document.getElementById('last-update');
   
   if (!contentDiv || !lastUpdateDiv) {
-    console.warn("⚠️ Éléments de la fenêtre non trouvés");
     return;
   }
 
@@ -482,39 +407,18 @@ function updateOnlineUsersWindow() {
 
   const users = Object.values(onlineUsersData);
   
-  // CORRIGÉ: Meilleure gestion du cas "pas de données"
+  // CORRECTION : Vérifier si on a des données utilisateurs
   if (users.length === 0) {
-    // Vérifier si on attend encore des données ou si c'est vraiment vide
-    const isStillLoading = searchTimeout !== null;
-    
-    if (isStillLoading) {
-      // On attend encore
-      contentDiv.innerHTML = `
-        <div class="empty-state">
-          <div class="loading-spinner"></div>
-          <h3>🔄 Recherche en cours...</h3>
-          <p>Récupération des utilisateurs connectés...</p>
-          <p style="font-size: 12px; color: #999; margin-top: 10px;">
-            ${Math.ceil((8000 - (Date.now() - (Date.now() - 8000))) / 1000)} secondes restantes avant timeout
-          </p>
-        </div>
-      `;
-    } else {
-      // Plus d'attente, afficher le résultat final
-      contentDiv.innerHTML = `
-        <div class="empty-state">
-          <h3>👤 Vous êtes seul connecté</h3>
-          <p>Aucun autre utilisateur n'est actuellement connecté</p>
-          <p style="font-size: 12px; color: #666; margin-top: 10px;">
-            Les autres utilisateurs apparaîtront ici quand ils se connecteront
-          </p>
-        </div>
-      `;
-    }
+    contentDiv.innerHTML = `
+      <div class="empty-state">
+        <h3>🔄 Connexion en cours...</h3>
+        <p>Chargement des utilisateurs connectés...</p>
+      </div>
+    `;
     return;
   }
 
-  // Suite du code original pour afficher les utilisateurs...
+  // Trier les utilisateurs : utilisateur actuel en premier, puis par nom
   users.sort((a, b) => {
     if (a.email === currentUser?.email) return -1;
     if (b.email === currentUser?.email) return 1;
@@ -553,6 +457,7 @@ function updateOnlineUsersWindow() {
     `;
   });
   
+  // CORRECTION : Afficher un message spécial si vous êtes seul
   if (users.length === 1 && users[0].email === currentUser?.email) {
     html += `
       <div style="text-align: center; margin-top: 20px; padding: 20px; background: #f0f8ff; border-radius: 10px; border: 1px dashed #007bff;">
@@ -563,77 +468,6 @@ function updateOnlineUsersWindow() {
   }
   
   contentDiv.innerHTML = html;
-  
-  console.log("✅ Fenêtre mise à jour avec succès");
-}
-
-// ===== NOUVELLES FONCTIONS DE GESTION D'ERREUR =====
-function handleSearchTimeout() {
-  console.warn("⏰ Timeout de recherche des utilisateurs connectés");
-  searchTimeout = null;
-  
-  if (onlineUsersWindow && !onlineUsersWindow.closed) {
-    const contentDiv = onlineUsersWindow.document.getElementById('users-content');
-    if (contentDiv) {
-      contentDiv.innerHTML = `
-        <div class="error-state">
-          <h3>⏰ Timeout de recherche</h3>
-          <p>La recherche des utilisateurs connectés a pris trop de temps</p>
-          <p style="margin-top: 15px;">
-            <button onclick="window.opener.retrySearch()" style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-              🔄 Réessayer
-            </button>
-          </p>
-        </div>
-      `;
-    }
-  }
-}
-
-function handleSearchError(error) {
-  console.error("❌ Erreur lors de la recherche:", error);
-  
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-    searchTimeout = null;
-  }
-  
-  if (onlineUsersWindow && !onlineUsersWindow.closed) {
-    const contentDiv = onlineUsersWindow.document.getElementById('users-content');
-    if (contentDiv) {
-      contentDiv.innerHTML = `
-        <div class="error-state">
-          <h3>❌ Erreur de recherche</h3>
-          <p>Impossible de récupérer les utilisateurs connectés</p>
-          <p style="font-size: 12px; color: #999; margin: 10px 0;">
-            Erreur: ${error.message}
-          </p>
-          <p>
-            <button onclick="window.opener.retrySearch()" style="background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-              🔄 Réessayer
-            </button>
-          </p>
-        </div>
-      `;
-    }
-  } else {
-    // Si pas de fenêtre, afficher une alerte
-    alert(`❌ Erreur lors de la recherche des utilisateurs connectés:\n\n${error.message}\n\nVeuillez réessayer.`);
-  }
-}
-
-// ===== FONCTION DE RÉESSAI =====
-function retrySearch() {
-  console.log("🔄 Nouvelle tentative de recherche...");
-  
-  if (onlineUsersWindow && !onlineUsersWindow.closed) {
-    onlineUsersWindow.close();
-  }
-  
-  // Attendre un peu avant de réessayer
-  setTimeout(() => {
-    openOnlineUsersWindowSafe();
-  }, 1000);
 }
 
 // ===== NETTOYAGE À LA DÉCONNEXION =====
@@ -641,34 +475,34 @@ function cleanupOnlineUsersManager() {
   try {
     console.log("🧹 Nettoyage du gestionnaire des utilisateurs en ligne...");
     
+    // NOUVEAU : Marquer comme déconnecté IMMÉDIATEMENT
     isUserAuthenticated = false;
     
-    // NOUVEAU: Nettoyer le timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
-    
+    // Nettoyer les écouteurs Firebase
     if (window.onlineUsersRef) {
       window.onlineUsersRef.off();
       window.onlineUsersRef = null;
       console.log("✅ Écouteur Firebase supprimé");
     }
     
+    // Fermer la fenêtre IMMÉDIATEMENT
     if (onlineUsersWindow && !onlineUsersWindow.closed) {
       onlineUsersWindow.close();
       console.log("✅ Fenêtre utilisateurs fermée");
     }
     
+    // Supprimer l'indicateur IMMÉDIATEMENT
     const indicator = document.getElementById('online-users-indicator');
     if (indicator) {
       indicator.remove();
       console.log("✅ Indicateur supprimé");
     }
     
+    // Réinitialiser les variables
     onlineUsersData = {};
     onlineUsersWindow = null;
     
+    // NOUVEAU : Forcer la suppression immédiate de Firebase
     if (currentUser && db) {
       try {
         db.ref(`dp_online/${currentUser.uid}`).remove();
@@ -687,9 +521,11 @@ function cleanupOnlineUsersManager() {
 
 // ===== INITIALISATION AUTOMATIQUE =====
 function initOnlineUsersManager() {
+  // Attendre que l'utilisateur soit connecté
   if (typeof currentUser !== 'undefined' && currentUser) {
     initializeOnlineUsersListener();
   } else {
+    // Réessayer toutes les 2 secondes jusqu'à ce que l'utilisateur soit connecté
     const checkInterval = setInterval(() => {
       if (typeof currentUser !== 'undefined' && currentUser && isUserAuthenticated !== false) {
         clearInterval(checkInterval);
@@ -697,6 +533,7 @@ function initOnlineUsersManager() {
       }
     }, 2000);
     
+    // Arrêter après 30 secondes max
     setTimeout(() => {
       clearInterval(checkInterval);
     }, 30000);
@@ -708,6 +545,7 @@ function setOnlineUsersManagerActive(active) {
   if (active) {
     isUserAuthenticated = true;
     console.log("✅ Gestionnaire utilisateurs en ligne activé");
+    // Réinitialiser si nécessaire
     if (currentUser && db) {
       initializeOnlineUsersListener();
     }
@@ -718,17 +556,17 @@ function setOnlineUsersManagerActive(active) {
 }
 
 // ===== EXPORTS GLOBAUX =====
-window.openOnlineUsersWindow = openOnlineUsersWindowSafe; // CORRIGÉ: Version sécurisée
+window.openOnlineUsersWindow = openOnlineUsersWindow;
 window.updateOnlineUsersWindow = updateOnlineUsersWindow;
 window.cleanupOnlineUsersManager = cleanupOnlineUsersManager;
-window.setOnlineUsersManagerActive = setOnlineUsersManagerActive;
-window.retrySearch = retrySearch; // NOUVEAU
+window.setOnlineUsersManagerActive = setOnlineUsersManagerActive; // NOUVEAU
 
 // ===== INITIALISATION =====
+// Lancer l'initialisation quand le DOM est prêt
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initOnlineUsersManager);
 } else {
   initOnlineUsersManager();
 }
 
-console.log("👥 Gestionnaire des utilisateurs connectés chargé (VERSION SÉCURISÉE)");
+console.log("👥 Gestionnaire des utilisateurs connectés chargé");
