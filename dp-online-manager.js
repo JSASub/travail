@@ -535,18 +535,16 @@ function updateOnlineUsersWindow() {
         month: '2-digit'
       }) : 'Heure inconnue';
     
-    const userName = user.nom || user.email.split('@')[0];
-    const userLevel = user.niveau || 'Utilisateur';
+    // CORRECTION : Afficher seulement l'email, pas le nom DP
+    const userEmail = user.email;
     
     html += `
       <div class="${cardClass}">
         <div class="user-name">
           <span class="status-online"></span>
-          ${userName}
+          ${userEmail}
         </div>
-        <div class="user-email">${user.email}</div>
         <div class="user-info">
-          <span class="user-level">${userLevel}</span>
           <span class="user-time">Connecté à ${connectionTime}</span>
         </div>
       </div>
