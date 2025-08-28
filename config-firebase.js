@@ -209,11 +209,16 @@ function markDPOnlineSafe() {
     const dpOnlineRef = db.ref(`dp_online/${currentUser.uid}`);
     
     dpOnlineRef.set({
-      // CORRECTION: On enregistre seulement l'email, pas le nom DP
       email: currentUser.email,
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       sessionActive: true
     });
+    
+    dpOnlineRef.onDisconnect().remove();
+  } catch (error) {
+    console.error("Erreur marquage DP en ligne:", error);
+  }
+}
 	
 function listenToLocksSafe() {
   if (!db) return;
