@@ -332,11 +332,12 @@ function loadEmergencyBackup() {
       
       // Restaurer les métadonnées
 // Restaurer les métadonnées - VERSION AVEC ATTENTE FIREBASE
+// Restaurer les métadonnées - VERSION DEBUG INTENSIVE
 if (data.metadata) {
   const dpNomSauvegarde = data.metadata.dp;
-  console.log("🔍 Tentative restauration DP:", dpNomSauvegarde);
+  console.log("🔍 [DEBUG] Restauration DP demandée:", dpNomSauvegarde);
   
-  // Restaurer les autres champs AVANT le DP
+  // Restaurer les autres champs d'abord
   const dpDate = document.getElementById("dp-date");
   const dpLieu = document.getElementById("dp-lieu");
   const dpPlongee = document.getElementById("dp-plongee");
@@ -345,65 +346,118 @@ if (data.metadata) {
   if (dpLieu) dpLieu.value = data.metadata.lieu || "";
   if (dpPlongee) dpPlongee.value = data.metadata.plongee || "matin";
   
-  // Attendre que les DP soient chargés depuis Firebase
   if (dpNomSauvegarde) {
-    const attendreDP = () => {
+    // Fonction de debug du sélecteur
+    const debugSelector = () => {
+      const dpSelect = document.getElementById("dp-select");
+      console.log("🔍 [DEBUG] État sélecteur:");
+      console.log("  - Element trouvé:", !!dpSelect);
+      console.log("  - Nombre d'options:", dpSelect?.options.length);
+      console.log("  - Index sélectionné:", dpSelect?.selectedIndex);
+      console.log("  - Valeur sélectionnée:", dpSelect?.value);
+      console.log("  - Texte sélectionné:", dpSelect?.options[dpSelect?.selectedIndex]?.text);
+      console.log("  - window.dpSelected:", window.dpSelected);
+      
+      if (dpSelect) {
+        console.log("  - Toutes les options:");
+        Array.from(dpSelect.options).forEach((opt, i) => {
+          console.log(`    [${i}] "${opt.text}" (value: ${opt.value})`);
+        });
+      }
+    };
+    
+    console.log("🔍 [DEBUG] État AVANT restauration:");
+    debugSelector();
+    
+    // Attendre et restaurer avec surveillance
+    let tentatives = 0;
+    const maxTentatives = 50; // 10 secondes max
+    
+    const tenterRestauration = () => {
+      tentatives++;
       const dpSelect = document.getElementById("dp-select");
       
-      // Vérifier si le sélecteur a des options (plus que "Choisir un DP")
+      console.log(`🔍 [DEBUG] Tentative ${tentatives}/${maxTentatives}`);
+      
       if (!dpSelect || dpSelect.options.length <= 1) {
-        console.log("⏳ Attente du chargement des DP... Options:", dpSelect?.options.length);
-        setTimeout(attendreDP, 200); // Réessayer dans 200ms
+        if (tentatives < maxTentatives) {
+          setTimeout(tenterRestauration, 200);
+        } else {
+          console.log("❌ [DEBUG] Abandon - DP non chargés après", maxTentatives * 200, "ms");
+        }
         return;
       }
       
-      console.log("✅ DP disponibles:", dpSelect.options.length, "- Restauration du DP:", dpNomSauvegarde);
+      console.log("🔍 [DEBUG] Début de restauration - DP disponibles:", dpSelect.options.length);
       
-      // Maintenant restaurer le DP
+      // Sauvegarder l'état avant modification
+      const indexAvant = dpSelect.selectedIndex;
+      
+      // Tentative de restauration
       let dpTrouve = false;
+      let indexTrouve = -1;
       
-      // Méthode 1: Recherche exacte
       for (let i = 0; i < dpSelect.options.length; i++) {
-        if (dpSelect.options[i].text.trim() === dpNomSauvegarde.trim()) {
-          dpSelect.selectedIndex = i;
-          dpSelect.value = dpSelect.options[i].value;
+        const optionText = dpSelect.options[i].text.trim();
+        console.log(`🔍 [DEBUG] Comparaison: "${optionText}" vs "${dpNomSauvegarde}"`);
+        
+        if (optionText === dpNomSauvegarde.trim()) {
+          indexTrouve = i;
           dpTrouve = true;
-          console.log("✅ DP restauré - match exact:", dpNomSauvegarde);
+          console.log("✅ [DEBUG] Match exact trouvé à l'index", i);
           break;
         }
       }
       
-      // Méthode 2: Recherche par nom de famille
       if (!dpTrouve) {
         const nomFamille = dpNomSauvegarde.split(' ')[0];
+        console.log("🔍 [DEBUG] Recherche partielle avec:", nomFamille);
+        
         for (let i = 0; i < dpSelect.options.length; i++) {
           if (dpSelect.options[i].text.includes(nomFamille)) {
-            dpSelect.selectedIndex = i;
-            dpSelect.value = dpSelect.options[i].value;
+            indexTrouve = i;
             dpTrouve = true;
-            console.log("✅ DP restauré - match partiel:", nomFamille);
+            console.log("✅ [DEBUG] Match partiel trouvé à l'index", i);
             break;
           }
         }
       }
       
       if (dpTrouve) {
-        // Déclencher les événements pour mettre à jour l'interface
-        dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log("🎯 [DEBUG] Application de la sélection index:", indexTrouve);
+        
+        // Appliquer la sélection
+        dpSelect.selectedIndex = indexTrouve;
+        dpSelect.value = dpSelect.options[indexTrouve].value;
         window.dpSelected = dpNomSauvegarde;
         
-        // Vérification finale
+        console.log("🔍 [DEBUG] État APRÈS sélection:");
+        debugSelector();
+        
+        // Déclencher les événements
+        console.log("🔍 [DEBUG] Déclenchement des événements...");
+        dpSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        dpSelect.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        // Vérification avec délai
         setTimeout(() => {
-          console.log("🎯 DP final sélectionné:", dpSelect.options[dpSelect.selectedIndex]?.text);
-        }, 100);
+          console.log("🔍 [DEBUG] État FINAL après événements:");
+          debugSelector();
+        }, 500);
+        
+        // Vérification périodique pour détecter si quelque chose remet à zéro
+        setTimeout(() => {
+          console.log("🔍 [DEBUG] État après 2 secondes:");
+          debugSelector();
+        }, 2000);
+        
       } else {
-        console.log("❌ DP non trouvé dans la liste:", dpNomSauvegarde);
-        console.log("📋 DP disponibles:", Array.from(dpSelect.options).map(opt => opt.text));
+        console.log("❌ [DEBUG] DP non trouvé:", dpNomSauvegarde);
       }
     };
     
-    // Démarrer l'attente
-    attendreDP();
+    // Lancer la tentative
+    setTimeout(tenterRestauration, 500); // Petit délai initial
   }
 }
 
