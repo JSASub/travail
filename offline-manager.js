@@ -197,12 +197,16 @@ function emergencyLocalSave() {
       timestamp: Date.now(),
       plongeurs: plongeurs || [],
       palanquees: palanquees || [],
-      metadata: {
-        dp: document.getElementById("dp-nom")?.value || "",
-        date: document.getElementById("dp-date")?.value || "",
-        lieu: document.getElementById("dp-lieu")?.value || "",
-        plongee: document.getElementById("dp-plongee")?.value || "matin"
-      },
+	  metadata: {
+		dp: window.dpSelected || getCurrentDPName() || (function() {
+		const dpSelect = document.getElementById("dp-select");
+		return dpSelect && dpSelect.selectedIndex > 0 ? 
+		dpSelect.options[dpSelect.selectedIndex].text.trim() : "";
+		})(),
+		date: document.getElementById("dp-date")?.value || "",
+		lieu: document.getElementById("dp-lieu")?.value || "",
+		plongee: document.getElementById("dp-plongee")?.value || "matin"
+	 },
       version: "2.5.0-offline",
       userEmail: currentUser.email // Ajouter l'email de l'utilisateur pour sécurité
     };
