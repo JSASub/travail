@@ -535,14 +535,14 @@ function updateOnlineUsersWindow() {
         month: '2-digit'
       }) : 'Heure inconnue';
     
-    // CORRECTION : Afficher seulement l'email, pas le nom DP
-    const userEmail = user.email;
+    // SOLUTION SÉCURISÉE : Toujours afficher l'email, ignorer le nom DP
+    const displayName = user.email; // Utiliser toujours l'email
     
     html += `
       <div class="${cardClass}">
         <div class="user-name">
           <span class="status-online"></span>
-          ${userEmail}
+          ${displayName}
         </div>
         <div class="user-info">
           <span class="user-time">Connecté à ${connectionTime}</span>
