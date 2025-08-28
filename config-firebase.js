@@ -214,7 +214,7 @@ function markDPOnlineSafe() {
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       sessionActive: true
     });
-
+	
 function listenToLocksSafe() {
   if (!db) return;
   
