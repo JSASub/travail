@@ -750,7 +750,7 @@ function generatePDFPreview() {
     htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Print</button>';
     htmlContent += '<button class="command-button success" onclick="parent.savePreviewDirectToPDF()">📄 PDF</button>';
     htmlContent += '<button class="command-button warning" onclick="parent.downloadPreviewHTML()">📄 HTML</button>';
-    htmlContent += '<button class="command-button info" onclick="parent.testPreviewCommands()">🧪 Test</button>';
+    //htmlContent += '<button class="command-button info" onclick="parent.testPreviewCommands()">🧪 Test</button>';
     htmlContent += '</div>';
     
     // Bouton de fermeture existant
