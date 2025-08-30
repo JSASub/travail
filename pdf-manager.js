@@ -840,15 +840,96 @@ function generatePDFPreview() {
 
 // ===== NOUVELLE FONCTION : TÉLÉCHARGER PDF DEPUIS LA PREVIEW =====
 function downloadPDFFromPreview() {
-  console.log("📄 Téléchargement du PDF depuis l'aperçu...");
+  console.log("📄 Téléchargement du PDF depuis l'aperçu HTML...");
   
-  // Appeler directement la fonction d'export PDF existante
   try {
-    exportToPDF();
-    console.log("✅ Téléchargement PDF lancé depuis l'aperçu");
+    // Récupérer l'iframe de la preview
+    const pdfPreview = document.getElementById("pdfPreview");
+    if (!pdfPreview || !pdfPreview.contentDocument) {
+      throw new Error("Aperçu PDF non trouvé ou non accessible");
+    }
+    
+    // Récupérer le contenu HTML de l'iframe
+    const previewDocument = pdfPreview.contentDocument;
+    const container = previewDocument.querySelector('.container');
+    
+    if (!container) {
+      throw new Error("Contenu de l'aperçu non trouvé");
+    }
+    
+    // Vérifier si html2pdf est disponible (via canvas2pdf ou autre)
+    if (typeof html2pdf === 'undefined') {
+      // Alternative avec jsPDF + html2canvas si html2pdf n'est pas disponible
+      if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+        console.log("📄 Utilisation de html2canvas + jsPDF...");
+        
+        html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        }).then(canvas => {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          
+          const imgWidth = 210; // A4 width in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          
+          // Nom du fichier
+          const dpDate = document.getElementById("dp-date")?.value || "export";
+          const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+          const fileName = 'palanquees-jsas-preview-' + dpDate + '-' + dpPlongee + '.pdf';
+          
+          pdf.save(fileName);
+          console.log("✅ PDF généré depuis l'aperçu HTML:", fileName);
+        }).catch(error => {
+          throw new Error("Erreur html2canvas: " + error.message);
+        });
+        
+      } else {
+        throw new Error("Bibliothèques de conversion PDF non disponibles. Veuillez charger html2pdf, ou html2canvas + jsPDF");
+      }
+      
+    } else {
+      // Utiliser html2pdf si disponible
+      console.log("📄 Utilisation de html2pdf...");
+      
+      const dpDate = document.getElementById("dp-date")?.value || "export";
+      const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+      const fileName = 'palanquees-jsas-preview-' + dpDate + '-' + dpPlongee + '.pdf';
+      
+      const opt = {
+        margin: 10,
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        }
+      };
+      
+      html2pdf().from(container).set(opt).save().then(() => {
+        console.log("✅ PDF généré depuis l'aperçu HTML avec html2pdf:", fileName);
+      }).catch(error => {
+        throw new Error("Erreur html2pdf: " + error.message);
+      });
+    }
+    
   } catch (error) {
     console.error("❌ Erreur téléchargement PDF depuis aperçu:", error);
-    alert("Erreur lors du téléchargement du PDF: " + error.message);
+    alert("Erreur lors du téléchargement du PDF depuis l'aperçu: " + error.message + 
+          "\n\nAssurez-vous d'avoir chargé html2pdf.js ou html2canvas dans votre page HTML.");
   }
 }
 
