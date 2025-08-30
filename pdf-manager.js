@@ -825,7 +825,7 @@ function generatePDFPreview() {
       });
       
       console.log("✅ Aperçu PDF généré avec boutons Download/Print et tri par grade");
-      setTimeout(() => URL.createObjectURL(url), 30000);
+      setTimeout(() => URL.revokeObjectURL(url), 30000); // CORRECTION: revokeObjectURL au lieu de createObjectURL
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
