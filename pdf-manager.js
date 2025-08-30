@@ -860,11 +860,31 @@ function downloadPDFFromPreview() {
   console.log("📄 Téléchargement du PDF depuis l'aperçu HTML...");
   
   try {
-    // ÉTAPE 1: Vérifier les bibliothèques disponibles
-    console.log("🔍 Vérification des bibliothèques...");
+    // ÉTAPE 1: Vérifier les bibliothèques disponibles avec diagnostic détaillé
+    console.log("🔍 Diagnostic des bibliothèques PDF...");
     console.log("html2pdf disponible:", typeof html2pdf !== 'undefined');
     console.log("html2canvas disponible:", typeof html2canvas !== 'undefined');
     console.log("jsPDF disponible:", typeof window.jspdf !== 'undefined');
+    console.log("window.jsPDF disponible:", typeof window.jsPDF !== 'undefined');
+    
+    // Diagnostic approfondi
+    if (typeof html2pdf === 'undefined') {
+      console.warn("❌ html2pdf non trouvé");
+    } else {
+      console.log("✅ html2pdf détecté:", html2pdf);
+    }
+    
+    if (typeof html2canvas === 'undefined') {
+      console.warn("❌ html2canvas non trouvé");
+    } else {
+      console.log("✅ html2canvas détecté:", html2canvas);
+    }
+    
+    if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+      console.warn("❌ jsPDF non trouvé (ni window.jspdf ni window.jsPDF)");
+    } else {
+      console.log("✅ jsPDF détecté:", window.jspdf || window.jsPDF);
+    }
     
     // ÉTAPE 2: Récupérer les données
     console.log("📊 Récupération des données...");
@@ -1014,12 +1034,13 @@ function downloadPDFFromPreview() {
     console.log("✅ Élément temporaire créé et ajouté au DOM");
     console.log("Contenu HTML généré, longueur:", htmlContent.length);
     
-    // ÉTAPE 4: Conversion en PDF
+    // ÉTAPE 4: Conversion en PDF avec détection robuste
     const fileName = 'palanquees-jsas-preview-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
     console.log("📄 Nom du fichier:", fileName);
     
     // Attendre un peu que l'élément soit rendu
     setTimeout(() => {
+      // Option 1: html2pdf (prioritaire)
       if (typeof html2pdf !== 'undefined') {
         console.log("🔄 Utilisation de html2pdf...");
         
@@ -1050,8 +1071,13 @@ function downloadPDFFromPreview() {
           alert("Erreur html2pdf: " + error.message);
         });
         
-      } else if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+      // Option 2: html2canvas + jsPDF
+      } else if (typeof html2canvas !== 'undefined' && (typeof window.jspdf !== 'undefined' || typeof window.jsPDF !== 'undefined')) {
         console.log("🔄 Utilisation de html2canvas + jsPDF...");
+        
+        // Support des deux versions de jsPDF
+        const jsPDFLib = window.jspdf || window.jsPDF;
+        const jsPDFClass = jsPDFLib.jsPDF || jsPDFLib;
         
         html2canvas(tempDiv, {
           scale: 2,
@@ -1062,8 +1088,7 @@ function downloadPDFFromPreview() {
         }).then(canvas => {
           console.log("✅ Canvas créé, dimensions:", canvas.width, "x", canvas.height);
           
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdf = new jsPDFClass('p', 'mm', 'a4');
           
           const imgWidth = 210; // A4 width in mm
           const pageHeight = 297; // A4 height in mm
@@ -1094,17 +1119,33 @@ function downloadPDFFromPreview() {
           document.body.removeChild(tempDiv);
           alert("Erreur html2canvas: " + error.message);
         });
-        
+      
+      // Option 3: Aucune bibliothèque disponible
       } else {
         document.body.removeChild(tempDiv);
-        const message = "❌ Aucune bibliothèque de conversion PDF disponible.\n\n" +
-                       "Veuillez ajouter dans votre HTML :\n" +
-                       "• html2pdf.js (recommandé) :\n" +
-                       '  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>\n\n' +
-                       "• OU html2canvas :\n" +
-                       '  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>';
         
-        console.error(message);
+        // Diagnostic détaillé pour l'utilisateur
+        let missingLibs = [];
+        if (typeof html2pdf === 'undefined') missingLibs.push('html2pdf');
+        if (typeof html2canvas === 'undefined') missingLibs.push('html2canvas');
+        if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') missingLibs.push('jsPDF');
+        
+        const message = `❌ Bibliothèques PDF manquantes: ${missingLibs.join(', ')}\n\n` +
+                       `📋 SOLUTION: Ajoutez dans votre HTML (avant la fermeture </body>) :\n\n` +
+                       `OPTION 1 (Recommandée) :\n` +
+                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>\n\n` +
+                       `OPTION 2 (Alternative) :\n` +
+                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>\n` +
+                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>\n\n` +
+                       `📍 Vous avez mentionné canvas2pdf - vérifiez qu'il est bien chargé !`;
+        
+        console.error("❌ MODULE PDF NON CHARGÉ");
+        console.error("Bibliothèques manquantes:", missingLibs);
+        console.error("html2pdf:", typeof html2pdf);
+        console.error("html2canvas:", typeof html2canvas); 
+        console.error("window.jspdf:", typeof window.jspdf);
+        console.error("window.jsPDF:", typeof window.jsPDF);
+        
         alert(message);
       }
     }, 100); // Petit délai pour le rendu
@@ -1119,12 +1160,21 @@ function downloadPDFFromPreview() {
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
+  const pdfPreviewDiv = document.getElementById("pdfPreviewDiv");
   
   if (previewContainer) {
     previewContainer.style.display = "none";
+    
+    // Nettoyer l'iframe
     if (pdfPreview) {
       pdfPreview.src = "";
     }
+    
+    // Nettoyer le div de preview
+    if (pdfPreviewDiv) {
+      pdfPreviewDiv.innerHTML = "";
+    }
+    
     console.log("✅ Aperçu PDF fermé");
   }
 }
