@@ -477,55 +477,27 @@ function generatePDFPreview() {
           min-height: 297mm;
           position: relative;
         }
-        
-        /* === BARRE D'ACTION EN HAUT === */
-        .action-bar {
+        .close-button {
           position: fixed;
           top: 20px;
           right: 20px;
-          display: flex;
-          gap: 10px;
-          z-index: 1000;
-        }
-        
-        .action-button {
-          border: none;
-          border-radius: 8px;
-          padding: 12px 16px;
-          font-size: 14px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .close-button {
           background: #dc3545;
           color: white;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+          z-index: 1000;
+          transition: all 0.3s ease;
         }
-        
-        .download-button {
-          background: #28a745;
-          color: white;
+        .close-button:hover {
+          background: #c82333;
+          transform: scale(1.1);
         }
-        
-        .print-button {
-          background: #007bff;
-          color: white;
-        }
-        
-        .action-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-        }
-        
-        .close-button:hover { background: #c82333; }
-        .download-button:hover { background: #218838; }
-        .print-button:hover { background: #0056b3; }
-        
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
@@ -610,19 +582,6 @@ function generatePDFPreview() {
             margin: 0 !important;
             box-shadow: none !important;
           }
-          .action-bar {
-            position: relative !important;
-            top: auto !important;
-            right: auto !important;
-            justify-content: center !important;
-            padding: 15px !important;
-            background: rgba(255,255,255,0.9) !important;
-            backdrop-filter: blur(10px) !important;
-          }
-          .action-button {
-            padding: 10px 12px !important;
-            font-size: 12px !important;
-          }
           .header {
             padding: 15px !important;
           }
@@ -664,6 +623,13 @@ function generatePDFPreview() {
           .plongeur-prerogatives {
             font-size: 10px !important;
           }
+          .close-button {
+            width: 45px !important;
+            height: 45px !important;
+            font-size: 18px !important;
+            top: 15px !important;
+            right: 15px !important;
+          }
         }
         
         @media screen and (max-width: 480px) {
@@ -682,39 +648,31 @@ function generatePDFPreview() {
           .palanquee-title {
             font-size: 14px !important;
           }
-          .action-button {
-            padding: 8px 10px !important;
-            font-size: 11px !important;
+          .close-button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            top: 10px !important;
+            right: 10px !important;
           }
         }
         
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .action-bar { display: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
 
     let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
     htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // === BARRE D'ACTIONS EN HAUT ===
-    htmlContent += '<div class="action-bar">';
-    htmlContent += '<button class="action-button download-button" onclick="parent.downloadPDFFromPreview()" title="Télécharger le PDF">';
-    htmlContent += '<span>📄</span> Télécharger PDF';
-    htmlContent += '</button>';
-    htmlContent += '<button class="action-button print-button" onclick="window.print()" title="Imprimer">';
-    htmlContent += '<span>🖨️</span> Imprimer';
-    htmlContent += '</button>';
-    htmlContent += '<button class="action-button close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">';
-    htmlContent += '<span>✕</span> Fermer';
-    htmlContent += '</button>';
-    htmlContent += '</div>';
+    // Ajout du bouton de fermeture intégré dans le HTML
+    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -824,7 +782,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec boutons Download/Print et tri par grade");
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
       setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
@@ -835,20 +793,6 @@ function generatePDFPreview() {
   } catch (error) {
     console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
-  }
-}
-
-// ===== NOUVELLE FONCTION : TÉLÉCHARGER PDF DEPUIS LA PREVIEW =====
-function downloadPDFFromPreview() {
-  console.log("📄 Téléchargement du PDF depuis l'aperçu...");
-  
-  // Appeler directement la fonction d'export PDF existante
-  try {
-    exportToPDF();
-    console.log("✅ Téléchargement PDF lancé depuis l'aperçu");
-  } catch (error) {
-    console.error("❌ Erreur téléchargement PDF depuis aperçu:", error);
-    alert("Erreur lors du téléchargement du PDF: " + error.message);
   }
 }
 
@@ -869,7 +813,6 @@ function closePDFPreview() {
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
-window.downloadPDFFromPreview = downloadPDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec boutons Download/Print");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
