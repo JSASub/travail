@@ -678,6 +678,7 @@ function generatePDFPreview() {
 	htmlContent += '<button class="command-button warning" onclick="parent.savePreviewAsImage()">🖼️ Image</button>';
 	htmlContent += '</div>';
 	htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
+	htmlContent += '<button class="command-button success" onclick="parent.exportPreviewToPDF()">📄 PDF</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
