@@ -732,6 +732,278 @@ function printPDFPreview() {
   }
 }
 
+function printPDFPreview() {
+  console.log("🖨️ Impression du preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  if (!pdfPreview) {
+    alert("Aperçu non trouvé");
+    return;
+  }
+  
+  try {
+    // Créer une nouvelle fenêtre avec tout le contenu HTML
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
+    const previewContent = pdfPreview.srcdoc;
+    
+    if (previewContent) {
+      // Modifier le CSS pour l'impression
+      const printContent = previewContent.replace(
+        '</head>',
+        `<style>
+          @media print {
+            .command-bar, .close-button { display: none !important; }
+            body { background: white !important; }
+            .container { box-shadow: none !important; max-width: none !important; margin: 0 !important; }
+            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+          }
+        </style></head>`
+      );
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Attendre le chargement et imprimer
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          // Ne pas fermer automatiquement pour permettre à l'utilisateur de voir/ajuster
+        }, 1000);
+      };
+      
+      console.log("✅ Fenêtre d'impression ouverte");
+    } else {
+      alert("Impossible d'accéder au contenu du preview");
+    }
+  } catch (error) {
+    console.error("❌ Erreur impression:", error);
+    alert("Erreur d'impression : " + error.message);
+  }
+}
+
+function savePreviewDirectToPDF() {
+  console.log("💾 Sauvegarde du preview en PDF...");
+  
+  // Vérifier que jsPDF est disponible
+  if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+    alert("Erreur: jsPDF non disponible");
+    return;
+  }
+  
+  try {
+    const { jsPDF } = window.jspdf;
+    
+    // Récupérer les données actuelles
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+    
+    // Utiliser les variables globales si disponibles
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    // Créer un nouveau PDF
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const colors = {
+      primaryR: 0, primaryG: 64, primaryB: 128,
+      secondaryR: 0, secondaryG: 123, secondaryB: 255,
+      darkR: 52, darkG: 58, darkB: 64
+    };
+    
+    let yPos = 20;
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // En-tête simplifié
+    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Palanquées JSAS - Preview", margin, 20);
+    
+    doc.setFontSize(10);
+    doc.text(`DP: ${dpNom}`, margin, 30);
+    doc.text(`Date: ${dpDate} - ${dpPlongee}`, margin, 37);
+    doc.text(`Lieu: ${dpLieu}`, margin, 44);
+    
+    yPos = 65;
+    
+    // Statistiques
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.text("RÉSUMÉ", margin, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+    doc.text(`Total plongeurs: ${totalPlongeurs}`, margin, yPos);
+    yPos += 6;
+    doc.text(`Palanquées: ${palanqueesLocal.length}`, margin, yPos);
+    yPos += 15;
+    
+    // Palanquées
+    if (palanqueesLocal.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+      doc.text("PALANQUÉES", margin, yPos);
+      yPos += 10;
+      
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          // Vérifier si on a besoin d'une nouvelle page
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFontSize(12);
+          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+          doc.text(`Palanquée ${i + 1} (${pal.length} plongeurs)`, margin, yPos);
+          yPos += 8;
+          
+          if (pal.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+            
+            pal.forEach(p => {
+              if (p && p.nom) {
+                const line = `• ${p.nom} (${p.niveau || 'N?'})${p.pre ? ' - ' + p.pre : ''}`;
+                doc.text(line, margin + 5, yPos);
+                yPos += 4;
+              }
+            });
+          } else {
+            doc.setFontSize(9);
+            doc.setTextColor(128, 128, 128);
+            doc.text("Aucun plongeur assigné", margin + 5, yPos);
+            yPos += 4;
+          }
+          yPos += 6;
+        }
+      });
+    }
+    
+    // Plongeurs en attente
+    if (plongeursLocal.length > 0) {
+      if (yPos > 220) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+      doc.text("PLONGEURS EN ATTENTE", margin, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      plongeursLocal.forEach(p => {
+        if (p && p.nom) {
+          const line = `• ${p.nom} (${p.niveau || 'N?'})${p.pre ? ' - ' + p.pre : ''}`;
+          doc.text(line, margin + 5, yPos);
+          yPos += 4;
+        }
+      });
+    }
+    
+    // Sauvegarder
+    const fileName = `palanquees-preview-${dpDate || 'export'}-${dpPlongee}.pdf`;
+    doc.save(fileName);
+    
+    console.log("✅ PDF du preview sauvegardé:", fileName);
+    alert(`PDF du preview sauvegardé avec succès !\n📄 ${fileName}`);
+    
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde PDF:", error);
+    alert("Erreur lors de la sauvegarde PDF: " + error.message);
+  }
+}
+
+function downloadPreviewHTML() {
+  console.log("📄 Téléchargement du HTML du preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  if (!pdfPreview) {
+    alert("Aperçu non trouvé");
+    return;
+  }
+  
+  try {
+    const htmlContent = pdfPreview.srcdoc;
+    if (!htmlContent) {
+      alert("Contenu HTML non accessible");
+      return;
+    }
+    
+    // Nettoyer le HTML pour retirer les boutons de commandes
+    const cleanHtml = htmlContent.replace(
+      /<div class="command-bar">.*?<\/div>/s,
+      ''
+    ).replace(
+      /<button class="close-button".*?<\/button>/s,
+      ''
+    );
+    
+    const blob = new Blob([cleanHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    const dpDate = document.getElementById("dp-date")?.value || new Date().toISOString().split('T')[0];
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "preview";
+    
+    link.download = `palanquees-preview-${dpDate}-${dpPlongee}.html`;
+    link.href = url;
+    link.click();
+    
+    // Nettoyer l'URL après usage
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    
+    console.log("✅ HTML téléchargé:", link.download);
+    alert(`Fichier HTML téléchargé avec succès !\n📄 ${link.download}`);
+    
+  } catch (error) {
+    console.error("❌ Erreur téléchargement HTML:", error);
+    alert("Erreur lors du téléchargement: " + error.message);
+  }
+}
+
+function testPreviewCommands() {
+  console.log("🧪 Test des commandes preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  console.log("Preview element:", pdfPreview);
+  
+  if (pdfPreview) {
+    console.log("Preview srcdoc length:", pdfPreview.srcdoc?.length || 0);
+    console.log("Variables globales:");
+    console.log("- plongeurs:", typeof plongeurs, plongeurs?.length || 0);
+    console.log("- palanquees:", typeof palanquees, palanquees?.length || 0);
+    console.log("- jsPDF:", typeof window.jspdf);
+    
+    alert(`Test réussi !\n\n✅ Preview trouvé\n📏 Contenu: ${pdfPreview.srcdoc?.length || 0} caractères\n👥 Plongeurs: ${typeof plongeurs !== 'undefined' ? plongeurs.length : 0}\n🏊 Palanquées: ${typeof palanquees !== 'undefined' ? palanquees.length : 0}\n📄 jsPDF: ${typeof window.jspdf !== 'undefined' ? 'OK' : 'NON DISPONIBLE'}`);
+  } else {
+    alert("❌ Preview non trouvé !");
+  }
+}
+
+// ===== EXPORT DES NOUVELLES FONCTIONS =====
+window.printPDFPreview = printPDFPreview;
+window.savePreviewDirectToPDF = savePreviewDirectToPDF;
+window.downloadPreviewHTML = downloadPreviewHTML;
+window.testPreviewCommands = testPreviewCommands;
+
+console.log("🔧 Fonctions de commandes du preview ajoutées et exportées");
+
 function testPreviewCommands() {
   console.log("🧪 Test des commandes preview...");
   const pdfPreview = document.getElementById("pdfPreview");
