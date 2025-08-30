@@ -410,259 +410,282 @@ function exportToPDF() {
 }
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
-// Solution simple et directe pour les commandes du preview
-
-// Fonction d'impression simple qui fonctionne
 function printPDFPreview() {
-  console.log("🖨️ Impression du preview...");
+  console.log("🖨️ Impression de l'aperçu...");
   
   const pdfPreview = document.getElementById("pdfPreview");
-  if (!pdfPreview) {
-    alert("Aperçu non trouvé");
-    return;
-  }
-  
-  try {
-    // Méthode simple : ouvrir une nouvelle fenêtre avec le contenu
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    // Récupérer le contenu HTML du preview
-    const previewContent = pdfPreview.srcdoc || pdfPreview.contentDocument?.documentElement.outerHTML;
-    
-    if (previewContent) {
-      printWindow.document.write(previewContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé puis imprimer
-      printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 500);
-      };
-      
-      console.log("✅ Impression lancée dans nouvelle fenêtre");
-    } else {
-      alert("Impossible d'accéder au contenu du preview");
-    }
-    
-  } catch (error) {
-    console.error("❌ Erreur impression:", error);
-    alert("Erreur d'impression : " + error.message);
-  }
-}
-
-// Fonction pour sauvegarder directement le HTML du preview en PDF
-function savePreviewDirectToPDF() {
-  console.log("💾 Sauvegarde directe du preview en PDF...");
-  
-  // Vérifier que jsPDF est disponible
-  if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
-    alert("Erreur: jsPDF non disponible pour la sauvegarde");
-    return;
-  }
-  
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    // Récupérer les données du preview depuis les variables globales
-    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
-    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-    
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
-    
-    // Générer un PDF simplifié avec le contenu du preview
-    let yPos = 20;
-    const margin = 20;
-    
-    // En-tête
-    doc.setFontSize(20);
-    doc.setTextColor(0, 64, 128);
-    doc.text("Palanquées JSAS - Preview", margin, yPos);
-    yPos += 10;
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`DP: ${dpNom}`, margin, yPos);
-    yPos += 6;
-    doc.text(`Date: ${dpDate} - ${dpPlongee}`, margin, yPos);
-    yPos += 6;
-    doc.text(`Lieu: ${dpLieu}`, margin, yPos);
-    yPos += 15;
-    
-    // Statistiques
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    doc.setFontSize(14);
-    doc.setTextColor(0, 64, 128);
-    doc.text("Résumé", margin, yPos);
-    yPos += 8;
-    
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total plongeurs: ${totalPlongeurs}`, margin, yPos);
-    yPos += 5;
-    doc.text(`Palanquées: ${palanqueesLocal.length}`, margin, yPos);
-    yPos += 15;
-    
-    // Palanquées
-    if (palanqueesLocal.length > 0) {
-      doc.setFontSize(14);
-      doc.setTextColor(0, 64, 128);
-      doc.text("Palanquées", margin, yPos);
-      yPos += 10;
-      
-      palanqueesLocal.forEach((pal, i) => {
-        if (pal && Array.isArray(pal)) {
-          doc.setFontSize(12);
-          doc.setTextColor(0, 123, 255);
-          doc.text(`Palanquée ${i + 1} (${pal.length} plongeurs)`, margin, yPos);
-          yPos += 8;
-          
-          if (pal.length > 0) {
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 0);
-            pal.forEach(p => {
-              if (p && p.nom) {
-                doc.text(`• ${p.nom} (${p.niveau || 'N?'})`, margin + 5, yPos);
-                yPos += 4;
-              }
-            });
-          } else {
-            doc.setFontSize(9);
-            doc.setTextColor(128, 128, 128);
-            doc.text("Aucun plongeur assigné", margin + 5, yPos);
-            yPos += 4;
-          }
-          yPos += 5;
-          
-          // Vérifier si on doit changer de page
-          if (yPos > 250) {
-            doc.addPage();
-            yPos = 20;
-          }
-        }
-      });
-    }
-    
-    // Plongeurs en attente
-    if (plongeursLocal.length > 0) {
-      if (yPos > 200) {
-        doc.addPage();
-        yPos = 20;
+  if (pdfPreview) {
+    try {
+      // Méthode 1: Impression via l'iframe
+      if (pdfPreview.contentWindow) {
+        pdfPreview.contentWindow.focus();
+        pdfPreview.contentWindow.print();
+      } else {
+        // Méthode 2: Ouvrir le contenu dans une nouvelle fenêtre pour impression
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(pdfPreview.srcdoc || '');
+        newWindow.document.close();
+        newWindow.focus();
+        newWindow.print();
+        newWindow.close();
       }
-      
-      doc.setFontSize(14);
-      doc.setTextColor(0, 64, 128);
-      doc.text("Plongeurs en Attente", margin, yPos);
-      yPos += 10;
-      
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      plongeursLocal.forEach(p => {
-        if (p && p.nom) {
-          doc.text(`• ${p.nom} (${p.niveau || 'N?'})`, margin + 5, yPos);
-          yPos += 4;
-        }
-      });
+      console.log("✅ Impression lancée");
+    } catch (error) {
+      console.error("❌ Erreur impression:", error);
+      // Méthode 3: Fallback - capturer et imprimer
+      captureAndPrint();
     }
-    
-    // Sauvegarder
-    const fileName = `palanquees-preview-${dpDate || 'export'}-${dpPlongee}.pdf`;
-    doc.save(fileName);
-    
-    console.log("✅ PDF preview sauvegardé:", fileName);
-    alert(`PDF du preview sauvegardé !\n📄 ${fileName}`);
-    
-  } catch (error) {
-    console.error("❌ Erreur sauvegarde PDF:", error);
-    alert("Erreur lors de la sauvegarde : " + error.message);
   }
 }
 
-// Fonction pour télécharger le HTML du preview
-function downloadPreviewHTML() {
-  console.log("📄 Téléchargement du HTML du preview...");
+// Fonction pour capturer le preview et l'imprimer
+function captureAndPrint() {
+  console.log("📸 Capture pour impression...");
   
-  const pdfPreview = document.getElementById("pdfPreview");
-  if (!pdfPreview) {
-    alert("Aperçu non trouvé");
-    return;
-  }
-  
-  try {
-    const htmlContent = pdfPreview.srcdoc;
-    if (!htmlContent) {
-      alert("Contenu HTML non accessible");
+  capturePreviewAsImage().then(canvas => {
+    if (canvas) {
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Impression Preview</title>
+          <style>
+            body { margin: 0; padding: 20px; text-align: center; }
+            img { max-width: 100%; height: auto; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <img src="${canvas.toDataURL()}" alt="Preview" />
+          <script>window.onload = () => { window.print(); window.close(); }</script>
+        </body>
+        </html>
+      `);
+      newWindow.document.close();
+    }
+  });
+}
+
+// Fonction pour capturer le preview comme image
+function capturePreviewAsImage() {
+  return new Promise((resolve) => {
+    console.log("📸 Capture du preview en cours...");
+    
+    const pdfPreview = document.getElementById("pdfPreview");
+    if (!pdfPreview) {
+      console.error("❌ Preview non trouvé");
+      resolve(null);
       return;
     }
     
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    // Vérifier si html2canvas est disponible
+    if (typeof html2canvas === 'undefined') {
+      console.warn("⚠️ html2canvas non disponible, chargement...");
+      loadHtml2Canvas().then(() => capturePreviewContent(pdfPreview, resolve));
+    } else {
+      capturePreviewContent(pdfPreview, resolve);
+    }
+  });
+}
+
+// Charger html2canvas dynamiquement
+function loadHtml2Canvas() {
+  return new Promise((resolve, reject) => {
+    if (typeof html2canvas !== 'undefined') {
+      resolve();
+      return;
+    }
     
-    const link = document.createElement('a');
-    const dpDate = document.getElementById("dp-date")?.value || new Date().toISOString().split('T')[0];
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "preview";
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => {
+      console.log("✅ html2canvas chargé");
+      resolve();
+    };
+    script.onerror = () => {
+      console.error("❌ Erreur chargement html2canvas");
+      reject();
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// Capturer le contenu du preview
+function capturePreviewContent(pdfPreview, resolve) {
+  try {
+    // Accéder au document de l'iframe
+    const iframeDoc = pdfPreview.contentDocument || pdfPreview.contentWindow.document;
+    const previewBody = iframeDoc.body;
     
-    link.download = `palanquees-preview-${dpDate}-${dpPlongee}.html`;
-    link.href = url;
-    link.click();
+    if (!previewBody) {
+      console.error("❌ Contenu preview non accessible");
+      resolve(null);
+      return;
+    }
     
-    URL.revokeObjectURL(url);
+    // Options pour html2canvas
+    const options = {
+      allowTaint: true,
+      useCORS: true,
+      scale: 2, // Meilleure qualité
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: previewBody.scrollWidth,
+      height: previewBody.scrollHeight
+    };
     
-    console.log("✅ HTML téléchargé:", link.download);
-    alert(`Fichier HTML téléchargé !\n📄 ${link.download}`);
+    html2canvas(previewBody, options).then(canvas => {
+      console.log("✅ Capture réussie:", canvas.width + "x" + canvas.height);
+      resolve(canvas);
+    }).catch(error => {
+      console.error("❌ Erreur capture:", error);
+      resolve(null);
+    });
     
   } catch (error) {
-    console.error("❌ Erreur téléchargement HTML:", error);
-    alert("Erreur lors du téléchargement : " + error.message);
+    console.error("❌ Erreur accès iframe:", error);
+    resolve(null);
   }
 }
 
-// Version simplifiée pour tester
-function testPreviewCommands() {
-  console.log("🧪 Test des commandes preview...");
+// Fonction pour sauvegarder le preview visible comme PDF
+function savePreviewAsPDF() {
+  console.log("💾 Sauvegarde du preview visible...");
   
-  const pdfPreview = document.getElementById("pdfPreview");
-  console.log("Preview element:", pdfPreview);
-  
-  if (pdfPreview) {
-    console.log("Preview src:", pdfPreview.src);
-    console.log("Preview srcdoc length:", pdfPreview.srcdoc?.length || 0);
-    console.log("Content accessible:", !!pdfPreview.contentDocument);
-  }
-  
-  alert("Vérifiez la console pour les détails du test");
+  capturePreviewAsImage().then(canvas => {
+    if (!canvas) {
+      alert("Erreur: Impossible de capturer le preview");
+      return;
+    }
+    
+    try {
+      // Vérifier que jsPDF est disponible
+      if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+        alert("Erreur: jsPDF non disponible");
+        return;
+      }
+      
+      const { jsPDF } = window.jspdf;
+      
+      // Calculer les dimensions pour A4
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = imgWidth / imgHeight;
+      
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      
+      let finalWidth, finalHeight;
+      
+      if (ratio > pdfWidth / pdfHeight) {
+        // Image plus large que A4
+        finalWidth = pdfWidth;
+        finalHeight = pdfWidth / ratio;
+      } else {
+        // Image plus haute que A4
+        finalHeight = pdfHeight;
+        finalWidth = pdfHeight * ratio;
+      }
+      
+      const doc = new jsPDF({
+        orientation: finalHeight > finalWidth ? 'portrait' : 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Centrer l'image
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+      
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
+      
+      // Générer le nom de fichier
+      const dpDate = document.getElementById("dp-date")?.value || new Date().toISOString().split('T')[0];
+      const dpPlongee = document.getElementById("dp-plongee")?.value || "preview";
+      const fileName = `palanquees-preview-${dpDate}-${dpPlongee}.pdf`;
+      
+      doc.save(fileName);
+      
+      console.log("✅ PDF du preview sauvegardé:", fileName);
+      alert(`PDF sauvegardé avec succès !\n📄 ${fileName}`);
+      
+    } catch (error) {
+      console.error("❌ Erreur sauvegarde PDF:", error);
+      alert("Erreur lors de la sauvegarde PDF: " + error.message);
+    }
+  });
 }
 
-// Fonction mise à jour pour la barre de commandes
-function updateCommandBar() {
-  // Cette fonction met à jour les boutons dans le HTML généré
-  return `
-    <div class="command-bar">
-      <button class="command-button" onclick="parent.printPDFPreview()" title="Imprimer">🖨️ Print</button>
-      <button class="command-button success" onclick="parent.savePreviewDirectToPDF()" title="PDF du preview">📄 PDF</button>
-      <button class="command-button warning" onclick="parent.downloadPreviewHTML()" title="Télécharger HTML">📄 HTML</button>
-      <button class="command-button info" onclick="parent.testPreviewCommands()" title="Test">🧪 Test</button>
-    </div>
-  `;
+// Fonction pour sauvegarder comme image
+function savePreviewAsImage(format = 'png') {
+  console.log(`🖼️ Sauvegarde du preview comme ${format.toUpperCase()}...`);
+  
+  capturePreviewAsImage().then(canvas => {
+    if (!canvas) {
+      alert("Erreur: Impossible de capturer le preview");
+      return;
+    }
+    
+    try {
+      // Créer un lien de téléchargement
+      const link = document.createElement('a');
+      link.download = `palanquees-preview-${new Date().toISOString().split('T')[0]}.${format}`;
+      
+      if (format === 'jpg' || format === 'jpeg') {
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+      } else {
+        link.href = canvas.toDataURL('image/png');
+      }
+      
+      link.click();
+      
+      console.log(`✅ ${format.toUpperCase()} sauvegardé:`, link.download);
+      alert(`Image sauvegardée !\n🖼️ ${link.download}`);
+      
+    } catch (error) {
+      console.error("❌ Erreur sauvegarde image:", error);
+      alert("Erreur lors de la sauvegarde: " + error.message);
+    }
+  });
+}
+
+// Fonction modifiée pour le bouton PDF du preview
+function exportPreviewToPDF() {
+  console.log("📄 Export du preview visible en PDF...");
+  
+  // Demander à l'utilisateur quel type d'export
+  const choice = confirm(
+    "Choisissez le type d'export :\n\n" +
+    "OK = PDF du contenu visible (preview)\n" +
+    "Annuler = PDF complet avec formatage original"
+  );
+  
+  if (choice) {
+    savePreviewAsPDF();
+  } else {
+    exportToPDF(); // Fonction originale
+  }
 }
 
 // Export des fonctions
 window.printPDFPreview = printPDFPreview;
-window.savePreviewDirectToPDF = savePreviewDirectToPDF;
-window.downloadPreviewHTML = downloadPreviewHTML;
-window.testPreviewCommands = testPreviewCommands;
-window.updateCommandBar = updateCommandBar;
+window.savePreviewAsPDF = savePreviewAsPDF;
+window.savePreviewAsImage = savePreviewAsImage;
+window.exportPreviewToPDF = exportPreviewToPDF;
+window.capturePreviewAsImage = capturePreviewAsImage;
 
-console.log("🔧 Commandes preview simplifiées chargées");
+console.log("📸 Module capture preview chargé - Sauvegarde écran disponible");
+
+// Modification de la barre de commandes dans generatePDFPreview()
+// Remplacer dans votre fonction generatePDFPreview() :
+/*
+htmlContent += '<div class="command-bar">';
+htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Imprimer</button>';
+htmlContent += '<button class="command-button success" onclick="parent.exportPreviewToPDF()">📄 PDF</button>';
+htmlContent += '<button class="command-button warning" onclick="parent.savePreviewAsImage()">🖼️ Image</button>';
+htmlContent += '</div>';
+*/
 // Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
