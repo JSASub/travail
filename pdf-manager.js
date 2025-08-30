@@ -410,392 +410,259 @@ function exportToPDF() {
 }
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
-function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel...");
+// Solution simple et directe pour les commandes du preview
+
+// Fonction d'impression simple qui fonctionne
+function printPDFPreview() {
+  console.log("🖨️ Impression du preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  if (!pdfPreview) {
+    alert("Aperçu non trouvé");
+    return;
+  }
   
   try {
+    // Méthode simple : ouvrir une nouvelle fenêtre avec le contenu
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    // Récupérer le contenu HTML du preview
+    const previewContent = pdfPreview.srcdoc || pdfPreview.contentDocument?.documentElement.outerHTML;
+    
+    if (previewContent) {
+      printWindow.document.write(previewContent);
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé puis imprimer
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+      };
+      
+      console.log("✅ Impression lancée dans nouvelle fenêtre");
+    } else {
+      alert("Impossible d'accéder au contenu du preview");
+    }
+    
+  } catch (error) {
+    console.error("❌ Erreur impression:", error);
+    alert("Erreur d'impression : " + error.message);
+  }
+}
+
+// Fonction pour sauvegarder directement le HTML du preview en PDF
+function savePreviewDirectToPDF() {
+  console.log("💾 Sauvegarde directe du preview en PDF...");
+  
+  // Vérifier que jsPDF est disponible
+  if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+    alert("Erreur: jsPDF non disponible pour la sauvegarde");
+    return;
+  }
+  
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Récupérer les données du preview depuis les variables globales
     const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
-    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
+    // Générer un PDF simplifié avec le contenu du preview
+    let yPos = 20;
+    const margin = 20;
+    
+    // En-tête
+    doc.setFontSize(20);
+    doc.setTextColor(0, 64, 128);
+    doc.text("Palanquées JSAS - Preview", margin, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`DP: ${dpNom}`, margin, yPos);
+    yPos += 6;
+    doc.text(`Date: ${dpDate} - ${dpPlongee}`, margin, yPos);
+    yPos += 6;
+    doc.text(`Lieu: ${dpLieu}`, margin, yPos);
+    yPos += 15;
+    
+    // Statistiques
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
+    doc.setFontSize(14);
+    doc.setTextColor(0, 64, 128);
+    doc.text("Résumé", margin, yPos);
+    yPos += 8;
     
-    // NOUVEAU: Fonction de tri par grade pour l'aperçu
-    function trierPlongeursParGrade(plongeurs) {
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Total plongeurs: ${totalPlongeurs}`, margin, yPos);
+    yPos += 5;
+    doc.text(`Palanquées: ${palanqueesLocal.length}`, margin, yPos);
+    yPos += 15;
+    
+    // Palanquées
+    if (palanqueesLocal.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(0, 64, 128);
+      doc.text("Palanquées", margin, yPos);
+      yPos += 10;
       
-      return [...plongeurs].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        
-        if (ordreA === ordreB) {
-          // Si même niveau, trier par nom
-          return a.nom.localeCompare(b.nom);
-        }
-        
-        return ordreA - ordreB;
-      });
-    }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
-    }
-    
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    const cssStyles = `
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: 'Segoe UI', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-          min-height: 100vh;
-        }
-        .container {
-          max-width: 210mm;
-          margin: 0 auto;
-          background: white;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          min-height: 297mm;
-          position: relative;
-        }
-        .close-button {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #dc3545;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          font-size: 20px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-          z-index: 1000;
-          transition: all 0.3s ease;
-        }
-        .close-button:hover {
-          background: #c82333;
-          transform: scale(1.1);
-        }
-        .header {
-          background: linear-gradient(135deg, #004080 0%, #007bff 100%);
-          color: white;
-          padding: 30px;
-        }
-        .main-title {
-          font-size: 28px;
-          font-weight: 300;
-          letter-spacing: 2px;
-        }
-        .content { padding: 40px; }
-        .section { margin-bottom: 40px; }
-        .section-title {
-          font-size: 20px;
-          color: #004080;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 3px solid #007bff;
-        }
-        .plongeur-item {
-          padding: 8px 12px;
-          margin: 4px 0;
-          background: #f8f9fa;
-          border-left: 4px solid #007bff;
-          border-radius: 4px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          transition: all 0.2s ease;
-        }
-        .plongeur-item:hover {
-          background: #e9ecef;
-          transform: translateX(2px);
-        }
-        .plongeur-nom {
-          font-weight: bold;
-          flex: 1;
-        }
-        .plongeur-niveau {
-          background: #28a745;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: bold;
-          min-width: 50px;
-          text-align: center;
-          margin-right: 8px;
-        }
-        .plongeur-prerogatives {
-          font-size: 11px;
-          color: #666;
-          font-style: italic;
-        }
-        .palanquee-box {
-          margin: 20px 0;
-          padding: 20px;
-          border: 2px solid #007bff;
-          border-radius: 8px;
-          background: #f8f9fa;
-        }
-        .palanquee-title {
-          font-size: 18px;
-          font-weight: bold;
-          color: #004080;
-          margin-bottom: 15px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #dee2e6;
-        }
-        .alert-box {
-          border-color: #dc3545 !important;
-          background: #fff5f5 !important;
-        }
-        .alert-title {
-          color: #dc3545 !important;
-        }
-        
-        /* Responsive Design pour Mobile */
-        @media screen and (max-width: 768px) {
-          .container {
-            max-width: 100% !important;
-            margin: 0 !important;
-            box-shadow: none !important;
-          }
-          .header {
-            padding: 15px !important;
-          }
-          .main-title {
-            font-size: 20px !important;
-            letter-spacing: 1px !important;
-          }
-          .content {
-            padding: 15px !important;
-          }
-          .section {
-            margin-bottom: 25px !important;
-          }
-          .section-title {
-            font-size: 16px !important;
-            margin-bottom: 15px !important;
-          }
-          .palanquee-box {
-            margin: 15px 0 !important;
-            padding: 15px !important;
-          }
-          .palanquee-title {
-            font-size: 16px !important;
-            margin-bottom: 12px !important;
-          }
-          .plongeur-item {
-            padding: 10px 8px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-          }
-          .plongeur-nom {
-            font-size: 14px !important;
-          }
-          .plongeur-niveau {
-            font-size: 11px !important;
-            padding: 3px 6px !important;
-          }
-          .plongeur-prerogatives {
-            font-size: 10px !important;
-          }
-          .close-button {
-            width: 45px !important;
-            height: 45px !important;
-            font-size: 18px !important;
-            top: 15px !important;
-            right: 15px !important;
-          }
-        }
-        
-        @media screen and (max-width: 480px) {
-          .header {
-            padding: 10px !important;
-          }
-          .main-title {
-            font-size: 18px !important;
-          }
-          .content {
-            padding: 10px !important;
-          }
-          .section-title {
-            font-size: 14px !important;
-          }
-          .palanquee-title {
-            font-size: 14px !important;
-          }
-          .close-button {
-            width: 40px !important;
-            height: 40px !important;
-            font-size: 16px !important;
-            top: 10px !important;
-            right: 10px !important;
-          }
-        }
-        
-        @media print {
-          body { background: white !important; }
-          .container { box-shadow: none !important; max-width: none !important; }
-          .close-button { display: none !important; }
-        }
-      </style>
-    `;
-
-    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
-    htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
-    htmlContent += cssStyles;
-    htmlContent += '</head><body>';
-    
-    // Ajout du bouton de fermeture intégré dans le HTML
-    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
-    
-    htmlContent += '<div class="container">';
-    htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
-    htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
-    htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
-    htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
-    htmlContent += '</header>';
-    
-    htmlContent += '<main class="content">';
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
-    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
-    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
-    htmlContent += '</section>';
-    
-    if (alertesTotal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
-      alertesTotal.forEach(alerte => {
-        htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
-      });
-      htmlContent += '</section>';
-    }
-    
-    htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
-    
-    if (palanqueesLocal.length === 0) {
-      htmlContent += '<p>Aucune palanquée créée.</p>';
-    } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
-          const boxClass = hasAlert ? 'palanquee-box alert-box' : 'palanquee-box';
-          const titleClass = hasAlert ? 'palanquee-title alert-title' : 'palanquee-title';
+          doc.setFontSize(12);
+          doc.setTextColor(0, 123, 255);
+          doc.text(`Palanquée ${i + 1} (${pal.length} plongeurs)`, margin, yPos);
+          yPos += 8;
           
-          htmlContent += `<div class="${boxClass}">`;
-          htmlContent += `<h3 class="${titleClass}">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
-          
-          if (pal.length === 0) {
-            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
-          } else {
-            // MODIFICATION: Trier les plongeurs par grade avant affichage
-            const plongeursTriés = trierPlongeursParGrade(pal);
-            
-            plongeursTriés.forEach(p => {
+          if (pal.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            pal.forEach(p => {
               if (p && p.nom) {
-                htmlContent += '<div class="plongeur-item">';
-                htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
-                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-                htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
-                if (p.pre) {
-                  htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
-                }
-                htmlContent += '</div>';
-                htmlContent += '</div>';
+                doc.text(`• ${p.nom} (${p.niveau || 'N?'})`, margin + 5, yPos);
+                yPos += 4;
               }
             });
+          } else {
+            doc.setFontSize(9);
+            doc.setTextColor(128, 128, 128);
+            doc.text("Aucun plongeur assigné", margin + 5, yPos);
+            yPos += 4;
           }
-          htmlContent += '</div>';
+          yPos += 5;
+          
+          // Vérifier si on doit changer de page
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
         }
       });
     }
     
-    htmlContent += '</section>';
-    
+    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
-      htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
       
-      // MODIFICATION: Trier aussi les plongeurs en attente par grade
-      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      doc.setFontSize(14);
+      doc.setTextColor(0, 64, 128);
+      doc.text("Plongeurs en Attente", margin, yPos);
+      yPos += 10;
       
-      plongeursEnAttenteTriés.forEach(p => {
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      plongeursLocal.forEach(p => {
         if (p && p.nom) {
-          htmlContent += '<div class="plongeur-item">';
-          htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
-          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-          htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
-          if (p.pre) {
-            htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
-          }
-          htmlContent += '</div>';
-          htmlContent += '</div>';
+          doc.text(`• ${p.nom} (${p.niveau || 'N?'})`, margin + 5, yPos);
+          yPos += 4;
         }
       });
-      htmlContent += '</section>';
     }
     
-    htmlContent += '</main>';
-    htmlContent += '</div></body></html>';
-
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    // Sauvegarder
+    const fileName = `palanquees-preview-${dpDate || 'export'}-${dpPlongee}.pdf`;
+    doc.save(fileName);
     
-    const previewContainer = document.getElementById("previewContainer");
-    const pdfPreview = document.getElementById("pdfPreview");
-    
-    if (previewContainer && pdfPreview) {
-      previewContainer.style.display = "block";
-      pdfPreview.src = url;
-      
-      previewContainer.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-      
-      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
-      setTimeout(() => URL.createObjectURL(url), 30000);
-      
-    } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
-      alert("Erreur: impossible d'afficher l'aperçu PDF");
-    }
+    console.log("✅ PDF preview sauvegardé:", fileName);
+    alert(`PDF du preview sauvegardé !\n📄 ${fileName}`);
     
   } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
-    alert("Erreur lors de la génération de l'aperçu: " + error.message);
+    console.error("❌ Erreur sauvegarde PDF:", error);
+    alert("Erreur lors de la sauvegarde : " + error.message);
   }
 }
 
+// Fonction pour télécharger le HTML du preview
+function downloadPreviewHTML() {
+  console.log("📄 Téléchargement du HTML du preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  if (!pdfPreview) {
+    alert("Aperçu non trouvé");
+    return;
+  }
+  
+  try {
+    const htmlContent = pdfPreview.srcdoc;
+    if (!htmlContent) {
+      alert("Contenu HTML non accessible");
+      return;
+    }
+    
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    const dpDate = document.getElementById("dp-date")?.value || new Date().toISOString().split('T')[0];
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "preview";
+    
+    link.download = `palanquees-preview-${dpDate}-${dpPlongee}.html`;
+    link.href = url;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    
+    console.log("✅ HTML téléchargé:", link.download);
+    alert(`Fichier HTML téléchargé !\n📄 ${link.download}`);
+    
+  } catch (error) {
+    console.error("❌ Erreur téléchargement HTML:", error);
+    alert("Erreur lors du téléchargement : " + error.message);
+  }
+}
+
+// Version simplifiée pour tester
+function testPreviewCommands() {
+  console.log("🧪 Test des commandes preview...");
+  
+  const pdfPreview = document.getElementById("pdfPreview");
+  console.log("Preview element:", pdfPreview);
+  
+  if (pdfPreview) {
+    console.log("Preview src:", pdfPreview.src);
+    console.log("Preview srcdoc length:", pdfPreview.srcdoc?.length || 0);
+    console.log("Content accessible:", !!pdfPreview.contentDocument);
+  }
+  
+  alert("Vérifiez la console pour les détails du test");
+}
+
+// Fonction mise à jour pour la barre de commandes
+function updateCommandBar() {
+  // Cette fonction met à jour les boutons dans le HTML généré
+  return `
+    <div class="command-bar">
+      <button class="command-button" onclick="parent.printPDFPreview()" title="Imprimer">🖨️ Print</button>
+      <button class="command-button success" onclick="parent.savePreviewDirectToPDF()" title="PDF du preview">📄 PDF</button>
+      <button class="command-button warning" onclick="parent.downloadPreviewHTML()" title="Télécharger HTML">📄 HTML</button>
+      <button class="command-button info" onclick="parent.testPreviewCommands()" title="Test">🧪 Test</button>
+    </div>
+  `;
+}
+
+// Export des fonctions
+window.printPDFPreview = printPDFPreview;
+window.savePreviewDirectToPDF = savePreviewDirectToPDF;
+window.downloadPreviewHTML = downloadPreviewHTML;
+window.testPreviewCommands = testPreviewCommands;
+window.updateCommandBar = updateCommandBar;
+
+console.log("🔧 Commandes preview simplifiées chargées");
 // Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
