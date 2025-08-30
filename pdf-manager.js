@@ -997,6 +997,28 @@ function savePreviewDirectToPDF() {
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
+    // AJOUT : Fonction de tri par grade (identique au preview)
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          // Si même niveau, trier par nom
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+    
     // Créer un nouveau PDF
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -1044,7 +1066,7 @@ function savePreviewDirectToPDF() {
     doc.text(`Palanquées: ${palanqueesLocal.length}`, margin, yPos);
     yPos += 15;
     
-    // Palanquées
+    // Palanquées AVEC TRI
     if (palanqueesLocal.length > 0) {
       doc.setFontSize(14);
       doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
@@ -1068,7 +1090,10 @@ function savePreviewDirectToPDF() {
             doc.setFontSize(9);
             doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             
-            pal.forEach(p => {
+            // ✅ AJOUT DU TRI ICI
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
                 const line = `• ${p.nom} (${p.niveau || 'N?'})${p.pre ? ' - ' + p.pre : ''}`;
                 doc.text(line, margin + 5, yPos);
@@ -1086,7 +1111,7 @@ function savePreviewDirectToPDF() {
       });
     }
     
-    // Plongeurs en attente
+    // Plongeurs en attente AVEC TRI
     if (plongeursLocal.length > 0) {
       if (yPos > 220) {
         doc.addPage();
@@ -1100,7 +1125,11 @@ function savePreviewDirectToPDF() {
       
       doc.setFontSize(9);
       doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      plongeursLocal.forEach(p => {
+      
+      // ✅ AJOUT DU TRI ICI AUSSI
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
         if (p && p.nom) {
           const line = `• ${p.nom} (${p.niveau || 'N?'})${p.pre ? ' - ' + p.pre : ''}`;
           doc.text(line, margin + 5, yPos);
@@ -1113,8 +1142,8 @@ function savePreviewDirectToPDF() {
     const fileName = `palanquees-preview-${dpDate || 'export'}-${dpPlongee}.pdf`;
     doc.save(fileName);
     
-    console.log("✅ PDF du preview sauvegardé:", fileName);
-    alert(`PDF du preview sauvegardé avec succès !\n📄 ${fileName}`);
+    console.log("✅ PDF du preview sauvegardé avec tri:", fileName);
+    alert(`PDF du preview sauvegardé avec succès !\n📄 ${fileName}\n\n✅ Plongeurs triés par niveau`);
     
   } catch (error) {
     console.error("❌ Erreur sauvegarde PDF:", error);
