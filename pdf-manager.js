@@ -462,7 +462,7 @@ function generatePDFPreview() {
     const cssStyles = `
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        .preview-wrapper {
           font-family: 'Segoe UI', Arial, sans-serif;
           line-height: 1.6;
           color: #333;
@@ -480,12 +480,14 @@ function generatePDFPreview() {
         
         /* === BARRE D'ACTION EN HAUT === */
         .action-bar {
-          position: fixed;
+          position: sticky;
           top: 20px;
           right: 20px;
           display: flex;
           gap: 10px;
           z-index: 1000;
+          justify-content: flex-end;
+          padding: 20px;
         }
         
         .action-button {
@@ -689,29 +691,25 @@ function generatePDFPreview() {
         }
         
         @media print {
-          body { background: white !important; }
+          .preview-wrapper { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
           .action-bar { display: none !important; }
         }
       </style>
     `;
 
-    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
-    htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
-    htmlContent += cssStyles;
-    htmlContent += '</head><body>';
+    let htmlContent = cssStyles;
     
     // === BARRE D'ACTIONS EN HAUT ===
+    htmlContent += '<div class="preview-wrapper">';
     htmlContent += '<div class="action-bar">';
-    htmlContent += '<button class="action-button download-button" onclick="parent.downloadPDFFromPreview()" title="Télécharger le PDF">';
+    htmlContent += '<button class="action-button download-button" onclick="downloadPDFFromPreview()" title="Télécharger le PDF">';
     htmlContent += '<span>📄</span> Télécharger PDF';
     htmlContent += '</button>';
     htmlContent += '<button class="action-button print-button" onclick="window.print()" title="Imprimer">';
     htmlContent += '<span>🖨️</span> Imprimer';
     htmlContent += '</button>';
-    htmlContent += '<button class="action-button close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">';
+    htmlContent += '<button class="action-button close-button" onclick="closePDFPreview()" title="Fermer l\'aperçu">';
     htmlContent += '<span>✕</span> Fermer';
     htmlContent += '</button>';
     htmlContent += '</div>';
@@ -807,25 +805,44 @@ function generatePDFPreview() {
     }
     
     htmlContent += '</main>';
-    htmlContent += '</div></body></html>';
+    htmlContent += '</div>';
+    htmlContent += '</div>';
 
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    
+    // Injecter directement dans le conteneur au lieu d'utiliser un blob URL
     const previewContainer = document.getElementById("previewContainer");
     const pdfPreview = document.getElementById("pdfPreview");
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
-      pdfPreview.src = url;
+      
+      // Remplacer l'iframe par un div
+      pdfPreview.style.display = "none";
+      
+      let previewDiv = document.getElementById("pdfPreviewDiv");
+      if (!previewDiv) {
+        previewDiv = document.createElement("div");
+        previewDiv.id = "pdfPreviewDiv";
+        previewDiv.style.width = "100%";
+        previewDiv.style.minHeight = "600px";
+        previewDiv.style.border = "1px solid #ddd";
+        previewDiv.style.borderRadius = "8px";
+        previewDiv.style.overflow = "auto";
+        previewContainer.appendChild(previewDiv);
+      }
+      
+      previewDiv.innerHTML = htmlContent;
       
       previewContainer.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec boutons Download/Print et tri par grade");
-      setTimeout(() => URL.revokeObjectURL(url), 30000); // CORRECTION: revokeObjectURL au lieu de createObjectURL
+      console.log("✅ Aperçu PDF généré avec boutons Download/Print et tri par grade (div direct)");
+      
+    } else {
+      console.error("❌ Éléments d'aperçu non trouvés");
+      alert("Erreur: impossible d'afficher l'aperçu PDF");
+    }
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
