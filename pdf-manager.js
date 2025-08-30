@@ -843,7 +843,14 @@ function downloadPDFFromPreview() {
   console.log("📄 Téléchargement du PDF depuis l'aperçu HTML...");
   
   try {
-    // Récupérer les données nécessaires
+    // ÉTAPE 1: Vérifier les bibliothèques disponibles
+    console.log("🔍 Vérification des bibliothèques...");
+    console.log("html2pdf disponible:", typeof html2pdf !== 'undefined');
+    console.log("html2canvas disponible:", typeof html2canvas !== 'undefined');
+    console.log("jsPDF disponible:", typeof window.jspdf !== 'undefined');
+    
+    // ÉTAPE 2: Récupérer les données
+    console.log("📊 Récupération des données...");
     const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
@@ -852,78 +859,57 @@ function downloadPDFFromPreview() {
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
+    console.log("Plongeurs:", plongeursLocal.length);
+    console.log("Palanquées:", palanqueesLocal.length);
+    
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // Fonction de tri par grade (identique à celle de la preview)
-    function trierPlongeursParGrade(plongeurs) {
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
-      
-      return [...plongeurs].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        
-        if (ordreA === ordreB) {
-          return a.nom.localeCompare(b.nom);
-        }
-        
-        return ordreA - ordreB;
-      });
-    }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
-    }
-    
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    // Créer un élément temporaire pour la conversion PDF (SANS les boutons d'action)
+    // ÉTAPE 3: Créer le contenu HTML simple
+    console.log("🏗️ Création du contenu HTML...");
     const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.width = '210mm';
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.top = '-9999px';
+    tempDiv.style.left = '0';
+    tempDiv.style.width = '800px';
     tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.fontFamily = 'Segoe UI, Arial, sans-serif';
+    tempDiv.style.fontFamily = 'Arial, sans-serif';
+    tempDiv.style.fontSize = '14px';
     tempDiv.style.color = '#333';
-    tempDiv.style.lineHeight = '1.6';
+    tempDiv.style.padding = '20px';
     
-    let htmlContent = '';
-    htmlContent += '<div style="max-width: 210mm; margin: 0 auto; background: white; min-height: 297mm;">';
-    htmlContent += '<header style="background: linear-gradient(135deg, #004080 0%, #007bff 100%); color: white; padding: 30px;">';
-    htmlContent += '<h1 style="font-size: 28px; font-weight: 300; letter-spacing: 2px; margin-bottom: 10px;">Palanquées JSAS - Fiche de Sécurité</h1>';
-    htmlContent += '<p style="margin: 5px 0;">Directeur de Plongée: ' + dpNom + '</p>';
-    htmlContent += '<p style="margin: 5px 0;">Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
+    // Contenu HTML simplifié pour le PDF
+    let htmlContent = '<div style="background: white; padding: 20px; font-family: Arial, sans-serif;">';
+    
+    // En-tête
+    htmlContent += '<div style="background: #004080; color: white; padding: 20px; margin-bottom: 20px;">';
+    htmlContent += '<h1 style="margin: 0; font-size: 24px;">Palanquées JSAS - Fiche de Sécurité</h1>';
+    htmlContent += '<p style="margin: 5px 0;">DP: ' + dpNom + '</p>';
+    htmlContent += '<p style="margin: 5px 0;">Date: ' + dpDate + ' - ' + dpPlongee + '</p>';
     htmlContent += '<p style="margin: 5px 0;">Lieu: ' + dpLieu + '</p>';
-    htmlContent += '</header>';
+    htmlContent += '</div>';
     
-    htmlContent += '<main style="padding: 40px;">';
-    htmlContent += '<section style="margin-bottom: 40px;">';
-    htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">📊 Résumé</h2>';
-    htmlContent += '<p style="margin: 10px 0;">Total plongeurs: ' + totalPlongeurs + '</p>';
-    htmlContent += '<p style="margin: 10px 0;">Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p style="margin: 10px 0;">Alertes: ' + alertesTotal.length + '</p>';
-    htmlContent += '</section>';
+    // Résumé
+    htmlContent += '<div style="margin-bottom: 30px;">';
+    htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">📊 Résumé</h2>';
+    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
+    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
+    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
+    htmlContent += '</div>';
     
+    // Alertes
     if (alertesTotal.length > 0) {
-      htmlContent += '<section style="margin-bottom: 40px;">';
-      htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">⚠️ Alertes</h2>';
+      htmlContent += '<div style="margin-bottom: 30px;">';
+      htmlContent += '<h2 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;">⚠️ Alertes</h2>';
       alertesTotal.forEach(alerte => {
-        htmlContent += '<p style="color: red; margin: 5px 0;">• ' + alerte + '</p>';
+        htmlContent += '<p style="color: #dc3545;">• ' + alerte + '</p>';
       });
-      htmlContent += '</section>';
+      htmlContent += '</div>';
     }
     
-    htmlContent += '<section style="margin-bottom: 40px;">';
-    htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">🏊‍♂️ Palanquées</h2>';
+    // Palanquées
+    htmlContent += '<div style="margin-bottom: 30px;">';
+    htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">🏊‍♂️ Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
       htmlContent += '<p>Aucune palanquée créée.</p>';
@@ -932,27 +918,35 @@ function downloadPDFFromPreview() {
         if (pal && Array.isArray(pal)) {
           const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
           const borderColor = hasAlert ? '#dc3545' : '#007bff';
-          const backgroundColor = hasAlert ? '#fff5f5' : '#f8f9fa';
-          const titleColor = hasAlert ? '#dc3545' : '#004080';
           
-          htmlContent += `<div style="margin: 20px 0; padding: 20px; border: 2px solid ${borderColor}; border-radius: 8px; background: ${backgroundColor};">`;
-          htmlContent += `<h3 style="font-size: 18px; font-weight: bold; color: ${titleColor}; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #dee2e6;">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
+          htmlContent += '<div style="border: 2px solid ' + borderColor + '; padding: 15px; margin: 15px 0; background: #f8f9fa;">';
+          htmlContent += '<h3 style="margin: 0 0 10px 0; color: #004080;">Palanquée ' + (i + 1) + ' (' + pal.length + ' plongeur' + (pal.length > 1 ? 's' : '') + ')</h3>';
           
           if (pal.length === 0) {
-            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
+            htmlContent += '<p style="font-style: italic; color: #666;">Aucun plongeur assigné</p>';
           } else {
-            const plongeursTriés = trierPlongeursParGrade(pal);
+            // Tri des plongeurs par niveau
+            const ordreNiveaux = {
+              'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+              'N3': 7, 'N2': 8, 'N1': 9,
+              'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+              'Déb.': 13, 'débutant': 14, 'Déb': 15
+            };
+            
+            const plongeursTriés = [...pal].sort((a, b) => {
+              const ordreA = ordreNiveaux[a.niveau] || 99;
+              const ordreB = ordreNiveaux[b.niveau] || 99;
+              return ordreA === ordreB ? a.nom.localeCompare(b.nom) : ordreA - ordreB;
+            });
             
             plongeursTriés.forEach(p => {
               if (p && p.nom) {
-                htmlContent += '<div style="padding: 8px 12px; margin: 4px 0; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
-                htmlContent += '<span style="font-weight: bold; flex: 1;">' + p.nom + '</span>';
-                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-                htmlContent += '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; min-width: 50px; text-align: center; margin-right: 8px;">' + (p.niveau || 'N?') + '</span>';
+                htmlContent += '<div style="margin: 5px 0; padding: 8px; background: white; border-left: 4px solid #007bff;">';
+                htmlContent += '<strong>' + p.nom + '</strong> ';
+                htmlContent += '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">' + (p.niveau || 'N?') + '</span>';
                 if (p.pre) {
-                  htmlContent += '<span style="font-size: 11px; color: #666; font-style: italic;">(' + p.pre + ')</span>';
+                  htmlContent += ' <em style="color: #666;">(' + p.pre + ')</em>';
                 }
-                htmlContent += '</div>';
                 htmlContent += '</div>';
               }
             });
@@ -961,116 +955,146 @@ function downloadPDFFromPreview() {
         }
       });
     }
+    htmlContent += '</div>';
     
-    htmlContent += '</section>';
-    
+    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
-      htmlContent += '<section style="margin-bottom: 40px;">';
-      htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">⏳ Plongeurs en Attente</h2>';
+      htmlContent += '<div style="margin-bottom: 30px;">';
+      htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">⏳ Plongeurs en Attente</h2>';
       
-      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      const plongeursEnAttenteTriés = [...plongeursLocal].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        return ordreA === ordreB ? a.nom.localeCompare(b.nom) : ordreA - ordreB;
+      });
       
       plongeursEnAttenteTriés.forEach(p => {
         if (p && p.nom) {
-          htmlContent += '<div style="padding: 8px 12px; margin: 4px 0; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
-          htmlContent += '<span style="font-weight: bold; flex: 1;">' + p.nom + '</span>';
-          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
-          htmlContent += '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; min-width: 50px; text-align: center; margin-right: 8px;">' + (p.niveau || 'N?') + '</span>';
+          htmlContent += '<div style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-left: 4px solid #ffc107;">';
+          htmlContent += '<strong>' + p.nom + '</strong> ';
+          htmlContent += '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">' + (p.niveau || 'N?') + '</span>';
           if (p.pre) {
-            htmlContent += '<span style="font-size: 11px; color: #666; font-style: italic;">(' + p.pre + ')</span>';
+            htmlContent += ' <em style="color: #666;">(' + p.pre + ')</em>';
           }
-          htmlContent += '</div>';
           htmlContent += '</div>';
         }
       });
-      htmlContent += '</section>';
+      htmlContent += '</div>';
     }
     
-    htmlContent += '</main>';
     htmlContent += '</div>';
     
     tempDiv.innerHTML = htmlContent;
     document.body.appendChild(tempDiv);
     
-    // Nom du fichier
-    const fileName = 'palanquees-jsas-preview-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
+    console.log("✅ Élément temporaire créé et ajouté au DOM");
+    console.log("Contenu HTML généré, longueur:", htmlContent.length);
     
-    // Vérifier si html2pdf est disponible
-    if (typeof html2pdf !== 'undefined') {
-      console.log("📄 Utilisation de html2pdf...");
-      
-      const opt = {
-        margin: 10,
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
+    // ÉTAPE 4: Conversion en PDF
+    const fileName = 'palanquees-jsas-preview-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
+    console.log("📄 Nom du fichier:", fileName);
+    
+    // Attendre un peu que l'élément soit rendu
+    setTimeout(() => {
+      if (typeof html2pdf !== 'undefined') {
+        console.log("🔄 Utilisation de html2pdf...");
+        
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: fileName,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: true
+          },
+          jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait' 
+          }
+        };
+        
+        html2pdf().from(tempDiv).set(opt).save().then(() => {
+          console.log("✅ PDF généré avec html2pdf:", fileName);
+          document.body.removeChild(tempDiv);
+          alert("PDF généré avec succès : " + fileName);
+        }).catch(error => {
+          console.error("❌ Erreur html2pdf:", error);
+          document.body.removeChild(tempDiv);
+          alert("Erreur html2pdf: " + error.message);
+        });
+        
+      } else if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+        console.log("🔄 Utilisation de html2canvas + jsPDF...");
+        
+        html2canvas(tempDiv, {
           scale: 2,
           useCORS: true,
-          backgroundColor: '#ffffff'
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait' 
-        }
-      };
-      
-      html2pdf().from(tempDiv).set(opt).save().then(() => {
-        console.log("✅ PDF généré depuis l'aperçu HTML avec html2pdf:", fileName);
-        document.body.removeChild(tempDiv);
-      }).catch(error => {
-        document.body.removeChild(tempDiv);
-        throw new Error("Erreur html2pdf: " + error.message);
-      });
-      
-    } else if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
-      console.log("📄 Utilisation de html2canvas + jsPDF...");
-      
-      html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      }).then(canvas => {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: true
+        }).then(canvas => {
+          console.log("✅ Canvas créé, dimensions:", canvas.width, "x", canvas.height);
+          
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          
+          const imgWidth = 210; // A4 width in mm
+          const pageHeight = 297; // A4 height in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          const imgData = canvas.toDataURL('image/png');
+          
+          let heightLeft = imgHeight;
+          let position = 0;
+          
           pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
-        }
+          
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          
+          pdf.save(fileName);
+          console.log("✅ PDF généré avec html2canvas + jsPDF:", fileName);
+          document.body.removeChild(tempDiv);
+          alert("PDF généré avec succès : " + fileName);
+          
+        }).catch(error => {
+          console.error("❌ Erreur html2canvas:", error);
+          document.body.removeChild(tempDiv);
+          alert("Erreur html2canvas: " + error.message);
+        });
         
-        pdf.save(fileName);
-        console.log("✅ PDF généré depuis l'aperçu HTML avec html2canvas:", fileName);
+      } else {
         document.body.removeChild(tempDiv);
+        const message = "❌ Aucune bibliothèque de conversion PDF disponible.\n\n" +
+                       "Veuillez ajouter dans votre HTML :\n" +
+                       "• html2pdf.js (recommandé) :\n" +
+                       '  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>\n\n' +
+                       "• OU html2canvas :\n" +
+                       '  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>';
         
-      }).catch(error => {
-        document.body.removeChild(tempDiv);
-        throw new Error("Erreur html2canvas: " + error.message);
-      });
-      
-    } else {
-      document.body.removeChild(tempDiv);
-      throw new Error("Bibliothèques de conversion PDF non disponibles. Veuillez charger html2pdf.js, ou html2canvas + jsPDF");
-    }
+        console.error(message);
+        alert(message);
+      }
+    }, 100); // Petit délai pour le rendu
     
   } catch (error) {
-    console.error("❌ Erreur téléchargement PDF depuis aperçu:", error);
-    alert("Erreur lors du téléchargement du PDF depuis l'aperçu: " + error.message + 
-          "\n\nAssurez-vous d'avoir chargé html2pdf.js ou html2canvas dans votre page HTML.");
+    console.error("❌ Erreur globale téléchargement PDF:", error);
+    alert("Erreur lors du téléchargement du PDF: " + error.message);
   }
 }
 
