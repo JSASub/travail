@@ -1177,7 +1177,6 @@ window.downloadPreviewHTML = downloadPreviewHTML;
 
 console.log("🔧 Fonctions de commandes du preview ajoutées et exportées");
 
-function testPreviewCommands() {
   console.log("🧪 Test des commandes preview...");
   const pdfPreview = document.getElementById("pdfPreview");
   console.log("Preview element:", pdfPreview);
