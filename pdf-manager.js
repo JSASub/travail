@@ -843,65 +843,161 @@ function downloadPDFFromPreview() {
   console.log("📄 Téléchargement du PDF depuis l'aperçu HTML...");
   
   try {
-    // Récupérer l'iframe de la preview
-    const pdfPreview = document.getElementById("pdfPreview");
-    if (!pdfPreview || !pdfPreview.contentDocument) {
-      throw new Error("Aperçu PDF non trouvé ou non accessible");
-    }
+    // Récupérer les données nécessaires
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
-    // Récupérer le contenu HTML de l'iframe
-    const previewDocument = pdfPreview.contentDocument;
-    const container = previewDocument.querySelector('.container');
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
-    if (!container) {
-      throw new Error("Contenu de l'aperçu non trouvé");
-    }
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // Vérifier si html2pdf est disponible (via canvas2pdf ou autre)
-    if (typeof html2pdf === 'undefined') {
-      // Alternative avec jsPDF + html2canvas si html2pdf n'est pas disponible
-      if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
-        console.log("📄 Utilisation de html2canvas + jsPDF...");
-        
-        html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: container.offsetWidth,
-          height: container.offsetHeight
-        }).then(canvas => {
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          
-          const imgWidth = 210; // A4 width in mm
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          
-          const imgData = canvas.toDataURL('image/png');
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          
-          // Nom du fichier
-          const dpDate = document.getElementById("dp-date")?.value || "export";
-          const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-          const fileName = 'palanquees-jsas-preview-' + dpDate + '-' + dpPlongee + '.pdf';
-          
-          pdf.save(fileName);
-          console.log("✅ PDF généré depuis l'aperçu HTML:", fileName);
-        }).catch(error => {
-          throw new Error("Erreur html2canvas: " + error.message);
-        });
-        
-      } else {
-        throw new Error("Bibliothèques de conversion PDF non disponibles. Veuillez charger html2pdf, ou html2canvas + jsPDF");
-      }
+    // Fonction de tri par grade (identique à celle de la preview)
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
       
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+    
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+    
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    // Créer un élément temporaire pour la conversion PDF (SANS les boutons d'action)
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = '210mm';
+    tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.fontFamily = 'Segoe UI, Arial, sans-serif';
+    tempDiv.style.color = '#333';
+    tempDiv.style.lineHeight = '1.6';
+    
+    let htmlContent = '';
+    htmlContent += '<div style="max-width: 210mm; margin: 0 auto; background: white; min-height: 297mm;">';
+    htmlContent += '<header style="background: linear-gradient(135deg, #004080 0%, #007bff 100%); color: white; padding: 30px;">';
+    htmlContent += '<h1 style="font-size: 28px; font-weight: 300; letter-spacing: 2px; margin-bottom: 10px;">Palanquées JSAS - Fiche de Sécurité</h1>';
+    htmlContent += '<p style="margin: 5px 0;">Directeur de Plongée: ' + dpNom + '</p>';
+    htmlContent += '<p style="margin: 5px 0;">Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
+    htmlContent += '<p style="margin: 5px 0;">Lieu: ' + dpLieu + '</p>';
+    htmlContent += '</header>';
+    
+    htmlContent += '<main style="padding: 40px;">';
+    htmlContent += '<section style="margin-bottom: 40px;">';
+    htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">📊 Résumé</h2>';
+    htmlContent += '<p style="margin: 10px 0;">Total plongeurs: ' + totalPlongeurs + '</p>';
+    htmlContent += '<p style="margin: 10px 0;">Palanquées: ' + palanqueesLocal.length + '</p>';
+    htmlContent += '<p style="margin: 10px 0;">Alertes: ' + alertesTotal.length + '</p>';
+    htmlContent += '</section>';
+    
+    if (alertesTotal.length > 0) {
+      htmlContent += '<section style="margin-bottom: 40px;">';
+      htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">⚠️ Alertes</h2>';
+      alertesTotal.forEach(alerte => {
+        htmlContent += '<p style="color: red; margin: 5px 0;">• ' + alerte + '</p>';
+      });
+      htmlContent += '</section>';
+    }
+    
+    htmlContent += '<section style="margin-bottom: 40px;">';
+    htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">🏊‍♂️ Palanquées</h2>';
+    
+    if (palanqueesLocal.length === 0) {
+      htmlContent += '<p>Aucune palanquée créée.</p>';
     } else {
-      // Utiliser html2pdf si disponible
-      console.log("📄 Utilisation de html2pdf...");
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
+          const borderColor = hasAlert ? '#dc3545' : '#007bff';
+          const backgroundColor = hasAlert ? '#fff5f5' : '#f8f9fa';
+          const titleColor = hasAlert ? '#dc3545' : '#004080';
+          
+          htmlContent += `<div style="margin: 20px 0; padding: 20px; border: 2px solid ${borderColor}; border-radius: 8px; background: ${backgroundColor};">`;
+          htmlContent += `<h3 style="font-size: 18px; font-weight: bold; color: ${titleColor}; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #dee2e6;">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
+          
+          if (pal.length === 0) {
+            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
+          } else {
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                htmlContent += '<div style="padding: 8px 12px; margin: 4px 0; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
+                htmlContent += '<span style="font-weight: bold; flex: 1;">' + p.nom + '</span>';
+                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+                htmlContent += '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; min-width: 50px; text-align: center; margin-right: 8px;">' + (p.niveau || 'N?') + '</span>';
+                if (p.pre) {
+                  htmlContent += '<span style="font-size: 11px; color: #666; font-style: italic;">(' + p.pre + ')</span>';
+                }
+                htmlContent += '</div>';
+                htmlContent += '</div>';
+              }
+            });
+          }
+          htmlContent += '</div>';
+        }
+      });
+    }
+    
+    htmlContent += '</section>';
+    
+    if (plongeursLocal.length > 0) {
+      htmlContent += '<section style="margin-bottom: 40px;">';
+      htmlContent += '<h2 style="font-size: 20px; color: #004080; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #007bff;">⏳ Plongeurs en Attente</h2>';
       
-      const dpDate = document.getElementById("dp-date")?.value || "export";
-      const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-      const fileName = 'palanquees-jsas-preview-' + dpDate + '-' + dpPlongee + '.pdf';
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
+        if (p && p.nom) {
+          htmlContent += '<div style="padding: 8px 12px; margin: 4px 0; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">';
+          htmlContent += '<span style="font-weight: bold; flex: 1;">' + p.nom + '</span>';
+          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+          htmlContent += '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; min-width: 50px; text-align: center; margin-right: 8px;">' + (p.niveau || 'N?') + '</span>';
+          if (p.pre) {
+            htmlContent += '<span style="font-size: 11px; color: #666; font-style: italic;">(' + p.pre + ')</span>';
+          }
+          htmlContent += '</div>';
+          htmlContent += '</div>';
+        }
+      });
+      htmlContent += '</section>';
+    }
+    
+    htmlContent += '</main>';
+    htmlContent += '</div>';
+    
+    tempDiv.innerHTML = htmlContent;
+    document.body.appendChild(tempDiv);
+    
+    // Nom du fichier
+    const fileName = 'palanquees-jsas-preview-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
+    
+    // Vérifier si html2pdf est disponible
+    if (typeof html2pdf !== 'undefined') {
+      console.log("📄 Utilisation de html2pdf...");
       
       const opt = {
         margin: 10,
@@ -919,11 +1015,56 @@ function downloadPDFFromPreview() {
         }
       };
       
-      html2pdf().from(container).set(opt).save().then(() => {
+      html2pdf().from(tempDiv).set(opt).save().then(() => {
         console.log("✅ PDF généré depuis l'aperçu HTML avec html2pdf:", fileName);
+        document.body.removeChild(tempDiv);
       }).catch(error => {
+        document.body.removeChild(tempDiv);
         throw new Error("Erreur html2pdf: " + error.message);
       });
+      
+    } else if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+      console.log("📄 Utilisation de html2canvas + jsPDF...");
+      
+      html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        pdf.save(fileName);
+        console.log("✅ PDF généré depuis l'aperçu HTML avec html2canvas:", fileName);
+        document.body.removeChild(tempDiv);
+        
+      }).catch(error => {
+        document.body.removeChild(tempDiv);
+        throw new Error("Erreur html2canvas: " + error.message);
+      });
+      
+    } else {
+      document.body.removeChild(tempDiv);
+      throw new Error("Bibliothèques de conversion PDF non disponibles. Veuillez charger html2pdf.js, ou html2canvas + jsPDF");
     }
     
   } catch (error) {
