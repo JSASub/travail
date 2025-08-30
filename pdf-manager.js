@@ -978,15 +978,39 @@ function printPDFPreview() {
 function savePreviewDirectToPDF() {
   console.log("💾 Sauvegarde du preview en PDF...");
   
-  // Vérifier que jsPDF est disponible
-  if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
-    alert("Erreur: jsPDF non disponible");
+  // Vérifications étendues pour jsPDF
+  console.log("🔍 Vérification jsPDF...");
+  console.log("- window.jspdf:", typeof window.jspdf);
+  console.log("- window.jsPDF:", typeof window.jsPDF);
+  console.log("- window.jspdf?.jsPDF:", typeof window.jspdf?.jsPDF);
+  
+  let jsPDF_class = null;
+  
+  // Essayer différentes façons d'accéder à jsPDF
+  if (window.jspdf && window.jspdf.jsPDF) {
+    jsPDF_class = window.jspdf.jsPDF;
+    console.log("✅ jsPDF trouvé via window.jspdf.jsPDF");
+  } else if (window.jsPDF) {
+    jsPDF_class = window.jsPDF;
+    console.log("✅ jsPDF trouvé via window.jsPDF");
+  } else if (typeof jsPDF !== 'undefined') {
+    jsPDF_class = jsPDF;
+    console.log("✅ jsPDF trouvé via variable globale jsPDF");
+  } else {
+    console.error("❌ jsPDF non trouvé - Tentative de chargement...");
+    
+    // Essayer de charger jsPDF dynamiquement
+    loadJsPDFDynamically().then(() => {
+      console.log("🔄 Retry après chargement...");
+      savePreviewDirectToPDF(); // Réessayer après chargement
+    }).catch(error => {
+      console.error("❌ Impossible de charger jsPDF:", error);
+      alert("Erreur: Impossible de charger jsPDF.\n\nVérifiez que la bibliothèque jsPDF est incluse dans votre page HTML:\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js\"></script>");
+    });
     return;
   }
   
   try {
-    const { jsPDF } = window.jspdf;
-    
     // Récupérer les données actuelles
     const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
@@ -997,7 +1021,9 @@ function savePreviewDirectToPDF() {
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
-    // AJOUT : Fonction de tri par grade (identique au preview)
+    console.log(`📊 Données récupérées: ${plongeursLocal.length} plongeurs, ${palanqueesLocal.length} palanquées`);
+    
+    // Fonction de tri par grade (identique au preview)
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -1011,7 +1037,6 @@ function savePreviewDirectToPDF() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
-          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -1019,12 +1044,14 @@ function savePreviewDirectToPDF() {
       });
     }
     
-    // Créer un nouveau PDF
-    const doc = new jsPDF({
+    // Créer le PDF
+    const doc = new jsPDF_class({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     });
+    
+    console.log("✅ Document PDF créé");
     
     const colors = {
       primaryR: 0, primaryG: 64, primaryB: 128,
@@ -1036,7 +1063,7 @@ function savePreviewDirectToPDF() {
     const margin = 20;
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // En-tête simplifié
+    // En-tête
     doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
     doc.rect(0, 0, pageWidth, 50, 'F');
     
@@ -1066,7 +1093,7 @@ function savePreviewDirectToPDF() {
     doc.text(`Palanquées: ${palanqueesLocal.length}`, margin, yPos);
     yPos += 15;
     
-    // Palanquées AVEC TRI
+    // Palanquées avec tri
     if (palanqueesLocal.length > 0) {
       doc.setFontSize(14);
       doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
@@ -1075,7 +1102,6 @@ function savePreviewDirectToPDF() {
       
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          // Vérifier si on a besoin d'une nouvelle page
           if (yPos > 250) {
             doc.addPage();
             yPos = 20;
@@ -1090,7 +1116,6 @@ function savePreviewDirectToPDF() {
             doc.setFontSize(9);
             doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
             
-            // ✅ AJOUT DU TRI ICI
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -1111,7 +1136,7 @@ function savePreviewDirectToPDF() {
       });
     }
     
-    // Plongeurs en attente AVEC TRI
+    // Plongeurs en attente avec tri
     if (plongeursLocal.length > 0) {
       if (yPos > 220) {
         doc.addPage();
@@ -1126,7 +1151,6 @@ function savePreviewDirectToPDF() {
       doc.setFontSize(9);
       doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
       
-      // ✅ AJOUT DU TRI ICI AUSSI
       const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
       plongeursEnAttenteTriés.forEach(p => {
@@ -1147,9 +1171,73 @@ function savePreviewDirectToPDF() {
     
   } catch (error) {
     console.error("❌ Erreur sauvegarde PDF:", error);
-    alert("Erreur lors de la sauvegarde PDF: " + error.message);
+    alert("Erreur lors de la sauvegarde PDF: " + error.message + "\n\nDétails dans la console (F12)");
   }
 }
+
+// 2. Fonction pour charger jsPDF dynamiquement
+function loadJsPDFDynamically() {
+  return new Promise((resolve, reject) => {
+    console.log("📥 Chargement dynamique de jsPDF...");
+    
+    // Vérifier si déjà chargé
+    if (window.jspdf || window.jsPDF || typeof jsPDF !== 'undefined') {
+      resolve();
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => {
+      console.log("✅ jsPDF chargé dynamiquement");
+      // Attendre un peu pour que la bibliothèque s'initialise
+      setTimeout(resolve, 100);
+    };
+    script.onerror = () => {
+      reject(new Error("Échec du chargement de jsPDF"));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// 3. Fonction de diagnostic jsPDF
+function diagnoseJsPDF() {
+  console.log("🔍 === DIAGNOSTIC jsPDF ===");
+  console.log("window.jspdf:", typeof window.jspdf);
+  console.log("window.jsPDF:", typeof window.jsPDF);
+  console.log("jsPDF (global):", typeof jsPDF);
+  console.log("window.jspdf?.jsPDF:", typeof window.jspdf?.jsPDF);
+  
+  // Vérifier les scripts chargés
+  const scripts = Array.from(document.scripts).map(s => s.src).filter(src => src.includes('jspdf'));
+  console.log("Scripts jsPDF trouvés:", scripts);
+  
+  let result = "🔍 DIAGNOSTIC jsPDF:\n\n";
+  result += `• window.jspdf: ${typeof window.jspdf}\n`;
+  result += `• window.jsPDF: ${typeof window.jsPDF}\n`;
+  result += `• jsPDF global: ${typeof jsPDF}\n`;
+  result += `• Scripts trouvés: ${scripts.length}\n`;
+  
+  if (scripts.length > 0) {
+    result += `• URL: ${scripts[0]}\n`;
+  } else {
+    result += "❌ Aucun script jsPDF détecté!\n\nAjoutez dans votre HTML:\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js\"></script>";
+  }
+  
+  alert(result);
+  
+  return {
+    hasJsPDF: !!(window.jspdf || window.jsPDF || (typeof jsPDF !== 'undefined')),
+    scripts: scripts
+  };
+}
+
+// Export des fonctions
+window.savePreviewDirectToPDF = savePreviewDirectToPDF;
+window.loadJsPDFDynamically = loadJsPDFDynamically;
+window.diagnoseJsPDF = diagnoseJsPDF;
+
+console.log("🔧 Module jsPDF amélioré chargé avec diagnostic");
 
 function downloadPreviewHTML() {
   console.log("📄 Téléchargement du HTML du preview...");
