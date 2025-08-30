@@ -1185,4 +1185,13 @@ window.generatePDFPreview = generatePDFPreview;
 window.downloadPDFFromPreview = downloadPDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
+// S'assurer que les fonctions sont disponibles immédiatement
+if (typeof window !== 'undefined') {
+  console.log("📄 Module PDF Manager - Fonctions exportées:");
+  console.log("- exportToPDF:", typeof window.exportToPDF);
+  console.log("- generatePDFPreview:", typeof window.generatePDFPreview);
+  console.log("- downloadPDFFromPreview:", typeof window.downloadPDFFromPreview);
+  console.log("- closePDFPreview:", typeof window.closePDFPreview);
+}
+
 console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec boutons Download/Print");
