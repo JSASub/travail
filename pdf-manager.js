@@ -1174,7 +1174,6 @@ function downloadPreviewHTML() {
 window.printPDFPreview = printPDFPreview;
 window.savePreviewDirectToPDF = savePreviewDirectToPDF;
 window.downloadPreviewHTML = downloadPreviewHTML;
-window.testPreviewCommands = testPreviewCommands;
 
 console.log("🔧 Fonctions de commandes du preview ajoutées et exportées");
 
