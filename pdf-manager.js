@@ -672,7 +672,12 @@ function generatePDFPreview() {
     htmlContent += '</head><body>';
     
     // Ajout du bouton de fermeture intégré dans le HTML
-    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
+    htmlContent += '<div class="command-bar">';
+	htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Imprimer</button>';
+	htmlContent += '<button class="command-button success" onclick="parent.exportToPDF()">📄 PDF</button>';
+	htmlContent += '<button class="command-button warning" onclick="parent.editFromPreview()">✏️ Éditer</button>';
+	htmlContent += '</div>';
+	htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
