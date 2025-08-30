@@ -673,12 +673,12 @@ function generatePDFPreview() {
     
     // Ajout du bouton de fermeture intégré dans le HTML
 	htmlContent += '<div class="command-bar">';
-	htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Imprimer</button>';
-	htmlContent += '<button class="command-button success" onclick="parent.exportPreviewToPDF()">📄 PDF</button>';
-	htmlContent += '<button class="command-button warning" onclick="parent.savePreviewAsImage()">🖼️ Image</button>';
+	htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Print</button>';
+	htmlContent += '<button class="command-button success" onclick="parent.savePreviewDirectToPDF()">📄 PDF</button>';
+	htmlContent += '<button class="command-button warning" onclick="parent.downloadPreviewHTML()">📄 HTML</button>';
+	htmlContent += '<button class="command-button info" onclick="parent.testPreviewCommands()">🧪 Test</button>';
 	htmlContent += '</div>';
 	htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
-	htmlContent += '<button class="command-button success" onclick="parent.exportPreviewToPDF()">📄 PDF</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
