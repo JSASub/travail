@@ -410,8 +410,6 @@ function exportToPDF() {
 }
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
-// Modification de votre fonction generatePDFPreview() existante
-
 function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
@@ -479,64 +477,6 @@ function generatePDFPreview() {
           min-height: 297mm;
           position: relative;
         }
-        
-        /* Barre de commandes */
-        .command-bar {
-          position: fixed;
-          top: 20px;
-          right: 80px;
-          display: flex;
-          gap: 8px;
-          z-index: 1000;
-          flex-wrap: wrap;
-          max-width: 300px;
-        }
-        
-        .command-button {
-          background: #007bff;
-          color: white;
-          border: none;
-          border-radius: 20px;
-          padding: 8px 12px;
-          font-size: 11px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
-          transition: all 0.3s ease;
-          min-width: 60px;
-          white-space: nowrap;
-        }
-        
-        .command-button:hover {
-          background: #0056b3;
-          transform: translateY(-2px);
-        }
-        
-        .command-button.success {
-          background: #28a745;
-        }
-        
-        .command-button.success:hover {
-          background: #1e7e34;
-        }
-        
-        .command-button.warning {
-          background: #ffc107;
-          color: #212529;
-        }
-        
-        .command-button.warning:hover {
-          background: #e0a800;
-        }
-        
-        .command-button.info {
-          background: #17a2b8;
-        }
-        
-        .command-button.info:hover {
-          background: #117a8b;
-        }
-        
         .close-button {
           position: fixed;
           top: 20px;
@@ -637,20 +577,6 @@ function generatePDFPreview() {
         
         /* Responsive Design pour Mobile */
         @media screen and (max-width: 768px) {
-          .command-bar {
-            top: 70px !important;
-            right: 10px !important;
-            left: 10px !important;
-            justify-content: center !important;
-            max-width: none !important;
-          }
-          
-          .command-button {
-            font-size: 10px !important;
-            padding: 6px 10px !important;
-            min-width: 50px !important;
-          }
-          
           .container {
             max-width: 100% !important;
             margin: 0 !important;
@@ -734,7 +660,7 @@ function generatePDFPreview() {
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .close-button, .command-bar { display: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
@@ -745,15 +671,7 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout de la barre de commandes
-    htmlContent += '<div class="command-bar">';
-    htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Print</button>';
-    htmlContent += '<button class="command-button success" onclick="parent.savePreviewDirectToPDF()">📄 PDF</button>';
-    htmlContent += '<button class="command-button warning" onclick="parent.downloadPreviewHTML()">📄 HTML</button>';
-    //htmlContent += '<button class="command-button info" onclick="parent.testPreviewCommands()">🧪 Test</button>';
-    htmlContent += '</div>';
-    
-    // Bouton de fermeture existant
+    // Ajout du bouton de fermeture intégré dans le HTML
     htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
@@ -769,15 +687,14 @@ function generatePDFPreview() {
     htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
     htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
     htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p>Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)</p>';
     htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
     htmlContent += '</section>';
     
     if (alertesTotal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⚠️ Alertes de Sécurité</h2>';
+      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
       alertesTotal.forEach(alerte => {
-        htmlContent += '<p style="color: #dc3545; font-weight: bold;">• ' + alerte + '</p>';
+        htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
       });
       htmlContent += '</section>';
     }
@@ -786,7 +703,7 @@ function generatePDFPreview() {
     htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
-      htmlContent += '<p>Aucune palanquée créée - Tous les plongeurs en attente</p>';
+      htmlContent += '<p>Aucune palanquée créée.</p>';
     } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
@@ -800,7 +717,7 @@ function generatePDFPreview() {
           if (pal.length === 0) {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            // Trier les plongeurs par grade avant affichage
+            // MODIFICATION: Trier les plongeurs par grade avant affichage
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -828,7 +745,7 @@ function generatePDFPreview() {
       htmlContent += '<section class="section">';
       htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
       
-      // Trier aussi les plongeurs en attente par grade
+      // MODIFICATION: Trier aussi les plongeurs en attente par grade
       const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
       plongeursEnAttenteTriés.forEach(p => {
@@ -858,15 +775,15 @@ function generatePDFPreview() {
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
-      pdfPreview.srcdoc = htmlContent; // Utiliser srcdoc pour que les fonctions parent.* marchent
+      pdfPreview.src = url;
       
       previewContainer.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et barre de commandes");
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
@@ -893,157 +810,6 @@ function closePDFPreview() {
   }
 }
 
-function printPDFPreview() {
-  console.log("🖨️ Impression du preview...");
-  const pdfPreview = document.getElementById("pdfPreview");
-  if (!pdfPreview) {
-    alert("Aperçu non trouvé");
-    return;
-  }
-  
-  try {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    const previewContent = pdfPreview.srcdoc;
-    
-    if (previewContent) {
-      printWindow.document.write(previewContent);
-      printWindow.document.close();
-      
-      printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 500);
-      };
-      
-      console.log("✅ Impression lancée");
-    } else {
-      alert("Impossible d'accéder au contenu du preview");
-    }
-  } catch (error) {
-    console.error("❌ Erreur impression:", error);
-    alert("Erreur d'impression : " + error.message);
-  }
-}
-
-function printPDFPreview() {
-  console.log("🖨️ Impression du preview...");
-  
-  const pdfPreview = document.getElementById("pdfPreview");
-  if (!pdfPreview) {
-    alert("Aperçu non trouvé");
-    return;
-  }
-  
-  try {
-    // Créer une nouvelle fenêtre avec tout le contenu HTML
-    const printWindow = window.open('', '_blank', 'width=1000,height=800');
-    const previewContent = pdfPreview.srcdoc;
-    
-    if (previewContent) {
-      // Modifier le CSS pour l'impression
-      const printContent = previewContent.replace(
-        '</head>',
-        `<style>
-          @media print {
-            .command-bar, .close-button { display: none !important; }
-            body { background: white !important; }
-            .container { box-shadow: none !important; max-width: none !important; margin: 0 !important; }
-            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
-          }
-        </style></head>`
-      );
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Attendre le chargement et imprimer
-      printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          // Ne pas fermer automatiquement pour permettre à l'utilisateur de voir/ajuster
-        }, 1000);
-      };
-      
-      console.log("✅ Fenêtre d'impression ouverte");
-    } else {
-      alert("Impossible d'accéder au contenu du preview");
-    }
-  } catch (error) {
-    console.error("❌ Erreur impression:", error);
-    alert("Erreur d'impression : " + error.message);
-  }
-}
-
-
-
-function downloadPreviewHTML() {
-  console.log("📄 Téléchargement du HTML du preview...");
-  
-  const pdfPreview = document.getElementById("pdfPreview");
-  if (!pdfPreview) {
-    alert("Aperçu non trouvé");
-    return;
-  }
-  
-  try {
-    const htmlContent = pdfPreview.srcdoc;
-    if (!htmlContent) {
-      alert("Contenu HTML non accessible");
-      return;
-    }
-    
-    // Nettoyer le HTML pour retirer les boutons de commandes
-    const cleanHtml = htmlContent.replace(
-      /<div class="command-bar">.*?<\/div>/s,
-      ''
-    ).replace(
-      /<button class="close-button".*?<\/button>/s,
-      ''
-    );
-    
-    const blob = new Blob([cleanHtml], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    const dpDate = document.getElementById("dp-date")?.value || new Date().toISOString().split('T')[0];
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "preview";
-    
-    link.download = `palanquees-preview-${dpDate}-${dpPlongee}.html`;
-    link.href = url;
-    link.click();
-    
-    // Nettoyer l'URL après usage
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    
-    console.log("✅ HTML téléchargé:", link.download);
-    alert(`Fichier HTML téléchargé avec succès !\n📄 ${link.download}`);
-    
-  } catch (error) {
-    console.error("❌ Erreur téléchargement HTML:", error);
-    alert("Erreur lors du téléchargement: " + error.message);
-  }
-}
-
-// ===== EXPORT DES NOUVELLES FONCTIONS =====
-window.printPDFPreview = printPDFPreview;
-window.savePreviewDirectToPDF = savePreviewDirectToPDF;
-window.downloadPreviewHTML = downloadPreviewHTML;
-
-console.log("🔧 Fonctions de commandes du preview ajoutées et exportées");
-
-  console.log("🧪 Test des commandes preview...");
-  const pdfPreview = document.getElementById("pdfPreview");
-  console.log("Preview element:", pdfPreview);
-  
-  if (pdfPreview) {
-    console.log("Preview srcdoc length:", pdfPreview.srcdoc?.length || 0);
-    alert("Test OK - Vérifiez la console pour les détails");
-  } else {
-    alert("❌ Preview non trouvé !");
-  }
-}
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
