@@ -429,7 +429,7 @@ function generatePDFPreview() {
     const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // ... votre fonction trierPlongeursParGrade existante ...
+    // NOUVEAU: Fonction de tri par grade pour l'aperçu
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -443,6 +443,7 @@ function generatePDFPreview() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
+          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -450,7 +451,6 @@ function generatePDFPreview() {
       });
     }
     
-    // ... vos autres fonctions helper existantes ...
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
       const date = new Date(dateString);
@@ -480,7 +480,7 @@ function generatePDFPreview() {
           position: relative;
         }
         
-        /* NOUVELLE BARRE DE COMMANDES */
+        /* Barre de commandes */
         .command-bar {
           position: fixed;
           top: 20px;
@@ -510,38 +510,31 @@ function generatePDFPreview() {
         .command-button:hover {
           background: #0056b3;
           transform: translateY(-2px);
-          box-shadow: 0 5px 12px rgba(0, 123, 255, 0.4);
         }
         
         .command-button.success {
           background: #28a745;
-          box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
         }
         
         .command-button.success:hover {
           background: #1e7e34;
-          box-shadow: 0 5px 12px rgba(40, 167, 69, 0.4);
         }
         
         .command-button.warning {
           background: #ffc107;
           color: #212529;
-          box-shadow: 0 3px 8px rgba(255, 193, 7, 0.3);
         }
         
         .command-button.warning:hover {
           background: #e0a800;
-          box-shadow: 0 5px 12px rgba(255, 193, 7, 0.4);
         }
         
         .command-button.info {
           background: #17a2b8;
-          box-shadow: 0 3px 8px rgba(23, 162, 184, 0.3);
         }
         
         .command-button.info:hover {
           background: #117a8b;
-          box-shadow: 0 5px 12px rgba(23, 162, 184, 0.4);
         }
         
         .close-button {
@@ -552,47 +545,19 @@ function generatePDFPreview() {
           color: white;
           border: none;
           border-radius: 50%;
-          width: 45px;
-          height: 45px;
-          font-size: 18px;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
           font-weight: bold;
           cursor: pointer;
           box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-          z-index: 1001;
+          z-index: 1000;
           transition: all 0.3s ease;
         }
-        
         .close-button:hover {
           background: #c82333;
           transform: scale(1.1);
         }
-        
-        /* Responsive pour mobile */
-        @media screen and (max-width: 768px) {
-          .command-bar {
-            top: 70px !important;
-            right: 10px !important;
-            left: 10px !important;
-            justify-content: center !important;
-            max-width: none !important;
-          }
-          
-          .command-button {
-            font-size: 10px !important;
-            padding: 6px 10px !important;
-            min-width: 50px !important;
-          }
-          
-          .close-button {
-            width: 40px !important;
-            height: 40px !important;
-            font-size: 16px !important;
-            top: 15px !important;
-            right: 15px !important;
-          }
-        }
-        
-        /* ... vos autres styles CSS existants ... */
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
@@ -612,18 +577,175 @@ function generatePDFPreview() {
           padding-bottom: 10px;
           border-bottom: 3px solid #007bff;
         }
-        /* ... continuez avec vos autres styles ... */
+        .plongeur-item {
+          padding: 8px 12px;
+          margin: 4px 0;
+          background: #f8f9fa;
+          border-left: 4px solid #007bff;
+          border-radius: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: all 0.2s ease;
+        }
+        .plongeur-item:hover {
+          background: #e9ecef;
+          transform: translateX(2px);
+        }
+        .plongeur-nom {
+          font-weight: bold;
+          flex: 1;
+        }
+        .plongeur-niveau {
+          background: #28a745;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: bold;
+          min-width: 50px;
+          text-align: center;
+          margin-right: 8px;
+        }
+        .plongeur-prerogatives {
+          font-size: 11px;
+          color: #666;
+          font-style: italic;
+        }
+        .palanquee-box {
+          margin: 20px 0;
+          padding: 20px;
+          border: 2px solid #007bff;
+          border-radius: 8px;
+          background: #f8f9fa;
+        }
+        .palanquee-title {
+          font-size: 18px;
+          font-weight: bold;
+          color: #004080;
+          margin-bottom: 15px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #dee2e6;
+        }
+        .alert-box {
+          border-color: #dc3545 !important;
+          background: #fff5f5 !important;
+        }
+        .alert-title {
+          color: #dc3545 !important;
+        }
+        
+        /* Responsive Design pour Mobile */
+        @media screen and (max-width: 768px) {
+          .command-bar {
+            top: 70px !important;
+            right: 10px !important;
+            left: 10px !important;
+            justify-content: center !important;
+            max-width: none !important;
+          }
+          
+          .command-button {
+            font-size: 10px !important;
+            padding: 6px 10px !important;
+            min-width: 50px !important;
+          }
+          
+          .container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+          .header {
+            padding: 15px !important;
+          }
+          .main-title {
+            font-size: 20px !important;
+            letter-spacing: 1px !important;
+          }
+          .content {
+            padding: 15px !important;
+          }
+          .section {
+            margin-bottom: 25px !important;
+          }
+          .section-title {
+            font-size: 16px !important;
+            margin-bottom: 15px !important;
+          }
+          .palanquee-box {
+            margin: 15px 0 !important;
+            padding: 15px !important;
+          }
+          .palanquee-title {
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+          .plongeur-item {
+            padding: 10px 8px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .plongeur-nom {
+            font-size: 14px !important;
+          }
+          .plongeur-niveau {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+          }
+          .plongeur-prerogatives {
+            font-size: 10px !important;
+          }
+          .close-button {
+            width: 45px !important;
+            height: 45px !important;
+            font-size: 18px !important;
+            top: 15px !important;
+            right: 15px !important;
+          }
+        }
+        
+        @media screen and (max-width: 480px) {
+          .header {
+            padding: 10px !important;
+          }
+          .main-title {
+            font-size: 18px !important;
+          }
+          .content {
+            padding: 10px !important;
+          }
+          .section-title {
+            font-size: 14px !important;
+          }
+          .palanquee-title {
+            font-size: 14px !important;
+          }
+          .close-button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            top: 10px !important;
+            right: 10px !important;
+          }
+        }
+        
+        @media print {
+          body { background: white !important; }
+          .container { box-shadow: none !important; max-width: none !important; }
+          .close-button, .command-bar { display: none !important; }
+        }
       </style>
     `;
 
     let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
     htmlContent += '<meta charset="UTF-8">';
-    htmlContent += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // ===== AJOUT DE LA BARRE DE COMMANDES =====
+    // Ajout de la barre de commandes
     htmlContent += '<div class="command-bar">';
     htmlContent += '<button class="command-button" onclick="parent.printPDFPreview()">🖨️ Print</button>';
     htmlContent += '<button class="command-button success" onclick="parent.savePreviewDirectToPDF()">📄 PDF</button>';
@@ -642,17 +764,88 @@ function generatePDFPreview() {
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
     htmlContent += '</header>';
     
-    // ... continuez avec le reste de votre génération HTML existante ...
-    
     htmlContent += '<main class="content">';
     htmlContent += '<section class="section">';
     htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
     htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
     htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
+    htmlContent += '<p>Assignés: ' + plongeursEnPalanquees + ' (' + (totalPlongeurs > 0 ? ((plongeursEnPalanquees/totalPlongeurs)*100).toFixed(0) : 0) + '%)</p>';
     htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
     htmlContent += '</section>';
     
-    // ... continuez avec le reste de votre code HTML existant ...
+    if (alertesTotal.length > 0) {
+      htmlContent += '<section class="section">';
+      htmlContent += '<h2 class="section-title">⚠️ Alertes de Sécurité</h2>';
+      alertesTotal.forEach(alerte => {
+        htmlContent += '<p style="color: #dc3545; font-weight: bold;">• ' + alerte + '</p>';
+      });
+      htmlContent += '</section>';
+    }
+    
+    htmlContent += '<section class="section">';
+    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
+    
+    if (palanqueesLocal.length === 0) {
+      htmlContent += '<p>Aucune palanquée créée - Tous les plongeurs en attente</p>';
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
+          const boxClass = hasAlert ? 'palanquee-box alert-box' : 'palanquee-box';
+          const titleClass = hasAlert ? 'palanquee-title alert-title' : 'palanquee-title';
+          
+          htmlContent += `<div class="${boxClass}">`;
+          htmlContent += `<h3 class="${titleClass}">Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})</h3>`;
+          
+          if (pal.length === 0) {
+            htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
+          } else {
+            // Trier les plongeurs par grade avant affichage
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                htmlContent += '<div class="plongeur-item">';
+                htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+                htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+                htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+                if (p.pre) {
+                  htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+                }
+                htmlContent += '</div>';
+                htmlContent += '</div>';
+              }
+            });
+          }
+          htmlContent += '</div>';
+        }
+      });
+    }
+    
+    htmlContent += '</section>';
+    
+    if (plongeursLocal.length > 0) {
+      htmlContent += '<section class="section">';
+      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
+      
+      // Trier aussi les plongeurs en attente par grade
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
+        if (p && p.nom) {
+          htmlContent += '<div class="plongeur-item">';
+          htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
+          htmlContent += '<div style="display: flex; align-items: center; gap: 8px;">';
+          htmlContent += '<span class="plongeur-niveau">' + (p.niveau || 'N?') + '</span>';
+          if (p.pre) {
+            htmlContent += '<span class="plongeur-prerogatives">(' + p.pre + ')</span>';
+          }
+          htmlContent += '</div>';
+          htmlContent += '</div>';
+        }
+      });
+      htmlContent += '</section>';
+    }
     
     htmlContent += '</main>';
     htmlContent += '</div></body></html>';
@@ -665,14 +858,15 @@ function generatePDFPreview() {
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
-      pdfPreview.srcdoc = htmlContent; // Important : utiliser srcdoc au lieu de src
+      pdfPreview.srcdoc = htmlContent; // Utiliser srcdoc pour que les fonctions parent.* marchent
       
       previewContainer.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec barre de commandes");
+      console.log("✅ Aperçu PDF généré avec tri par grade et barre de commandes");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
@@ -684,7 +878,6 @@ function generatePDFPreview() {
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
-
 // Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
@@ -974,25 +1167,6 @@ function downloadPreviewHTML() {
   } catch (error) {
     console.error("❌ Erreur téléchargement HTML:", error);
     alert("Erreur lors du téléchargement: " + error.message);
-  }
-}
-
-function testPreviewCommands() {
-  console.log("🧪 Test des commandes preview...");
-  
-  const pdfPreview = document.getElementById("pdfPreview");
-  console.log("Preview element:", pdfPreview);
-  
-  if (pdfPreview) {
-    console.log("Preview srcdoc length:", pdfPreview.srcdoc?.length || 0);
-    console.log("Variables globales:");
-    console.log("- plongeurs:", typeof plongeurs, plongeurs?.length || 0);
-    console.log("- palanquees:", typeof palanquees, palanquees?.length || 0);
-    console.log("- jsPDF:", typeof window.jspdf);
-    
-    alert(`Test réussi !\n\n✅ Preview trouvé\n📏 Contenu: ${pdfPreview.srcdoc?.length || 0} caractères\n👥 Plongeurs: ${typeof plongeurs !== 'undefined' ? plongeurs.length : 0}\n🏊 Palanquées: ${typeof palanquees !== 'undefined' ? palanquees.length : 0}\n📄 jsPDF: ${typeof window.jspdf !== 'undefined' ? 'OK' : 'NON DISPONIBLE'}`);
-  } else {
-    alert("❌ Preview non trouvé !");
   }
 }
 
