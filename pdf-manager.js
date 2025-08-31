@@ -462,7 +462,7 @@ function generatePDFPreview() {
     const cssStyles = `
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        .preview-wrapper {
+        body {
           font-family: 'Segoe UI', Arial, sans-serif;
           line-height: 1.6;
           color: #333;
@@ -477,57 +477,27 @@ function generatePDFPreview() {
           min-height: 297mm;
           position: relative;
         }
-        
-        /* === BARRE D'ACTION EN HAUT === */
-        .action-bar {
-          position: sticky;
+        .close-button {
+          position: fixed;
           top: 20px;
           right: 20px;
-          display: flex;
-          gap: 10px;
-          z-index: 1000;
-          justify-content: flex-end;
-          padding: 20px;
-        }
-        
-        .action-button {
-          border: none;
-          border-radius: 8px;
-          padding: 12px 16px;
-          font-size: 14px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .close-button {
           background: #dc3545;
           color: white;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+          z-index: 1000;
+          transition: all 0.3s ease;
         }
-        
-        .download-button {
-          background: #28a745;
-          color: white;
+        .close-button:hover {
+          background: #c82333;
+          transform: scale(1.1);
         }
-        
-        .print-button {
-          background: #007bff;
-          color: white;
-        }
-        
-        .action-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-        }
-        
-        .close-button:hover { background: #c82333; }
-        .download-button:hover { background: #218838; }
-        .print-button:hover { background: #0056b3; }
-        
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
@@ -612,19 +582,6 @@ function generatePDFPreview() {
             margin: 0 !important;
             box-shadow: none !important;
           }
-          .action-bar {
-            position: relative !important;
-            top: auto !important;
-            right: auto !important;
-            justify-content: center !important;
-            padding: 15px !important;
-            background: rgba(255,255,255,0.9) !important;
-            backdrop-filter: blur(10px) !important;
-          }
-          .action-button {
-            padding: 10px 12px !important;
-            font-size: 12px !important;
-          }
           .header {
             padding: 15px !important;
           }
@@ -666,6 +623,13 @@ function generatePDFPreview() {
           .plongeur-prerogatives {
             font-size: 10px !important;
           }
+          .close-button {
+            width: 45px !important;
+            height: 45px !important;
+            font-size: 18px !important;
+            top: 15px !important;
+            right: 15px !important;
+          }
         }
         
         @media screen and (max-width: 480px) {
@@ -684,35 +648,31 @@ function generatePDFPreview() {
           .palanquee-title {
             font-size: 14px !important;
           }
-          .action-button {
-            padding: 8px 10px !important;
-            font-size: 11px !important;
+          .close-button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            top: 10px !important;
+            right: 10px !important;
           }
         }
         
         @media print {
-          .preview-wrapper { background: white !important; }
+          body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .action-bar { display: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
 
-    let htmlContent = cssStyles;
+    let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
+    htmlContent += '<meta charset="UTF-8">';
+    htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
+    htmlContent += cssStyles;
+    htmlContent += '</head><body>';
     
-    // === BARRE D'ACTIONS EN HAUT ===
-    htmlContent += '<div class="preview-wrapper">';
-    htmlContent += '<div class="action-bar">';
-    htmlContent += '<button class="action-button download-button" onclick="downloadPDFFromPreview()" title="Télécharger le PDF">';
-    htmlContent += '<span>📄</span> Télécharger PDF';
-    htmlContent += '</button>';
-    htmlContent += '<button class="action-button print-button" onclick="window.print()" title="Imprimer">';
-    htmlContent += '<span>🖨️</span> Imprimer';
-    htmlContent += '</button>';
-    htmlContent += '<button class="action-button close-button" onclick="closePDFPreview()" title="Fermer l\'aperçu">';
-    htmlContent += '<span>✕</span> Fermer';
-    htmlContent += '</button>';
-    htmlContent += '</div>';
+    // Ajout du bouton de fermeture intégré dans le HTML
+    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -805,44 +765,25 @@ function generatePDFPreview() {
     }
     
     htmlContent += '</main>';
-    htmlContent += '</div>';
-    htmlContent += '</div>';
+    htmlContent += '</div></body></html>';
 
-    // Injecter directement dans le conteneur au lieu d'utiliser un blob URL
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
     const previewContainer = document.getElementById("previewContainer");
     const pdfPreview = document.getElementById("pdfPreview");
     
     if (previewContainer && pdfPreview) {
       previewContainer.style.display = "block";
-      
-      // Remplacer l'iframe par un div
-      pdfPreview.style.display = "none";
-      
-      let previewDiv = document.getElementById("pdfPreviewDiv");
-      if (!previewDiv) {
-        previewDiv = document.createElement("div");
-        previewDiv.id = "pdfPreviewDiv";
-        previewDiv.style.width = "100%";
-        previewDiv.style.minHeight = "600px";
-        previewDiv.style.border = "1px solid #ddd";
-        previewDiv.style.borderRadius = "8px";
-        previewDiv.style.overflow = "auto";
-        previewContainer.appendChild(previewDiv);
-      }
-      
-      previewDiv.innerHTML = htmlContent;
+      pdfPreview.src = url;
       
       previewContainer.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec boutons Download/Print et tri par grade (div direct)");
-      
-    } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
-      alert("Erreur: impossible d'afficher l'aperçu PDF");
-    }
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
@@ -855,326 +796,16 @@ function generatePDFPreview() {
   }
 }
 
-// ===== NOUVELLE FONCTION : TÉLÉCHARGER PDF DEPUIS LA PREVIEW =====
-function downloadPDFFromPreview() {
-  console.log("📄 Téléchargement du PDF depuis l'aperçu HTML...");
-  
-  try {
-    // ÉTAPE 1: Vérifier les bibliothèques disponibles avec diagnostic détaillé
-    console.log("🔍 Diagnostic des bibliothèques PDF...");
-    console.log("html2pdf disponible:", typeof html2pdf !== 'undefined');
-    console.log("html2canvas disponible:", typeof html2canvas !== 'undefined');
-    console.log("jsPDF disponible:", typeof window.jspdf !== 'undefined');
-    console.log("window.jsPDF disponible:", typeof window.jsPDF !== 'undefined');
-    
-    // Diagnostic approfondi
-    if (typeof html2pdf === 'undefined') {
-      console.warn("❌ html2pdf non trouvé");
-    } else {
-      console.log("✅ html2pdf détecté:", html2pdf);
-    }
-    
-    if (typeof html2canvas === 'undefined') {
-      console.warn("❌ html2canvas non trouvé");
-    } else {
-      console.log("✅ html2canvas détecté:", html2canvas);
-    }
-    
-    if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
-      console.warn("❌ jsPDF non trouvé (ni window.jspdf ni window.jsPDF)");
-    } else {
-      console.log("✅ jsPDF détecté:", window.jspdf || window.jsPDF);
-    }
-    
-    // ÉTAPE 2: Récupérer les données
-    console.log("📊 Récupération des données...");
-    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
-    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-    
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
-    
-    console.log("Plongeurs:", plongeursLocal.length);
-    console.log("Palanquées:", palanqueesLocal.length);
-    
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
-    
-    // ÉTAPE 3: Créer le contenu HTML simple
-    console.log("🏗️ Création du contenu HTML...");
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'fixed';
-    tempDiv.style.top = '-9999px';
-    tempDiv.style.left = '0';
-    tempDiv.style.width = '800px';
-    tempDiv.style.backgroundColor = 'white';
-    tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.style.fontSize = '14px';
-    tempDiv.style.color = '#333';
-    tempDiv.style.padding = '20px';
-    
-    // Contenu HTML simplifié pour le PDF
-    let htmlContent = '<div style="background: white; padding: 20px; font-family: Arial, sans-serif;">';
-    
-    // En-tête
-    htmlContent += '<div style="background: #004080; color: white; padding: 20px; margin-bottom: 20px;">';
-    htmlContent += '<h1 style="margin: 0; font-size: 24px;">Palanquées JSAS - Fiche de Sécurité</h1>';
-    htmlContent += '<p style="margin: 5px 0;">DP: ' + dpNom + '</p>';
-    htmlContent += '<p style="margin: 5px 0;">Date: ' + dpDate + ' - ' + dpPlongee + '</p>';
-    htmlContent += '<p style="margin: 5px 0;">Lieu: ' + dpLieu + '</p>';
-    htmlContent += '</div>';
-    
-    // Résumé
-    htmlContent += '<div style="margin-bottom: 30px;">';
-    htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">📊 Résumé</h2>';
-    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
-    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
-    htmlContent += '</div>';
-    
-    // Alertes
-    if (alertesTotal.length > 0) {
-      htmlContent += '<div style="margin-bottom: 30px;">';
-      htmlContent += '<h2 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;">⚠️ Alertes</h2>';
-      alertesTotal.forEach(alerte => {
-        htmlContent += '<p style="color: #dc3545;">• ' + alerte + '</p>';
-      });
-      htmlContent += '</div>';
-    }
-    
-    // Palanquées
-    htmlContent += '<div style="margin-bottom: 30px;">';
-    htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">🏊‍♂️ Palanquées</h2>';
-    
-    if (palanqueesLocal.length === 0) {
-      htmlContent += '<p>Aucune palanquée créée.</p>';
-    } else {
-      palanqueesLocal.forEach((pal, i) => {
-        if (pal && Array.isArray(pal)) {
-          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
-          const borderColor = hasAlert ? '#dc3545' : '#007bff';
-          
-          htmlContent += '<div style="border: 2px solid ' + borderColor + '; padding: 15px; margin: 15px 0; background: #f8f9fa;">';
-          htmlContent += '<h3 style="margin: 0 0 10px 0; color: #004080;">Palanquée ' + (i + 1) + ' (' + pal.length + ' plongeur' + (pal.length > 1 ? 's' : '') + ')</h3>';
-          
-          if (pal.length === 0) {
-            htmlContent += '<p style="font-style: italic; color: #666;">Aucun plongeur assigné</p>';
-          } else {
-            // Tri des plongeurs par niveau
-            const ordreNiveaux = {
-              'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-              'N3': 7, 'N2': 8, 'N1': 9,
-              'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-              'Déb.': 13, 'débutant': 14, 'Déb': 15
-            };
-            
-            const plongeursTriés = [...pal].sort((a, b) => {
-              const ordreA = ordreNiveaux[a.niveau] || 99;
-              const ordreB = ordreNiveaux[b.niveau] || 99;
-              return ordreA === ordreB ? a.nom.localeCompare(b.nom) : ordreA - ordreB;
-            });
-            
-            plongeursTriés.forEach(p => {
-              if (p && p.nom) {
-                htmlContent += '<div style="margin: 5px 0; padding: 8px; background: white; border-left: 4px solid #007bff;">';
-                htmlContent += '<strong>' + p.nom + '</strong> ';
-                htmlContent += '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">' + (p.niveau || 'N?') + '</span>';
-                if (p.pre) {
-                  htmlContent += ' <em style="color: #666;">(' + p.pre + ')</em>';
-                }
-                htmlContent += '</div>';
-              }
-            });
-          }
-          htmlContent += '</div>';
-        }
-      });
-    }
-    htmlContent += '</div>';
-    
-    // Plongeurs en attente
-    if (plongeursLocal.length > 0) {
-      htmlContent += '<div style="margin-bottom: 30px;">';
-      htmlContent += '<h2 style="color: #004080; border-bottom: 2px solid #007bff; padding-bottom: 5px;">⏳ Plongeurs en Attente</h2>';
-      
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
-      
-      const plongeursEnAttenteTriés = [...plongeursLocal].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        return ordreA === ordreB ? a.nom.localeCompare(b.nom) : ordreA - ordreB;
-      });
-      
-      plongeursEnAttenteTriés.forEach(p => {
-        if (p && p.nom) {
-          htmlContent += '<div style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-left: 4px solid #ffc107;">';
-          htmlContent += '<strong>' + p.nom + '</strong> ';
-          htmlContent += '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">' + (p.niveau || 'N?') + '</span>';
-          if (p.pre) {
-            htmlContent += ' <em style="color: #666;">(' + p.pre + ')</em>';
-          }
-          htmlContent += '</div>';
-        }
-      });
-      htmlContent += '</div>';
-    }
-    
-    htmlContent += '</div>';
-    
-    tempDiv.innerHTML = htmlContent;
-    document.body.appendChild(tempDiv);
-    
-    console.log("✅ Élément temporaire créé et ajouté au DOM");
-    console.log("Contenu HTML généré, longueur:", htmlContent.length);
-    
-    // ÉTAPE 4: Conversion en PDF avec détection robuste
-    const fileName = 'palanquees-jsas-preview-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
-    console.log("📄 Nom du fichier:", fileName);
-    
-    // Attendre un peu que l'élément soit rendu
-    setTimeout(() => {
-      // Option 1: html2pdf (prioritaire)
-      if (typeof html2pdf !== 'undefined') {
-        console.log("🔄 Utilisation de html2pdf...");
-        
-        const opt = {
-          margin: [10, 10, 10, 10],
-          filename: fileName,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { 
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: true
-          },
-          jsPDF: { 
-            unit: 'mm', 
-            format: 'a4', 
-            orientation: 'portrait' 
-          }
-        };
-        
-        html2pdf().from(tempDiv).set(opt).save().then(() => {
-          console.log("✅ PDF généré avec html2pdf:", fileName);
-          document.body.removeChild(tempDiv);
-          alert("PDF généré avec succès : " + fileName);
-        }).catch(error => {
-          console.error("❌ Erreur html2pdf:", error);
-          document.body.removeChild(tempDiv);
-          alert("Erreur html2pdf: " + error.message);
-        });
-        
-      // Option 2: html2canvas + jsPDF
-      } else if (typeof html2canvas !== 'undefined' && (typeof window.jspdf !== 'undefined' || typeof window.jsPDF !== 'undefined')) {
-        console.log("🔄 Utilisation de html2canvas + jsPDF...");
-        
-        // Support des deux versions de jsPDF
-        const jsPDFLib = window.jspdf || window.jsPDF;
-        const jsPDFClass = jsPDFLib.jsPDF || jsPDFLib;
-        
-        html2canvas(tempDiv, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: true
-        }).then(canvas => {
-          console.log("✅ Canvas créé, dimensions:", canvas.width, "x", canvas.height);
-          
-          const pdf = new jsPDFClass('p', 'mm', 'a4');
-          
-          const imgWidth = 210; // A4 width in mm
-          const pageHeight = 297; // A4 height in mm
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          
-          const imgData = canvas.toDataURL('image/png');
-          
-          let heightLeft = imgHeight;
-          let position = 0;
-          
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-          
-          while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-          }
-          
-          pdf.save(fileName);
-          console.log("✅ PDF généré avec html2canvas + jsPDF:", fileName);
-          document.body.removeChild(tempDiv);
-          alert("PDF généré avec succès : " + fileName);
-          
-        }).catch(error => {
-          console.error("❌ Erreur html2canvas:", error);
-          document.body.removeChild(tempDiv);
-          alert("Erreur html2canvas: " + error.message);
-        });
-      
-      // Option 3: Aucune bibliothèque disponible
-      } else {
-        document.body.removeChild(tempDiv);
-        
-        // Diagnostic détaillé pour l'utilisateur
-        let missingLibs = [];
-        if (typeof html2pdf === 'undefined') missingLibs.push('html2pdf');
-        if (typeof html2canvas === 'undefined') missingLibs.push('html2canvas');
-        if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') missingLibs.push('jsPDF');
-        
-        const message = `❌ Bibliothèques PDF manquantes: ${missingLibs.join(', ')}\n\n` +
-                       `📋 SOLUTION: Ajoutez dans votre HTML (avant la fermeture </body>) :\n\n` +
-                       `OPTION 1 (Recommandée) :\n` +
-                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>\n\n` +
-                       `OPTION 2 (Alternative) :\n` +
-                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>\n` +
-                       `<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>\n\n` +
-                       `📍 Vous avez mentionné canvas2pdf - vérifiez qu'il est bien chargé !`;
-        
-        console.error("❌ MODULE PDF NON CHARGÉ");
-        console.error("Bibliothèques manquantes:", missingLibs);
-        console.error("html2pdf:", typeof html2pdf);
-        console.error("html2canvas:", typeof html2canvas); 
-        console.error("window.jspdf:", typeof window.jspdf);
-        console.error("window.jsPDF:", typeof window.jsPDF);
-        
-        alert(message);
-      }
-    }, 100); // Petit délai pour le rendu
-    
-  } catch (error) {
-    console.error("❌ Erreur globale téléchargement PDF:", error);
-    alert("Erreur lors du téléchargement du PDF: " + error.message);
-  }
-}
-
 // Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
-  const pdfPreviewDiv = document.getElementById("pdfPreviewDiv");
   
   if (previewContainer) {
     previewContainer.style.display = "none";
-    
-    // Nettoyer l'iframe
     if (pdfPreview) {
       pdfPreview.src = "";
     }
-    
-    // Nettoyer le div de preview
-    if (pdfPreviewDiv) {
-      pdfPreviewDiv.innerHTML = "";
-    }
-    
     console.log("✅ Aperçu PDF fermé");
   }
 }
@@ -1182,16 +813,6 @@ function closePDFPreview() {
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
-window.downloadPDFFromPreview = downloadPDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
-// S'assurer que les fonctions sont disponibles immédiatement
-if (typeof window !== 'undefined') {
-  console.log("📄 Module PDF Manager - Fonctions exportées:");
-  console.log("- exportToPDF:", typeof window.exportToPDF);
-  console.log("- generatePDFPreview:", typeof window.generatePDFPreview);
-  console.log("- downloadPDFFromPreview:", typeof window.downloadPDFFromPreview);
-  console.log("- closePDFPreview:", typeof window.closePDFPreview);
-}
-
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec boutons Download/Print");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
