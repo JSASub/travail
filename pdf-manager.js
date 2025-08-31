@@ -436,12 +436,6 @@ function generatePDFFromPreview() {
     const previewDocument = pdfPreview.contentDocument;
     const previewBody = previewDocument.body;
 
-    // Temporairement masquer le bouton PDF dans l'iframe pour la capture
-    const pdfButton = previewDocument.getElementById('pdf-from-preview-btn');
-    if (pdfButton) {
-      pdfButton.style.display = 'none';
-    }
-
     // Options pour html2canvas optimisées pour PDF
     const options = {
       scale: 2, // Haute qualité
@@ -490,11 +484,6 @@ function generatePDFFromPreview() {
         currentY -= pdfHeight;
       }
 
-      // Réafficher le bouton
-      if (pdfButton) {
-        pdfButton.style.display = 'block';
-      }
-
       // Télécharger le PDF
       function formatDateFrench(dateString) {
         if (!dateString) return "export";
@@ -510,12 +499,6 @@ function generatePDFFromPreview() {
 
     }).catch(error => {
       console.error("❌ Erreur capture html2canvas:", error);
-      
-      // Réafficher le bouton en cas d'erreur
-      if (pdfButton) {
-        pdfButton.style.display = 'block';
-      }
-      
       alert("Erreur lors de la capture de l'aperçu: " + error.message);
     });
 
@@ -613,29 +596,6 @@ function generatePDFPreview() {
         .close-button:hover {
           background: #c82333;
           transform: scale(1.1);
-        }
-        .pdf-button {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #28a745;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 10px 15px;
-          font-size: 14px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-          z-index: 1000;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-        .pdf-button:hover {
-          background: #218838;
-          transform: scale(1.05);
         }
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
@@ -762,19 +722,12 @@ function generatePDFPreview() {
           .plongeur-prerogatives {
             font-size: 10px !important;
           }
-          .close-button, .pdf-button {
+          .close-button {
             width: 45px !important;
             height: 45px !important;
             font-size: 18px !important;
             top: 15px !important;
-          }
-          .close-button {
-            right: 70px !important;
-          }
-          .pdf-button {
             right: 15px !important;
-            padding: 8px !important;
-            font-size: 12px !important;
           }
         }
         
@@ -794,26 +747,19 @@ function generatePDFPreview() {
           .palanquee-title {
             font-size: 14px !important;
           }
-          .close-button, .pdf-button {
+          .close-button {
             width: 40px !important;
             height: 40px !important;
             font-size: 16px !important;
             top: 10px !important;
-          }
-          .close-button {
-            right: 60px !important;
-          }
-          .pdf-button {
             right: 10px !important;
-            padding: 6px !important;
-            font-size: 10px !important;
           }
         }
         
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .close-button, .pdf-button { display: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
@@ -824,9 +770,8 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout des boutons de fermeture et PDF intégrés dans le HTML
+    // Ajout du bouton de fermeture seulement (le bouton PDF sera dans la page principale)
     htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
-    htmlContent += '<button id="pdf-from-preview-btn" class="pdf-button" onclick="parent.generatePDFFromPreview()" title="Générer PDF de cet aperçu">📄 PDF</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
