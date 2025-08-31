@@ -16,7 +16,9 @@ function exportToPDF() {
     return element || { value: "" }; // Retourne un objet avec value vide si élément non trouvé
   }
   
-  const dpNom = $("dp-select").value || "Non défini";
+  // Récupération spéciale pour le directeur de plongée (texte affiché, pas value)
+  const dpSelect = document.getElementById("dp-select");
+  const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
   const dpLieu = $("dp-lieu").value || "Non défini";
   const dpPlongee = $("dp-plongee").value || "matin";
@@ -414,7 +416,9 @@ function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
   try {
-    const dpNom = document.getElementById("dp-select")?.value || "Non défini";
+    // Récupération spéciale pour le directeur de plongée
+    const dpSelect = document.getElementById("dp-select");
+    const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
@@ -806,7 +810,8 @@ function generatePDFFromPreview() {
       throw new Error("jsPDF non disponible");
     }
 
-    const dpNom = document.getElementById("dp-select")?.value || "Non défini";
+    const dpSelect = document.getElementById("dp-select");
+    const dpNom = dpSelect?.selectedOptions[0]?.textContent || "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
