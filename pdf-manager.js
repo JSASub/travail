@@ -409,245 +409,6 @@ function exportToPDF() {
   }
 }
 
-// ===== GÉNÉRATION PDF DEPUIS LE PREVIEW (NOUVELLE FONCTION) =====
-function generatePDFFromPreview() {
-  console.log("📄 Génération PDF depuis l'aperçu...");
-  
-  try {
-    // Vérifier que jsPDF est disponible
-    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
-      throw new Error("jsPDF non disponible");
-    }
-
-    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
-    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-
-    // S'assurer que les variables existent
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
-    
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
-
-    // Fonction de tri par grade
-    function trierPlongeursParGrade(plongeurs) {
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
-      
-      return [...plongeurs].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        
-        if (ordreA === ordreB) {
-          return a.nom.localeCompare(b.nom);
-        }
-        
-        return ordreA - ordreB;
-      });
-    }
-
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
-    }
-
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    // Créer le PDF avec jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const colors = {
-      primaryR: 0, primaryG: 64, primaryB: 128,
-      secondaryR: 0, secondaryG: 123, secondaryB: 255,
-      successR: 40, successG: 167, successB: 69,
-      dangerR: 220, dangerG: 53, dangerB: 69,
-      darkR: 52, darkG: 58, darkB: 64,
-      grayR: 108, grayG: 117, grayB: 125
-    };
-
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - (2 * margin);
-
-    function checkPageBreak(heightNeeded) {
-      if (yPosition + heightNeeded > pageHeight - 30) {
-        doc.addPage();
-        yPosition = 20;
-        return true;
-      }
-      return false;
-    }
-
-    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
-      
-      switch(color) {
-        case 'primary':
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          break;
-        case 'secondary':
-          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          break;
-        case 'success':
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          break;
-        case 'danger':
-          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          break;
-        case 'gray':
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          break;
-        default:
-          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      }
-      
-      doc.text(text, x, y);
-    }
-
-    // === EN-TÊTE ===
-    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
-    doc.rect(0, 0, pageWidth, 50, 'F');
-    
-    addText('Palanquées JSAS - Fiche de Sécurité', margin, 20, 18, 'bold', 'white');
-    addText('Directeur de Plongée: ' + dpNom, margin, 30, 12, 'normal', 'white');
-    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10, 'normal', 'white');
-    addText('Lieu: ' + dpLieu, margin, 46, 10, 'normal', 'white');
-    
-    yPosition = 65;
-
-    // === RÉSUMÉ ===
-    addText('📊 RÉSUMÉ', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 8;
-    
-    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition, 10, 'normal');
-    yPosition += 6;
-    addText('Palanquées: ' + palanqueesLocal.length, margin, yPosition, 10, 'normal');
-    yPosition += 6;
-    addText('Alertes: ' + alertesTotal.length, margin, yPosition, 10, 'normal');
-    yPosition += 15;
-
-    // === ALERTES ===
-    if (alertesTotal.length > 0) {
-      checkPageBreak(20 + alertesTotal.length * 6);
-      addText('⚠️ ALERTES', margin, yPosition, 14, 'bold', 'danger');
-      yPosition += 8;
-      
-      alertesTotal.forEach(alerte => {
-        addText('• ' + alerte, margin + 5, yPosition, 10, 'normal');
-        yPosition += 6;
-      });
-      yPosition += 10;
-    }
-
-    // === PALANQUÉES ===
-    addText('🏊‍♂️ PALANQUÉES', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 10;
-
-    if (palanqueesLocal.length === 0) {
-      addText('Aucune palanquée créée.', margin, yPosition, 12, 'normal');
-      yPosition += 15;
-    } else {
-      palanqueesLocal.forEach((pal, i) => {
-        if (pal && Array.isArray(pal)) {
-          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
-          
-          // Calculer hauteur nécessaire pour cette palanquée
-          const palanqueeHeight = 15 + (pal.length * 6) + 10;
-          checkPageBreak(palanqueeHeight);
-          
-          // En-tête palanquée
-          if (hasAlert) {
-            doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          } else {
-            doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          }
-          doc.rect(margin, yPosition - 2, contentWidth, 8, 'F');
-          
-          addText(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, margin + 5, yPosition + 3, 12, 'bold', 'white');
-          yPosition += 12;
-          
-          if (pal.length === 0) {
-            addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic', 'gray');
-            yPosition += 8;
-          } else {
-            // Trier et afficher les plongeurs
-            const plongeursTriés = trierPlongeursParGrade(pal);
-            
-            plongeursTriés.forEach(p => {
-              if (p && p.nom) {
-                const textLine = '• ' + p.nom + '   (' + (p.niveau || 'N?') + ')' + (p.pre ? '   - ' + p.pre : '');
-                addText(textLine, margin + 5, yPosition, 10, 'normal');
-                yPosition += 6;
-              }
-            });
-          }
-          yPosition += 8;
-        }
-      });
-    }
-
-    // === PLONGEURS EN ATTENTE ===
-    if (plongeursLocal.length > 0) {
-      checkPageBreak(15 + plongeursLocal.length * 6);
-      
-      addText('⏳ PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold', 'primary');
-      yPosition += 8;
-      
-      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
-      
-      plongeursEnAttenteTriés.forEach(p => {
-        if (p && p.nom) {
-          const textLine = '• ' + p.nom + '   (' + (p.niveau || 'N?') + ')' + (p.pre ? '   - ' + p.pre : '');
-          addText(textLine, margin + 5, yPosition, 10, 'normal');
-          yPosition += 6;
-        }
-      });
-    }
-
-    // === FOOTER ===
-    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
-    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      doc.setPage(pageNum);
-      
-      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
-      doc.setLineWidth(0.3);
-      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
-      
-      addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 10, 8, 'normal', 'gray');
-      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 10, 8, 'normal', 'gray');
-    }
-
-    // Télécharger le PDF
-    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate) + '-' + dpPlongee + '.pdf';
-    doc.save(fileName);
-    
-    console.log("✅ PDF généré depuis l'aperçu:", fileName);
-    alert('PDF de l\'aperçu généré avec succès !\n\nFichier: ' + fileName);
-
-  } catch (error) {
-    console.error("❌ Erreur PDF depuis aperçu:", error);
-    alert("Erreur lors de la génération du PDF depuis l'aperçu: " + error.message);
-  }
-}
-
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
 function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
@@ -910,7 +671,7 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout seulement du bouton de fermeture dans l'iframe
+    // Bouton de fermeture dans l'iframe
     htmlContent += '<button class="close-button" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
@@ -1034,6 +795,193 @@ function generatePDFPreview() {
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
+
+// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
+function generatePDFFromPreview() {
+  console.log("📄 Génération PDF simplifié avec tri par niveau...");
+  
+  try {
+    // Vérifier que jsPDF est disponible
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      throw new Error("jsPDF non disponible");
+    }
+
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+
+    // S'assurer que les variables existent
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
+
+    // Fonction de tri par grade
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    // Créer le PDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('portrait', 'mm', 'a4');
+
+    let yPosition = 20;
+    const margin = 20;
+    const pageWidth = 210;
+    const pageHeight = 297;
+
+    function checkPageBreak(height) {
+      if (yPosition + height > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
+      }
+      return false;
+    }
+
+    function addText(text, x, y, size = 10, style = 'normal') {
+      doc.setFontSize(size);
+      doc.setFont(undefined, style);
+      doc.text(text, x, y);
+    }
+
+    // En-tête
+    doc.setFillColor(0, 64, 128);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    addText('Palanquées JSAS - Fiche de Sécurité', margin, 20, 18, 'bold');
+    addText('DP: ' + dpNom, margin, 30, 12);
+    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10);
+    addText('Lieu: ' + dpLieu, margin, 46, 10);
+    
+    yPosition = 65;
+    doc.setTextColor(0, 0, 0);
+
+    // Résumé
+    addText('RÉSUMÉ', margin, yPosition, 14, 'bold');
+    yPosition += 8;
+    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+    yPosition += 6;
+    addText('Palanquées: ' + palanqueesLocal.length, margin, yPosition);
+    yPosition += 6;
+    addText('Alertes: ' + alertesTotal.length, margin, yPosition);
+    yPosition += 15;
+
+    // Alertes
+    if (alertesTotal.length > 0) {
+      checkPageBreak(20 + alertesTotal.length * 6);
+      addText('ALERTES', margin, yPosition, 14, 'bold');
+      yPosition += 8;
+      alertesTotal.forEach(alerte => {
+        addText('• ' + alerte, margin + 5, yPosition);
+        yPosition += 6;
+      });
+      yPosition += 10;
+    }
+
+    // Palanquées
+    addText('PALANQUÉES', margin, yPosition, 14, 'bold');
+    yPosition += 10;
+
+    if (palanqueesLocal.length === 0) {
+      addText('Aucune palanquée créée.', margin, yPosition);
+      yPosition += 15;
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          checkPageBreak(15 + pal.length * 6 + 10);
+          
+          addText(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, margin, yPosition, 12, 'bold');
+          yPosition += 8;
+          
+          if (pal.length === 0) {
+            addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic');
+            yPosition += 8;
+          } else {
+            // Trier et afficher les plongeurs
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
+                addText(textLine, margin + 5, yPosition);
+                yPosition += 6;
+              }
+            });
+          }
+          yPosition += 8;
+        }
+      });
+    }
+
+    // Plongeurs en attente
+    if (plongeursLocal.length > 0) {
+      checkPageBreak(15 + plongeursLocal.length * 6);
+      
+      addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold');
+      yPosition += 8;
+      
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursTriés.forEach(p => {
+        if (p && p.nom) {
+          const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
+          addText(textLine, margin + 5, yPosition);
+          yPosition += 6;
+        }
+      });
+    }
+
+    // Footer sur toutes les pages
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10);
+      doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+    }
+
+    // Télécharger
+    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
+    doc.save(fileName);
+    
+    console.log("✅ PDF aperçu généré:", fileName);
+    alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
+
+  } catch (error) {
+    console.error("❌ Erreur PDF aperçu:", error);
+    alert("Erreur lors de la génération du PDF: " + error.message);
+  }
 }
 
 // Fonction pour fermer l'aperçu PDF
