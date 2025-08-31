@@ -810,10 +810,11 @@ function closePDFPreview() {
   }
 }
 //
-document.querySelectorAll('[data-component="sessions-manager"]').forEach(manager => {
-    manager.querySelector('[data-action="load-session"]').addEventListener('click', () => {
-        // logique spécifique à cette instance
-    });
+document.querySelector('.app-container').addEventListener('click', (e) => {
+    if (e.target.matches('.load-session')) {
+        const sessionManager = e.target.closest('.sessions-manager');
+        // traiter cette instance spécifique
+    }
 });
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;

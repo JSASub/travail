@@ -208,13 +208,18 @@
   <br><br>
   <hr>
   
-  <section data-component="sessions-manager" data-instance="1">
-    <select data-role="session-selector">
-        <option value="">-- Charger une session --</option>
-    </select>
-    <button data-action="load-session" class="btn-secondary">Charger</button>
-    <button data-action="save-session" class="btn-success">Sauvegarder</button>
-</section>
+<!-- Pas besoin d'IDs du tout -->
+<div class="app-container">
+    <section class="sessions-manager">
+        <button class="load-session btn-secondary">Charger</button>
+        <!-- ... -->
+    </section>
+    
+    <section class="sessions-manager">
+        <button class="load-session btn-secondary">Charger</button>
+        <!-- ... -->
+    </section>
+</div>
 
 <section class="sessions-manager">
     <label><strong>Gestion des Sessions</strong></label>
