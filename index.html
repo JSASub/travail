@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
-  <!-- jsPDF pour l'export PDF -->
+  <!-- jsPDF et html2canvas pour l'export PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -89,7 +89,7 @@
       <select id="session-selector" style="margin: 5px 10px;">
         <option value="">-- Charger une session --</option>
       </select>
-      <button id="load-session" class="btn-secondary">Charger une plongéee enregistrée</button>
+      <button id="load-session" class="btn-secondary">Charger une plongée enregistrée</button>
     </div>
     <div style="margin: 10px 0; font-size: 0.7em; color: #666;">
       Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
@@ -200,12 +200,23 @@
 	<div><strong>Création PDF de la Fiche de Sécurité</strong></div>
     <button id="generatePDF" class="btn-secondary">Aperçu des palanquées PDF</button>
     <button id="exportPDF" class="btn-success">Télécharger Fiche de Sécu PDF</button>
+    <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+      💡 <strong>Nouvelle fonction :</strong> L'aperçu PDF inclut maintenant un bouton "📄 PDF" qui vous permet de télécharger directement une copie PDF de l'aperçu avec le tri des plongeurs par niveau.
+    </div>
    </section>
   </main>
-  <div id="previewContainer" style="display:none;">
-    <strong>Aperçu PDF</strong>
-    <iframe id="pdfPreview" width="100%" height="500px"></iframe>
+  
+  <!-- CONTENEUR POUR L'APERÇU PDF -->
+  <div id="previewContainer" style="display:none; margin-top: 20px; border-top: 3px solid #007bff; padding-top: 20px;">
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <strong>📄 Aperçu PDF</strong>
+      <div style="margin-top: 8px; font-size: 0.9em; color: #666;">
+        Utilisez le bouton <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">📄 PDF</span> dans l'aperçu ci-dessous pour générer une copie PDF de cet aperçu avec le tri automatique des plongeurs par niveau.
+      </div>
+    </div>
+    <iframe id="pdfPreview" width="100%" height="500px" style="border: 2px solid #dee2e6; border-radius: 8px;"></iframe>
   </div>
+  
   <br><br>
   <hr>
   
@@ -237,9 +248,6 @@
     </div>
 </section>
 
-
-
-
   <br>
   <hr>
   <section id="sessions-manager-extended">
@@ -260,7 +268,7 @@
 
   
   <footer style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 5.0.1 - RA - 2025 - JSA Subaquatique
+  Version 5.0.2 - RA - 2025 - JSA Subaquatique - <strong>Nouveau : PDF depuis aperçu</strong>
   </footer>
 
   </div> <!-- Fin main-app -->
@@ -280,6 +288,7 @@
   <!-- NOUVEAU MODULE DE GESTION DES DP -->
   <script src="dp-management.js"></script>
   <script src="dp-save-improved.js"></script>
+  
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
 <div id="dp-modal">
   <div class="dp-modal-content">
@@ -311,3 +320,6 @@
     </div>
   </div>
 </div>
+
+</body>
+</html>
