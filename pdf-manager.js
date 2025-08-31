@@ -680,7 +680,7 @@ function generatePDFPreview() {
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">Palanquées JSAS - Fiche de Sécurité</h1>';
+    htmlContent += '<h1 class="main-title">Palanquées JSAS</h1>';
     htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
     htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
@@ -883,7 +883,7 @@ function generatePDFFromPreview() {
     doc.rect(0, 0, pageWidth, 50, 'F');
     
     doc.setTextColor(255, 255, 255);
-    addText('Palanquées JSAS - Fiche de Sécurité', margin, 20, 18, 'bold');
+    addText('Palanquées JSAS', margin, 20, 18, 'bold');
     addText('DP: ' + dpNom, margin, 30, 12);
     addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10);
     addText('Lieu: ' + dpLieu, margin, 46, 10);
