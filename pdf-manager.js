@@ -409,6 +409,122 @@ function exportToPDF() {
   }
 }
 
+// ===== GÉNÉRATION PDF DEPUIS LE PREVIEW =====
+function generatePDFFromPreview() {
+  console.log("📄 Génération PDF depuis l'aperçu...");
+  
+  try {
+    // Vérifier que jsPDF et html2canvas sont disponibles
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      throw new Error("jsPDF non disponible");
+    }
+    if (typeof html2canvas === 'undefined') {
+      throw new Error("html2canvas non disponible");
+    }
+
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+
+    // Récupérer l'iframe de l'aperçu
+    const pdfPreview = document.getElementById("pdfPreview");
+    if (!pdfPreview || !pdfPreview.contentDocument) {
+      throw new Error("Aperçu PDF non trouvé ou non accessible");
+    }
+
+    const previewDocument = pdfPreview.contentDocument;
+    const previewBody = previewDocument.body;
+
+    // Temporairement masquer le bouton PDF dans l'iframe pour la capture
+    const pdfButton = previewDocument.getElementById('pdf-from-preview-btn');
+    if (pdfButton) {
+      pdfButton.style.display = 'none';
+    }
+
+    // Options pour html2canvas optimisées pour PDF
+    const options = {
+      scale: 2, // Haute qualité
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: previewBody.scrollWidth,
+      height: previewBody.scrollHeight,
+      scrollX: 0,
+      scrollY: 0
+    };
+
+    // Capturer l'aperçu en image puis convertir en PDF
+    html2canvas(previewBody, options).then(canvas => {
+      const { jsPDF } = window.jspdf;
+      
+      // Créer un PDF en format A4
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculer les dimensions pour l'ajustement
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 0;
+      
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      
+      // Si l'image dépasse la hauteur, ajouter des pages supplémentaires
+      let heightLeft = imgHeight * ratio - pdfHeight;
+      let currentY = -pdfHeight;
+      
+      while (heightLeft > 0) {
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', imgX, currentY, imgWidth * ratio, imgHeight * ratio);
+        heightLeft -= pdfHeight;
+        currentY -= pdfHeight;
+      }
+
+      // Réafficher le bouton
+      if (pdfButton) {
+        pdfButton.style.display = 'block';
+      }
+
+      // Télécharger le PDF
+      function formatDateFrench(dateString) {
+        if (!dateString) return "export";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR').replace(/\//g, '-');
+      }
+
+      const fileName = 'palanquees-jsas-preview-' + formatDateFrench(dpDate) + '-' + dpPlongee + '.pdf';
+      pdf.save(fileName);
+      
+      console.log("✅ PDF généré depuis l'aperçu:", fileName);
+      alert('PDF de l\'aperçu généré avec succès !\n\nFichier: ' + fileName);
+
+    }).catch(error => {
+      console.error("❌ Erreur capture html2canvas:", error);
+      
+      // Réafficher le bouton en cas d'erreur
+      if (pdfButton) {
+        pdfButton.style.display = 'block';
+      }
+      
+      alert("Erreur lors de la capture de l'aperçu: " + error.message);
+    });
+
+  } catch (error) {
+    console.error("❌ Erreur PDF depuis aperçu:", error);
+    alert("Erreur lors de la génération du PDF depuis l'aperçu: " + error.message);
+  }
+}
+
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
 function generatePDFPreview() {
   console.log("🎨 Génération de l'aperçu PDF professionnel...");
@@ -480,7 +596,7 @@ function generatePDFPreview() {
         .close-button {
           position: fixed;
           top: 20px;
-          right: 20px;
+          right: 80px;
           background: #dc3545;
           color: white;
           border: none;
@@ -497,6 +613,29 @@ function generatePDFPreview() {
         .close-button:hover {
           background: #c82333;
           transform: scale(1.1);
+        }
+        .pdf-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #28a745;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 15px;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+          z-index: 1000;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .pdf-button:hover {
+          background: #218838;
+          transform: scale(1.05);
         }
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
@@ -623,12 +762,19 @@ function generatePDFPreview() {
           .plongeur-prerogatives {
             font-size: 10px !important;
           }
-          .close-button {
+          .close-button, .pdf-button {
             width: 45px !important;
             height: 45px !important;
             font-size: 18px !important;
             top: 15px !important;
+          }
+          .close-button {
+            right: 70px !important;
+          }
+          .pdf-button {
             right: 15px !important;
+            padding: 8px !important;
+            font-size: 12px !important;
           }
         }
         
@@ -648,19 +794,26 @@ function generatePDFPreview() {
           .palanquee-title {
             font-size: 14px !important;
           }
-          .close-button {
+          .close-button, .pdf-button {
             width: 40px !important;
             height: 40px !important;
             font-size: 16px !important;
             top: 10px !important;
+          }
+          .close-button {
+            right: 60px !important;
+          }
+          .pdf-button {
             right: 10px !important;
+            padding: 6px !important;
+            font-size: 10px !important;
           }
         }
         
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .close-button { display: none !important; }
+          .close-button, .pdf-button { display: none !important; }
         }
       </style>
     `;
@@ -671,8 +824,9 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout du bouton de fermeture intégré dans le HTML
+    // Ajout des boutons de fermeture et PDF intégrés dans le HTML
     htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
+    htmlContent += '<button id="pdf-from-preview-btn" class="pdf-button" onclick="parent.generatePDFFromPreview()" title="Générer PDF de cet aperçu">📄 PDF</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -782,7 +936,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton PDF intégré");
       setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
@@ -813,6 +967,7 @@ function closePDFPreview() {
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
+window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
 console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
