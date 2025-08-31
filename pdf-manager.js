@@ -809,7 +809,12 @@ function closePDFPreview() {
     console.log("✅ Aperçu PDF fermé");
   }
 }
-
+//
+document.querySelectorAll('[data-component="sessions-manager"]').forEach(manager => {
+    manager.querySelector('[data-action="load-session"]').addEventListener('click', () => {
+        // logique spécifique à cette instance
+    });
+});
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
