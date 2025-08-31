@@ -409,7 +409,7 @@ function exportToPDF() {
   }
 }
 
-// ===== GÉNÉRATION PDF DEPUIS LE PREVIEW =====
+// ===== GÉNÉRATION PDF DEPUIS LE PREVIEW (NOUVELLE FONCTION) =====
 function generatePDFFromPreview() {
   console.log("📄 Génération PDF depuis l'aperçu...");
   
@@ -718,7 +718,7 @@ function generatePDFPreview() {
         }
         .close-button {
           position: fixed;
-          top: 80px;
+          top: 20px;
           right: 20px;
           background: #dc3545;
           color: white;
@@ -736,29 +736,6 @@ function generatePDFPreview() {
         .close-button:hover {
           background: #c82333;
           transform: scale(1.1);
-        }
-        .pdf-button {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #28a745;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 10px 15px;
-          font-size: 14px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-          z-index: 1000;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-        .pdf-button:hover {
-          background: #218838;
-          transform: scale(1.05);
         }
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
@@ -889,14 +866,6 @@ function generatePDFPreview() {
             width: 45px !important;
             height: 45px !important;
             font-size: 18px !important;
-            top: 70px !important;
-            right: 15px !important;
-          }
-          .pdf-button {
-            width: 45px !important;
-            height: 35px !important;
-            font-size: 12px !important;
-            padding: 5px !important;
             top: 15px !important;
             right: 15px !important;
           }
@@ -922,14 +891,6 @@ function generatePDFPreview() {
             width: 40px !important;
             height: 40px !important;
             font-size: 16px !important;
-            top: 60px !important;
-            right: 10px !important;
-          }
-          .pdf-button {
-            width: 40px !important;
-            height: 30px !important;
-            font-size: 10px !important;
-            padding: 3px !important;
             top: 10px !important;
             right: 10px !important;
           }
@@ -938,7 +899,7 @@ function generatePDFPreview() {
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .close-button, .pdf-button { display: none !important; }
+          .close-button { display: none !important; }
         }
       </style>
     `;
@@ -949,9 +910,8 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout des boutons dans l'iframe avec communication via postMessage
-    htmlContent += '<button class="close-button" onclick="parent.postMessage({action: \'closePDF\'}, \'*\')" title="Fermer l\'aperçu">✕</button>';
-    htmlContent += '<button class="pdf-button" onclick="parent.postMessage({action: \'generatePDF\'}, \'*\')" title="Générer PDF de cet aperçu">📄 PDF</button>';
+    // Ajout seulement du bouton de fermeture dans l'iframe
+    htmlContent += '<button class="close-button" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -1061,8 +1021,8 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et boutons intégrés");
-      setTimeout(() => URL.createObjectURL(url), 30000);
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
       console.error("❌ Éléments d'aperçu non trouvés");
@@ -1073,27 +1033,6 @@ function generatePDFPreview() {
     console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
-}
-
-// ===== GESTION DES MESSAGES DEPUIS L'IFRAME =====
-function setupPreviewMessageListener() {
-  window.addEventListener('message', function(event) {
-    // Vérifier l'origine du message pour la sécurité
-    if (event.origin !== window.location.origin && event.origin !== 'null') {
-      return;
-    }
-    
-    if (event.data && event.data.action) {
-      switch (event.data.action) {
-        case 'generatePDF':
-          generatePDFFromPreview();
-          break;
-        case 'closePDF':
-          closePDFPreview();
-          break;
-      }
-    }
-  });
 }
 }
 
@@ -1116,8 +1055,5 @@ window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
-
-// Initialiser l'écoute des messages au chargement
-document.addEventListener('DOMContentLoaded', setupPreviewMessageListener);
 
 console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
