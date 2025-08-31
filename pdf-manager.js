@@ -414,12 +414,9 @@ function generatePDFFromPreview() {
   console.log("📄 Génération PDF depuis l'aperçu...");
   
   try {
-    // Vérifier que jsPDF et html2canvas sont disponibles
+    // Vérifier que jsPDF est disponible
     if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
       throw new Error("jsPDF non disponible");
-    }
-    if (typeof html2canvas === 'undefined') {
-      throw new Error("html2canvas non disponible");
     }
 
     const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
@@ -427,80 +424,223 @@ function generatePDFFromPreview() {
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
 
-    // Récupérer l'iframe de l'aperçu
-    const pdfPreview = document.getElementById("pdfPreview");
-    if (!pdfPreview || !pdfPreview.contentDocument) {
-      throw new Error("Aperçu PDF non trouvé ou non accessible");
+    // S'assurer que les variables existent
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
+
+    // Fonction de tri par grade
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
     }
 
-    const previewDocument = pdfPreview.contentDocument;
-    const previewBody = previewDocument.body;
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
 
-    // Options pour html2canvas optimisées pour PDF
-    const options = {
-      scale: 2, // Haute qualité
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: previewBody.scrollWidth,
-      height: previewBody.scrollHeight,
-      scrollX: 0,
-      scrollY: 0
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    // Créer le PDF avec jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const colors = {
+      primaryR: 0, primaryG: 64, primaryB: 128,
+      secondaryR: 0, secondaryG: 123, secondaryB: 255,
+      successR: 40, successG: 167, successB: 69,
+      dangerR: 220, dangerG: 53, dangerB: 69,
+      darkR: 52, darkG: 58, darkB: 64,
+      grayR: 108, grayG: 117, grayB: 125
     };
 
-    // Capturer l'aperçu en image puis convertir en PDF
-    html2canvas(previewBody, options).then(canvas => {
-      const { jsPDF } = window.jspdf;
+    let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+
+    function checkPageBreak(heightNeeded) {
+      if (yPosition + heightNeeded > pageHeight - 30) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
+      }
+      return false;
+    }
+
+    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, fontStyle);
       
-      // Créer un PDF en format A4
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+      switch(color) {
+        case 'primary':
+          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+          break;
+        case 'secondary':
+          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+          break;
+        case 'success':
+          doc.setTextColor(colors.successR, colors.successG, colors.successB);
+          break;
+        case 'danger':
+          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+          break;
+        case 'gray':
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          break;
+        default:
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      }
+      
+      doc.text(text, x, y);
+    }
+
+    // === EN-TÊTE ===
+    doc.setFillColor(colors.primaryR, colors.primaryG, colors.primaryB);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    addText('Palanquées JSAS - Fiche de Sécurité', margin, 20, 18, 'bold', 'white');
+    addText('Directeur de Plongée: ' + dpNom, margin, 30, 12, 'normal', 'white');
+    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10, 'normal', 'white');
+    addText('Lieu: ' + dpLieu, margin, 46, 10, 'normal', 'white');
+    
+    yPosition = 65;
+
+    // === RÉSUMÉ ===
+    addText('📊 RÉSUMÉ', margin, yPosition, 14, 'bold', 'primary');
+    yPosition += 8;
+    
+    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition, 10, 'normal');
+    yPosition += 6;
+    addText('Palanquées: ' + palanqueesLocal.length, margin, yPosition, 10, 'normal');
+    yPosition += 6;
+    addText('Alertes: ' + alertesTotal.length, margin, yPosition, 10, 'normal');
+    yPosition += 15;
+
+    // === ALERTES ===
+    if (alertesTotal.length > 0) {
+      checkPageBreak(20 + alertesTotal.length * 6);
+      addText('⚠️ ALERTES', margin, yPosition, 14, 'bold', 'danger');
+      yPosition += 8;
+      
+      alertesTotal.forEach(alerte => {
+        addText('• ' + alerte, margin + 5, yPosition, 10, 'normal');
+        yPosition += 6;
       });
+      yPosition += 10;
+    }
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Calculer les dimensions pour l'ajustement
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-      
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      
-      // Si l'image dépasse la hauteur, ajouter des pages supplémentaires
-      let heightLeft = imgHeight * ratio - pdfHeight;
-      let currentY = -pdfHeight;
-      
-      while (heightLeft > 0) {
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', imgX, currentY, imgWidth * ratio, imgHeight * ratio);
-        heightLeft -= pdfHeight;
-        currentY -= pdfHeight;
-      }
+    // === PALANQUÉES ===
+    addText('🏊‍♂️ PALANQUÉES', margin, yPosition, 14, 'bold', 'primary');
+    yPosition += 10;
 
-      // Télécharger le PDF
-      function formatDateFrench(dateString) {
-        if (!dateString) return "export";
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR').replace(/\//g, '-');
-      }
+    if (palanqueesLocal.length === 0) {
+      addText('Aucune palanquée créée.', margin, yPosition, 12, 'normal');
+      yPosition += 15;
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          const hasAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
+          
+          // Calculer hauteur nécessaire pour cette palanquée
+          const palanqueeHeight = 15 + (pal.length * 6) + 10;
+          checkPageBreak(palanqueeHeight);
+          
+          // En-tête palanquée
+          if (hasAlert) {
+            doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
+          } else {
+            doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+          }
+          doc.rect(margin, yPosition - 2, contentWidth, 8, 'F');
+          
+          addText(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, margin + 5, yPosition + 3, 12, 'bold', 'white');
+          yPosition += 12;
+          
+          if (pal.length === 0) {
+            addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic', 'gray');
+            yPosition += 8;
+          } else {
+            // Trier et afficher les plongeurs
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                const textLine = '• ' + p.nom + '   (' + (p.niveau || 'N?') + ')' + (p.pre ? '   - ' + p.pre : '');
+                addText(textLine, margin + 5, yPosition, 10, 'normal');
+                yPosition += 6;
+              }
+            });
+          }
+          yPosition += 8;
+        }
+      });
+    }
 
-      const fileName = 'palanquees-jsas-preview-' + formatDateFrench(dpDate) + '-' + dpPlongee + '.pdf';
-      pdf.save(fileName);
+    // === PLONGEURS EN ATTENTE ===
+    if (plongeursLocal.length > 0) {
+      checkPageBreak(15 + plongeursLocal.length * 6);
       
-      console.log("✅ PDF généré depuis l'aperçu:", fileName);
-      alert('PDF de l\'aperçu généré avec succès !\n\nFichier: ' + fileName);
+      addText('⏳ PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold', 'primary');
+      yPosition += 8;
+      
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursEnAttenteTriés.forEach(p => {
+        if (p && p.nom) {
+          const textLine = '• ' + p.nom + '   (' + (p.niveau || 'N?') + ')' + (p.pre ? '   - ' + p.pre : '');
+          addText(textLine, margin + 5, yPosition, 10, 'normal');
+          yPosition += 6;
+        }
+      });
+    }
 
-    }).catch(error => {
-      console.error("❌ Erreur capture html2canvas:", error);
-      alert("Erreur lors de la capture de l'aperçu: " + error.message);
-    });
+    // === FOOTER ===
+    const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      doc.setPage(pageNum);
+      
+      doc.setDrawColor(colors.grayR, colors.grayG, colors.grayB);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+      
+      addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 10, 8, 'normal', 'gray');
+      addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 10, 8, 'normal', 'gray');
+    }
+
+    // Télécharger le PDF
+    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate) + '-' + dpPlongee + '.pdf';
+    doc.save(fileName);
+    
+    console.log("✅ PDF généré depuis l'aperçu:", fileName);
+    alert('PDF de l\'aperçu généré avec succès !\n\nFichier: ' + fileName);
 
   } catch (error) {
     console.error("❌ Erreur PDF depuis aperçu:", error);
@@ -578,8 +718,8 @@ function generatePDFPreview() {
         }
         .close-button {
           position: fixed;
-          top: 20px;
-          right: 80px;
+          top: 80px;
+          right: 20px;
           background: #dc3545;
           color: white;
           border: none;
@@ -596,6 +736,29 @@ function generatePDFPreview() {
         .close-button:hover {
           background: #c82333;
           transform: scale(1.1);
+        }
+        .pdf-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #28a745;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 15px;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+          z-index: 1000;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .pdf-button:hover {
+          background: #218838;
+          transform: scale(1.05);
         }
         .header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
@@ -726,6 +889,14 @@ function generatePDFPreview() {
             width: 45px !important;
             height: 45px !important;
             font-size: 18px !important;
+            top: 70px !important;
+            right: 15px !important;
+          }
+          .pdf-button {
+            width: 45px !important;
+            height: 35px !important;
+            font-size: 12px !important;
+            padding: 5px !important;
             top: 15px !important;
             right: 15px !important;
           }
@@ -751,6 +922,14 @@ function generatePDFPreview() {
             width: 40px !important;
             height: 40px !important;
             font-size: 16px !important;
+            top: 60px !important;
+            right: 10px !important;
+          }
+          .pdf-button {
+            width: 40px !important;
+            height: 30px !important;
+            font-size: 10px !important;
+            padding: 3px !important;
             top: 10px !important;
             right: 10px !important;
           }
@@ -759,7 +938,7 @@ function generatePDFPreview() {
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
-          .close-button { display: none !important; }
+          .close-button, .pdf-button { display: none !important; }
         }
       </style>
     `;
@@ -770,8 +949,9 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Ajout du bouton de fermeture seulement (le bouton PDF sera dans la page principale)
-    htmlContent += '<button class="close-button" onclick="parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
+    // Ajout des boutons dans l'iframe avec communication via postMessage
+    htmlContent += '<button class="close-button" onclick="parent.postMessage({action: \'closePDF\'}, \'*\')" title="Fermer l\'aperçu">✕</button>';
+    htmlContent += '<button class="pdf-button" onclick="parent.postMessage({action: \'generatePDF\'}, \'*\')" title="Générer PDF de cet aperçu">📄 PDF</button>';
     
     htmlContent += '<div class="container">';
     htmlContent += '<header class="header">';
@@ -881,7 +1061,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et bouton PDF intégré");
+      console.log("✅ Aperçu PDF généré avec tri par grade et boutons intégrés");
       setTimeout(() => URL.createObjectURL(url), 30000);
       
     } else {
@@ -893,6 +1073,28 @@ function generatePDFPreview() {
     console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
+}
+
+// ===== GESTION DES MESSAGES DEPUIS L'IFRAME =====
+function setupPreviewMessageListener() {
+  window.addEventListener('message', function(event) {
+    // Vérifier l'origine du message pour la sécurité
+    if (event.origin !== window.location.origin && event.origin !== 'null') {
+      return;
+    }
+    
+    if (event.data && event.data.action) {
+      switch (event.data.action) {
+        case 'generatePDF':
+          generatePDFFromPreview();
+          break;
+        case 'closePDF':
+          closePDFPreview();
+          break;
+      }
+    }
+  });
+}
 }
 
 // Fonction pour fermer l'aperçu PDF
@@ -914,5 +1116,8 @@ window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
+
+// Initialiser l'écoute des messages au chargement
+document.addEventListener('DOMContentLoaded', setupPreviewMessageListener);
 
 console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
