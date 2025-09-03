@@ -207,7 +207,108 @@
 <button onclick="partagerWhatsApp()" style="
   background: #25D366; 
   color: white; 
+  border: none; 
+  border-radius: 8px; 
+  padding: 12px 16px; 
+  font-size: 14px; 
+  font-weight: bold; 
+  cursor: pointer; 
+  margin: 5px;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+" title="Générer PDF et partager sur WhatsApp">
+  📱 Partager sur WhatsApp
+</button>
 
+<script>
+function partagerWhatsApp() {
+  try {
+    console.log("📱 Début partage WhatsApp...");
+    
+    // Récupération des données
+    var dpSelect = document.getElementById("dp-select");
+    var dpNom = "Non défini";
+    if (dpSelect && dpSelect.selectedIndex > 0) {
+      dpNom = dpSelect.options[dpSelect.selectedIndex].text;
+    }
+    
+    var dpDate = document.getElementById("dp-date").value || new Date().toLocaleDateString('fr-FR');
+    var dpLieu = document.getElementById("dp-lieu").value || "Non défini";
+    var dpPlongee = document.getElementById("dp-plongee").value || "matin";
+    
+    // Statistiques
+    var totalPlongeurs = 0;
+    var nombrePalanquees = 0;
+    var nombreAlertes = 0;
+    
+    try {
+      if (typeof plongeurs !== 'undefined') totalPlongeurs += plongeurs.length;
+      if (typeof palanquees !== 'undefined') {
+        nombrePalanquees = palanquees.length;
+        for (var i = 0; i < palanquees.length; i++) {
+          if (palanquees[i] && palanquees[i].length) {
+            totalPlongeurs += palanquees[i].length;
+          }
+        }
+      }
+      if (typeof checkAllAlerts === 'function') {
+        var alertes = checkAllAlerts();
+        nombreAlertes = alertes ? alertes.length : 0;
+      }
+    } catch (statsError) {
+      console.warn("Erreur stats:", statsError);
+    }
+    
+    // Construction du message
+    var message = "🤿 Palanquées JSAS du " + dpDate + "\n";
+    message += "📍 " + dpLieu + " - " + capitaliser(dpPlongee) + "\n";
+    message += "👨‍🏫 DP: " + dpNom + "\n\n";
+    message += "📊 RÉSUMÉ:\n";
+    message += "• " + totalPlongeurs + " plongeurs total\n";
+    message += "• " + nombrePalanquees + " palanquées constituées";
+    
+    if (nombreAlertes > 0) {
+      message += "\n\n⚠️ " + nombreAlertes + " alerte(s) détectée(s)";
+    }
+    
+    message += "\n\n📎 Fiche de sécurité PDF jointe\n\n";
+    message += "Instructions:\n";
+    message += "1. Le PDF va être téléchargé\n";
+    message += "2. Joignez-le à ce message WhatsApp\n";
+    message += "3. Envoyez à votre groupe/contact";
+    
+    // Ouverture WhatsApp
+    var whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);
+    window.open(whatsappUrl, '_blank');
+    
+    console.log("✅ WhatsApp ouvert");
+    
+    // Génération PDF avec délai
+    setTimeout(function() {
+      console.log("📄 Génération PDF...");
+      if (typeof exportToPDF === 'function') {
+        exportToPDF();
+        console.log("✅ PDF généré");
+      } else {
+        alert('PDF non généré automatiquement. Cliquez sur le bouton vert "Télécharger Fiche de Sécu PDF".');
+      }
+    }, 1500);
+    
+    // Message de confirmation
+    setTimeout(function() {
+      alert('✅ WhatsApp ouvert avec message personnalisé !\n\n📱 Le PDF se télécharge automatiquement.\nJoignez-le dans WhatsApp et envoyez !\n\n📊 ' + totalPlongeurs + ' plongeurs, ' + nombrePalanquees + ' palanquées' + (nombreAlertes > 0 ? ', ' + nombreAlertes + ' alertes' : ''));
+    }, 2000);
+    
+  } catch (error) {
+    console.error("❌ Erreur:", error);
+    alert("Erreur: " + error.message);
+  }
+}
+
+function capitaliser(str) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+</script>
 
 
       </div>
