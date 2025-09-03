@@ -1059,18 +1059,27 @@ function generatePDFPreview() {
             // Récupérer les données depuis le parent
             const plongeursLocal = window.parent.plongeurs || [];
             const palanqueesLocal = window.parent.palanquees || [];
-            
-            // Récupérer les infos DP
+            // Récupérer les infos DP avec vérifications
             const dpSelect = window.parent.document.getElementById("dp-select");
             const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
-            const dpDate = window.parent.document.getElementById("dp-date")?.value || "Non définie";
-            const dpLieu = window.parent.document.getElementById("dp-lieu")?.value || "Non défini";
-            const dpPlongee = window.parent.document.getElementById("dp-plongee")?.value || "matin";
+            const dpDateElement = window.parent.document.getElementById("dp-date");
+            const dpLieuElement = window.parent.document.getElementById("dp-lieu");
+            const dpPlongeeElement = window.parent.document.getElementById("dp-plongee");
+            
+            const dpDate = dpDateElement?.value || "Non définie";
+            const dpLieu = dpLieuElement?.value || "Non défini";
+            const dpPlongee = dpPlongeeElement?.value || "matin";
+
+            console.log('Infos DP récupérées:', { dpNom, dpDate, dpLieu, dpPlongee });
 
             function formatDateFrench(dateString) {
-              if (!dateString) return "Non définie";
-              const date = new Date(dateString);
-              return date.toLocaleDateString('fr-FR');
+              if (!dateString || dateString === "Non définie") return "Non définie";
+              try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fr-FR');
+              } catch (error) {
+                return dateString;
+              }
             }
 
             // Créer le PDF optimisé pour WhatsApp
@@ -1097,8 +1106,16 @@ function generatePDFPreview() {
             yPosition = 55;
             doc.setTextColor(0, 0, 0);
 
-            // Statistiques
-            const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+            // Statistiques avec vérifications
+            let totalPlongeurs = 0;
+            try {
+              totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => {
+                return total + (Array.isArray(pal) ? pal.length : 0);
+              }, 0);
+            } catch (error) {
+              console.warn('Erreur calcul total plongeurs:', error);
+              totalPlongeurs = plongeursLocal.length;
+            }
             
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
@@ -1148,7 +1165,7 @@ function generatePDFPreview() {
                       const ordreA = ordreNiveaux[a.niveau] || 99;
                       const ordreB = ordreNiveaux[b.niveau] || 99;
                       if (ordreA === ordreB) {
-                        return a.nom.localeCompare(b.nom);
+                        return (a.nom || '').localeCompare(b.nom || '');
                       }
                       return ordreA - ordreB;
                     });
@@ -1157,7 +1174,7 @@ function generatePDFPreview() {
                     doc.setFont(undefined, 'normal');
                     plongeursTriés.forEach(p => {
                       if (p && p.nom) {
-                        const ligne = \`  • \${p.nom} (\${p.niveau})\${p.pre ? ' - ' + p.pre : ''}\`;
+                        const ligne = \`  • \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
                         doc.text(ligne, margin + 5, yPosition);
                         yPosition += 5;
                       }
@@ -1192,7 +1209,7 @@ function generatePDFPreview() {
                 const ordreA = ordreNiveaux[a.niveau] || 99;
                 const ordreB = ordreNiveaux[b.niveau] || 99;
                 if (ordreA === ordreB) {
-                  return a.nom.localeCompare(b.nom);
+                  return (a.nom || '').localeCompare(b.nom || '');
                 }
                 return ordreA - ordreB;
               });
@@ -1201,7 +1218,7 @@ function generatePDFPreview() {
               doc.setFont(undefined, 'normal');
               plongeursEnAttenteTriés.forEach(p => {
                 if (p && p.nom) {
-                  const ligne = \`• \${p.nom} (\${p.niveau})\${p.pre ? ' - ' + p.pre : ''}\`;
+                  const ligne = \`• \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
                   doc.text(ligne, margin + 5, yPosition);
                   yPosition += 5;
                 }
