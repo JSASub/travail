@@ -131,7 +131,7 @@ function exportToPDF() {
     doc.rect(0, 0, pageWidth, spacing.headerHeight, 'F');
     
     addText('Palanquées JSAS', margin, 20, 10, 'bold', 'white');
-    addText('Fiche de Sécurité', margin, 32, 20, 'bold', 'white');
+    addText('Fiche de SÉCURITÉ', margin, 32, 20, 'bold', 'white');
     addText('Association Sportive de Plongée', margin, 40, 8, 'normal', 'white');
     
     addText('DP: ' + dpNom.substring(0, 30), margin, 48, 10, 'bold', 'white');
@@ -406,7 +406,7 @@ function exportToPDF() {
     alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
     
   } catch (error) {
-    console.error("⌘ Erreur PDF:", error);
+    console.error("❌ Erreur PDF:", error);
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
@@ -687,13 +687,13 @@ function generatePDFPreview() {
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
     htmlContent += '</header>';
     
-    // NOUVEAU : Barre d'actions avec boutons PDF et WhatsApp
+    // NOUVEAU : Barre d'actions avec boutons PDF et WhatsApp CORRIGÉS
     htmlContent += `
     <div class="actions-bar" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
       <div>
         <strong>📄 Actions disponibles</strong>
         <div style="margin-top: 8px; font-size: 0.9em; color: #666;">
-          Générez le PDF et partagez-le directement sur WhatsApp.
+          Générez le PDF simplifié (palanquées uniquement) ou partagez sur WhatsApp.
         </div>
       </div>
       <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -711,12 +711,12 @@ function generatePDFPreview() {
           display: flex;
           align-items: center;
           gap: 6px;
-        " title="Générer PDF de cet aperçu avec tri par niveau" onmouseover="this.style.background='#218838'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#28a745'; this.style.transform='scale(1)';">
-          📄 Générer PDF
+        " title="Générer PDF SIMPLIFIÉ de cet aperçu avec tri par niveau" onmouseover="this.style.background='#218838'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#28a745'; this.style.transform='scale(1)';">
+          📄 PDF Simplifié
         </button>
         
         <button onclick="shareToWhatsAppFromPreview()" style="
-          background: #25D366; 
+          background: linear-gradient(135deg, #25D366 0%, #20ba5a 100%); 
           color: white; 
           border: none; 
           border-radius: 8px; 
@@ -724,13 +724,15 @@ function generatePDFPreview() {
           font-size: 14px; 
           font-weight: bold; 
           cursor: pointer; 
-          box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); 
+          box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4); 
           transition: all 0.3s ease;
           display: flex;
           align-items: center;
-          gap: 6px;
-        " title="Partager sur WhatsApp (PDF + message)" onmouseover="this.style.background='#20ba5a'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#25D366'; this.style.transform='scale(1)';">
-          📱 WhatsApp
+          gap: 8px;
+          min-width: 180px;
+          justify-content: center;
+        " title="Générer PDF SIMPLIFIÉ (palanquées uniquement) et partager sur WhatsApp" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 20px rgba(37, 211, 102, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 16px rgba(37, 211, 102, 0.4)';">
+          📱 WhatsApp Simplifié
         </button>
       </div>
     </div>`;
@@ -819,23 +821,31 @@ function generatePDFPreview() {
     
     htmlContent += '</main>';
 
-    // NOUVEAU : Script WhatsApp intégré dans l'aperçu (sans template literals)
+    // SCRIPT WHATSAPP CORRIGÉ dans l'aperçu
     htmlContent += '<script>';
     htmlContent += 'function shareToWhatsAppFromPreview() {';
+    htmlContent += '  console.log("📱 Partage WhatsApp avec PDF simplifié depuis l\'aperçu...");';
     htmlContent += '  try {';
-    htmlContent += '    var dpDate = window.parent.document.getElementById("dp-date").value || new Date().toLocaleDateString("fr-FR");';
-    htmlContent += '    var dpLieu = window.parent.document.getElementById("dp-lieu").value || "Lieu";';
-    htmlContent += '    var dpPlongee = window.parent.document.getElementById("dp-plongee").value || "matin";';
     htmlContent += '    var dpSelect = window.parent.document.getElementById("dp-select");';
-    htmlContent += '    var dpNom = (dpSelect && dpSelect.selectedOptions[0]) ? dpSelect.selectedOptions[0].textContent : "DP";';
+    htmlContent += '    var dpNom = (dpSelect && dpSelect.selectedOptions[0]) ? dpSelect.selectedOptions[0].textContent : "Non défini";';
+    htmlContent += '    var dpDate = window.parent.document.getElementById("dp-date").value || new Date().toLocaleDateString("fr-FR");';
+    htmlContent += '    var dpLieu = window.parent.document.getElementById("dp-lieu").value || "Non défini";';
+    htmlContent += '    var dpPlongee = window.parent.document.getElementById("dp-plongee").value || "matin";';
     htmlContent += '    ';
     htmlContent += '    var plongeursLocal = window.parent.plongeurs || [];';
     htmlContent += '    var palanqueesLocal = window.parent.palanquees || [];';
     htmlContent += '    var totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce(function(total, pal) { return total + (pal ? pal.length : 0); }, 0);';
     htmlContent += '    var alertesTotal = window.parent.checkAllAlerts ? window.parent.checkAllAlerts() : [];';
     htmlContent += '    ';
-    htmlContent += '    var message = "🤿 Palanquées JSAS du " + dpDate + "\\n";';
-    htmlContent += '    message += "📍 " + dpLieu + " - " + capitalize(dpPlongee) + "\\n";';
+    htmlContent += '    function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(); }';
+    htmlContent += '    function formatDateFrench(dateString) {';
+    htmlContent += '      if (!dateString) return new Date().toLocaleDateString("fr-FR");';
+    htmlContent += '      try { var date = new Date(dateString); return date.toLocaleDateString("fr-FR"); }';
+    htmlContent += '      catch (error) { return dateString; }';
+    htmlContent += '    }';
+    htmlContent += '    ';
+    htmlContent += '    var message = "🤿 Palanquées JSAS du " + formatDateFrench(dpDate) + "\\n";';
+    htmlContent += '    message += "📍 " + dpLieu + " - Session " + capitalize(dpPlongee) + "\\n";';
     htmlContent += '    message += "👨‍🏫 DP: " + dpNom + "\\n\\n";';
     htmlContent += '    message += "📊 RÉSUMÉ:\\n";';
     htmlContent += '    message += "• " + totalPlongeurs + " plongeurs total\\n";';
@@ -847,31 +857,45 @@ function generatePDFPreview() {
     htmlContent += '        message += "• " + alertesTotal[i] + "\\n";';
     htmlContent += '      }';
     htmlContent += '      if (alertesTotal.length > 3) {';
-    htmlContent += '        message += "• ... et " + (alertesTotal.length - 3) + " autres alertes";';
+    htmlContent += '        message += "• ... et " + (alertesTotal.length - 3) + " autres alertes\\n";';
     htmlContent += '      }';
     htmlContent += '    }';
     htmlContent += '    ';
-    htmlContent += '    message += "\\n\\n📎 Fiche de sécurité PDF jointe\\n\\n✅ Aperçu vérifié et prêt.";';
+    htmlContent += '    message += "\\n\\n📋 Composition des palanquées (version simplifiée)\\n";';
+    htmlContent += '    message += "📎 PDF joint à ce message\\n\\n";';
+    htmlContent += '    message += "✅ Aperçu vérifié et prêt pour plongée.";';
     htmlContent += '    ';
     htmlContent += '    var whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);';
     htmlContent += '    window.open(whatsappUrl, "_blank");';
     htmlContent += '    ';
     htmlContent += '    setTimeout(function() {';
-    htmlContent += '      if (window.parent.exportToPDF) {';
-    htmlContent += '        window.parent.exportToPDF();';
-    htmlContent += '        console.log("✅ PDF téléchargé automatiquement");';
-    htmlContent += '      } else if (window.parent.generatePDFFromPreview) {';
+    htmlContent += '      console.log("📄 Génération du PDF simplifié...");';
+    htmlContent += '      if (window.parent.generatePDFFromPreview) {';
     htmlContent += '        window.parent.generatePDFFromPreview();';
+    htmlContent += '        console.log("✅ PDF simplifié généré");';
+    htmlContent += '      } else {';
+    htmlContent += '        alert("Erreur: Fonction de génération PDF simplifiée non disponible");';
+    htmlContent += '        console.error("❌ generatePDFFromPreview() non disponible");';
     htmlContent += '      }';
     htmlContent += '    }, 800);';
     htmlContent += '    ';
+    htmlContent += '    setTimeout(function() {';
+    htmlContent += '      var confirmMessage = "✅ WhatsApp ouvert avec message pré-rempli !\\n\\n";';
+    htmlContent += '      confirmMessage += "📱 Étapes suivantes :\\n";';
+    htmlContent += '      confirmMessage += "1. ⏳ Le PDF SIMPLIFIÉ se télécharge automatiquement\\n";';
+    htmlContent += '      confirmMessage += "2. 📎 Dans WhatsApp, cliquez sur l\'icône de pièce jointe\\n";';
+    htmlContent += '      confirmMessage += "3. 📄 Sélectionnez \\"Document\\" et choisissez le PDF téléchargé\\n";';
+    htmlContent += '      confirmMessage += "4. ▶️ Envoyez le message\\n\\n";';
+    htmlContent += '      confirmMessage += "📊 Format partagé : Palanquées simplifiées (" + totalPlongeurs + " plongeurs, " + palanqueesLocal.length + " palanquées)\\n";';
+    htmlContent += '      confirmMessage += "🎯 Parfait pour partage rapide sur WhatsApp !";';
+    htmlContent += '      alert(confirmMessage);';
+    htmlContent += '    }, 1200);';
+    htmlContent += '    ';
+    htmlContent += '    console.log("✅ Partage WhatsApp PDF simplifié initié");';
     htmlContent += '  } catch (error) {';
-    htmlContent += '    alert("Erreur WhatsApp: " + error.message);';
+    htmlContent += '    console.error("❌ Erreur partage WhatsApp simplifié:", error);';
+    htmlContent += '    alert("Erreur lors du partage WhatsApp : " + error.message);';
     htmlContent += '  }';
-    htmlContent += '}';
-    htmlContent += '';
-    htmlContent += 'function capitalize(str) {';
-    htmlContent += '  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();';
     htmlContent += '}';
     htmlContent += '</script>';
     
@@ -892,16 +916,16 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et bouton WhatsApp intégré");
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton WhatsApp CORRIGÉ");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("⌘ Éléments d'aperçu non trouvés");
+      console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("⌘ Erreur génération aperçu PDF:", error);
+    console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
@@ -1083,23 +1107,23 @@ function generatePDFFromPreview() {
     }
 
     // Télécharger
-    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
+    const fileName = 'palanquees-jsas-simplifie-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF aperçu généré:", fileName);
-    alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
+    console.log("✅ PDF simplifié généré:", fileName);
+    alert('PDF simplifié généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
 
   } catch (error) {
-    console.error("⌘ Erreur PDF aperçu:", error);
+    console.error("❌ Erreur PDF simplifié:", error);
     alert("Erreur lors de la génération du PDF: " + error.message);
   }
 }
 
 // ===== FONCTIONS WHATSAPP INTÉGRÉES =====
 
-// Fonction principale pour partager sur WhatsApp avec génération PDF automatique
+// Fonction principale pour partager sur WhatsApp avec génération PDF automatique (FICHE COMPLÈTE)
 function shareToWhatsAppWithPDF() {
-  console.log("📱 Partage WhatsApp avec génération PDF automatique...");
+  console.log("📱 Partage WhatsApp avec génération PDF COMPLET automatique...");
   
   try {
     // Récupération des données de la session
@@ -1129,8 +1153,8 @@ function shareToWhatsAppWithPDF() {
       }
     }
     
-    // Construction du message WhatsApp complet
-    let message = `🤿 Palanquées JSAS du ${formatDateFrench(dpDate)}
+    // Construction du message WhatsApp pour FICHE COMPLÈTE
+    let message = `🤿 Fiche de Sécurité JSAS du ${formatDateFrench(dpDate)}
 📍 ${dpLieu} - Session ${capitalize(dpPlongee)}
 👨‍🏫 DP: ${dpNom}
 
@@ -1153,7 +1177,8 @@ function shareToWhatsAppWithPDF() {
 
     message += `
 
-📎 Fiche de sécurité PDF en cours de téléchargement...
+📋 Fiche de sécurité COMPLÈTE avec paramètres
+📎 PDF joint à ce message
 
 Instructions:
 1. Le PDF se télécharge automatiquement
@@ -1165,11 +1190,11 @@ Instructions:
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     
-    // Génération automatique du PDF avec délai
+    // Génération automatique du PDF COMPLET avec délai
     setTimeout(() => {
-      console.log("📄 Déclenchement de la génération PDF...");
+      console.log("📄 Déclenchement de la génération PDF COMPLET...");
       if (typeof exportToPDF === 'function') {
-        exportToPDF();
+        exportToPDF(); // FICHE COMPLÈTE
       } else {
         alert('Fonction exportToPDF non disponible. Veuillez générer le PDF manuellement.');
       }
@@ -1179,18 +1204,19 @@ Instructions:
     const confirmMessage = `✅ WhatsApp ouvert avec message pré-rempli !
 
 📱 Étapes suivantes :
-1. ⏳ Le PDF se télécharge automatiquement
+1. ⏳ Le PDF COMPLET (fiche de sécurité) se télécharge automatiquement
 2. 📎 Dans WhatsApp, cliquez sur l'icône de pièce jointe
 3. 📄 Sélectionnez "Document" et choisissez le PDF téléchargé
 4. ▶️ Envoyez le message
 
-📊 Données partagées : ${totalPlongeurs} plongeurs, ${palanqueesLocal.length} palanquées${alertesTotal.length > 0 ? `, ${alertesTotal.length} alertes` : ''}`;
+📊 Données partagées : ${totalPlongeurs} plongeurs, ${palanqueesLocal.length} palanquées${alertesTotal.length > 0 ? `, ${alertesTotal.length} alertes` : ''}
+📋 Format : Fiche de sécurité complète avec paramètres`;
     
     setTimeout(() => {
       alert(confirmMessage);
     }, 1500);
     
-    console.log("✅ Partage WhatsApp initié avec génération PDF automatique");
+    console.log("✅ Partage WhatsApp FICHE COMPLÈTE initié avec génération PDF automatique");
     
   } catch (error) {
     console.error("❌ Erreur partage WhatsApp:", error);
@@ -1219,4 +1245,4 @@ window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 window.shareToWhatsAppWithPDF = shareToWhatsAppWithPDF;
 
-console.log("📄 Module PDF Manager avec WhatsApp chargé - Toutes fonctionnalités PDF + WhatsApp disponibles");
+console.log("📄 Module PDF Manager CORRIGÉ - PDF simplifié pour WhatsApp aperçu + PDF complet pour bouton principal");
