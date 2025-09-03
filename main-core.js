@@ -1242,7 +1242,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
   }
 });
-
+//
+// Configuration JSAS spécifique
+document.addEventListener('DOMContentLoaded', function() {
+  // Configuration personnalisée pour JSAS
+  configureWhatsAppShare({
+    defaultMessage: '🤿 Palanquées JSAS du {date}\n📍 {lieu} - Session {session}\n👨‍🏫 DP: ' + (document.getElementById("dp-select")?.selectedOptions[0]?.textContent || 'N/A') + '\n\n📋 Fiche de sécurité en pièce jointe',
+    shareOptions: {
+      includeStats: true,
+      includeAlerts: true,
+      autoDownload: true
+    }
+    // Si vous avez un groupe WhatsApp JSAS, ajoutez l'ID ici :
+    // defaultGroupId: 'VOTRE_ID_GROUPE_WHATSAPP'
+  });
+});
 // ===== EXPORTS GLOBAUX =====
 window.handleError = handleError;
 window.testFirebaseConnectionSafe = testFirebaseConnectionSafe;
