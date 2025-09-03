@@ -875,7 +875,7 @@ function generatePDFPreview() {
     htmlContent += '<h1 class="preview-title">Aperçu des Palanquées</h1>';
     htmlContent += '<div class="preview-buttons">';
     htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕ Fermer</button>';
-    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">📄GÉN♫RER PDF</button>';
+    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">📄Générer PDF</button>';
     htmlContent += '<button id="btn-whatsapp" class="preview-btn btn-whatsapp" onclick="shareToWhatsApp()" title="Partager sur WhatsApp">💬WhatsApp</button>';
     htmlContent += '</div>';
     htmlContent += '</header>';
