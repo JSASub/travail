@@ -14,6 +14,35 @@ function checkRequiredElements() {
   }
   return true;
 }
+// Fonction manquante pour rafraîchir les listes avec indicateur
+function refreshAllListsWithIndicator() {
+  console.log("🔄 Rafraîchissement des listes...");
+  
+  try {
+    // Mise à jour du compteur de plongeurs
+    if (typeof updatePlongeursCounter === 'function') {
+      updatePlongeursCounter();
+    }
+    
+    // Mise à jour du compteur de palanquées
+    if (typeof updatePalanqueesCounter === 'function') {
+      updatePalanqueesCounter();
+    }
+    
+    // Rafraîchissement des listes existantes
+    if (typeof renderPlongeursList === 'function') {
+      renderPlongeursList();
+    }
+    
+    if (typeof renderPalanquees === 'function') {
+      renderPalanquees();
+    }
+    
+    console.log("✅ Listes rafraîchies");
+  } catch (error) {
+    console.warn("⚠️ Erreur lors du rafraîchissement:", error);
+  }
+}
 // Fonction utilitaire pour vérifier l'existence des éléments
 function checkElementExists(elementId) {
   const element = document.getElementById(elementId);
