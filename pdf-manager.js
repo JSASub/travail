@@ -1037,7 +1037,7 @@ function generatePDFPreview() {
             btn.disabled = false;
             if (pdfBtn) pdfBtn.disabled = false;
             
-            btn.innerHTML = '💬 WHATSAPP';
+            btn.innerHTML = '💬 WhatsApp';
           }, 1500);
         }
       }
@@ -1255,7 +1255,7 @@ function generatePDFPreview() {
             btn.disabled = false;
             if (whatsappBtn) whatsappBtn.disabled = false;
             
-            btn.innerHTML = '📄 GENERER PDF';
+            btn.innerHTML = '📄 Générer PDF';
           }, 1500);
         }
       }
