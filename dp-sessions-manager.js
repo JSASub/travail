@@ -1,4 +1,19 @@
 // dp-sessions-manager.js - Gestion DP et Sessions (extrait de main-complete.js)
+// Fonction manquante pour vérifier les éléments requis
+function checkRequiredElements() {
+  const requiredElements = [
+    'dp-select', 'dp-date', 'dp-lieu', 'dp-plongee'
+  ];
+  
+  for (let elementId of requiredElements) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.warn(`Élément manquant: ${elementId}`);
+      return false;
+    }
+  }
+  return true;
+}
 // Fonction utilitaire pour vérifier l'existence des éléments
 function checkElementExists(elementId) {
   const element = document.getElementById(elementId);
