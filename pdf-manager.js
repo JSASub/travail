@@ -819,82 +819,61 @@ function generatePDFPreview() {
     
     htmlContent += '</main>';
 
-    // NOUVEAU : Script WhatsApp intégré dans l'aperçu
-    htmlContent += `
-    <script>
-    // Fonction WhatsApp intégrée dans l'aperçu
-    function shareToWhatsAppFromPreview() {
-      try {
-        // Récupération des données depuis la fenêtre parent
-        const dpDate = window.parent.document.getElementById("dp-date")?.value || new Date().toLocaleDateString('fr-FR');
-        const dpLieu = window.parent.document.getElementById("dp-lieu")?.value || "Lieu non défini";
-        const dpPlongee = window.parent.document.getElementById("dp-plongee")?.value || "matin";
-        const dpSelect = window.parent.document.getElementById("dp-select");
-        const dpNom = dpSelect?.selectedOptions[0]?.textContent || "Non défini";
-        
-        // Statistiques depuis les variables globales de la fenêtre parent
-        const plongeursLocal = window.parent.plongeurs || [];
-        const palanqueesLocal = window.parent.palanquees || [];
-        const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-        const alertesTotal = window.parent.checkAllAlerts ? window.parent.checkAllAlerts() : [];
-        
-        // Construction du message WhatsApp complet
-        let message = \`🤿 Palanquées JSAS du \${dpDate}
-📍 \${dpLieu} - Session \${capitalize(dpPlongee)}
-👨‍🏫 DP: \${dpNom}
-
-📊 RÉSUMÉ:
-• \${totalPlongeurs} plongeurs total
-• \${palanqueesLocal.length} palanquées constituées\`;
-
-        // Ajout des alertes si présentes
-        if (alertesTotal.length > 0) {
-          message += \`
-
-⚠️ ALERTES (\${alertesTotal.length}):
-\${alertesTotal.slice(0, 3).map(alerte => '• ' + alerte).join('\\n')}\`;
-          if (alertesTotal.length > 3) {
-            message += \`\\n• ... et \${alertesTotal.length - 3} autres alertes\`;
-          }
-        }
-
-        message += \`
-
-📎 Fiche de sécurité PDF jointe
-
-✅ Aperçu vérifié et prêt à envoyer.\`;
-        
-        // Ouverture de WhatsApp
-        const whatsappUrl = \`https://wa.me/?text=\${encodeURIComponent(message)}\`;
-        window.open(whatsappUrl, '_blank');
-        
-        // Déclenchement automatique du téléchargement PDF avec délai
-        setTimeout(() => {
-          if (window.parent.exportToPDF && typeof window.parent.exportToPDF === 'function') {
-            window.parent.exportToPDF();
-            console.log("✅ PDF téléchargé automatiquement");
-          } else {
-            alert('Le PDF sera téléchargé. Veillez à l\'attacher dans WhatsApp.');
-            // Fallback : essayer avec generatePDFFromPreview
-            if (window.parent.generatePDFFromPreview) {
-              window.parent.generatePDFFromPreview();
-            }
-          }
-        }, 800);
-        
-        console.log("✅ WhatsApp ouvert depuis l'aperçu avec message complet");
-        
-      } catch (error) {
-        console.error("❌ Erreur WhatsApp depuis aperçu:", error);
-        alert("Erreur lors du partage WhatsApp: " + error.message + "\\n\\nVeuillez utiliser les boutons PDF et WhatsApp de la page principale.");
-      }
-    }
-    
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-    </script>
-    `;
+    // NOUVEAU : Script WhatsApp intégré dans l'aperçu (sans template literals)
+    htmlContent += '<script>';
+    htmlContent += 'function shareToWhatsAppFromPreview() {';
+    htmlContent += '  try {';
+    htmlContent += '    var dpDate = window.parent.document.getElementById("dp-date").value || new Date().toLocaleDateString("fr-FR");';
+    htmlContent += '    var dpLieu = window.parent.document.getElementById("dp-lieu").value || "Lieu";';
+    htmlContent += '    var dpPlongee = window.parent.document.getElementById("dp-plongee").value || "matin";';
+    htmlContent += '    var dpSelect = window.parent.document.getElementById("dp-select");';
+    htmlContent += '    var dpNom = (dpSelect && dpSelect.selectedOptions[0]) ? dpSelect.selectedOptions[0].textContent : "DP";';
+    htmlContent += '    ';
+    htmlContent += '    var plongeursLocal = window.parent.plongeurs || [];';
+    htmlContent += '    var palanqueesLocal = window.parent.palanquees || [];';
+    htmlContent += '    var totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce(function(total, pal) { return total + (pal ? pal.length : 0); }, 0);';
+    htmlContent += '    var alertesTotal = window.parent.checkAllAlerts ? window.parent.checkAllAlerts() : [];';
+    htmlContent += '    ';
+    htmlContent += '    var message = "🤿 Palanquées JSAS du " + dpDate + "\\n";';
+    htmlContent += '    message += "📍 " + dpLieu + " - " + capitalize(dpPlongee) + "\\n";';
+    htmlContent += '    message += "👨‍🏫 DP: " + dpNom + "\\n\\n";';
+    htmlContent += '    message += "📊 RÉSUMÉ:\\n";';
+    htmlContent += '    message += "• " + totalPlongeurs + " plongeurs total\\n";';
+    htmlContent += '    message += "• " + palanqueesLocal.length + " palanquées constituées";';
+    htmlContent += '    ';
+    htmlContent += '    if (alertesTotal.length > 0) {';
+    htmlContent += '      message += "\\n\\n⚠️ ALERTES (" + alertesTotal.length + "):\\n";';
+    htmlContent += '      for (var i = 0; i < Math.min(3, alertesTotal.length); i++) {';
+    htmlContent += '        message += "• " + alertesTotal[i] + "\\n";';
+    htmlContent += '      }';
+    htmlContent += '      if (alertesTotal.length > 3) {';
+    htmlContent += '        message += "• ... et " + (alertesTotal.length - 3) + " autres alertes";';
+    htmlContent += '      }';
+    htmlContent += '    }';
+    htmlContent += '    ';
+    htmlContent += '    message += "\\n\\n📎 Fiche de sécurité PDF jointe\\n\\n✅ Aperçu vérifié et prêt.";';
+    htmlContent += '    ';
+    htmlContent += '    var whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);';
+    htmlContent += '    window.open(whatsappUrl, "_blank");';
+    htmlContent += '    ';
+    htmlContent += '    setTimeout(function() {';
+    htmlContent += '      if (window.parent.exportToPDF) {';
+    htmlContent += '        window.parent.exportToPDF();';
+    htmlContent += '        console.log("✅ PDF téléchargé automatiquement");';
+    htmlContent += '      } else if (window.parent.generatePDFFromPreview) {';
+    htmlContent += '        window.parent.generatePDFFromPreview();';
+    htmlContent += '      }';
+    htmlContent += '    }, 800);';
+    htmlContent += '    ';
+    htmlContent += '  } catch (error) {';
+    htmlContent += '    alert("Erreur WhatsApp: " + error.message);';
+    htmlContent += '  }';
+    htmlContent += '}';
+    htmlContent += '';
+    htmlContent += 'function capitalize(str) {';
+    htmlContent += '  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();';
+    htmlContent += '}';
+    htmlContent += '</script>';
     
     htmlContent += '</div></body></html>';
 
