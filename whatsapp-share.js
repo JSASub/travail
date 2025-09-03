@@ -70,10 +70,10 @@ function shareToWhatsApp(target = 'group', options = {}) {
       console.log("📄 Génération automatique du PDF...");
       
       // Utiliser la fonction existante pour générer le PDF
-      if (typeof exportToPDF === 'function') {
-        exportToPDF();
+      if (typeof generatePDFFromPreview === 'function') {
+        generatePDFFromPreview();
       } else {
-        console.warn("⚠️ Fonction exportToPDF non disponible");
+        console.warn("⚠️ Fonction generatePDFFromPreview non disponible");
       }
     }
     
