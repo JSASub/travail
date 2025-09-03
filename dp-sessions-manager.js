@@ -1,48 +1,4 @@
 // dp-sessions-manager.js - Gestion DP et Sessions (extrait de main-complete.js)
-// Fonction manquante pour vérifier les éléments requis
-function checkRequiredElements() {
-  const requiredElements = [
-    'dp-select', 'dp-date', 'dp-lieu', 'dp-plongee'
-  ];
-  
-  for (let elementId of requiredElements) {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.warn(`Élément manquant: ${elementId}`);
-      return false;
-    }
-  }
-  return true;
-}
-// Fonction manquante pour rafraîchir les listes avec indicateur
-function refreshAllListsWithIndicator() {
-  console.log("🔄 Rafraîchissement des listes...");
-  
-  try {
-    // Mise à jour du compteur de plongeurs
-    if (typeof updatePlongeursCounter === 'function') {
-      updatePlongeursCounter();
-    }
-    
-    // Mise à jour du compteur de palanquées
-    if (typeof updatePalanqueesCounter === 'function') {
-      updatePalanqueesCounter();
-    }
-    
-    // Rafraîchissement des listes existantes
-    if (typeof renderPlongeursList === 'function') {
-      renderPlongeursList();
-    }
-    
-    if (typeof renderPalanquees === 'function') {
-      renderPalanquees();
-    }
-    
-    console.log("✅ Listes rafraîchies");
-  } catch (error) {
-    console.warn("⚠️ Erreur lors du rafraîchissement:", error);
-  }
-}
 // Fonction utilitaire pour vérifier l'existence des éléments
 function checkElementExists(elementId) {
   const element = document.getElementById(elementId);

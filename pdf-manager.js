@@ -1,22 +1,22 @@
-// pdf-manager.js - Gestion complète des PDF avec distinction claire
+// pdf-manager.js - Gestion complète des PDF (extrait de main-complete.js)
 
-// ===== EXPORT PDF COMPLET (FICHE DE SÉCURITÉ) =====
+// ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
   if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
-    console.log("Export PDF bloqué - page en cours de chargement");
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
     return;
   }
     
-  console.log("Génération du PDF COMPLET (fiche de sécurité)...");
+  console.log("📄 Génération du PDF professionnel...");
   
   // Fonction helper sécurisée pour getElementById
   function $(id) {
     const element = document.getElementById(id);
-    return element || { value: "" };
+    return element || { value: "" }; // Retourne un objet avec value vide si élément non trouvé
   }
   
-  // Récupération spéciale pour le directeur de plongée
+  // Récupération spéciale pour le directeur de plongée (texte affiché, pas value)
   const dpSelect = document.getElementById("dp-select");
   const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -51,13 +51,14 @@ function exportToPDF() {
     const margin = 20;
     const contentWidth = pageWidth - (2 * margin);
     
+    // MODIFICATION : Constantes pour l'espacement RÉDUIT
     const spacing = {
       lineHeight: 6,
-      sectionGap: 8,
-      subsectionGap: 6,
+      sectionGap: 8, // RÉDUIT de 12 à 8
+      subsectionGap: 6, // RÉDUIT de 8 à 6
       headerHeight: 60,
       footerHeight: 25,
-      palanqueeGap: 6
+      palanqueeGap: 6 // NOUVEAU : espacement spécifique entre palanquées
     };
     
     function checkPageBreak(heightNeeded, forceNewPage = false) {
@@ -72,11 +73,11 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(7);
+        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10);
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10);
-        yPosition = 15;
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
+        yPosition = 15; // RÉDUIT de 18 à 15
       }
     }
     
@@ -130,7 +131,7 @@ function exportToPDF() {
     doc.rect(0, 0, pageWidth, spacing.headerHeight, 'F');
     
     addText('Palanquées JSAS', margin, 20, 10, 'bold', 'white');
-    addText('Fiche de SÉCURITÉ', margin, 32, 20, 'bold', 'white');
+    addText('Fiche de Sécurité', margin, 32, 20, 'bold', 'white');
     addText('Association Sportive de Plongée', margin, 40, 8, 'normal', 'white');
     
     addText('DP: ' + dpNom.substring(0, 30), margin, 48, 10, 'bold', 'white');
@@ -183,12 +184,12 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === PALANQUÉES DÉTAILLÉES AVEC PARAMÈTRES ===
+    // === PALANQUÉES DÉTAILLÉES ===
     checkPageBreak(40, true);
     
-    yPosition += 3;
+    yPosition += 3; // AJOUT de 3mm d'espacement avant le titre
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 3;
+    yPosition += 3; // RÉDUIT de 6 à 3 (descendre de 3mm)
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
@@ -202,40 +203,43 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        let palanqueeHeight = 12;
-        palanqueeHeight += (pal.length * spacing.lineHeight) + 3;
-        palanqueeHeight += 26; // Paramètres
-        palanqueeHeight += spacing.palanqueeGap;
+        // MODIFICATION : Calculer la hauteur nécessaire pour cette palanquée (ENCORE PLUS RÉDUITE)
+        let palanqueeHeight = 12; // Header RÉDUIT de 14 à 12
+        palanqueeHeight += (pal.length * spacing.lineHeight) + 3; // Plongeurs + espacement réduit
+        palanqueeHeight += 26; // Paramètres RÉDUIT de 30 à 26
+        palanqueeHeight += spacing.palanqueeGap; // NOUVEAU : espacement spécifique entre palanquées
         
         checkPageBreak(palanqueeHeight + 10);
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée
+        // En-tête de palanquée ULTRA RÉDUIT
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 7, 'F');
+        doc.rect(margin, yPosition, contentWidth, 7, 'F'); // Hauteur RÉDUITE de 8 à 7
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white');
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white'); // Position Y ajustée
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white');
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white'); // Position Y ajustée
         
-        yPosition += 12;
+        yPosition += 12; // RÉDUIT : Espacement entre cadre bleu et premier plongeur
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + 3;
+          yPosition += spacing.lineHeight + 3; // Espacement réduit pour cohérence
         } else {
+          // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
           const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
           
+          // Fonction de tri par niveau
           const plongeursTriés = [...pal].sort((a, b) => {
             const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
             const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
@@ -259,17 +263,17 @@ function exportToPDF() {
             
             yPosition += spacing.lineHeight;
           }
-          yPosition += 3;
+          yPosition += 3; // RÉDUIT : Espacement entre dernier plongeur et paramètres
         }
         
-        // === PARAMÈTRES DE PLONGÉE (FICHE DE SÉCURITÉ) ===
+        // MODIFICATION : Paramètres de plongée (TAILLE ET ESPACEMENT RÉDUITS)
         
-        // Ligne 1: Horaire
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary');
+        // Ligne 1: Horaire de mise à l'eau
+        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT de 10 à 9
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 9, 'normal');
-          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray');
+          addText(pal.horaire, margin + 50, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 105, yPosition, margin + 140, yPosition);
@@ -277,60 +281,61 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 50, yPosition, margin + 85, yPosition);
-          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
+          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 3.5;
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary');
+        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal');
+          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 35, yPosition, margin + 55, yPosition);
-          addText('m', margin + 57, yPosition, 9, 'normal', 'gray');
+          addText('m', margin + 57, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary');
+        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal');
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 115, yPosition, margin + 140, yPosition);
-          addText('min', margin + 142, yPosition, 9, 'normal', 'gray');
+          addText('min', margin + 142, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 3.5;
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success');
+        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal');
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 40, yPosition, margin + 60, yPosition);
-          addText('m', margin + 62, yPosition, 9, 'normal', 'gray');
+          addText('m', margin + 62, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success');
+        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal');
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal'); // RÉDUIT à 9
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 120, yPosition, margin + 145, yPosition);
-          addText('min', margin + 147, yPosition, 9, 'normal', 'gray');
+          addText('min', margin + 147, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
         }
-        yPosition += 3.5;
+        yPosition += 3.5; // RÉDUIT de 4 à 3.5
         
         // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary');
+        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 8, 'normal');
-          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray');
+          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // RÉDUIT à 8
+          // Correction rapprochée
+          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 95, yPosition, margin + 140, yPosition);
@@ -338,11 +343,12 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 25, yPosition, margin + 65, yPosition);
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray');
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray'); // RÉDUIT à 8
           doc.line(margin + 130, yPosition, margin + 150, yPosition);
         }
         
-        yPosition += spacing.lineHeight + spacing.palanqueeGap;
+        // MODIFICATION MAJEURE : Espacement réduit entre palanquées
+        yPosition += spacing.lineHeight + spacing.palanqueeGap; // Utilise le nouvel espacement spécifique
       }
     }
     
@@ -373,7 +379,7 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === FOOTER ===
+    // === FOOTER REORGANISÉ ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
@@ -383,206 +389,49 @@ function exportToPDF() {
       doc.setLineWidth(0.3);
       doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
       
+      // Date et heure à gauche
       addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 6, 6, 'normal', 'gray');
+      
+      // Numérotation à droite
       addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 6, 6, 'normal', 'gray');
     }
     
     // === TÉLÉCHARGEMENT ===
-    const fileName = 'fiche-securite-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '.pdf';
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-compact.pdf';
     doc.save(fileName);
     
-    console.log("PDF COMPLET (fiche de sécurité) généré:", fileName);
+    console.log("✅ PDF généré avec espacement réduit:", fileName);
     
-    const alertesText = alertesTotal.length > 0 ? '\nAlertes: ' + alertesTotal.length : '\nAucune alerte';
-    alert('PDF COMPLET généré avec succès !\n\n' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\nFichier: ' + fileName);
+    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
+    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
     
   } catch (error) {
-    console.error("Erreur PDF complet:", error);
-    alert("Erreur lors de la génération du PDF complet : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
+    console.error("❌ Erreur PDF:", error);
+    alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
 
-// ===== EXPORT PDF MINIMAL (PALANQUÉES SEULEMENT) =====
-function generatePDFFromPreview() {
-  console.log("Génération PDF MINIMAL (palanquées uniquement) pour WhatsApp...");
-  
-  try {
-    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
-      throw new Error("jsPDF non disponible");
-    }
-
-    const dpSelect = document.getElementById("dp-select");
-    const dpNom = dpSelect?.selectedOptions[0]?.textContent || "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
-    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
-    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-
-    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
-    
-    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-
-    function trierPlongeursParGrade(plongeurs) {
-      const ordreNiveaux = {
-        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-        'N3': 7, 'N2': 8, 'N1': 9,
-        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
-      };
-      
-      return [...plongeurs].sort((a, b) => {
-        const ordreA = ordreNiveaux[a.niveau] || 99;
-        const ordreB = ordreNiveaux[b.niveau] || 99;
-        
-        if (ordreA === ordreB) {
-          return a.nom.localeCompare(b.nom);
-        }
-        
-        return ordreA - ordreB;
-      });
-    }
-
-    function formatDateFrench(dateString) {
-      if (!dateString) return "Non définie";
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR');
-    }
-
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('portrait', 'mm', 'a4');
-
-    let yPosition = 20;
-    const margin = 20;
-    const pageWidth = 210;
-    const pageHeight = 297;
-
-    function checkPageBreak(height) {
-      if (yPosition + height > pageHeight - 25) {
-        doc.addPage();
-        yPosition = 20;
-        return true;
-      }
-      return false;
-    }
-
-    function addText(text, x, y, size = 10, style = 'normal', color = [0, 0, 0]) {
-      doc.setFontSize(size);
-      doc.setFont(undefined, style);
-      doc.setTextColor(color[0], color[1], color[2]);
-      doc.text(text, x, y);
-    }
-
-    // === EN-TÊTE MINIMAL ===
-    doc.setFillColor(0, 123, 255);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
-    addText('Palanquées JSAS', margin, 15, 16, 'bold', [255, 255, 255]);
-    addText(formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + ' - ' + dpLieu, margin, 25, 10, 'normal', [255, 255, 255]);
-    addText('DP: ' + dpNom, margin, 32, 9, 'normal', [255, 255, 255]);
-    
-    yPosition = 50;
-
-    // === STATISTIQUES SIMPLES ===
-    addText(totalPlongeurs + ' plongeurs - ' + palanqueesLocal.length + ' palanquées', margin, yPosition, 12, 'bold');
-    yPosition += 15;
-
-    // === PALANQUÉES UNIQUEMENT (SANS PARAMÈTRES) ===
-    if (palanqueesLocal.length === 0) {
-      addText('Aucune palanquée créée - Tous les plongeurs en attente', margin, yPosition, 11);
-      yPosition += 15;
-    } else {
-      palanqueesLocal.forEach((pal, i) => {
-        if (pal && Array.isArray(pal)) {
-          checkPageBreak(10 + pal.length * 5 + 8);
-          
-          // Titre palanquée simple
-          addText('Palanquée ' + (i + 1), margin, yPosition, 14, 'bold', [0, 64, 128]);
-          yPosition += 8;
-          
-          if (pal.length === 0) {
-            addText('  Aucun plongeur', margin + 5, yPosition, 10, 'italic', [128, 128, 128]);
-            yPosition += 6;
-          } else {
-            // Plongeurs triés par grade
-            const plongeursTriés = trierPlongeursParGrade(pal);
-            
-            plongeursTriés.forEach(p => {
-              if (p && p.nom) {
-                const textLine = '  • ' + p.nom + ' (' + (p.niveau || 'N?') + ')';
-                addText(textLine, margin + 3, yPosition, 10, 'normal');
-                yPosition += 5;
-              }
-            });
-          }
-          yPosition += 8;
-        }
-      });
-    }
-
-    // === PLONGEURS EN ATTENTE ===
-    if (plongeursLocal.length > 0) {
-      checkPageBreak(10 + plongeursLocal.length * 5);
-      
-      addText('En attente', margin, yPosition, 12, 'bold', [255, 140, 0]);
-      yPosition += 8;
-      
-      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
-      
-      plongeursTriés.forEach(p => {
-        if (p && p.nom) {
-          const textLine = '  • ' + p.nom + ' (' + (p.niveau || 'N?') + ')';
-          addText(textLine, margin + 3, yPosition, 10, 'normal');
-          yPosition += 5;
-        }
-      });
-    }
-
-    // === FOOTER MINIMAL ===
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 8);
-      if (totalPages > 1) {
-        doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 8);
-      }
-    }
-
-    // === TÉLÉCHARGEMENT ===
-    const fileName = 'palanquees-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '-whatsapp.pdf';
-    doc.save(fileName);
-    
-    console.log("PDF MINIMAL généré pour WhatsApp:", fileName);
-    alert('PDF minimal généré !\n\nFormat: Palanquées uniquement\n' + totalPlongeurs + ' plongeurs, ' + palanqueesLocal.length + ' palanquées\n\nFichier: ' + fileName);
-
-  } catch (error) {
-    console.error("Erreur PDF minimal:", error);
-    alert("Erreur lors de la génération du PDF minimal: " + error.message);
-  }
-}
-
-// ===== GÉNÉRATION PDF PREVIEW =====
+// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
 function generatePDFPreview() {
-  console.log("Génération de l'aperçu PDF...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel...");
   
   try {
+    // Récupération spéciale pour le directeur de plongée
     const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
+    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
+    // NOUVEAU: Fonction de tri par grade pour l'aperçu
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -596,6 +445,7 @@ function generatePDFPreview() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
+          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -608,7 +458,7 @@ function generatePDFPreview() {
       const date = new Date(dateString);
       return date.toLocaleDateString('fr-FR');
     }
-
+    
     function capitalize(str) {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
@@ -729,40 +579,92 @@ function generatePDFPreview() {
           color: #dc3545 !important;
         }
         
+        /* Responsive Design pour Mobile */
         @media screen and (max-width: 768px) {
           .container {
             max-width: 100% !important;
             margin: 0 !important;
             box-shadow: none !important;
           }
-          .header { padding: 15px !important; }
-          .main-title { font-size: 20px !important; letter-spacing: 1px !important; }
-          .content { padding: 15px !important; }
-          .section { margin-bottom: 25px !important; }
-          .section-title { font-size: 16px !important; margin-bottom: 15px !important; }
-          .palanquee-box { margin: 15px 0 !important; padding: 15px !important; }
-          .palanquee-title { font-size: 16px !important; margin-bottom: 12px !important; }
-          .plongeur-item { padding: 10px 8px !important; flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
-          .plongeur-nom { font-size: 14px !important; }
-          .plongeur-niveau { font-size: 11px !important; padding: 3px 6px !important; }
-          .plongeur-prerogatives { font-size: 10px !important; }
-          .close-button { width: 45px !important; height: 45px !important; font-size: 18px !important; top: 15px !important; right: 15px !important; }
+          .header {
+            padding: 15px !important;
+          }
+          .main-title {
+            font-size: 20px !important;
+            letter-spacing: 1px !important;
+          }
+          .content {
+            padding: 15px !important;
+          }
+          .section {
+            margin-bottom: 25px !important;
+          }
+          .section-title {
+            font-size: 16px !important;
+            margin-bottom: 15px !important;
+          }
+          .palanquee-box {
+            margin: 15px 0 !important;
+            padding: 15px !important;
+          }
+          .palanquee-title {
+            font-size: 16px !important;
+            margin-bottom: 12px !important;
+          }
+          .plongeur-item {
+            padding: 10px 8px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .plongeur-nom {
+            font-size: 14px !important;
+          }
+          .plongeur-niveau {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+          }
+          .plongeur-prerogatives {
+            font-size: 10px !important;
+          }
+          .close-button {
+            width: 45px !important;
+            height: 45px !important;
+            font-size: 18px !important;
+            top: 15px !important;
+            right: 15px !important;
+          }
         }
         
         @media screen and (max-width: 480px) {
-          .header { padding: 10px !important; }
-          .main-title { font-size: 18px !important; }
-          .content { padding: 10px !important; }
-          .section-title { font-size: 14px !important; }
-          .palanquee-title { font-size: 14px !important; }
-          .close-button { width: 40px !important; height: 40px !important; font-size: 16px !important; top: 10px !important; right: 10px !important; }
+          .header {
+            padding: 10px !important;
+          }
+          .main-title {
+            font-size: 18px !important;
+          }
+          .content {
+            padding: 10px !important;
+          }
+          .section-title {
+            font-size: 14px !important;
+          }
+          .palanquee-title {
+            font-size: 14px !important;
+          }
+          .close-button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            top: 10px !important;
+            right: 10px !important;
+          }
         }
         
         @media print {
           body { background: white !important; }
           .container { box-shadow: none !important; max-width: none !important; }
           .close-button { display: none !important; }
-          .actions-bar { display: none !important; }
         }
       </style>
     `;
@@ -773,6 +675,7 @@ function generatePDFPreview() {
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
+    // Bouton de fermeture dans l'iframe
     htmlContent += '<button class="close-button" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
     
     htmlContent += '<div class="container">';
@@ -783,59 +686,9 @@ function generatePDFPreview() {
     htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
     htmlContent += '</header>';
     
-    // Barre d'actions avec boutons distincts
-    htmlContent += `
-    <div class="actions-bar" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-      <div>
-        <strong>Actions disponibles</strong>
-        <div style="margin-top: 8px; font-size: 0.9em; color: #666;">
-          Générez le PDF simplifié (palanquées uniquement) ou partagez sur WhatsApp.
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <button onclick="generatePDFFromPreview()" style="
-          background: #28a745; 
-          color: white; 
-          border: none; 
-          border-radius: 8px; 
-          padding: 12px 16px; 
-          font-size: 14px; 
-          font-weight: bold; 
-          cursor: pointer; 
-          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); 
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        " title="Générer PDF SIMPLIFIÉ de cet aperçu" onmouseover="this.style.background='#218838'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#28a745'; this.style.transform='scale(1)';">
-          PDF Simplifié
-        </button>
-        
-        <button onclick="shareToWhatsAppFromPreview()" style="
-          background: linear-gradient(135deg, #25D366 0%, #20ba5a 100%); 
-          color: white; 
-          border: none; 
-          border-radius: 8px; 
-          padding: 12px 16px; 
-          font-size: 14px; 
-          font-weight: bold; 
-          cursor: pointer; 
-          box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4); 
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          min-width: 180px;
-          justify-content: center;
-        " title="Générer PDF SIMPLIFIÉ et partager sur WhatsApp" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 20px rgba(37, 211, 102, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 16px rgba(37, 211, 102, 0.4)';">
-          WhatsApp Simplifié
-        </button>
-      </div>
-    </div>`;
-    
     htmlContent += '<main class="content">';
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">Résumé</h2>';
+    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
     htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
     htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
     htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
@@ -843,7 +696,7 @@ function generatePDFPreview() {
     
     if (alertesTotal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">Alertes</h2>';
+      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
       alertesTotal.forEach(alerte => {
         htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
       });
@@ -851,7 +704,7 @@ function generatePDFPreview() {
     }
     
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">Palanquées</h2>';
+    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
       htmlContent += '<p>Aucune palanquée créée.</p>';
@@ -868,6 +721,7 @@ function generatePDFPreview() {
           if (pal.length === 0) {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
+            // MODIFICATION: Trier les plongeurs par grade avant affichage
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -893,8 +747,9 @@ function generatePDFPreview() {
     
     if (plongeursLocal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">Plongeurs en Attente</h2>';
+      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
       
+      // MODIFICATION: Trier aussi les plongeurs en attente par grade
       const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
       plongeursEnAttenteTriés.forEach(p => {
@@ -914,81 +769,6 @@ function generatePDFPreview() {
     }
     
     htmlContent += '</main>';
-
-    // Script WhatsApp corrigé dans l'aperçu
-    htmlContent += '<script>';
-    htmlContent += 'function shareToWhatsAppFromPreview() {';
-    htmlContent += '  console.log("Partage WhatsApp avec PDF MINIMAL...");';
-    htmlContent += '  try {';
-    htmlContent += '    var dpSelect = window.parent.document.getElementById("dp-select");';
-    htmlContent += '    var dpNom = (dpSelect && dpSelect.selectedOptions[0]) ? dpSelect.selectedOptions[0].textContent : "Non défini";';
-    htmlContent += '    var dpDate = window.parent.document.getElementById("dp-date").value || new Date().toLocaleDateString("fr-FR");';
-    htmlContent += '    var dpLieu = window.parent.document.getElementById("dp-lieu").value || "Non défini";';
-    htmlContent += '    var dpPlongee = window.parent.document.getElementById("dp-plongee").value || "matin";';
-    htmlContent += '    ';
-    htmlContent += '    var plongeursLocal = window.parent.plongeurs || [];';
-    htmlContent += '    var palanqueesLocal = window.parent.palanquees || [];';
-    htmlContent += '    var totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce(function(total, pal) { return total + (pal ? pal.length : 0); }, 0);';
-    htmlContent += '    var alertesTotal = window.parent.checkAllAlerts ? window.parent.checkAllAlerts() : [];';
-    htmlContent += '    ';
-    htmlContent += '    function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase(); }';
-    htmlContent += '    function formatDateFrench(dateString) {';
-    htmlContent += '      if (!dateString) return new Date().toLocaleDateString("fr-FR");';
-    htmlContent += '      try { var date = new Date(dateString); return date.toLocaleDateString("fr-FR"); }';
-    htmlContent += '      catch (error) { return dateString; }';
-    htmlContent += '    }';
-    htmlContent += '    ';
-    htmlContent += '    var message = "Palanquées JSAS du " + formatDateFrench(dpDate) + "\\n";';
-    htmlContent += '    message += dpLieu + " - Session " + capitalize(dpPlongee) + "\\n";';
-    htmlContent += '    message += "DP: " + dpNom + "\\n\\n";';
-    htmlContent += '    message += "RÉSUMÉ:\\n";';
-    htmlContent += '    message += "• " + totalPlongeurs + " plongeurs total\\n";';
-    htmlContent += '    message += "• " + palanqueesLocal.length + " palanquées constituées";';
-    htmlContent += '    ';
-    htmlContent += '    if (alertesTotal.length > 0) {';
-    htmlContent += '      message += "\\n\\nALERTES (" + alertesTotal.length + "):\\n";';
-    htmlContent += '      for (var i = 0; i < Math.min(3, alertesTotal.length); i++) {';
-    htmlContent += '        message += "• " + alertesTotal[i] + "\\n";';
-    htmlContent += '      }';
-    htmlContent += '      if (alertesTotal.length > 3) {';
-    htmlContent += '        message += "• ... et " + (alertesTotal.length - 3) + " autres alertes\\n";';
-    htmlContent += '      }';
-    htmlContent += '    }';
-    htmlContent += '    ';
-    htmlContent += '    message += "\\n\\nComposition des palanquées (version simplifiée)\\n";';
-    htmlContent += '    message += "PDF joint\\n\\n";';
-    htmlContent += '    message += "Aperçu vérifié et prêt.";';
-    htmlContent += '    ';
-    htmlContent += '    var whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message);';
-    htmlContent += '    window.open(whatsappUrl, "_blank");';
-    htmlContent += '    ';
-    htmlContent += '    setTimeout(function() {';
-    htmlContent += '      console.log("Génération du PDF MINIMAL...");';
-    htmlContent += '      if (window.parent.generatePDFFromPreview) {';
-    htmlContent += '        window.parent.generatePDFFromPreview();';
-    htmlContent += '        console.log("PDF MINIMAL généré");';
-    htmlContent += '      } else {';
-    htmlContent += '        alert("Erreur: Fonction PDF minimal non disponible");';
-    htmlContent += '      }';
-    htmlContent += '    }, 800);';
-    htmlContent += '    ';
-    htmlContent += '    setTimeout(function() {';
-    htmlContent += '      var confirmMessage = "WhatsApp ouvert !\\n\\n";';
-    htmlContent += '      confirmMessage += "Étapes suivantes :\\n";';
-    htmlContent += '      confirmMessage += "1. Le PDF MINIMAL se télécharge automatiquement\\n";';
-    htmlContent += '      confirmMessage += "2. Dans WhatsApp, joignez le PDF téléchargé\\n";';
-    htmlContent += '      confirmMessage += "3. Envoyez le message\\n\\n";';
-    htmlContent += '      confirmMessage += "Format partagé : Palanquées simplifiées (" + totalPlongeurs + " plongeurs, " + palanqueesLocal.length + " palanquées)\\n";';
-    htmlContent += '      confirmMessage += "Parfait pour partage WhatsApp !";';
-    htmlContent += '      alert(confirmMessage);';
-    htmlContent += '    }, 1200);';
-    htmlContent += '    ';
-    htmlContent += '  } catch (error) {';
-    htmlContent += '    alert("Erreur partage WhatsApp : " + error.message);';
-    htmlContent += '  }';
-    htmlContent += '}';
-    htmlContent += '</script>';
-    
     htmlContent += '</div></body></html>';
 
     const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
@@ -1006,119 +786,210 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("Aperçu PDF généré avec bouton WhatsApp MINIMAL");
+      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("Éléments d'aperçu non trouvés");
+      console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("Erreur génération aperçu PDF:", error);
+    console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
 
-// ===== FONCTION WHATSAPP POUR BOUTON PRINCIPAL (PDF COMPLET) =====
-function shareToWhatsAppWithPDF() {
-  console.log("Partage WhatsApp avec génération PDF COMPLET automatique...");
+// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
+function generatePDFFromPreview() {
+  console.log("📄 Génération PDF simplifié avec tri par niveau...");
   
   try {
+    // Vérifier que jsPDF est disponible
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      throw new Error("jsPDF non disponible");
+    }
+
     const dpSelect = document.getElementById("dp-select");
-    const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
-    const dpDate = document.getElementById("dp-date")?.value || new Date().toLocaleDateString('fr-FR');
+    const dpNom = dpSelect?.selectedOptions[0]?.textContent || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
-    
+
+    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
-    
+
+    // Fonction de tri par grade
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+
     function capitalize(str) {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
-    
-    function formatDateFrench(dateString) {
-      if (!dateString) return new Date().toLocaleDateString('fr-FR');
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR');
-      } catch (error) {
-        return dateString;
+
+    // Créer le PDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('portrait', 'mm', 'a4');
+
+    let yPosition = 20;
+    const margin = 20;
+    const pageWidth = 210;
+    const pageHeight = 297;
+
+    function checkPageBreak(height) {
+      if (yPosition + height > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
       }
+      return false;
     }
+
+    function addText(text, x, y, size = 10, style = 'normal') {
+      doc.setFontSize(size);
+      doc.setFont(undefined, style);
+      doc.text(text, x, y);
+    }
+
+    // En-tête
+    doc.setFillColor(0, 64, 128);
+    doc.rect(0, 0, pageWidth, 50, 'F');
     
-    // Message pour FICHE COMPLÈTE
-    let message = `Fiche de Sécurité JSAS du ${formatDateFrench(dpDate)}
-${dpLieu} - Session ${capitalize(dpPlongee)}
-DP: ${dpNom}
+    doc.setTextColor(255, 255, 255);
+    addText('Palanquées JSAS', margin, 20, 18, 'bold');
+    addText('DP: ' + dpNom, margin, 30, 12);
+    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10);
+    addText('Lieu: ' + dpLieu, margin, 46, 10);
+    
+    yPosition = 65;
+    doc.setTextColor(0, 0, 0);
 
-RÉSUMÉ:
-• ${totalPlongeurs} plongeurs total
-• ${palanqueesLocal.length} palanquées constituées`;
+    // Résumé
+    addText('RÉSUMÉ', margin, yPosition, 14, 'bold');
+    yPosition += 8;
+    addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
+    yPosition += 6;
+    addText('Palanquées: ' + palanqueesLocal.length, margin, yPosition);
+    yPosition += 6;
+    addText('Alertes: ' + alertesTotal.length, margin, yPosition);
+    yPosition += 15;
 
+    // Alertes
     if (alertesTotal.length > 0) {
-      message += `
-
-ALERTES (${alertesTotal.length}):`;
-      alertesTotal.slice(0, 3).forEach(alerte => {
-        message += `\n• ${alerte}`;
+      checkPageBreak(20 + alertesTotal.length * 6);
+      addText('ALERTES', margin, yPosition, 14, 'bold');
+      yPosition += 8;
+      alertesTotal.forEach(alerte => {
+        addText('• ' + alerte, margin + 5, yPosition);
+        yPosition += 6;
       });
-      if (alertesTotal.length > 3) {
-        message += `\n• ... et ${alertesTotal.length - 3} autres alertes`;
-      }
+      yPosition += 10;
     }
 
-    message += `
+    // Palanquées
+    addText('PALANQUÉES', margin, yPosition, 14, 'bold');
+    yPosition += 10;
 
-Fiche de sécurité COMPLÈTE avec paramètres
-PDF joint à ce message
+    if (palanqueesLocal.length === 0) {
+      addText('Aucune palanquée créée.', margin, yPosition);
+      yPosition += 15;
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          checkPageBreak(15 + pal.length * 6 + 10);
+          
+          addText(`Palanquée ${i + 1} (${pal.length} plongeur${pal.length > 1 ? 's' : ''})`, margin, yPosition, 12, 'bold');
+          yPosition += 8;
+          
+          if (pal.length === 0) {
+            addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic');
+            yPosition += 8;
+          } else {
+            // Trier et afficher les plongeurs
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
+                addText(textLine, margin + 5, yPosition);
+                yPosition += 6;
+              }
+            });
+          }
+          yPosition += 8;
+        }
+      });
+    }
 
-Instructions:
-1. Le PDF se télécharge automatiquement
-2. Attendez la fin du téléchargement  
-3. Joignez le PDF à ce message WhatsApp
-4. Envoyez à votre groupe/contact`;
-    
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    
-    // Génération PDF COMPLET avec délai
-    setTimeout(() => {
-      console.log("Déclenchement génération PDF COMPLET...");
-      if (typeof exportToPDF === 'function') {
-        exportToPDF(); // FICHE COMPLÈTE
-      } else {
-        alert('Fonction exportToPDF non disponible.');
-      }
-    }, 1000);
-    
-    const confirmMessage = `WhatsApp ouvert avec message pré-rempli !
+    // Plongeurs en attente
+    if (plongeursLocal.length > 0) {
+      checkPageBreak(15 + plongeursLocal.length * 6);
+      
+      addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold');
+      yPosition += 8;
+      
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      
+      plongeursTriés.forEach(p => {
+        if (p && p.nom) {
+          const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
+          addText(textLine, margin + 5, yPosition);
+          yPosition += 6;
+        }
+      });
+    }
 
-Étapes suivantes :
-1. Le PDF COMPLET (fiche de sécurité) se télécharge automatiquement
-2. Dans WhatsApp, cliquez sur l'icône de pièce jointe
-3. Sélectionnez "Document" et choisissez le PDF téléchargé
-4. Envoyez le message
+    // Footer sur toutes les pages
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10);
+      doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+    }
 
-Données partagées : ${totalPlongeurs} plongeurs, ${palanqueesLocal.length} palanquées${alertesTotal.length > 0 ? `, ${alertesTotal.length} alertes` : ''}
-Format : Fiche de sécurité complète avec paramètres`;
+    // Télécharger
+    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
+    doc.save(fileName);
     
-    setTimeout(() => {
-      alert(confirmMessage);
-    }, 1500);
-    
-    console.log("Partage WhatsApp FICHE COMPLÈTE initié");
-    
+    console.log("✅ PDF aperçu généré:", fileName);
+    alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
+
   } catch (error) {
-    console.error("Erreur partage WhatsApp:", error);
-    alert("Erreur lors du partage WhatsApp : " + error.message);
+    console.error("❌ Erreur PDF aperçu:", error);
+    alert("Erreur lors de la génération du PDF: " + error.message);
   }
 }
 
-// ===== FONCTION FERMETURE APERÇU =====
+// Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
@@ -1128,15 +999,14 @@ function closePDFPreview() {
     if (pdfPreview) {
       pdfPreview.src = "";
     }
-    console.log("Aperçu PDF fermé");
+    console.log("✅ Aperçu PDF fermé");
   }
 }
 
-// ===== EXPORTS GLOBAUX =====
+// Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
-window.shareToWhatsAppWithPDF = shareToWhatsAppWithPDF;
 
-console.log("Module PDF Manager COMPLET - Distinction claire entre PDF complet et PDF minimal");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");

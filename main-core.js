@@ -1115,68 +1115,6 @@ function setupEventListeners() {
   }
 }
 
-// Fonction manquante pour rafraîchir les listes avec indicateur
-function refreshAllListsWithIndicator() {
-  console.log("🔄 Rafraîchissement des listes...");
-  
-  try {
-    // Mise à jour du compteur de plongeurs
-    if (typeof updatePlongeursCounter === 'function') {
-      updatePlongeursCounter();
-    }
-    
-    // Mise à jour du compteur de palanquées
-    if (typeof updatePalanqueesCounter === 'function') {
-      updatePalanqueesCounter();
-    }
-    
-    // Rafraîchissement des listes existantes
-    if (typeof renderPlongeursList === 'function') {
-      renderPlongeursList();
-    }
-    
-    if (typeof renderPalanquees === 'function') {
-      renderPalanquees();
-    }
-    
-    console.log("✅ Listes rafraîchies");
-  } catch (error) {
-    console.warn("⚠️ Erreur lors du rafraîchissement:", error);
-  }
-}
-// Fonctions utilitaires manquantes courantes
-function updatePlongeursCounter() {
-  const compteur = document.getElementById('compteur-plongeurs');
-  if (compteur && typeof plongeurs !== 'undefined') {
-    compteur.textContent = `(${plongeurs.length})`;
-  }
-}
-
-function updatePalanqueesCounter() {
-  const compteur = document.getElementById('compteur-palanquees');
-  if (compteur && typeof palanquees !== 'undefined') {
-    const totalPlongeurs = palanquees.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
-    compteur.textContent = `(${totalPlongeurs} plongeurs dans ${palanquees.length} palanquées)`;
-  }
-}
-
-function renderPlongeursList() {
-  // Fonction de base pour le rendu des plongeurs
-  const liste = document.getElementById('listePlongeurs');
-  if (liste && typeof plongeurs !== 'undefined') {
-    // Code de rendu existant ou basique
-    console.log("Liste des plongeurs mise à jour");
-  }
-}
-
-function renderPalanquees() {
-  // Fonction de base pour le rendu des palanquées
-  const container = document.getElementById('palanqueesContainer');
-  if (container && typeof palanquees !== 'undefined') {
-    // Code de rendu existant ou basique
-    console.log("Palanquées mises à jour");
-  }
-}
 // ===== DIAGNOSTIC ET MONITORING =====
 // Fonction de diagnostic pour le support technique
 window.diagnosticJSAS = function() {
@@ -1304,21 +1242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
   }
 });
-//
-// Configuration JSAS spécifique
-document.addEventListener('DOMContentLoaded', function() {
-  // Configuration personnalisée pour JSAS
-  configureWhatsAppShare({
-    defaultMessage: '🤿 Palanquées JSAS du {date}\n📍 {lieu} - Session {session}\n👨‍🏫 DP: ' + (document.getElementById("dp-select")?.selectedOptions[0]?.textContent || 'N/A') + '\n\n📋 Fiche de sécurité en pièce jointe',
-    shareOptions: {
-      includeStats: true,
-      includeAlerts: true,
-      autoDownload: true
-    }
-    // Si vous avez un groupe WhatsApp JSAS, ajoutez l'ID ici :
-    // defaultGroupId: 'VOTRE_ID_GROUPE_WHATSAPP'
-  });
-});
+
 // ===== EXPORTS GLOBAUX =====
 window.handleError = handleError;
 window.testFirebaseConnectionSafe = testFirebaseConnectionSafe;
