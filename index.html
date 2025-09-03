@@ -204,7 +204,10 @@
 
 
 <!-- Bouton WhatsApp fonctionnel -->
-<button onclick="partagerWhatsApp()" style="
+Je comprends, vous voulez partager le PDF simplifié généré par l'aperçu (fonction generatePDFFromPreview()), pas la fiche de sécurité complète (fonction exportToPDF()).
+Voici la version corrigée du bouton qui utilise la bonne fonction :
+html<!-- Bouton WhatsApp pour PDF aperçu - à ajouter dans index.html -->
+<button onclick="partagerWhatsAppApercu()" style="
   background: #25D366; 
   color: white; 
   border: none; 
@@ -215,14 +218,14 @@
   cursor: pointer; 
   margin: 5px;
   box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
-" title="Générer PDF et partager sur WhatsApp">
-  📱 Partager sur WhatsApp
+" title="Générer PDF aperçu et partager sur WhatsApp">
+  📱 Partager PDF Aperçu
 </button>
 
 <script>
-function partagerWhatsApp() {
+function partagerWhatsAppApercu() {
   try {
-    console.log("📱 Début partage WhatsApp...");
+    console.log("📱 Partage WhatsApp avec PDF aperçu...");
     
     // Récupération des données
     var dpSelect = document.getElementById("dp-select");
@@ -258,7 +261,7 @@ function partagerWhatsApp() {
       console.warn("Erreur stats:", statsError);
     }
     
-    // Construction du message
+    // Construction du message WhatsApp
     var message = "🤿 Palanquées JSAS du " + dpDate + "\n";
     message += "📍 " + dpLieu + " - " + capitaliser(dpPlongee) + "\n";
     message += "👨‍🏫 DP: " + dpNom + "\n\n";
@@ -270,9 +273,10 @@ function partagerWhatsApp() {
       message += "\n\n⚠️ " + nombreAlertes + " alerte(s) détectée(s)";
     }
     
-    message += "\n\n📎 Fiche de sécurité PDF jointe\n\n";
+    message += "\n\n📎 PDF aperçu des palanquées joint\n";
+    message += "(Version simplifiée avec tri par niveau)\n\n";
     message += "Instructions:\n";
-    message += "1. Le PDF va être téléchargé\n";
+    message += "1. Le PDF aperçu se télécharge automatiquement\n";
     message += "2. Joignez-le à ce message WhatsApp\n";
     message += "3. Envoyez à votre groupe/contact";
     
@@ -282,20 +286,20 @@ function partagerWhatsApp() {
     
     console.log("✅ WhatsApp ouvert");
     
-    // Génération PDF avec délai
+    // MODIFICATION IMPORTANTE : Utiliser generatePDFFromPreview au lieu de exportToPDF
     setTimeout(function() {
-      console.log("📄 Génération PDF...");
-      if (typeof exportToPDF === 'function') {
-        exportToPDF();
-        console.log("✅ PDF généré");
+      console.log("📄 Génération PDF aperçu...");
+      if (typeof generatePDFFromPreview === 'function') {
+        generatePDFFromPreview();
+        console.log("✅ PDF aperçu généré");
       } else {
-        alert('PDF non généré automatiquement. Cliquez sur le bouton vert "Télécharger Fiche de Sécu PDF".');
+        alert('Fonction generatePDFFromPreview non disponible.\n\nAlternatives :\n1. Cliquez sur "Aperçu des palanquées PDF" puis le bouton vert\n2. Ou utilisez le bouton "Télécharger Fiche de Sécu PDF"');
       }
     }, 1500);
     
-    // Message de confirmation
+    // Message de confirmation adapté
     setTimeout(function() {
-      alert('✅ WhatsApp ouvert avec message personnalisé !\n\n📱 Le PDF se télécharge automatiquement.\nJoignez-le dans WhatsApp et envoyez !\n\n📊 ' + totalPlongeurs + ' plongeurs, ' + nombrePalanquees + ' palanquées' + (nombreAlertes > 0 ? ', ' + nombreAlertes + ' alertes' : ''));
+      alert('✅ WhatsApp ouvert avec message personnalisé !\n\n📄 Le PDF APERÇU se télécharge (version simplifiée avec tri par niveau).\n\nJoignez-le dans WhatsApp et envoyez !\n\n📊 ' + totalPlongeurs + ' plongeurs, ' + nombrePalanquees + ' palanquées' + (nombreAlertes > 0 ? ', ' + nombreAlertes + ' alertes' : ''));
     }, 2000);
     
   } catch (error) {
