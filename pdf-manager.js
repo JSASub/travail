@@ -1,4 +1,4 @@
-// pdf-manager.js - Gestion complète des PDF (extrait de main-complete.js)
+// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp)
 
 // ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
@@ -411,9 +411,9 @@ function exportToPDF() {
   }
 }
 
-// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE =====
+// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
 function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp...");
   
   try {
     // Récupération spéciale pour le directeur de plongée
@@ -481,39 +481,187 @@ function generatePDFPreview() {
           min-height: 297mm;
           position: relative;
         }
-        .close-button {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #dc3545;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          font-size: 20px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-          z-index: 1000;
-          transition: all 0.3s ease;
-        }
-        .close-button:hover {
-          background: #c82333;
-          transform: scale(1.1);
-        }
-        .header {
+        
+        /* EN-TÊTE AVEC BOUTONS INTÉGRÉS */
+        .preview-header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
-          padding: 30px;
+          padding: 15px 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .main-title {
-          font-size: 28px;
-          font-weight: 300;
-          letter-spacing: 2px;
+        
+        .preview-title {
+          font-size: 18px;
+          font-weight: bold;
+          margin: 0;
         }
-        .content { padding: 40px; }
-        .section { margin-bottom: 40px; }
+        
+        .preview-buttons {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        
+        .preview-btn {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 5px;
+          font-weight: bold;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .btn-close {
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-close:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.05);
+        }
+        
+        .btn-pdf {
+          background: rgba(255, 255, 255, 0.9);
+          color: #004080;
+          border: 2px solid white;
+        }
+        
+        .btn-pdf:hover {
+          background: white;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .btn-whatsapp {
+          background: #25D366;
+          color: white;
+          border: 2px solid #25D366;
+        }
+        
+        .btn-whatsapp:hover {
+          background: #128C7E;
+          border-color: #128C7E;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3);
+        }
+        
+        .btn-whatsapp:disabled {
+          background: #6c757d;
+          border-color: #6c757d;
+          cursor: not-allowed;
+          transform: none;
+          opacity: 0.7;
+        }
+        
+        .loading-icon {
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* MODAL WHATSAPP */
+        .whatsapp-modal {
+          display: none;
+          position: fixed;
+          z-index: 2000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+          background-color: white;
+          margin: 5% auto;
+          padding: 20px;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 450px;
+          text-align: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+          color: #25D366;
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 15px;
+        }
+        
+        .modal-instructions {
+          margin: 15px 0;
+          text-align: left;
+          line-height: 1.5;
+          font-size: 14px;
+        }
+        
+        .modal-instructions ol {
+          padding-left: 20px;
+        }
+        
+        .modal-instructions li {
+          margin: 4px 0;
+        }
+        
+        .modal-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          margin-top: 20px;
+        }
+        
+        .modal-btn {
+          padding: 10px 16px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: all 0.3s ease;
+        }
+        
+        .modal-btn-primary {
+          background: #25D366;
+          color: white;
+        }
+        
+        .modal-btn-primary:hover {
+          background: #128C7E;
+        }
+        
+        .modal-btn-secondary {
+          background: #6c757d;
+          color: white;
+        }
+        
+        .modal-btn-secondary:hover {
+          background: #545b62;
+        }
+        
+        /* CONTENU PRINCIPAL */
+        .content { 
+          padding: 40px; 
+        }
+        
+        .section { 
+          margin-bottom: 40px; 
+        }
+        
         .section-title {
           font-size: 20px;
           color: #004080;
@@ -521,6 +669,7 @@ function generatePDFPreview() {
           padding-bottom: 10px;
           border-bottom: 3px solid #007bff;
         }
+        
         .plongeur-item {
           padding: 8px 12px;
           margin: 4px 0;
@@ -532,14 +681,17 @@ function generatePDFPreview() {
           align-items: center;
           transition: all 0.2s ease;
         }
+        
         .plongeur-item:hover {
           background: #e9ecef;
           transform: translateX(2px);
         }
+        
         .plongeur-nom {
           font-weight: bold;
           flex: 1;
         }
+        
         .plongeur-niveau {
           background: #28a745;
           color: white;
@@ -551,11 +703,13 @@ function generatePDFPreview() {
           text-align: center;
           margin-right: 8px;
         }
+        
         .plongeur-prerogatives {
           font-size: 11px;
           color: #666;
           font-style: italic;
         }
+        
         .palanquee-box {
           margin: 20px 0;
           padding: 20px;
@@ -563,6 +717,7 @@ function generatePDFPreview() {
           border-radius: 8px;
           background: #f8f9fa;
         }
+        
         .palanquee-title {
           font-size: 18px;
           font-weight: bold;
@@ -571,127 +726,173 @@ function generatePDFPreview() {
           padding-bottom: 8px;
           border-bottom: 1px solid #dee2e6;
         }
+        
         .alert-box {
           border-color: #dc3545 !important;
           background: #fff5f5 !important;
         }
+        
         .alert-title {
           color: #dc3545 !important;
         }
         
-        /* Responsive Design pour Mobile */
+        /* RESPONSIVE DESIGN */
         @media screen and (max-width: 768px) {
           .container {
             max-width: 100% !important;
             margin: 0 !important;
             box-shadow: none !important;
           }
-          .header {
-            padding: 15px !important;
+          
+          .preview-header {
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 15px;
           }
-          .main-title {
-            font-size: 20px !important;
-            letter-spacing: 1px !important;
+          
+          .preview-title {
+            font-size: 16px;
+            text-align: center;
           }
+          
+          .preview-buttons {
+            width: 100%;
+            justify-content: center;
+            gap: 8px;
+          }
+          
+          .preview-btn {
+            flex: 1;
+            min-width: 80px;
+            font-size: 12px;
+            padding: 6px 12px;
+          }
+          
           .content {
             padding: 15px !important;
           }
+          
           .section {
             margin-bottom: 25px !important;
           }
+          
           .section-title {
             font-size: 16px !important;
             margin-bottom: 15px !important;
           }
+          
           .palanquee-box {
             margin: 15px 0 !important;
             padding: 15px !important;
           }
+          
           .palanquee-title {
             font-size: 16px !important;
             margin-bottom: 12px !important;
           }
+          
           .plongeur-item {
             padding: 10px 8px !important;
             flex-direction: column !important;
             align-items: flex-start !important;
             gap: 8px !important;
           }
+          
           .plongeur-nom {
             font-size: 14px !important;
           }
+          
           .plongeur-niveau {
             font-size: 11px !important;
             padding: 3px 6px !important;
           }
+          
           .plongeur-prerogatives {
             font-size: 10px !important;
           }
-          .close-button {
-            width: 45px !important;
-            height: 45px !important;
-            font-size: 18px !important;
-            top: 15px !important;
-            right: 15px !important;
+          
+          .modal-content {
+            margin: 10% auto !important;
           }
         }
         
         @media screen and (max-width: 480px) {
-          .header {
-            padding: 10px !important;
+          .preview-header {
+            padding: 8px 10px !important;
           }
-          .main-title {
-            font-size: 18px !important;
+          
+          .preview-title {
+            font-size: 14px !important;
           }
+          
           .content {
             padding: 10px !important;
           }
+          
           .section-title {
             font-size: 14px !important;
           }
+          
           .palanquee-title {
             font-size: 14px !important;
           }
-          .close-button {
-            width: 40px !important;
-            height: 40px !important;
-            font-size: 16px !important;
-            top: 10px !important;
-            right: 10px !important;
+          
+          .modal-content {
+            width: 95% !important;
+            padding: 15px !important;
           }
         }
         
         @media print {
-          body { background: white !important; }
-          .container { box-shadow: none !important; max-width: none !important; }
-          .close-button { display: none !important; }
+          body { 
+            background: white !important; 
+          }
+          .container { 
+            box-shadow: none !important; 
+            max-width: none !important; 
+          }
+          .preview-header {
+            position: static !important;
+          }
+          .whatsapp-modal { 
+            display: none !important; 
+          }
         }
       </style>
     `;
 
     let htmlContent = '<!DOCTYPE html><html lang="fr"><head>';
     htmlContent += '<meta charset="UTF-8">';
+    htmlContent += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     htmlContent += '<title>Palanquées JSAS - ' + formatDateFrench(dpDate) + '</title>';
     htmlContent += cssStyles;
     htmlContent += '</head><body>';
     
-    // Bouton de fermeture dans l'iframe
-    htmlContent += '<button class="close-button" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕</button>';
-    
     htmlContent += '<div class="container">';
-    htmlContent += '<header class="header">';
-    htmlContent += '<h1 class="main-title">Palanquées JSAS</h1>';
-    htmlContent += '<p>Directeur de Plongée: ' + dpNom + '</p>';
-    htmlContent += '<p>Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
-    htmlContent += '<p>Lieu: ' + dpLieu + '</p>';
+    
+    // EN-TÊTE AVEC BOUTONS INTÉGRÉS
+    htmlContent += '<header class="preview-header">';
+    htmlContent += '<h1 class="preview-title">Aperçu des Palanquées</h1>';
+    htmlContent += '<div class="preview-buttons">';
+    htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕ Fermer</button>';
+    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">📄Générer PDF</button>';
+    htmlContent += '<button id="btn-whatsapp" class="preview-btn btn-whatsapp" onclick="shareToWhatsApp()" title="Partager sur WhatsApp">💬WhatsApp</button>';
+    htmlContent += '</div>';
     htmlContent += '</header>';
+    
+    // INFO DIRECTEUR DE PLONGÉE
+    htmlContent += '<div style="background: linear-gradient(135deg, #004080 0%, #007bff 100%); color: white; padding: 20px; margin-top: 0;">';
+    htmlContent += '<p style="margin: 0; font-size: 14px;"><strong>Directeur de Plongée:</strong> ' + dpNom + '</p>';
+    htmlContent += '<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Date:</strong> ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
+    htmlContent += '<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Lieu:</strong> ' + dpLieu + '</p>';
+    htmlContent += '</div>';
     
     htmlContent += '<main class="content">';
     htmlContent += '<section class="section">';
     htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
-    htmlContent += '<p>Total plongeurs: ' + totalPlongeurs + '</p>';
-    htmlContent += '<p>Palanquées: ' + palanqueesLocal.length + '</p>';
-    htmlContent += '<p>Alertes: ' + alertesTotal.length + '</p>';
+    htmlContent += '<p><strong>Total plongeurs:</strong> ' + totalPlongeurs + '</p>';
+    htmlContent += '<p><strong>Palanquées:</strong> ' + palanqueesLocal.length + '</p>';
+    htmlContent += '<p><strong>Alertes:</strong> ' + alertesTotal.length + '</p>';
     htmlContent += '</section>';
     
     if (alertesTotal.length > 0) {
@@ -769,7 +970,320 @@ function generatePDFPreview() {
     }
     
     htmlContent += '</main>';
-    htmlContent += '</div></body></html>';
+    htmlContent += '</div>';
+    
+    // MODAL WHATSAPP
+    htmlContent += '<div id="whatsapp-modal" class="whatsapp-modal">';
+    htmlContent += '<div class="modal-content">';
+    htmlContent += '<div class="modal-header">💬 PDF envoyé vers WhatsApp</div>';
+    htmlContent += '<div class="modal-instructions">';
+    htmlContent += '<p><strong>Le PDF d\'aperçu a été téléchargé !</strong></p>';
+    htmlContent += '<p><strong>Pour le partager sur WhatsApp :</strong></p>';
+    htmlContent += '<ol>';
+    htmlContent += '<li>Ouvrez WhatsApp</li>';
+    htmlContent += '<li>Sélectionnez le contact ou groupe</li>';
+    htmlContent += '<li>Cliquez sur 📎 (pièce jointe)</li>';
+    htmlContent += '<li>Sélectionnez "Document"</li>';
+    htmlContent += '<li>Choisissez le PDF téléchargé</li>';
+    htmlContent += '<li>Envoyez !</li>';
+    htmlContent += '</ol>';
+    htmlContent += '<p><em>Le fichier se trouve dans vos Téléchargements.</em></p>';
+    htmlContent += '</div>';
+    htmlContent += '<div class="modal-buttons">';
+    htmlContent += '<button class="modal-btn modal-btn-primary" onclick="openWhatsAppWeb()">Ouvrir WhatsApp Web</button>';
+    htmlContent += '<button class="modal-btn modal-btn-secondary" onclick="closeWhatsAppModal()">OK, compris</button>';
+    htmlContent += '</div>';
+    htmlContent += '</div>';
+    htmlContent += '</div>';
+
+    // JAVASCRIPT INTÉGRÉ
+    htmlContent += `<script>
+      // Variables pour la gestion du PDF
+      let isGeneratingPDF = false;
+
+      // Fonction pour partager l'aperçu sur WhatsApp
+      async function shareToWhatsApp() {
+        if (isGeneratingPDF) return;
+
+        const btn = document.getElementById('btn-whatsapp');
+        const pdfBtn = document.getElementById('btn-generer-pdf');
+        
+        if (!btn) return;
+        
+        // Désactiver les boutons et changer l'interface
+        isGeneratingPDF = true;
+        btn.disabled = true;
+        if (pdfBtn) pdfBtn.disabled = true;
+        
+        btn.innerHTML = '⏳ Génération...';
+
+        try {
+          // Générer le PDF d'aperçu pour WhatsApp
+          await generatePDFForWhatsApp();
+          
+          // Afficher les instructions
+          const modal = document.getElementById('whatsapp-modal');
+          if (modal) {
+            modal.style.display = 'block';
+          }
+          
+        } catch (error) {
+          console.error('Erreur partage WhatsApp:', error);
+          alert('Erreur lors de la génération du PDF pour WhatsApp : ' + error.message);
+        } finally {
+          // Réactiver les boutons après un délai
+          setTimeout(() => {
+            isGeneratingPDF = false;
+            btn.disabled = false;
+            if (pdfBtn) pdfBtn.disabled = false;
+            
+            btn.innerHTML = '💬 WhatsApp';
+          }, 1500);
+        }
+      }
+
+      // Fonction pour générer le PDF spécialement pour WhatsApp
+      async function generatePDFForWhatsApp() {
+        return new Promise((resolve, reject) => {
+          try {
+            // Vérifier que jsPDF est disponible dans le parent
+            let jsPDFLib = null;
+            if (typeof window.parent.jspdf !== 'undefined' && window.parent.jspdf.jsPDF) {
+              jsPDFLib = window.parent.jspdf;
+            } else if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+              jsPDFLib = window.jspdf;
+            } else {
+              throw new Error("jsPDF non disponible");
+            }
+
+            // Récupérer les données depuis le parent
+            const plongeursLocal = window.parent.plongeurs || [];
+            const palanqueesLocal = window.parent.palanquees || [];
+            
+            // Récupérer les infos DP
+            const dpSelect = window.parent.document.getElementById("dp-select");
+            const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
+            const dpDate = window.parent.document.getElementById("dp-date")?.value || "Non définie";
+            const dpLieu = window.parent.document.getElementById("dp-lieu")?.value || "Non défini";
+            const dpPlongee = window.parent.document.getElementById("dp-plongee")?.value || "matin";
+
+            function formatDateFrench(dateString) {
+              if (!dateString) return "Non définie";
+              const date = new Date(dateString);
+              return date.toLocaleDateString('fr-FR');
+            }
+
+            // Créer le PDF optimisé pour WhatsApp
+            const { jsPDF } = jsPDFLib;
+            const doc = new jsPDF('portrait', 'mm', 'a4');
+
+            let yPosition = 20;
+            const margin = 20;
+
+            // En-tête avec couleur WhatsApp
+            doc.setFillColor(37, 211, 102);
+            doc.rect(0, 0, 210, 45, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('Palanquées JSAS', margin, 18);
+            
+            doc.setFontSize(12);
+            doc.text('DP: ' + dpNom, margin, 28);
+            doc.text(formatDateFrench(dpDate) + ' - ' + dpPlongee.toUpperCase(), margin, 36);
+            doc.text('Lieu: ' + dpLieu, margin, 42);
+
+            yPosition = 55;
+            doc.setTextColor(0, 0, 0);
+
+            // Statistiques
+            const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('RÉSUMÉ', margin, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            doc.text('• Total plongeurs: ' + totalPlongeurs, margin + 5, yPosition);
+            yPosition += 6;
+            doc.text('• Palanquées: ' + palanqueesLocal.length, margin + 5, yPosition);
+            yPosition += 15;
+
+            // Palanquées avec tri par niveau
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('PALANQUÉES', margin, yPosition);
+            yPosition += 10;
+
+            if (palanqueesLocal.length === 0) {
+              doc.setFontSize(11);
+              doc.text('Aucune palanquée créée', margin + 5, yPosition);
+            } else {
+              palanqueesLocal.forEach((pal, i) => {
+                if (pal && Array.isArray(pal)) {
+                  // Vérifier si on a assez de place
+                  if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                  }
+
+                  doc.setFontSize(12);
+                  doc.setFont(undefined, 'bold');
+                  doc.text(\`Palanquée \${i + 1} (\${pal.length} plongeurs)\`, margin, yPosition);
+                  yPosition += 8;
+                  
+                  if (pal.length > 0) {
+                    // Trier par niveau (plus haut niveau en premier)
+                    const ordreNiveaux = {
+                      'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+                      'N3': 7, 'N2': 8, 'N1': 9,
+                      'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+                      'Déb.': 13, 'débutant': 14, 'Déb': 15
+                    };
+                    
+                    const plongeursTriés = [...pal].sort((a, b) => {
+                      const ordreA = ordreNiveaux[a.niveau] || 99;
+                      const ordreB = ordreNiveaux[b.niveau] || 99;
+                      if (ordreA === ordreB) {
+                        return a.nom.localeCompare(b.nom);
+                      }
+                      return ordreA - ordreB;
+                    });
+                    
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    plongeursTriés.forEach(p => {
+                      if (p && p.nom) {
+                        const ligne = \`  • \${p.nom} (\${p.niveau})\${p.pre ? ' - ' + p.pre : ''}\`;
+                        doc.text(ligne, margin + 5, yPosition);
+                        yPosition += 5;
+                      }
+                    });
+                  }
+                  yPosition += 8;
+                }
+              });
+            }
+
+            // Plongeurs en attente si il y en a
+            if (plongeursLocal.length > 0) {
+              if (yPosition > 240) {
+                doc.addPage();
+                yPosition = 20;
+              }
+
+              doc.setFontSize(14);
+              doc.setFont(undefined, 'bold');
+              doc.text('PLONGEURS EN ATTENTE', margin, yPosition);
+              yPosition += 10;
+
+              // Trier aussi les plongeurs en attente
+              const ordreNiveaux = {
+                'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+                'N3': 7, 'N2': 8, 'N1': 9,
+                'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+                'Déb.': 13, 'débutant': 14, 'Déb': 15
+              };
+              
+              const plongeursEnAttenteTriés = [...plongeursLocal].sort((a, b) => {
+                const ordreA = ordreNiveaux[a.niveau] || 99;
+                const ordreB = ordreNiveaux[b.niveau] || 99;
+                if (ordreA === ordreB) {
+                  return a.nom.localeCompare(b.nom);
+                }
+                return ordreA - ordreB;
+              });
+
+              doc.setFontSize(10);
+              doc.setFont(undefined, 'normal');
+              plongeursEnAttenteTriés.forEach(p => {
+                if (p && p.nom) {
+                  const ligne = \`• \${p.nom} (\${p.niveau})\${p.pre ? ' - ' + p.pre : ''}\`;
+                  doc.text(ligne, margin + 5, yPosition);
+                  yPosition += 5;
+                }
+              });
+            }
+
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(128, 128, 128);
+            doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, 285);
+
+            // Télécharger le PDF
+            const fileName = 'palanquees-jsas-whatsapp-' + formatDateFrench(dpDate).replace(/\\//g, '-') + '.pdf';
+            doc.save(fileName);
+
+            console.log('PDF WhatsApp généré:', fileName);
+            resolve(fileName);
+
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      // Améliorer la fonction generatePDFFromPreview existante
+      function generatePDFFromPreview() {
+        const btn = document.getElementById('btn-generer-pdf');
+        const whatsappBtn = document.getElementById('btn-whatsapp');
+        
+        if (!btn) return;
+        
+        // Feedback visuel
+        btn.disabled = true;
+        if (whatsappBtn) whatsappBtn.disabled = true;
+        
+        btn.innerHTML = '⏳ Génération...';
+
+        try {
+          // Appeler la fonction du parent
+          if (typeof window.parent.generatePDFFromPreview === 'function') {
+            window.parent.generatePDFFromPreview();
+          } else {
+            throw new Error('Fonction generatePDFFromPreview non trouvée');
+          }
+        } catch (error) {
+          alert('Erreur lors de la génération du PDF');
+          console.error('Erreur PDF:', error);
+        } finally {
+          // Restaurer l'interface
+          setTimeout(() => {
+            btn.disabled = false;
+            if (whatsappBtn) whatsappBtn.disabled = false;
+            
+            btn.innerHTML = '📄 Générer PDF';
+          }, 1500);
+        }
+      }
+
+      // Ouvrir WhatsApp Web
+      function openWhatsAppWeb() {
+        window.open('https://web.whatsapp.com/', '_blank');
+        closeWhatsAppModal();
+      }
+
+      // Fermer le modal WhatsApp
+      function closeWhatsAppModal() {
+        const modal = document.getElementById('whatsapp-modal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+
+      // Fermer modal en cliquant à l'extérieur
+      window.onclick = function(event) {
+        const modal = document.getElementById('whatsapp-modal');
+        if (event.target === modal) {
+          closeWhatsAppModal();
+        }
+      }
+    </script>`;
+
+    htmlContent += '</body></html>';
 
     const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -786,7 +1300,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade et bouton de fermeture intégré");
+      console.log("✅ Aperçu PDF généré avec tri par grade, en-tête intégré et bouton WhatsApp");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -1009,4 +1523,4 @@ window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp intégré");
