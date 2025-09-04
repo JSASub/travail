@@ -603,10 +603,6 @@ function fallbackCopyTextToClipboard(text) {
     const successful = document.execCommand('copy');
     if (successful) {
       alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !");
-      
-      if (confirm("Voulez-vous ouvrir WhatsApp Web maintenant ?")) {
-        window.open('https://web.whatsapp.com/', '_blank');
-      }
     } else {
       throw new Error('Commande copy non supportée');
     }
