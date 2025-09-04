@@ -864,7 +864,7 @@ function generatePDFForWhatsApp() {
 }
 
 function showWhatsAppInstructions() {
-  const instructions = `📱 PDF généré pour WhatsApp !
+  alert(`📱 PDF généré pour WhatsApp !
 
 📋 Instructions pour partager :
 
@@ -876,13 +876,7 @@ function showWhatsAppInstructions() {
 6️⃣ Ajoutez un message si désiré
 7️⃣ Envoyez ! 🚀
 
-💡 Le fichier se trouve dans vos Téléchargements
-
-Voulez-vous ouvrir WhatsApp Web ?`;
-
-  if (confirm(instructions)) {
-    window.open('https://web.whatsapp.com/', '_blank');
-  }
+💡 Le fichier se trouve dans vos Téléchargements`);
 }
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
