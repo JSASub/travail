@@ -563,12 +563,10 @@ function copyPalanqueesToClipboard() {
     if (navigator.clipboard && window.isSecureContext) {
       // Méthode moderne
       navigator.clipboard.writeText(texte).then(() => {
-        alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !\n\n💡 Le texte est formaté avec des emojis et du gras pour WhatsApp.");
-      }).catch(err => {
-        console.error('Erreur copie presse-papier:', err);
-        // Fallback vers la méthode ancienne
-        fallbackCopyTextToClipboard(texte);
-      });
+		showTextForManualCopy(texte); // Afficher la modal même si copie réussie
+		}).catch(err => {
+			fallbackCopyTextToClipboard(texte);
+	});
     } else {
       // Fallback pour navigateurs plus anciens
       fallbackCopyTextToClipboard(texte);
@@ -597,10 +595,11 @@ function fallbackCopyTextToClipboard(text) {
   try {
     const successful = document.execCommand('copy');
     if (successful) {
-      alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !");
-    } else {
-      throw new Error('Commande copy non supportée');
-    }
+	// Copie réussie, mais on affiche quand même la modal
+	showTextForManualCopy(text);
+	} else {
+	throw new Error('Commande copy non supportée');
+	}
   } catch (err) {
     console.error('Erreur fallback copie:', err);
     // Dernière solution : afficher le texte pour copie manuelle
