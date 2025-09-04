@@ -634,43 +634,226 @@ function showTextForManualCopy(text) {
     max-width: 90%;
     max-height: 80%;
     overflow: auto;
+    text-align: center;
   `;
   
   const title = document.createElement('h3');
-  title.textContent = '📋 Copiez ce texte manuellement :';
-  title.style.marginBottom = '10px';
+  title.textContent = '📋 Texte pour WhatsApp';
+  title.style.cssText = `
+    margin-bottom: 15px;
+    color: #25D366;
+    font-size: 18px;
+  `;
+  
+  const instructions = document.createElement('p');
+  instructions.textContent = 'Copiez ce texte et collez-le dans WhatsApp :';
+  instructions.style.cssText = `
+    margin-bottom: 15px;
+    color: #666;
+    font-size: 14px;
+  `;
   
   const textarea = document.createElement('textarea');
   textarea.value = text;
   textarea.style.cssText = `
     width: 100%;
     height: 300px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 12px;
+    border: 2px solid #25D366;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+    outline: none;
+    margin-bottom: 15px;
   `;
-  textarea.select();
   
-  const button = document.createElement('button');
-  button.textContent = 'Fermer';
-  button.style.cssText = `
-    margin-top: 10px;
-    padding: 10px 20px;
+  // Auto-sélection améliorée
+  setTimeout(() => {
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+  }, 100);
+  
+  // Container pour les boutons
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  `;
+  
+  // Bouton Copier (principal)
+  const copyButton = document.createElement('button');
+  copyButton.textContent = '📋 Copier le texte';
+  copyButton.style.cssText = `
+    padding: 12px 20px;
     background: #25D366;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
   `;
-  button.onclick = () => document.body.removeChild(modal);
+  
+  copyButton.onclick = async () => {
+    try {
+      // Tenter la copie moderne d'abord
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        copyButton.textContent = '✅ Copié !';
+        copyButton.style.background = '#28a745';
+        setTimeout(() => {
+          document.body.removeChild(modal);
+        }, 1000);
+      } else {
+        // Fallback avec selection
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, text.length);
+        const successful = document.execCommand('copy');
+        if (successful) {
+          copyButton.textContent = '✅ Copié !';
+          copyButton.style.background = '#28a745';
+          setTimeout(() => {
+            document.body.removeChild(modal);
+          }, 1000);
+        } else {
+          copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
+          copyButton.style.background = '#dc3545';
+          textarea.focus();
+          textarea.select();
+        }
+      }
+    } catch (err) {
+      copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
+      copyButton.style.background = '#dc3545';
+      textarea.focus();
+      textarea.select();
+    }
+  };
+  
+  copyButton.onmouseover = () => {
+    if (copyButton.textContent === '📋 Copier le texte') {
+      copyButton.style.background = '#128C7E';
+      copyButton.style.transform = 'translateY(-1px)';
+    }
+  };
+  
+  copyButton.onmouseout = () => {
+    if (copyButton.textContent === '📋 Copier le texte') {
+      copyButton.style.background = '#25D366';
+      copyButton.style.transform = 'translateY(0)';
+    }
+  };
+  
+  // Bouton Sélectionner tout
+  const selectButton = document.createElement('button');
+  selectButton.textContent = '🔍 Sélectionner tout';
+  selectButton.style.cssText = `
+    padding: 12px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  `;
+  
+  selectButton.onclick = () => {
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    selectButton.textContent = '✅ Sélectionné';
+    selectButton.style.background = '#28a745';
+    setTimeout(() => {
+      selectButton.textContent = '🔍 Sélectionner tout';
+      selectButton.style.background = '#007bff';
+    }, 1500);
+  };
+  
+  selectButton.onmouseover = () => {
+    if (selectButton.textContent === '🔍 Sélectionner tout') {
+      selectButton.style.background = '#0056b3';
+      selectButton.style.transform = 'translateY(-1px)';
+    }
+  };
+  
+  selectButton.onmouseout = () => {
+    if (selectButton.textContent === '🔍 Sélectionner tout') {
+      selectButton.style.background = '#007bff';
+      selectButton.style.transform = 'translateY(0)';
+    }
+  };
+  
+  // Bouton Fermer
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '✕ Fermer';
+  closeButton.style.cssText = `
+    padding: 12px 20px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  `;
+  
+  closeButton.onclick = () => document.body.removeChild(modal);
+  
+  closeButton.onmouseover = () => {
+    closeButton.style.background = '#545b62';
+    closeButton.style.transform = 'translateY(-1px)';
+  };
+  
+  closeButton.onmouseout = () => {
+    closeButton.style.background = '#6c757d';
+    closeButton.style.transform = 'translateY(0)';
+  };
+  
+  // Assemblage
+  buttonContainer.appendChild(copyButton);
+  buttonContainer.appendChild(selectButton);
+  buttonContainer.appendChild(closeButton);
   
   container.appendChild(title);
+  container.appendChild(instructions);
   container.appendChild(textarea);
-  container.appendChild(button);
+  container.appendChild(buttonContainer);
   modal.appendChild(container);
   document.body.appendChild(modal);
+  
+  // Raccourcis clavier
+  modal.onkeydown = (e) => {
+    if (e.key === 'Escape') {
+      document.body.removeChild(modal);
+    } else if (e.ctrlKey && e.key === 'a') {
+      e.preventDefault();
+      textarea.focus();
+      textarea.select();
+    } else if (e.ctrlKey && e.key === 'c') {
+      // Laisser le navigateur gérer Ctrl+C normalement
+      setTimeout(() => {
+        copyButton.textContent = '✅ Copié avec Ctrl+C !';
+        copyButton.style.background = '#28a745';
+      }, 100);
+    }
+  };
+  
+  // Fermeture en cliquant à l'extérieur
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  };
 }
 
 function generatePDFForWhatsApp() {
