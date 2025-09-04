@@ -707,9 +707,11 @@ function showTextForManualCopy(text) {
         await navigator.clipboard.writeText(text);
         copyButton.textContent = '✅ Copié !';
         copyButton.style.background = '#28a745';
+        // MODIFIÉ : Ne plus fermer automatiquement la modal
         setTimeout(() => {
-          document.body.removeChild(modal);
-        }, 1000);
+          copyButton.textContent = '📋 Copier le texte';
+          copyButton.style.background = '#25D366';
+        }, 2000);
       } else {
         // Fallback avec selection
         textarea.focus();
@@ -719,9 +721,11 @@ function showTextForManualCopy(text) {
         if (successful) {
           copyButton.textContent = '✅ Copié !';
           copyButton.style.background = '#28a745';
+          // MODIFIÉ : Ne plus fermer automatiquement la modal
           setTimeout(() => {
-            document.body.removeChild(modal);
-          }, 1000);
+            copyButton.textContent = '📋 Copier le texte';
+            copyButton.style.background = '#25D366';
+          }, 2000);
         } else {
           copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
           copyButton.style.background = '#dc3545';
