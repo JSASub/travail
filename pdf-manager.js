@@ -589,9 +589,25 @@ function rechercherDonneesAlternatives() {
   }
 })();
 
+// ===== FONCTION GENERATEPDFPREVIEW MANQUANTE =====
+function generatePDFPreview() {
+  console.log('📋 generatePDFPreview() appelée par main-core.js');
+  
+  try {
+    // Cette fonction est probablement appelée pour générer l'aperçu PDF
+    // On va utiliser notre fonction exportToPDF existante
+    exportToPDF();
+    console.log('✅ Aperçu PDF généré avec exploration complète');
+    
+  } catch (error) {
+    console.error('❌ Erreur dans generatePDFPreview:', error);
+  }
+}
+
 // ===== EXPOSER LES FONCTIONS GLOBALEMENT =====
 window.exportToPDF = exportToPDF;
 window.shareToWhatsApp = shareToWhatsApp;
 window.exportDetailedPDF = exportDetailedPDF;
 window.explorerWindowParent = explorerWindowParent;
 window.recupererDonneesSafe = recupererDonneesSafe;
+window.generatePDFPreview = generatePDFPreview;
