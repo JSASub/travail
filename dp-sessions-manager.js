@@ -1,12 +1,106 @@
-// dp-sessions-manager.js - Gestion DP et Sessions (extrait de main-complete.js)
+// dp-sessions-manager.js - Gestion DP et Sessions (version corrigée)
+
 // Fonction utilitaire pour vérifier l'existence des éléments
 function checkElementExists(elementId) {
   const element = document.getElementById(elementId);
   return element !== null;
 }
+
+// NOUVELLE FONCTION MANQUANTE : Vérifier les éléments requis
+function checkRequiredElements() {
+  console.log("🔍 Vérification des éléments requis...");
+  
+  const requiredElements = [
+    'dp-nom', 'dp-date', 'dp-lieu', 'dp-plongee',
+    'valider-dp', 'dp-message'
+  ];
+  
+  const missing = [];
+  const present = [];
+  
+  requiredElements.forEach(elementId => {
+    if (checkElementExists(elementId)) {
+      present.push(elementId);
+    } else {
+      missing.push(elementId);
+    }
+  });
+  
+  if (missing.length > 0) {
+    console.warn("⚠️ Éléments manquants:", missing);
+    return {
+      allPresent: false,
+      missing: missing,
+      present: present
+    };
+  } else {
+    console.log("✅ Tous les éléments requis sont présents");
+    return {
+      allPresent: true,
+      missing: [],
+      present: present
+    };
+  }
+}
+
+// NOUVELLE FONCTION : Rafraîchissement avec indicateur visuel
+async function refreshAllListsWithIndicator(buttonId = null) {
+  console.log("🔄 Rafraîchissement avec indicateur visuel...");
+  
+  let btn = null;
+  if (buttonId) {
+    btn = document.getElementById(buttonId);
+  }
+  
+  try {
+    // Indicateur de chargement
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "🔄 Actualisation...";
+      btn.style.backgroundColor = "#6c757d";
+    }
+    
+    await refreshAllLists();
+    
+    // Indicateur de succès
+    if (btn) {
+      btn.textContent = "✅ Actualisé !";
+      btn.style.backgroundColor = "#28a745";
+      setTimeout(() => {
+        btn.textContent = "🔄 Actualiser";
+        btn.style.backgroundColor = "#6c757d";
+      }, 2000);
+    }
+    
+    console.log("✅ Rafraîchissement avec indicateur terminé");
+    
+  } catch (error) {
+    console.error("❌ Erreur rafraîchissement avec indicateur:", error);
+    
+    if (btn) {
+      btn.textContent = "❌ Erreur";
+      btn.style.backgroundColor = "#dc3545";
+      setTimeout(() => {
+        btn.textContent = "🔄 Actualiser";
+        btn.style.backgroundColor = "#6c757d";
+      }, 3000);
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      if (btn.textContent.includes("🔄") && !btn.textContent.includes("Actualiser")) {
+        btn.textContent = "🔄 Actualiser";
+        btn.style.backgroundColor = "#6c757d";
+      }
+    }
+  }
+}
+
 // ===== GESTION DU DIRECTEUR DE PLONGÉE =====
 window.checkRequiredElements = checkRequiredElements;
 window.refreshAllLists = refreshAllLists;
+window.refreshAllListsWithIndicator = refreshAllListsWithIndicator;
+
 // Validation et enregistrement des informations DP
 async function validateAndSaveDP() {
   try {
@@ -165,7 +259,7 @@ function showDPValidationMessage(messageElement, nom, date, lieu, plongee, succe
         ✅ Session complète enregistrée avec succès
         <br><small style="font-weight: normal;">
           📋 ${typeof plongeurs !== 'undefined' ? plongeurs.length : 0} plongeurs, ${typeof palanquees !== 'undefined' ? palanquees.length : 0} palanquées
-          <br>📍 ${nom} - ${new Date(date).toLocaleDateString('fr-FR')} - ${lieu} (${plongee})
+          <br>📄 ${nom} - ${new Date(date).toLocaleDateString('fr-FR')} - ${lieu} (${plongee})
         </small>
       </div>
     `;
@@ -214,6 +308,7 @@ async function chargerHistoriqueDP() {
     console.error("Erreur lors du chargement de l'historique DP:", error);
   }
 }
+
 function afficherInfoDP() {
   const dpDatesSelect = document.getElementById("dp-dates");
   const historiqueInfo = document.getElementById("historique-info");
@@ -270,7 +365,7 @@ function afficherInfoDP() {
           <div style="margin-top: 15px;">
             <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
                     style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-              🔥 Charger dans l'interface
+              📥 Charger dans l'interface
             </button>
             <button onclick="supprimerDPSelectionne('${selectedKey}')" 
                     style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
@@ -458,7 +553,7 @@ async function loadSessionFromSelector() {
     // Indicateur de chargement
     if (loadBtn) {
       loadBtn.disabled = true;
-      loadBtn.textContent = "🔄 Chargement...";
+      loadBtn.textContent = "📄 Chargement...";
       loadBtn.style.backgroundColor = "#6c757d";
     }
     
@@ -516,7 +611,7 @@ async function loadSessionFromSelector() {
     // Restaurer le bouton dans tous les cas
     if (loadBtn) {
       loadBtn.disabled = false;
-      if (loadBtn.textContent.includes("🔄")) {
+      if (loadBtn.textContent.includes("📄")) {
         loadBtn.textContent = "Charger";
         loadBtn.style.backgroundColor = "#6c757d";
       }
@@ -811,7 +906,6 @@ async function deleteSelectedSessions() {
 }
 
 // ===== RAFRAÎCHISSEMENT AUTOMATIQUE =====
-saveSessionData
 
 // NOUVELLE FONCTION : Rafraîchissement avec indicateur visuel
 async function refreshAllLists() {
@@ -862,6 +956,7 @@ if (typeof window !== 'undefined') {
   window.checkElementExists = checkElementExists;
   window.diagnosticElements = diagnosticElements;
 }
+
 // ===== TEST FIREBASE =====
 async function testFirebaseConnection() {
   console.log("🧪 === TEST FIREBASE COMPLET SÉCURISÉ ===");
