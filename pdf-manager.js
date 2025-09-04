@@ -1,4 +1,4 @@
-// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp)
+// pdf-manager.js - Gestion complète des PDF (version propre avec WhatsApp)
 
 // ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
@@ -771,76 +771,6 @@ function generatePDFPreview() {
           .content {
             padding: 15px !important;
           }
-          
-          .section {
-            margin-bottom: 25px !important;
-          }
-          
-          .section-title {
-            font-size: 16px !important;
-            margin-bottom: 15px !important;
-          }
-          
-          .palanquee-box {
-            margin: 15px 0 !important;
-            padding: 15px !important;
-          }
-          
-          .palanquee-title {
-            font-size: 16px !important;
-            margin-bottom: 12px !important;
-          }
-          
-          .plongeur-item {
-            padding: 10px 8px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-          }
-          
-          .plongeur-nom {
-            font-size: 14px !important;
-          }
-          
-          .plongeur-niveau {
-            font-size: 11px !important;
-            padding: 3px 6px !important;
-          }
-          
-          .plongeur-prerogatives {
-            font-size: 10px !important;
-          }
-          
-          .modal-content {
-            margin: 10% auto !important;
-          }
-        }
-        
-        @media screen and (max-width: 480px) {
-          .preview-header {
-            padding: 8px 10px !important;
-          }
-          
-          .preview-title {
-            font-size: 14px !important;
-          }
-          
-          .content {
-            padding: 10px !important;
-          }
-          
-          .section-title {
-            font-size: 14px !important;
-          }
-          
-          .palanquee-title {
-            font-size: 14px !important;
-          }
-          
-          .modal-content {
-            width: 95% !important;
-            padding: 15px !important;
-          }
         }
         
         @media print {
@@ -996,309 +926,278 @@ function generatePDFPreview() {
     htmlContent += '</div>';
     htmlContent += '</div>';
 
-    // JAVASCRIPT INTÉGRÉ
+    // JAVASCRIPT INTÉGRÉ - NOUVELLE VERSION ULTRA-SÉCURISÉE
     htmlContent += `<script>
-      // Variables pour la gestion du PDF
-      let isGeneratingPDF = false;
+      // FONCTION ULTRA-SÉCURISÉE pour récupérer les données
+      function recupererDonneesSafe() {
+        const donnees = {
+          plongeurs: [],
+          palanquees: []
+        };
 
-      // Fonction pour partager l'aperçu sur WhatsApp
+        try {
+          // Récupération sécurisée des plongeurs
+          const plongeursData = window.parent.plongeurs;
+          if (Array.isArray(plongeursData)) {
+            donnees.plongeurs = plongeursData;
+          } else if (plongeursData && typeof plongeursData === 'object') {
+            donnees.plongeurs = Object.values(plongeursData).filter(p => p?.nom);
+          }
+        } catch (e) {
+          console.warn('Erreur récupération plongeurs:', e);
+        }
+
+        try {
+          // Récupération sécurisée des palanquées
+          const palanqueesData = window.parent.palanquees;
+          if (Array.isArray(palanqueesData)) {
+            donnees.palanquees = palanqueesData.filter(p => p != null);
+          } else if (palanqueesData && typeof palanqueesData === 'object') {
+            donnees.palanquees = Object.values(palanqueesData).filter(p => Array.isArray(p));
+          }
+        } catch (e) {
+          console.warn('Erreur récupération palanquées:', e);
+        }
+
+        // Garantir que ce sont des tableaux
+        if (!Array.isArray(donnees.plongeurs)) donnees.plongeurs = [];
+        if (!Array.isArray(donnees.palanquees)) donnees.palanquees = [];
+
+        console.log('Données récupérées en sécurité:', {
+          plongeurs: donnees.plongeurs.length,
+          palanquees: donnees.palanquees.length
+        });
+
+        return donnees;
+      }
+
+      // FONCTION WhatsApp totalement réécrite
       async function shareToWhatsApp() {
-        if (isGeneratingPDF) return;
-
         const btn = document.getElementById('btn-whatsapp');
-        const pdfBtn = document.getElementById('btn-generer-pdf');
-        
-        if (!btn) return;
-        
-        // Désactiver les boutons et changer l'interface
-        isGeneratingPDF = true;
+        if (!btn || btn.disabled) return;
+
         btn.disabled = true;
-        if (pdfBtn) pdfBtn.disabled = true;
-        
         btn.innerHTML = '⏳ Génération...';
 
         try {
-          // Générer le PDF d'aperçu pour WhatsApp
-          await generatePDFForWhatsApp();
-          
-          // Afficher les instructions
+          await genererPDFWhatsAppSafe();
           const modal = document.getElementById('whatsapp-modal');
-          if (modal) {
-            modal.style.display = 'block';
-          }
-          
+          if (modal) modal.style.display = 'block';
         } catch (error) {
           console.error('Erreur partage WhatsApp:', error);
-          alert('Erreur lors de la génération du PDF pour WhatsApp : ' + error.message);
+          alert('Erreur : ' + error.message);
         } finally {
-          // Réactiver les boutons après un délai
           setTimeout(() => {
-            isGeneratingPDF = false;
             btn.disabled = false;
-            if (pdfBtn) pdfBtn.disabled = false;
-            
             btn.innerHTML = '💬 WHATSAPP';
           }, 1500);
         }
       }
 
-      // Fonction pour générer le PDF spécialement pour WhatsApp
-      async function generatePDFForWhatsApp() {
-        return new Promise((resolve, reject) => {
+      // GÉNÉRATION PDF WHATSAPP ULTRA-SÉCURISÉE
+      async function genererPDFWhatsAppSafe() {
+        // Vérifier jsPDF
+        let jsPDFLib;
+        if (window.parent.jspdf?.jsPDF) {
+          jsPDFLib = window.parent.jspdf;
+        } else if (window.jspdf?.jsPDF) {
+          jsPDFLib = window.jspdf;
+        } else {
+          throw new Error("jsPDF non disponible");
+        }
+
+        // Récupérer les données de manière sécurisée
+        const donnees = recupererDonneesSafe();
+        
+        // Récupérer infos DP
+        const dpSelect = window.parent.document.getElementById("dp-select");
+        const dpNom = dpSelect?.options[dpSelect.selectedIndex]?.text || "Non défini";
+        const dpDate = window.parent.document.getElementById("dp-date")?.value || "Non définie";
+        const dpLieu = window.parent.document.getElementById("dp-lieu")?.value || "Non défini";
+        const dpPlongee = window.parent.document.getElementById("dp-plongee")?.value || "matin";
+
+        function formatDate(dateStr) {
           try {
-            // Vérifier que jsPDF est disponible dans le parent
-            let jsPDFLib = null;
-            if (typeof window.parent.jspdf !== 'undefined' && window.parent.jspdf.jsPDF) {
-              jsPDFLib = window.parent.jspdf;
-            } else if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
-              jsPDFLib = window.jspdf;
-            } else {
-              throw new Error("jsPDF non disponible");
-            }
-
-            // Récupérer les données depuis le parent
-            const plongeursLocal = window.parent.plongeurs || [];
-            const palanqueesLocal = window.parent.palanquees || [];
-            // Récupérer les infos DP avec vérifications
-            const dpSelect = window.parent.document.getElementById("dp-select");
-            const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
-            const dpDateElement = window.parent.document.getElementById("dp-date");
-            const dpLieuElement = window.parent.document.getElementById("dp-lieu");
-            const dpPlongeeElement = window.parent.document.getElementById("dp-plongee");
-            
-            const dpDate = dpDateElement?.value || "Non définie";
-            const dpLieu = dpLieuElement?.value || "Non défini";
-            const dpPlongee = dpPlongeeElement?.value || "matin";
-
-            console.log('Infos DP récupérées:', { dpNom, dpDate, dpLieu, dpPlongee });
-
-            function formatDateFrench(dateString) {
-              if (!dateString || dateString === "Non définie") return "Non définie";
-              try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('fr-FR');
-              } catch (error) {
-                return dateString;
-              }
-            }
-
-            // Créer le PDF optimisé pour WhatsApp
-            const { jsPDF } = jsPDFLib;
-            const doc = new jsPDF('portrait', 'mm', 'a4');
-
-            let yPosition = 20;
-            const margin = 20;
-
-            // En-tête avec couleur WhatsApp
-            doc.setFillColor(37, 211, 102);
-            doc.rect(0, 0, 210, 45, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
-            doc.setFont(undefined, 'bold');
-            doc.text('Palanquées JSAS', margin, 18);
-            
-            doc.setFontSize(12);
-            doc.text('DP: ' + dpNom, margin, 28);
-            doc.text(formatDateFrench(dpDate) + ' - ' + dpPlongee.toUpperCase(), margin, 36);
-            doc.text('Lieu: ' + dpLieu, margin, 42);
-
-            yPosition = 55;
-            doc.setTextColor(0, 0, 0);
-
-            // Statistiques avec vérifications SÉCURISÉES
-            let totalPlongeurs = 0;
-            try {
-              // Assurer que palanqueesLocal est un tableau pour les calculs
-              const palanqueesForCalc = Array.isArray(palanqueesLocal) ? palanqueesLocal : [];
-              totalPlongeurs = plongeursLocal.length + palanqueesForCalc.reduce((total, pal) => {
-                return total + (Array.isArray(pal) ? pal.length : 0);
-              }, 0);
-            } catch (error) {
-              console.warn('Erreur calcul total plongeurs:', error);
-              totalPlongeurs = plongeursLocal.length;
-            }
-            
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('RÉSUMÉ', margin, yPosition);
-            yPosition += 10;
-            
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'normal');
-            doc.text('• Total plongeurs: ' + totalPlongeurs, margin + 5, yPosition);
-            yPosition += 6;
-            doc.text('• Palanquées: ' + palanqueesLocal.length, margin + 5, yPosition);
-            yPosition += 15;
-
-            // Palanquées avec tri par niveau
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('PALANQUÉES', margin, yPosition);
-            yPosition += 10;
-
-            if (palanqueesLocal.length === 0) {
-              doc.setFontSize(11);
-              doc.text('Aucune palanquée créée', margin + 5, yPosition);
-            } else {
-              palanqueesLocal.forEach((pal, i) => {
-                if (pal && Array.isArray(pal)) {
-                  // Vérifier si on a assez de place
-                  if (yPosition > 250) {
-                    doc.addPage();
-                    yPosition = 20;
-                  }
-
-                  doc.setFontSize(12);
-                  doc.setFont(undefined, 'bold');
-                  doc.text(\`Palanquée \${i + 1} (\${pal.length} plongeurs)\`, margin, yPosition);
-                  yPosition += 8;
-                  
-                  if (pal.length > 0) {
-                    // Trier par niveau (plus haut niveau en premier)
-                    const ordreNiveaux = {
-                      'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-                      'N3': 7, 'N2': 8, 'N1': 9,
-                      'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-                      'Déb.': 13, 'débutant': 14, 'Déb': 15
-                    };
-                    
-                    const plongeursTriés = [...pal].sort((a, b) => {
-                      const ordreA = ordreNiveaux[a.niveau] || 99;
-                      const ordreB = ordreNiveaux[b.niveau] || 99;
-                      if (ordreA === ordreB) {
-                        return (a.nom || '').localeCompare(b.nom || '');
-                      }
-                      return ordreA - ordreB;
-                    });
-                    
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                    plongeursTriés.forEach(p => {
-                      if (p && p.nom) {
-                        const ligne = \`  • \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
-                        doc.text(ligne, margin + 5, yPosition);
-                        yPosition += 5;
-                      }
-                    });
-                  }
-                  yPosition += 8;
-                }
-              });
-            }
-
-            // Plongeurs en attente si il y en a
-            if (plongeursLocal.length > 0) {
-              if (yPosition > 240) {
-                doc.addPage();
-                yPosition = 20;
-              }
-
-              doc.setFontSize(14);
-              doc.setFont(undefined, 'bold');
-              doc.text('PLONGEURS EN ATTENTE', margin, yPosition);
-              yPosition += 10;
-
-              // Trier aussi les plongeurs en attente
-              const ordreNiveaux = {
-                'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-                'N3': 7, 'N2': 8, 'N1': 9,
-                'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-                'Déb.': 13, 'débutant': 14, 'Déb': 15
-              };
-              
-              const plongeursEnAttenteTriés = [...plongeursLocal].sort((a, b) => {
-                const ordreA = ordreNiveaux[a.niveau] || 99;
-                const ordreB = ordreNiveaux[b.niveau] || 99;
-                if (ordreA === ordreB) {
-                  return (a.nom || '').localeCompare(b.nom || '');
-                }
-                return ordreA - ordreB;
-              });
-
-              doc.setFontSize(10);
-              doc.setFont(undefined, 'normal');
-              plongeursEnAttenteTriés.forEach(p => {
-                if (p && p.nom) {
-                  const ligne = \`• \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
-                  doc.text(ligne, margin + 5, yPosition);
-                  yPosition += 5;
-                }
-              });
-            }
-
-            // Footer
-            doc.setFontSize(8);
-            doc.setTextColor(128, 128, 128);
-            doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, 285);
-
-            // Télécharger le PDF
-            const fileName = 'palanquees-jsas-whatsapp-' + formatDateFrench(dpDate).replace(/\\//g, '-') + '.pdf';
-            doc.save(fileName);
-
-            console.log('PDF WhatsApp généré:', fileName);
-            resolve(fileName);
-
-          } catch (error) {
-            reject(error);
+            return new Date(dateStr).toLocaleDateString('fr-FR');
+          } catch {
+            return dateStr || "Non définie";
           }
-        });
+        }
+
+        // Créer PDF
+        const { jsPDF } = jsPDFLib;
+        const doc = new jsPDF('portrait', 'mm', 'a4');
+        let y = 20;
+
+        // En-tête WhatsApp
+        doc.setFillColor(37, 211, 102);
+        doc.rect(0, 0, 210, 45, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text('Palanquées JSAS', 20, 18);
+        doc.setFontSize(12);
+        doc.text('DP: ' + dpNom, 20, 28);
+        doc.text(formatDate(dpDate) + ' - ' + dpPlongee.toUpperCase(), 20, 36);
+        doc.text('Lieu: ' + dpLieu, 20, 42);
+
+        y = 55;
+        doc.setTextColor(0, 0, 0);
+
+        // Statistiques
+        const totalPlongeurs = donnees.plongeurs.length + 
+          donnees.palanquees.reduce((sum, pal) => sum + (pal?.length || 0), 0);
+
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('RÉSUMÉ', 20, y);
+        y += 10;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.text('• Total plongeurs: ' + totalPlongeurs, 25, y);
+        y += 6;
+        doc.text('• Palanquées: ' + donnees.palanquees.length, 25, y);
+        y += 15;
+
+        // Palanquées
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('PALANQUÉES', 20, y);
+        y += 10;
+
+        if (donnees.palanquees.length === 0) {
+          doc.setFontSize(11);
+          doc.text('Aucune palanquée créée', 25, y);
+        } else {
+          donnees.palanquees.forEach((pal, i) => {
+            if (Array.isArray(pal)) {
+              if (y > 250) {
+                doc.addPage();
+                y = 20;
+              }
+
+              doc.setFontSize(12);
+              doc.setFont(undefined, 'bold');
+              doc.text(\`Palanquée \${i + 1} (\${pal.length} plongeurs)\`, 20, y);
+              y += 8;
+
+              if (pal.length > 0) {
+                // Tri par niveau
+                const ordreNiveaux = {
+                  'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+                  'N3': 7, 'N2': 8, 'N1': 9, 'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+                  'Déb.': 13, 'débutant': 14, 'Déb': 15
+                };
+
+                const plongeursTriés = pal.sort((a, b) => {
+                  const ordreA = ordreNiveaux[a?.niveau] || 99;
+                  const ordreB = ordreNiveaux[b?.niveau] || 99;
+                  if (ordreA === ordreB) {
+                    return (a?.nom || '').localeCompare(b?.nom || '');
+                  }
+                  return ordreA - ordreB;
+                });
+
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                plongeursTriés.forEach(p => {
+                  if (p?.nom) {
+                    const ligne = \`  • \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
+                    doc.text(ligne, 25, y);
+                    y += 5;
+                  }
+                });
+              }
+              y += 8;
+            }
+          });
+        }
+
+        // Plongeurs en attente
+        if (donnees.plongeurs.length > 0) {
+          if (y > 240) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'bold');
+          doc.text('PLONGEURS EN ATTENTE', 20, y);
+          y += 10;
+
+          // Tri par niveau
+          const ordreNiveaux = {
+            'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+            'N3': 7, 'N2': 8, 'N1': 9, 'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+            'Déb.': 13, 'débutant': 14, 'Déb': 15
+          };
+
+          const plongeursTriés = donnees.plongeurs.sort((a, b) => {
+            const ordreA = ordreNiveaux[a?.niveau] || 99;
+            const ordreB = ordreNiveaux[b?.niveau] || 99;
+            if (ordreA === ordreB) {
+              return (a?.nom || '').localeCompare(b?.nom || '');
+            }
+            return ordreA - ordreB;
+          });
+
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          plongeursTriés.forEach(p => {
+            if (p?.nom) {
+              const ligne = \`• \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
+              doc.text(ligne, 25, y);
+              y += 5;
+            }
+          });
+        }
+
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', 20, 285);
+
+        // Télécharger
+        const fileName = 'palanquees-jsas-whatsapp-' + formatDate(dpDate).replace(/\\//g, '-') + '.pdf';
+        doc.save(fileName);
+        console.log('PDF WhatsApp généré:', fileName);
       }
 
-      // Améliorer la fonction generatePDFFromPreview existante
+      // Autres fonctions
       function generatePDFFromPreview() {
         const btn = document.getElementById('btn-generer-pdf');
-        const whatsappBtn = document.getElementById('btn-whatsapp');
-        
-        if (!btn) return;
-        
-        // Feedback visuel
+        if (!btn || btn.disabled) return;
+
         btn.disabled = true;
-        if (whatsappBtn) whatsappBtn.disabled = true;
-        
         btn.innerHTML = '⏳ Génération...';
 
         try {
-          // Appeler la fonction du parent
           if (typeof window.parent.generatePDFFromPreview === 'function') {
             window.parent.generatePDFFromPreview();
-          } else {
-            throw new Error('Fonction generatePDFFromPreview non trouvée');
           }
         } catch (error) {
-          alert('Erreur lors de la génération du PDF');
-          console.error('Erreur PDF:', error);
+          alert('Erreur génération PDF');
         } finally {
-          // Restaurer l'interface
           setTimeout(() => {
             btn.disabled = false;
-            if (whatsappBtn) whatsappBtn.disabled = false;
-            
             btn.innerHTML = '📄 GENERER PDF';
           }, 1500);
         }
       }
 
-      // Ouvrir WhatsApp Web
       function openWhatsAppWeb() {
         window.open('https://web.whatsapp.com/', '_blank');
         closeWhatsAppModal();
       }
 
-      // Fermer le modal WhatsApp
       function closeWhatsAppModal() {
         const modal = document.getElementById('whatsapp-modal');
-        if (modal) {
-          modal.style.display = 'none';
-        }
+        if (modal) modal.style.display = 'none';
       }
 
-      // Fermer modal en cliquant à l'extérieur
       window.onclick = function(event) {
         const modal = document.getElementById('whatsapp-modal');
-        if (event.target === modal) {
-          closeWhatsAppModal();
-        }
+        if (event.target === modal) closeWhatsAppModal();
       }
     </script>`;
 
@@ -1319,7 +1218,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade, en-tête intégré et bouton WhatsApp");
+      console.log("✅ Aperçu PDF généré avec WhatsApp ultra-sécurisé");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -1542,4 +1441,4 @@ window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp intégré");
+console.log("📄 Module PDF Manager chargé - Version propre avec WhatsApp ultra-sécurisé");
