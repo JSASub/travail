@@ -1415,5 +1415,6 @@ window.closePDFPreview = closePDFPreview;
 window.shareToWhatsApp = shareToWhatsApp;
 window.generatePDFForWhatsApp = generatePDFForWhatsApp;
 window.showWhatsAppInstructions = showWhatsAppInstructions;
+window.copyPalanqueesToClipboard = copyPalanqueesToClipboard;
 
 console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel");
