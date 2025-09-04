@@ -416,12 +416,12 @@ function shareToWhatsApp() {
   console.log("💬 Partage WhatsApp démarré...");
   
   try {
-    // Proposer les options à l'utilisateur
+    // Proposer les options à l'utilisateur - CORRIGÉ : OK/ANNULER au lieu de OUI/NON
     const choix = confirm(
       "📱 PARTAGE WHATSAPP\n\n" +
       "Choisissez votre méthode préférée :\n\n" +
-      "✅ OUI = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
-      "❌ NON = Télécharger le PDF (partager comme document)\n\n" +
+      "✅ OK = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
+      "❌ ANNULER = Télécharger le PDF (partager comme document)\n\n" +
       "Le texte est plus pratique pour les messages rapides !"
     );
 
@@ -564,11 +564,6 @@ function copyPalanqueesToClipboard() {
       // Méthode moderne
       navigator.clipboard.writeText(texte).then(() => {
         alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !\n\n💡 Le texte est formaté avec des emojis et du gras pour WhatsApp.");
-        
-        // Proposer d'ouvrir WhatsApp Web
-        if (confirm("Voulez-vous ouvrir WhatsApp Web maintenant ?")) {
-          window.open('https://web.whatsapp.com/', '_blank');
-        }
       }).catch(err => {
         console.error('Erreur copie presse-papier:', err);
         // Fallback vers la méthode ancienne
@@ -863,6 +858,7 @@ function generatePDFForWhatsApp() {
   }
 }
 
+// CORRIGÉ : Plus de proposition WhatsApp Web
 function showWhatsAppInstructions() {
   alert(`📱 PDF généré pour WhatsApp !
 
