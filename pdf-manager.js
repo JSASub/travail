@@ -1,4 +1,4 @@
-// pdf-manager.js - Gestion complète des PDF (version propre avec WhatsApp)
+// pdf-manager.js - Gestion complète des PDF avec exploration des données
 
 // ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
@@ -54,11 +54,11 @@ function exportToPDF() {
     // MODIFICATION : Constantes pour l'espacement RÉDUIT
     const spacing = {
       lineHeight: 6,
-      sectionGap: 8, // RÉDUIT de 12 à 8
-      subsectionGap: 6, // RÉDUIT de 8 à 6
+      sectionGap: 8,
+      subsectionGap: 6,
       headerHeight: 60,
       footerHeight: 25,
-      palanqueeGap: 6 // NOUVEAU : espacement spécifique entre palanquées
+      palanqueeGap: 6
     };
     
     function checkPageBreak(heightNeeded, forceNewPage = false) {
@@ -73,11 +73,11 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
+        doc.setFontSize(7);
         doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
-        yPosition = 15; // RÉDUIT de 18 à 15
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10);
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10);
+        yPosition = 15;
       }
     }
     
@@ -187,9 +187,9 @@ function exportToPDF() {
     // === PALANQUÉES DÉTAILLÉES ===
     checkPageBreak(40, true);
     
-    yPosition += 3; // AJOUT de 3mm d'espacement avant le titre
+    yPosition += 3;
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 3; // RÉDUIT de 6 à 3 (descendre de 3mm)
+    yPosition += 3;
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
@@ -203,43 +203,38 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // MODIFICATION : Calculer la hauteur nécessaire pour cette palanquée (ENCORE PLUS RÉDUITE)
-        let palanqueeHeight = 12; // Header RÉDUIT de 14 à 12
-        palanqueeHeight += (pal.length * spacing.lineHeight) + 3; // Plongeurs + espacement réduit
-        palanqueeHeight += 26; // Paramètres RÉDUIT de 30 à 26
-        palanqueeHeight += spacing.palanqueeGap; // NOUVEAU : espacement spécifique entre palanquées
+        let palanqueeHeight = 12;
+        palanqueeHeight += (pal.length * spacing.lineHeight) + 3;
+        palanqueeHeight += 26;
+        palanqueeHeight += spacing.palanqueeGap;
         
         checkPageBreak(palanqueeHeight + 10);
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée ULTRA RÉDUIT
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 7, 'F'); // Hauteur RÉDUITE de 8 à 7
+        doc.rect(margin, yPosition, contentWidth, 7, 'F');
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white'); // Position Y ajustée
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white');
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white'); // Position Y ajustée
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white');
         
-        yPosition += 12; // RÉDUIT : Espacement entre cadre bleu et premier plongeur
+        yPosition += 12;
         
-        // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + 3; // Espacement réduit pour cohérence
+          yPosition += spacing.lineHeight + 3;
         } else {
-          // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
           const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
           
-          // Fonction de tri par niveau
           const plongeursTriés = [...pal].sort((a, b) => {
             const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
             const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
@@ -263,17 +258,15 @@ function exportToPDF() {
             
             yPosition += spacing.lineHeight;
           }
-          yPosition += 3; // RÉDUIT : Espacement entre dernier plongeur et paramètres
+          yPosition += 3;
         }
         
-        // MODIFICATION : Paramètres de plongée (TAILLE ET ESPACEMENT RÉDUITS)
-        
-        // Ligne 1: Horaire de mise à l'eau
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT de 10 à 9
+        // Paramètres de plongée
+        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary');
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 9, 'normal'); // RÉDUIT à 9
-          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
+          addText(pal.horaire, margin + 50, yPosition, 9, 'normal');
+          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 105, yPosition, margin + 140, yPosition);
@@ -281,61 +274,57 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 50, yPosition, margin + 85, yPosition);
-          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary');
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 35, yPosition, margin + 55, yPosition);
-          addText('m', margin + 57, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('m', margin + 57, yPosition, 9, 'normal', 'gray');
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary');
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 115, yPosition, margin + 140, yPosition);
-          addText('min', margin + 142, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('min', margin + 142, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
+        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success');
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 40, yPosition, margin + 60, yPosition);
-          addText('m', margin + 62, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('m', margin + 62, yPosition, 9, 'normal', 'gray');
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
+        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success');
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 120, yPosition, margin + 145, yPosition);
-          addText('min', margin + 147, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('min', margin + 147, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary');
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // RÉDUIT à 8
-          // Correction rapprochée
-          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
+          addText(pal.paliers, margin + 25, yPosition, 8, 'normal');
+          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 95, yPosition, margin + 140, yPosition);
@@ -343,12 +332,11 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 25, yPosition, margin + 65, yPosition);
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray'); // RÉDUIT à 8
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray');
           doc.line(margin + 130, yPosition, margin + 150, yPosition);
         }
         
-        // MODIFICATION MAJEURE : Espacement réduit entre palanquées
-        yPosition += spacing.lineHeight + spacing.palanqueeGap; // Utilise le nouvel espacement spécifique
+        yPosition += spacing.lineHeight + spacing.palanqueeGap;
       }
     }
     
@@ -379,7 +367,7 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === FOOTER REORGANISÉ ===
+    // === FOOTER ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
@@ -389,10 +377,8 @@ function exportToPDF() {
       doc.setLineWidth(0.3);
       doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
       
-      // Date et heure à gauche
       addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 6, 6, 'normal', 'gray');
       
-      // Numérotation à droite
       addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 6, 6, 'normal', 'gray');
     }
     
@@ -411,19 +397,19 @@ function exportToPDF() {
   }
 }
 
-// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
+// ===== GÉNÉRATION PDF PREVIEW AVEC EXPLORATION =====
 function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel avec exploration...");
   
   try {
-    // Récupération spéciale pour le directeur de plongée
+    // Récupération des infos DP
     const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
-    // S'assurer que les variables existent
+    // Variables locales pour l'aperçu
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
@@ -431,7 +417,6 @@ function generatePDFPreview() {
     const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // NOUVEAU: Fonction de tri par grade pour l'aperçu
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -445,7 +430,6 @@ function generatePDFPreview() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
-          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -482,7 +466,6 @@ function generatePDFPreview() {
           position: relative;
         }
         
-        /* EN-TÊTE AVEC BOUTONS INTÉGRÉS */
         .preview-header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
@@ -574,7 +557,6 @@ function generatePDFPreview() {
           100% { transform: rotate(360deg); }
         }
         
-        /* MODAL WHATSAPP */
         .whatsapp-modal {
           display: none;
           position: fixed;
@@ -653,7 +635,6 @@ function generatePDFPreview() {
           background: #545b62;
         }
         
-        /* CONTENU PRINCIPAL */
         .content { 
           padding: 40px; 
         }
@@ -736,7 +717,6 @@ function generatePDFPreview() {
           color: #dc3545 !important;
         }
         
-        /* RESPONSIVE DESIGN */
         @media screen and (max-width: 768px) {
           .container {
             max-width: 100% !important;
@@ -852,7 +832,6 @@ function generatePDFPreview() {
           if (pal.length === 0) {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            // MODIFICATION: Trier les plongeurs par grade avant affichage
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -880,7 +859,6 @@ function generatePDFPreview() {
       htmlContent += '<section class="section">';
       htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
       
-      // MODIFICATION: Trier aussi les plongeurs en attente par grade
       const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
       plongeursEnAttenteTriés.forEach(p => {
@@ -926,98 +904,122 @@ function generatePDFPreview() {
     htmlContent += '</div>';
     htmlContent += '</div>';
 
-    // JAVASCRIPT INTÉGRÉ - NOUVELLE VERSION ULTRA-SÉCURISÉE
+    // JAVASCRIPT INTÉGRÉ AVEC EXPLORATION
     htmlContent += `<script>
-      // FONCTION DEBUG pour récupérer les données avec diagnostic complet
-      function recupererDonneesSafe() {
-        console.log('🔍 DIAGNOSTIC COMPLET - Récupération des données');
+      // FONCTION EXPLORATEUR pour trouver les vraies données
+      function explorerWindowParent() {
+        console.log('🔍 EXPLORATION COMPLÈTE de window.parent');
         
-        // DEBUG : Voir toutes les variables disponibles dans window.parent
-        console.log('Variables disponibles dans window.parent:');
-        const parentVars = [];
+        const resultats = {
+          plongeursCanditates: [],
+          palanqueesCanditates: [],
+          autresVariables: []
+        };
+
         try {
           for (let key in window.parent) {
-            if (key.includes('plongeur') || key.includes('palanquee')) {
-              parentVars.push(key);
+            try {
+              const value = window.parent[key];
+              
+              // Chercher des tableaux qui ressemblent à des plongeurs
+              if (Array.isArray(value) && value.length > 0) {
+                const firstItem = value[0];
+                if (firstItem && typeof firstItem === 'object' && firstItem.nom) {
+                  resultats.plongeursCanditates.push({
+                    variable: key,
+                    length: value.length,
+                    sample: firstItem
+                  });
+                  console.log('🏊‍♂️ Candidat plongeurs trouvé: ' + key, value.length, 'éléments');
+                }
+                
+                // Chercher des tableaux de tableaux (palanquées)
+                if (firstItem && Array.isArray(firstItem)) {
+                  resultats.palanqueesCanditates.push({
+                    variable: key,
+                    length: value.length,
+                    totalPlongeurs: value.reduce((sum, pal) => sum + (pal?.length || 0), 0)
+                  });
+                  console.log('🏊‍♀️ Candidat palanquées trouvé: ' + key, value.length, 'palanquées');
+                }
+              }
+              
+              // Chercher toute variable contenant "plongeur" ou "palanquee"
+              if (key.toLowerCase().includes('plongeur') || key.toLowerCase().includes('palanquee')) {
+                resultats.autresVariables.push({
+                  variable: key,
+                  type: typeof value,
+                  isArray: Array.isArray(value),
+                  length: value?.length,
+                  value: Array.isArray(value) ? value : 'Non-array'
+                });
+                console.log('📋 Variable pertinente: ' + key, typeof value, Array.isArray(value) ? value.length + ' éléments' : '');
+              }
+            } catch (e) {
+              // Ignorer les variables inaccessibles
             }
           }
-          console.log('Variables liées à plongeur/palanquee:', parentVars);
         } catch (e) {
-          console.log('Impossible de lister les variables parent');
+          console.error('Erreur exploration window.parent:', e);
         }
 
+        console.log('📊 RÉSULTATS EXPLORATION:');
+        console.log('Candidats plongeurs:', resultats.plongeursCanditates);
+        console.log('Candidats palanquées:', resultats.palanqueesCanditates);
+        console.log('Autres variables:', resultats.autresVariables);
+        
+        return resultats;
+      }
+
+      // FONCTION pour récupérer les données en utilisant l'exploration
+      function recupererDonneesSafe() {
+        console.log('🔍 NOUVELLE APPROCHE - Exploration et récupération');
+        
+        // D'abord explorer
+        const exploration = explorerWindowParent();
+        
         const donnees = {
           plongeurs: [],
           palanquees: []
         };
 
-        // DEBUG PLONGEURS
-        try {
-          console.log('=== DEBUG PLONGEURS ===');
-          console.log('window.parent.plongeurs existe:', typeof window.parent.plongeurs);
-          console.log('window.parent.plongeurs valeur:', window.parent.plongeurs);
-          
-          const plongeursData = window.parent.plongeurs;
-          console.log('plongeursData type:', typeof plongeursData);
-          console.log('plongeursData isArray:', Array.isArray(plongeursData));
-          console.log('plongeursData length:', plongeursData?.length);
-          
-          if (Array.isArray(plongeursData)) {
-            donnees.plongeurs = plongeursData;
-            console.log('✅ Plongeurs récupérés comme tableau:', donnees.plongeurs.length);
-          } else if (plongeursData && typeof plongeursData === 'object') {
-            donnees.plongeurs = Object.values(plongeursData).filter(p => p?.nom);
-            console.log('✅ Plongeurs convertis depuis objet:', donnees.plongeurs.length);
-          } else {
-            console.log('❌ Aucune donnée plongeurs trouvée');
-          }
-        } catch (e) {
-          console.error('❌ Erreur récupération plongeurs:', e);
+        // Utiliser les candidats trouvés
+        if (exploration.plongeursCanditates.length > 0) {
+          const meilleurCandidat = exploration.plongeursCanditates[0];
+          console.log('✅ Utilisation de ' + meilleurCandidat.variable + ' pour les plongeurs');
+          donnees.plongeurs = window.parent[meilleurCandidat.variable] || [];
         }
 
-        // DEBUG PALANQUÉES
-        try {
-          console.log('=== DEBUG PALANQUÉES ===');
-          console.log('window.parent.palanquees existe:', typeof window.parent.palanquees);
-          console.log('window.parent.palanquees valeur:', window.parent.palanquees);
-          
-          const palanqueesData = window.parent.palanquees;
-          console.log('palanqueesData type:', typeof palanqueesData);
-          console.log('palanqueesData isArray:', Array.isArray(palanqueesData));
-          console.log('palanqueesData length:', palanqueesData?.length);
-          
-          if (Array.isArray(palanqueesData)) {
-            donnees.palanquees = palanqueesData.filter(p => p != null);
-            console.log('✅ Palanquées récupérées comme tableau:', donnees.palanquees.length);
-            console.log('Première palanquée:', donnees.palanquees[0]);
-          } else if (palanqueesData && typeof palanqueesData === 'object') {
-            donnees.palanquees = Object.values(palanqueesData).filter(p => Array.isArray(p));
-            console.log('✅ Palanquées converties depuis objet:', donnees.palanquees.length);
-          } else {
-            console.log('❌ Aucune donnée palanquées trouvée');
-          }
-        } catch (e) {
-          console.error('❌ Erreur récupération palanquées:', e);
+        if (exploration.palanqueesCanditates.length > 0) {
+          const meilleurCandidat = exploration.palanqueesCanditates[0];
+          console.log('✅ Utilisation de ' + meilleurCandidat.variable + ' pour les palanquées');
+          donnees.palanquees = window.parent[meilleurCandidat.variable] || [];
         }
 
-        // ESSAYER D'AUTRES NOMS DE VARIABLES
-        console.log('=== TENTATIVE AUTRES VARIABLES ===');
-        const alternativeVars = [
-          'plongeursArray', 'listePlongeurs', 'plongeursList',
-          'palanqueesArray', 'listePalanquees', 'palanqueesList'
-        ];
-        
-        alternativeVars.forEach(varName => {
-          if (window.parent[varName]) {
-            console.log(\`Variable alternative trouvée: \${varName}\`, window.parent[varName]);
-          }
-        });
+        // Si aucun candidat automatique, essayer les noms classiques
+        if (donnees.plongeurs.length === 0 && donnees.palanquees.length === 0) {
+          console.log('🔄 Tentative avec noms classiques...');
+          
+          const nomsTest = [
+            'plongeurs', 'plongeursList', 'plongeursArray', 'listePlongeurs',
+            'palanquees', 'palanqueesList', 'palanqueesArray', 'listePalanquees'
+          ];
+          
+          nomsTest.forEach(nom => {
+            const value = window.parent[nom];
+            if (Array.isArray(value) && value.length > 0) {
+              console.log('🎯 Trouvé données dans ' + nom + ':', value.length);
+              
+              if (nom.includes('plongeur') && donnees.plongeurs.length === 0) {
+                donnees.plongeurs = value;
+              } else if (nom.includes('palanquee') && donnees.palanquees.length === 0) {
+                donnees.palanquees = value;
+              }
+            }
+          });
+        }
 
-        // Garantir que ce sont des tableaux
-        if (!Array.isArray(donnees.plongeurs)) donnees.plongeurs = [];
-        if (!Array.isArray(donnees.palanquees)) donnees.palanquees = [];
-
-        console.log('📊 RÉSULTAT FINAL:');
+        console.log('📊 DONNÉES FINALES:');
         console.log('Plongeurs récupérés:', donnees.plongeurs.length);
         console.log('Palanquées récupérées:', donnees.palanquees.length);
         
@@ -1026,13 +1028,12 @@ function generatePDFPreview() {
         }
         if (donnees.palanquees.length > 0) {
           console.log('Première palanquée:', donnees.palanquees[0]);
-          console.log('Nombre de plongeurs dans première palanquée:', donnees.palanquees[0]?.length);
         }
 
         return donnees;
       }
 
-      // FONCTION WhatsApp totalement réécrite
+      // FONCTION WhatsApp avec exploration
       async function shareToWhatsApp() {
         const btn = document.getElementById('btn-whatsapp');
         if (!btn || btn.disabled) return;
@@ -1041,7 +1042,7 @@ function generatePDFPreview() {
         btn.innerHTML = '⏳ Génération...';
 
         try {
-          await genererPDFWhatsAppSafe();
+          await genererPDFWhatsAppAvecExploration();
           const modal = document.getElementById('whatsapp-modal');
           if (modal) modal.style.display = 'block';
         } catch (error) {
@@ -1055,8 +1056,8 @@ function generatePDFPreview() {
         }
       }
 
-      // GÉNÉRATION PDF WHATSAPP ULTRA-SÉCURISÉE
-      async function genererPDFWhatsAppSafe() {
+      // GÉNÉRATION PDF WHATSAPP avec exploration automatique
+      async function genererPDFWhatsAppAvecExploration() {
         // Vérifier jsPDF
         let jsPDFLib;
         if (window.parent.jspdf?.jsPDF) {
@@ -1067,7 +1068,7 @@ function generatePDFPreview() {
           throw new Error("jsPDF non disponible");
         }
 
-        // Récupérer les données de manière sécurisée
+        // Récupérer les données via exploration
         const donnees = recupererDonneesSafe();
         
         // Récupérer infos DP
@@ -1139,7 +1140,7 @@ function generatePDFPreview() {
 
               doc.setFontSize(12);
               doc.setFont(undefined, 'bold');
-              doc.text(\`Palanquée \${i + 1} (\${pal.length} plongeurs)\`, 20, y);
+              doc.text('Palanquée ' + (i + 1) + ' (' + pal.length + ' plongeurs)', 20, y);
               y += 8;
 
               if (pal.length > 0) {
@@ -1163,7 +1164,7 @@ function generatePDFPreview() {
                 doc.setFont(undefined, 'normal');
                 plongeursTriés.forEach(p => {
                   if (p?.nom) {
-                    const ligne = \`  • \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
+                    const ligne = '  • ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
                     doc.text(ligne, 25, y);
                     y += 5;
                   }
@@ -1206,7 +1207,7 @@ function generatePDFPreview() {
           doc.setFont(undefined, 'normal');
           plongeursTriés.forEach(p => {
             if (p?.nom) {
-              const ligne = \`• \${p.nom} (\${p.niveau || 'N?'})\${p.pre ? ' - ' + p.pre : ''}\`;
+              const ligne = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
               doc.text(ligne, 25, y);
               y += 5;
             }
@@ -1219,7 +1220,7 @@ function generatePDFPreview() {
         doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', 20, 285);
 
         // Télécharger
-        const fileName = 'palanquees-jsas-whatsapp-' + formatDate(dpDate).replace(/\\//g, '-') + '.pdf';
+        const fileName = 'palanquees-jsas-whatsapp-' + formatDate(dpDate).replace(/\\/g, '-') + '.pdf';
         doc.save(fileName);
         console.log('PDF WhatsApp généré:', fileName);
       }
@@ -1279,7 +1280,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec WhatsApp ultra-sécurisé");
+      console.log("✅ Aperçu PDF généré avec exploration complète");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -1293,12 +1294,11 @@ function generatePDFPreview() {
   }
 }
 
-// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
+// ===== GÉNÉRATION PDF SIMPLIFIÉ =====
 function generatePDFFromPreview() {
   console.log("📄 Génération PDF simplifié avec tri par niveau...");
   
   try {
-    // Vérifier que jsPDF est disponible
     if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
       throw new Error("jsPDF non disponible");
     }
@@ -1309,14 +1309,12 @@ function generatePDFFromPreview() {
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
 
-    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
 
-    // Fonction de tri par grade
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -1347,7 +1345,6 @@ function generatePDFFromPreview() {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 
-    // Créer le PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
 
@@ -1394,7 +1391,6 @@ function generatePDFFromPreview() {
     addText('Alertes: ' + alertesTotal.length, margin, yPosition);
     yPosition += 15;
 
-    // Alertes
     if (alertesTotal.length > 0) {
       checkPageBreak(20 + alertesTotal.length * 6);
       addText('ALERTES', margin, yPosition, 14, 'bold');
@@ -1406,7 +1402,6 @@ function generatePDFFromPreview() {
       yPosition += 10;
     }
 
-    // Palanquées
     addText('PALANQUÉES', margin, yPosition, 14, 'bold');
     yPosition += 10;
 
@@ -1425,7 +1420,6 @@ function generatePDFFromPreview() {
             addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic');
             yPosition += 8;
           } else {
-            // Trier et afficher les plongeurs
             const plongeursTriés = trierPlongeursParGrade(pal);
             
             plongeursTriés.forEach(p => {
@@ -1441,7 +1435,6 @@ function generatePDFFromPreview() {
       });
     }
 
-    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
       checkPageBreak(15 + plongeursLocal.length * 6);
       
@@ -1459,7 +1452,6 @@ function generatePDFFromPreview() {
       });
     }
 
-    // Footer sur toutes les pages
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
@@ -1469,7 +1461,6 @@ function generatePDFFromPreview() {
       doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
     }
 
-    // Télécharger
     const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
@@ -1482,7 +1473,6 @@ function generatePDFFromPreview() {
   }
 }
 
-// Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
@@ -1502,4 +1492,4 @@ window.generatePDFPreview = generatePDFPreview;
 window.generatePDFFromPreview = generatePDFFromPreview;
 window.closePDFPreview = closePDFPreview;
 
-console.log("📄 Module PDF Manager chargé - Version propre avec WhatsApp ultra-sécurisé");
+console.log("📄 Module PDF Manager chargé - Version avec exploration complète");
