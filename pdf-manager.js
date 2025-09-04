@@ -1106,10 +1106,12 @@ function generatePDFPreview() {
             yPosition = 55;
             doc.setTextColor(0, 0, 0);
 
-            // Statistiques avec vérifications
+            // Statistiques avec vérifications SÉCURISÉES
             let totalPlongeurs = 0;
             try {
-              totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => {
+              // Assurer que palanqueesLocal est un tableau pour les calculs
+              const palanqueesForCalc = Array.isArray(palanqueesLocal) ? palanqueesLocal : [];
+              totalPlongeurs = plongeursLocal.length + palanqueesForCalc.reduce((total, pal) => {
                 return total + (Array.isArray(pal) ? pal.length : 0);
               }, 0);
             } catch (error) {
