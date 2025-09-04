@@ -610,7 +610,7 @@ function fallbackCopyTextToClipboard(text) {
   document.body.removeChild(textArea);
 }
 
-// Afficher le texte pour copie manuelle
+// Afficher le texte pour copie manuelle - VERSION AMÉLIORÉE QUI RESTE OUVERTE
 function showTextForManualCopy(text) {
   const modal = document.createElement('div');
   modal.style.cssText = `
@@ -707,7 +707,7 @@ function showTextForManualCopy(text) {
         await navigator.clipboard.writeText(text);
         copyButton.textContent = '✅ Copié !';
         copyButton.style.background = '#28a745';
-        // MODIFIÉ : Ne plus fermer automatiquement la modal
+        // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
         setTimeout(() => {
           copyButton.textContent = '📋 Copier le texte';
           copyButton.style.background = '#25D366';
@@ -721,7 +721,7 @@ function showTextForManualCopy(text) {
         if (successful) {
           copyButton.textContent = '✅ Copié !';
           copyButton.style.background = '#28a745';
-          // MODIFIÉ : Ne plus fermer automatiquement la modal
+          // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
           setTimeout(() => {
             copyButton.textContent = '📋 Copier le texte';
             copyButton.style.background = '#25D366';
@@ -848,6 +848,11 @@ function showTextForManualCopy(text) {
       setTimeout(() => {
         copyButton.textContent = '✅ Copié avec Ctrl+C !';
         copyButton.style.background = '#28a745';
+        // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
+        setTimeout(() => {
+          copyButton.textContent = '📋 Copier le texte';
+          copyButton.style.background = '#25D366';
+        }, 2000);
       }, 100);
     }
   };
