@@ -411,23 +411,275 @@ function exportToPDF() {
   }
 }
 
-// ===== FONCTIONS WHATSAPP GLOBALES (CORRECTION) =====
+// ===== FONCTIONS WHATSAPP GLOBALES INTEGRÉES =====
 function shareToWhatsApp() {
   console.log("💬 Partage WhatsApp démarré...");
   
   try {
-    // Générer le PDF pour WhatsApp
-    generatePDFForWhatsApp();
-    
-    // Afficher les instructions après un délai
-    setTimeout(() => {
-      showWhatsAppInstructions();
-    }, 1000);
+    // Proposer les options à l'utilisateur
+    const choix = confirm(
+      "📱 PARTAGE WHATSAPP\n\n" +
+      "Choisissez votre méthode préférée :\n\n" +
+      "✅ OUI = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
+      "❌ NON = Télécharger le PDF (partager comme document)\n\n" +
+      "Le texte est plus pratique pour les messages rapides !"
+    );
+
+    if (choix) {
+      // Option 1 : Copier le texte formaté
+      copyPalanqueesToClipboard();
+    } else {
+      // Option 2 : Générer le PDF
+      generatePDFForWhatsApp();
+      setTimeout(() => {
+        showWhatsAppInstructions();
+      }, 1000);
+    }
     
   } catch (error) {
     console.error("❌ Erreur partage WhatsApp:", error);
     alert("Erreur lors de la préparation pour WhatsApp : " + error.message);
   }
+}
+
+// NOUVELLE FONCTION : Copier le texte des palanquées dans le presse-papier
+function copyPalanqueesToClipboard() {
+  console.log("📋 Copie du texte des palanquées...");
+  
+  try {
+    // Récupérer les données
+    const dpSelect = document.getElementById("dp-select");
+    const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
+
+    const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    
+    const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
+    const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
+
+    function formatDateFrench(dateString) {
+      if (!dateString) return "Non définie";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR');
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    function trierPlongeursParGrade(plongeurs) {
+      const ordreNiveaux = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      
+      return [...plongeurs].sort((a, b) => {
+        const ordreA = ordreNiveaux[a.niveau] || 99;
+        const ordreB = ordreNiveaux[b.niveau] || 99;
+        
+        if (ordreA === ordreB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return ordreA - ordreB;
+      });
+    }
+
+    // Créer le texte formaté pour WhatsApp
+    let texte = "🏊‍♂️ *PALANQUÉES JSAS*\n\n";
+    texte += `📅 *${formatDateFrench(dpDate)} - ${capitalize(dpPlongee)}*\n`;
+    texte += `📍 *${dpLieu}*\n`;
+    texte += `👤 *DP: ${dpNom}*\n\n`;
+    
+    // Résumé
+    texte += "📊 *RÉSUMÉ*\n";
+    texte += `• Total plongeurs: *${totalPlongeurs}*\n`;
+    texte += `• Palanquées: *${palanqueesLocal.length}*\n`;
+    if (alertesTotal.length > 0) {
+      texte += `⚠️ Alertes: *${alertesTotal.length}*\n`;
+    }
+    texte += "\n";
+
+    // Alertes si présentes
+    if (alertesTotal.length > 0) {
+      texte += "🚨 *ALERTES*\n";
+      alertesTotal.forEach(alerte => {
+        texte += `⚠️ ${alerte}\n`;
+      });
+      texte += "\n";
+    }
+
+    // Palanquées
+    if (palanqueesLocal.length === 0) {
+      texte += "⏳ *Aucune palanquée créée*\n";
+    } else {
+      palanqueesLocal.forEach((pal, i) => {
+        if (pal && Array.isArray(pal)) {
+          texte += `🐠 *Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
+          
+          if (pal.length === 0) {
+            texte += "   _Aucun plongeur assigné_\n";
+          } else {
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            plongeursTriés.forEach(p => {
+              if (p && p.nom) {
+                texte += `   • ${p.nom} (${p.niveau})`;
+                if (p.pre) {
+                  texte += ` - ${p.pre}`;
+                }
+                texte += "\n";
+              }
+            });
+          }
+          texte += "\n";
+        }
+      });
+    }
+
+    // Plongeurs en attente
+    if (plongeursLocal.length > 0) {
+      texte += "⏳ *PLONGEURS EN ATTENTE*\n";
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      plongeursTriés.forEach(p => {
+        if (p && p.nom) {
+          texte += `• ${p.nom} (${p.niveau})`;
+          if (p.pre) {
+            texte += ` - ${p.pre}`;
+          }
+          texte += "\n";
+        }
+      });
+      texte += "\n";
+    }
+
+    texte += `_Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}_`;
+
+    // Copier dans le presse-papier
+    if (navigator.clipboard && window.isSecureContext) {
+      // Méthode moderne
+      navigator.clipboard.writeText(texte).then(() => {
+        alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !\n\n💡 Le texte est formaté avec des emojis et du gras pour WhatsApp.");
+        
+        // Proposer d'ouvrir WhatsApp Web
+        if (confirm("Voulez-vous ouvrir WhatsApp Web maintenant ?")) {
+          window.open('https://web.whatsapp.com/', '_blank');
+        }
+      }).catch(err => {
+        console.error('Erreur copie presse-papier:', err);
+        // Fallback vers la méthode ancienne
+        fallbackCopyTextToClipboard(texte);
+      });
+    } else {
+      // Fallback pour navigateurs plus anciens
+      fallbackCopyTextToClipboard(texte);
+    }
+
+  } catch (error) {
+    console.error("❌ Erreur copie texte:", error);
+    alert("Erreur lors de la copie du texte : " + error.message);
+  }
+}
+
+// Fonction fallback pour copier le texte (anciens navigateurs)
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  
+  // Éviter de faire défiler vers l'élément
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+  
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      alert("✅ TEXTE COPIÉ !\n\n📱 Le résumé des palanquées est maintenant dans votre presse-papier.\n\n➡️ Ouvrez WhatsApp et collez (Ctrl+V) dans le message !");
+      
+      if (confirm("Voulez-vous ouvrir WhatsApp Web maintenant ?")) {
+        window.open('https://web.whatsapp.com/', '_blank');
+      }
+    } else {
+      throw new Error('Commande copy non supportée');
+    }
+  } catch (err) {
+    console.error('Erreur fallback copie:', err);
+    // Dernière solution : afficher le texte pour copie manuelle
+    showTextForManualCopy(text);
+  }
+  
+  document.body.removeChild(textArea);
+}
+
+// Afficher le texte pour copie manuelle
+function showTextForManualCopy(text) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  `;
+  
+  const container = document.createElement('div');
+  container.style.cssText = `
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 90%;
+    max-height: 80%;
+    overflow: auto;
+  `;
+  
+  const title = document.createElement('h3');
+  title.textContent = '📋 Copiez ce texte manuellement :';
+  title.style.marginBottom = '10px';
+  
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.cssText = `
+    width: 100%;
+    height: 300px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+  `;
+  textarea.select();
+  
+  const button = document.createElement('button');
+  button.textContent = 'Fermer';
+  button.style.cssText = `
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #25D366;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  `;
+  button.onclick = () => document.body.removeChild(modal);
+  
+  container.appendChild(title);
+  container.appendChild(textarea);
+  container.appendChild(button);
+  modal.appendChild(container);
+  document.body.appendChild(modal);
 }
 
 function generatePDFForWhatsApp() {
@@ -1107,7 +1359,6 @@ function generatePDFPreview() {
     htmlContent += '</main>';
     htmlContent += '</div>';
     
-
     // JAVASCRIPT INTÉGRÉ CORRIGÉ
     htmlContent += `<script>
       // Fonction pour partager sur WhatsApp depuis l'aperçu
