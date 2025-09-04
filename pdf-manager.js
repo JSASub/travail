@@ -906,14 +906,14 @@ function generatePDFPreview() {
 
     // JAVASCRIPT INTÉGRÉ AVEC EXPLORATION
     htmlContent += `<script>
-      // FONCTION EXPLORATEUR pour trouver les vraies données
+      // FONCTION EXPLORATEUR AMÉLIORÉE pour trouver les vraies données
       function explorerWindowParent() {
-        console.log('🔍 EXPLORATION COMPLÈTE de window.parent');
+        console.log('🔍 EXPLORATION APPROFONDIE de window.parent');
         
         const resultats = {
           plongeursCanditates: [],
           palanqueesCanditates: [],
-          autresVariables: []
+          tousLesTableaux: []
         };
 
         try {
@@ -921,61 +921,115 @@ function generatePDFPreview() {
             try {
               const value = window.parent[key];
               
-              // Chercher des tableaux qui ressemblent à des plongeurs
+              // Ignorer les éléments DOM
+              if (value && typeof value === 'object' && value.nodeType) {
+                continue;
+              }
+              
+              // Chercher TOUS les tableaux non-vides
               if (Array.isArray(value) && value.length > 0) {
                 const firstItem = value[0];
+                const info = {
+                  variable: key,
+                  length: value.length,
+                  firstItemType: typeof firstItem,
+                  sample: firstItem
+                };
+                
+                resultats.tousLesTableaux.push(info);
+                console.log('📋 Tableau trouvé:', key, '(' + value.length + ' éléments)', typeof firstItem);
+                
+                // Identifier les plongeurs (objets avec .nom)
                 if (firstItem && typeof firstItem === 'object' && firstItem.nom) {
                   resultats.plongeursCanditates.push({
                     variable: key,
                     length: value.length,
                     sample: firstItem
                   });
-                  console.log('🏊‍♂️ Candidat plongeurs trouvé: ' + key, value.length, 'éléments');
+                  console.log('🏊‍♂️ CANDIDAT PLONGEURS:', key, value.length, 'éléments');
+                  console.log('   Premier plongeur:', firstItem);
                 }
                 
-                // Chercher des tableaux de tableaux (palanquées)
-                if (firstItem && Array.isArray(firstItem)) {
+                // Identifier les palanquées (tableaux de tableaux)
+                if (Array.isArray(firstItem)) {
+                  const totalPlongeurs = value.reduce((sum, pal) => sum + (Array.isArray(pal) ? pal.length : 0), 0);
                   resultats.palanqueesCanditates.push({
                     variable: key,
                     length: value.length,
-                    totalPlongeurs: value.reduce((sum, pal) => sum + (pal?.length || 0), 0)
+                    totalPlongeurs: totalPlongeurs
                   });
-                  console.log('🏊‍♀️ Candidat palanquées trouvé: ' + key, value.length, 'palanquées');
+                  console.log('🏊‍♀️ CANDIDAT PALANQUÉES:', key, value.length, 'palanquées,', totalPlongeurs, 'plongeurs total');
+                  console.log('   Première palanquée:', firstItem);
                 }
               }
               
-              // Chercher toute variable contenant "plongeur" ou "palanquee"
-              if (key.toLowerCase().includes('plongeur') || key.toLowerCase().includes('palanquee')) {
-                resultats.autresVariables.push({
-                  variable: key,
-                  type: typeof value,
-                  isArray: Array.isArray(value),
-                  length: value?.length,
-                  value: Array.isArray(value) ? value : 'Non-array'
-                });
-                console.log('📋 Variable pertinente: ' + key, typeof value, Array.isArray(value) ? value.length + ' éléments' : '');
-              }
             } catch (e) {
               // Ignorer les variables inaccessibles
             }
           }
+          
+          // Si aucun candidat automatique, analyser les objets complexes
+          if (resultats.plongeursCanditates.length === 0 && resultats.palanqueesCanditates.length === 0) {
+            console.log('🔍 RECHERCHE DANS LES OBJETS COMPLEXES...');
+            
+            for (let key in window.parent) {
+              try {
+                const value = window.parent[key];
+                
+                // Chercher dans les objets qui pourraient contenir des arrays
+                if (value && typeof value === 'object' && !value.nodeType && !Array.isArray(value)) {
+                  for (let subKey in value) {
+                    try {
+                      const subValue = value[subKey];
+                      if (Array.isArray(subValue) && subValue.length > 0) {
+                        const firstItem = subValue[0];
+                        console.log('🔎 Sous-tableau trouvé:', key + '.' + subKey, '(' + subValue.length + ' éléments)');
+                        
+                        if (firstItem && typeof firstItem === 'object' && firstItem.nom) {
+                          resultats.plongeursCanditates.push({
+                            variable: key + '.' + subKey,
+                            length: subValue.length,
+                            sample: firstItem,
+                            parent: key,
+                            property: subKey
+                          });
+                          console.log('🏊‍♂️ CANDIDAT PLONGEURS DANS OBJET:', key + '.' + subKey);
+                        }
+                        
+                        if (Array.isArray(firstItem)) {
+                          resultats.palanqueesCanditates.push({
+                            variable: key + '.' + subKey,
+                            length: subValue.length,
+                            totalPlongeurs: subValue.reduce((sum, pal) => sum + (Array.isArray(pal) ? pal.length : 0), 0),
+                            parent: key,
+                            property: subKey
+                          });
+                          console.log('🏊‍♀️ CANDIDAT PALANQUÉES DANS OBJET:', key + '.' + subKey);
+                        }
+                      }
+                    } catch (e) {}
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+          
         } catch (e) {
-          console.error('Erreur exploration window.parent:', e);
+          console.error('Erreur exploration:', e);
         }
 
-        console.log('📊 RÉSULTATS EXPLORATION:');
-        console.log('Candidats plongeurs:', resultats.plongeursCanditates);
-        console.log('Candidats palanquées:', resultats.palanqueesCanditates);
-        console.log('Autres variables:', resultats.autresVariables);
+        console.log('📊 EXPLORATION TERMINÉE:');
+        console.log('Tous les tableaux:', resultats.tousLesTableaux.length);
+        console.log('Candidats plongeurs:', resultats.plongeursCanditates.length);
+        console.log('Candidats palanquées:', resultats.palanqueesCanditates.length);
         
         return resultats;
       }
 
-      // FONCTION pour récupérer les données en utilisant l'exploration
+      // FONCTION pour récupérer les données avec l'exploration améliorée
       function recupererDonneesSafe() {
-        console.log('🔍 NOUVELLE APPROCHE - Exploration et récupération');
+        console.log('🔍 RÉCUPÉRATION AVEC EXPLORATION AMÉLIORÉE');
         
-        // D'abord explorer
         const exploration = explorerWindowParent();
         
         const donnees = {
@@ -985,49 +1039,72 @@ function generatePDFPreview() {
 
         // Utiliser les candidats trouvés
         if (exploration.plongeursCanditates.length > 0) {
-          const meilleurCandidat = exploration.plongeursCanditates[0];
-          console.log('✅ Utilisation de ' + meilleurCandidat.variable + ' pour les plongeurs');
-          donnees.plongeurs = window.parent[meilleurCandidat.variable] || [];
+          const candidat = exploration.plongeursCanditates[0];
+          console.log('✅ Utilisation de', candidat.variable, 'pour les plongeurs');
+          
+          if (candidat.parent && candidat.property) {
+            // Récupération depuis un objet complexe
+            donnees.plongeurs = window.parent[candidat.parent][candidat.property] || [];
+          } else {
+            // Récupération directe
+            donnees.plongeurs = window.parent[candidat.variable] || [];
+          }
         }
 
         if (exploration.palanqueesCanditates.length > 0) {
-          const meilleurCandidat = exploration.palanqueesCanditates[0];
-          console.log('✅ Utilisation de ' + meilleurCandidat.variable + ' pour les palanquées');
-          donnees.palanquees = window.parent[meilleurCandidat.variable] || [];
+          const candidat = exploration.palanqueesCanditates[0];
+          console.log('✅ Utilisation de', candidat.variable, 'pour les palanquées');
+          
+          if (candidat.parent && candidat.property) {
+            // Récupération depuis un objet complexe
+            donnees.palanquees = window.parent[candidat.parent][candidat.property] || [];
+          } else {
+            // Récupération directe
+            donnees.palanquees = window.parent[candidat.variable] || [];
+          }
         }
 
-        // Si aucun candidat automatique, essayer les noms classiques
+        // Si toujours rien, essayer des noms alternatifs connus
         if (donnees.plongeurs.length === 0 && donnees.palanquees.length === 0) {
-          console.log('🔄 Tentative avec noms classiques...');
+          console.log('🔄 DERNIÈRE CHANCE - Noms alternatifs...');
           
-          const nomsTest = [
-            'plongeurs', 'plongeursList', 'plongeursArray', 'listePlongeurs',
-            'palanquees', 'palanqueesList', 'palanqueesArray', 'listePalanquees'
+          const nomsAlternatifs = [
+            'data', 'appData', 'gameData', 'sessionData', 'currentData',
+            'plongeursList', 'palanqueesList', 'diversList', 'teamsList'
           ];
           
-          nomsTest.forEach(nom => {
-            const value = window.parent[nom];
-            if (Array.isArray(value) && value.length > 0) {
-              console.log('🎯 Trouvé données dans ' + nom + ':', value.length);
-              
-              if (nom.includes('plongeur') && donnees.plongeurs.length === 0) {
-                donnees.plongeurs = value;
-              } else if (nom.includes('palanquee') && donnees.palanquees.length === 0) {
-                donnees.palanquees = value;
+          nomsAlternatifs.forEach(nom => {
+            if (window.parent[nom] && typeof window.parent[nom] === 'object') {
+              const obj = window.parent[nom];
+              for (let prop in obj) {
+                const value = obj[prop];
+                if (Array.isArray(value) && value.length > 0) {
+                  const first = value[0];
+                  if (first && first.nom && donnees.plongeurs.length === 0) {
+                    console.log('🎯 Plongeurs trouvés dans', nom + '.' + prop);
+                    donnees.plongeurs = value;
+                  } else if (Array.isArray(first) && donnees.palanquees.length === 0) {
+                    console.log('🎯 Palanquées trouvées dans', nom + '.' + prop);
+                    donnees.palanquees = value;
+                  }
+                }
               }
             }
           });
         }
 
-        console.log('📊 DONNÉES FINALES:');
-        console.log('Plongeurs récupérés:', donnees.plongeurs.length);
-        console.log('Palanquées récupérées:', donnees.palanquees.length);
+        console.log('📊 DONNÉES FINALES RÉCUPÉRÉES:');
+        console.log('Plongeurs:', donnees.plongeurs.length);
+        console.log('Palanquées:', donnees.palanquees.length);
         
         if (donnees.plongeurs.length > 0) {
           console.log('Premier plongeur:', donnees.plongeurs[0]);
         }
         if (donnees.palanquees.length > 0) {
           console.log('Première palanquée:', donnees.palanquees[0]);
+          if (donnees.palanquees[0] && donnees.palanquees[0].length > 0) {
+            console.log('Premier plongeur de la première palanquée:', donnees.palanquees[0][0]);
+          }
         }
 
         return donnees;
