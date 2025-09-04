@@ -1835,7 +1835,134 @@ function closePDFPreview() {
     console.log("✅ Aperçu PDF fermé");
   }
 }
+//// FONCTION CORRIGÉE - Modal qui ne se ferme JAMAIS automatiquement
+function showTextForManualCopy(text) {
+  // Supprimer toute modal existante d'abord
+  const existingModal = document.getElementById('whatsapp-text-modal');
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
 
+  const modal = document.createElement('div');
+  modal.id = 'whatsapp-text-modal';
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+    justify-content: center; align-items: center;
+  `;
+  
+  const container = document.createElement('div');
+  container.style.cssText = `
+    background: white; padding: 20px; border-radius: 10px;
+    max-width: 90%; max-height: 80%; overflow: auto; text-align: center;
+  `;
+  
+  container.innerHTML = `
+    <h3 style="margin-bottom: 15px; color: #25D366; font-size: 18px;">📋 Texte pour WhatsApp</h3>
+    <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Copiez ce texte et collez-le dans WhatsApp :</p>
+    <textarea id="whatsapp-textarea" style="
+      width: 100%; height: 300px; border: 2px solid #25D366; border-radius: 8px;
+      padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px;
+      line-height: 1.4; resize: vertical; outline: none; margin-bottom: 15px;
+    ">${text}</textarea>
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <button id="copy-btn" style="
+        padding: 12px 20px; background: #25D366; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">📋 Copier le texte</button>
+      <button id="select-btn" style="
+        padding: 12px 20px; background: #007bff; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">🔍 Sélectionner tout</button>
+      <button id="close-btn" style="
+        padding: 12px 20px; background: #6c757d; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">✕ Fermer</button>
+    </div>
+  `;
+  
+  modal.appendChild(container);
+  document.body.appendChild(modal);
+  
+  // Sélection automatique au début
+  const textarea = document.getElementById('whatsapp-textarea');
+  setTimeout(() => {
+    textarea.focus();
+    textarea.select();
+  }, 100);
+  
+  // Bouton Copier - NE FERME JAMAIS LA MODAL
+  document.getElementById('copy-btn').onclick = async () => {
+    const btn = document.getElementById('copy-btn');
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = '✅ Copié !';
+        btn.style.background = '#28a745';
+        // IMPORTANT : PAS de fermeture automatique !
+        setTimeout(() => {
+          btn.textContent = '📋 Copier le texte';
+          btn.style.background = '#25D366';
+        }, 2000);
+      } else {
+        textarea.select();
+        const success = document.execCommand('copy');
+        if (success) {
+          btn.textContent = '✅ Copié !';
+          btn.style.background = '#28a745';
+          // IMPORTANT : PAS de fermeture automatique !
+          setTimeout(() => {
+            btn.textContent = '📋 Copier le texte';
+            btn.style.background = '#25D366';
+          }, 2000);
+        } else {
+          btn.textContent = '❌ Utilisez Ctrl+C';
+          btn.style.background = '#dc3545';
+        }
+      }
+    } catch (err) {
+      btn.textContent = '❌ Utilisez Ctrl+C';
+      btn.style.background = '#dc3545';
+      textarea.select();
+    }
+  };
+  
+  // Bouton Sélectionner
+  document.getElementById('select-btn').onclick = () => {
+    textarea.focus();
+    textarea.select();
+    const btn = document.getElementById('select-btn');
+    btn.textContent = '✅ Sélectionné';
+    btn.style.background = '#28a745';
+    setTimeout(() => {
+      btn.textContent = '🔍 Sélectionner tout';
+      btn.style.background = '#007bff';
+    }, 1500);
+  };
+  
+  // Bouton Fermer - SEULE façon de fermer
+  document.getElementById('close-btn').onclick = () => {
+    document.body.removeChild(modal);
+  };
+  
+  // Raccourci Escape pour fermer
+  modal.onkeydown = (e) => {
+    if (e.key === 'Escape') {
+      document.body.removeChild(modal);
+    } else if (e.ctrlKey && e.key === 'c') {
+      const btn = document.getElementById('copy-btn');
+      setTimeout(() => {
+        btn.textContent = '✅ Copié avec Ctrl+C !';
+        btn.style.background = '#28a745';
+        // IMPORTANT : PAS de fermeture automatique !
+        setTimeout(() => {
+          btn.textContent = '📋 Copier le texte';
+          btn.style.background = '#25D366';
+        }, 2000);
+      }, 100);
+    }
+  };
+}
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
