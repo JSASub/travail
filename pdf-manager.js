@@ -609,5 +609,6 @@ window.exportToPDF = exportToPDF;
 window.shareToWhatsApp = shareToWhatsApp;
 window.exportDetailedPDF = exportDetailedPDF;
 window.explorerWindowParent = explorerWindowParent;
+window.explorerWindowParentAvecRetour = explorerWindowParentAvecRetour;
 window.recupererDonneesSafe = recupererDonneesSafe;
 window.generatePDFPreview = generatePDFPreview;
