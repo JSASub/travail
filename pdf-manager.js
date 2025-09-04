@@ -928,45 +928,106 @@ function generatePDFPreview() {
 
     // JAVASCRIPT INTÉGRÉ - NOUVELLE VERSION ULTRA-SÉCURISÉE
     htmlContent += `<script>
-      // FONCTION ULTRA-SÉCURISÉE pour récupérer les données
+      // FONCTION DEBUG pour récupérer les données avec diagnostic complet
       function recupererDonneesSafe() {
+        console.log('🔍 DIAGNOSTIC COMPLET - Récupération des données');
+        
+        // DEBUG : Voir toutes les variables disponibles dans window.parent
+        console.log('Variables disponibles dans window.parent:');
+        const parentVars = [];
+        try {
+          for (let key in window.parent) {
+            if (key.includes('plongeur') || key.includes('palanquee')) {
+              parentVars.push(key);
+            }
+          }
+          console.log('Variables liées à plongeur/palanquee:', parentVars);
+        } catch (e) {
+          console.log('Impossible de lister les variables parent');
+        }
+
         const donnees = {
           plongeurs: [],
           palanquees: []
         };
 
+        // DEBUG PLONGEURS
         try {
-          // Récupération sécurisée des plongeurs
+          console.log('=== DEBUG PLONGEURS ===');
+          console.log('window.parent.plongeurs existe:', typeof window.parent.plongeurs);
+          console.log('window.parent.plongeurs valeur:', window.parent.plongeurs);
+          
           const plongeursData = window.parent.plongeurs;
+          console.log('plongeursData type:', typeof plongeursData);
+          console.log('plongeursData isArray:', Array.isArray(plongeursData));
+          console.log('plongeursData length:', plongeursData?.length);
+          
           if (Array.isArray(plongeursData)) {
             donnees.plongeurs = plongeursData;
+            console.log('✅ Plongeurs récupérés comme tableau:', donnees.plongeurs.length);
           } else if (plongeursData && typeof plongeursData === 'object') {
             donnees.plongeurs = Object.values(plongeursData).filter(p => p?.nom);
+            console.log('✅ Plongeurs convertis depuis objet:', donnees.plongeurs.length);
+          } else {
+            console.log('❌ Aucune donnée plongeurs trouvée');
           }
         } catch (e) {
-          console.warn('Erreur récupération plongeurs:', e);
+          console.error('❌ Erreur récupération plongeurs:', e);
         }
 
+        // DEBUG PALANQUÉES
         try {
-          // Récupération sécurisée des palanquées
+          console.log('=== DEBUG PALANQUÉES ===');
+          console.log('window.parent.palanquees existe:', typeof window.parent.palanquees);
+          console.log('window.parent.palanquees valeur:', window.parent.palanquees);
+          
           const palanqueesData = window.parent.palanquees;
+          console.log('palanqueesData type:', typeof palanqueesData);
+          console.log('palanqueesData isArray:', Array.isArray(palanqueesData));
+          console.log('palanqueesData length:', palanqueesData?.length);
+          
           if (Array.isArray(palanqueesData)) {
             donnees.palanquees = palanqueesData.filter(p => p != null);
+            console.log('✅ Palanquées récupérées comme tableau:', donnees.palanquees.length);
+            console.log('Première palanquée:', donnees.palanquees[0]);
           } else if (palanqueesData && typeof palanqueesData === 'object') {
             donnees.palanquees = Object.values(palanqueesData).filter(p => Array.isArray(p));
+            console.log('✅ Palanquées converties depuis objet:', donnees.palanquees.length);
+          } else {
+            console.log('❌ Aucune donnée palanquées trouvée');
           }
         } catch (e) {
-          console.warn('Erreur récupération palanquées:', e);
+          console.error('❌ Erreur récupération palanquées:', e);
         }
+
+        // ESSAYER D'AUTRES NOMS DE VARIABLES
+        console.log('=== TENTATIVE AUTRES VARIABLES ===');
+        const alternativeVars = [
+          'plongeursArray', 'listePlongeurs', 'plongeursList',
+          'palanqueesArray', 'listePalanquees', 'palanqueesList'
+        ];
+        
+        alternativeVars.forEach(varName => {
+          if (window.parent[varName]) {
+            console.log(\`Variable alternative trouvée: \${varName}\`, window.parent[varName]);
+          }
+        });
 
         // Garantir que ce sont des tableaux
         if (!Array.isArray(donnees.plongeurs)) donnees.plongeurs = [];
         if (!Array.isArray(donnees.palanquees)) donnees.palanquees = [];
 
-        console.log('Données récupérées en sécurité:', {
-          plongeurs: donnees.plongeurs.length,
-          palanquees: donnees.palanquees.length
-        });
+        console.log('📊 RÉSULTAT FINAL:');
+        console.log('Plongeurs récupérés:', donnees.plongeurs.length);
+        console.log('Palanquées récupérées:', donnees.palanquees.length);
+        
+        if (donnees.plongeurs.length > 0) {
+          console.log('Premier plongeur:', donnees.plongeurs[0]);
+        }
+        if (donnees.palanquees.length > 0) {
+          console.log('Première palanquée:', donnees.palanquees[0]);
+          console.log('Nombre de plongeurs dans première palanquée:', donnees.palanquees[0]?.length);
+        }
 
         return donnees;
       }
