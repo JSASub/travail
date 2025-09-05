@@ -54,7 +54,58 @@ async function syncToDatabase() {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     if (typeof updateCompteurs === 'function') updateCompteurs();
+    ////
+	// CORRECTION : Forcer la restauration des paramètres dans l'interface
+setTimeout(() => {
+  console.log("🔄 Restauration forcée des paramètres d'interface...");
+  
+  palanquees.forEach((pal, index) => {
+    if (!pal || !Array.isArray(pal)) return;
     
+    // Chercher les champs de saisie pour cette palanquée
+    const horaireInput = document.getElementById(`horaire-${index}`) || 
+                        document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
+    const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
+                           document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`);
+    const dureePrevueInput = document.getElementById(`duree-prevue-${index}`) || 
+                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`);
+    const profRealiseeInput = document.getElementById(`profondeur-realisee-${index}`) || 
+                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`);
+    const dureeRealiseeInput = document.getElementById(`duree-realisee-${index}`) || 
+                              document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`);
+    const paliersInput = document.getElementById(`paliers-${index}`) || 
+                        document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
+    
+    // Restaurer les valeurs dans les champs
+    if (horaireInput && pal.horaire) {
+      horaireInput.value = pal.horaire;
+      console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
+    }
+    if (profPrevueInput && pal.profondeurPrevue) {
+      profPrevueInput.value = pal.profondeurPrevue;
+      console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
+    }
+    if (dureePrevueInput && pal.dureePrevue) {
+      dureePrevueInput.value = pal.dureePrevue;
+      console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
+    }
+    if (profRealiseeInput && pal.profondeurRealisee) {
+      profRealiseeInput.value = pal.profondeurRealisee;
+      console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
+    }
+    if (dureeRealiseeInput && pal.dureeRealisee) {
+      dureeRealiseeInput.value = pal.dureeRealisee;
+      console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
+    }
+    if (paliersInput && pal.paliers) {
+      paliersInput.value = pal.paliers;
+      console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
+    }
+  });
+  
+  console.log("✅ Restauration des paramètres terminée");
+}, 200);
+	////
     // Sauvegarder dans Firebase si connecté
     if (typeof firebaseConnected !== 'undefined' && firebaseConnected && typeof db !== 'undefined' && db) {
       try {
