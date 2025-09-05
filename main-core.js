@@ -1,5 +1,8 @@
 // main-core.js - Fichier principal allégé (remplace main-complete.js)
-// Fonction pour récupérer le nom du DP sélectionné
+// Ajouter cette variable globale au début du fichier
+let currentSessionKey = null;
+let sessionModified = false;
+
 function getSelectedDPName() {
   const dpSelect = document.getElementById('dp-select');
   
@@ -36,7 +39,7 @@ if (window.location.hostname !== 'localhost' && window.location.hostname !== '12
   }
 }
 
-// ===== SYNCHRONISATION BASE DE DONNÉES =====
+// ===== SYNCHRONISATION BASE DE DONNÉES MODIFIÉE =====
 async function syncToDatabase() {
   console.log("💾 Synchronisation Firebase...");
   
@@ -49,64 +52,70 @@ async function syncToDatabase() {
     // Mettre à jour plongeursOriginaux
     plongeursOriginaux = [...plongeurs];
     
+    // CORRECTION : Marquer que la session a été modifiée
+    if (currentSessionKey) {
+      sessionModified = true;
+      console.log("🔄 Session marquée comme modifiée");
+    }
+    
     // Re-rendre l'interface
     if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     if (typeof updateCompteurs === 'function') updateCompteurs();
-    ////
-	// CORRECTION : Forcer la restauration des paramètres dans l'interface
-setTimeout(() => {
-  console.log("🔄 Restauration forcée des paramètres d'interface...");
-  
-  palanquees.forEach((pal, index) => {
-    if (!pal || !Array.isArray(pal)) return;
     
-    // Chercher les champs de saisie pour cette palanquée
-    const horaireInput = document.getElementById(`horaire-${index}`) || 
-                        document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
-    const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
-                           document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`);
-    const dureePrevueInput = document.getElementById(`duree-prevue-${index}`) || 
-                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`);
-    const profRealiseeInput = document.getElementById(`profondeur-realisee-${index}`) || 
-                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`);
-    const dureeRealiseeInput = document.getElementById(`duree-realisee-${index}`) || 
-                              document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`);
-    const paliersInput = document.getElementById(`paliers-${index}`) || 
-                        document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
+    // CORRECTION : Forcer la restauration des paramètres dans l'interface
+    setTimeout(() => {
+      console.log("🔄 Restauration forcée des paramètres d'interface...");
+      
+      palanquees.forEach((pal, index) => {
+        if (!pal || !Array.isArray(pal)) return;
+        
+        // Chercher les champs de saisie pour cette palanquée
+        const horaireInput = document.getElementById(`horaire-${index}`) || 
+                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
+        const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
+                               document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`);
+        const dureePrevueInput = document.getElementById(`duree-prevue-${index}`) || 
+                                document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`);
+        const profRealiseeInput = document.getElementById(`profondeur-realisee-${index}`) || 
+                                 document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`);
+        const dureeRealiseeInput = document.getElementById(`duree-realisee-${index}`) || 
+                                  document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`);
+        const paliersInput = document.getElementById(`paliers-${index}`) || 
+                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
+        
+        // Restaurer les valeurs dans les champs
+        if (horaireInput && pal.horaire) {
+          horaireInput.value = pal.horaire;
+          console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
+        }
+        if (profPrevueInput && pal.profondeurPrevue) {
+          profPrevueInput.value = pal.profondeurPrevue;
+          console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
+        }
+        if (dureePrevueInput && pal.dureePrevue) {
+          dureePrevueInput.value = pal.dureePrevue;
+          console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
+        }
+        if (profRealiseeInput && pal.profondeurRealisee) {
+          profRealiseeInput.value = pal.profondeurRealisee;
+          console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
+        }
+        if (dureeRealiseeInput && pal.dureeRealisee) {
+          dureeRealiseeInput.value = pal.dureeRealisee;
+          console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
+        }
+        if (paliersInput && pal.paliers) {
+          paliersInput.value = pal.paliers;
+          console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
+        }
+      });
+      
+      console.log("✅ Restauration des paramètres terminée");
+    }, 200);
     
-    // Restaurer les valeurs dans les champs
-    if (horaireInput && pal.horaire) {
-      horaireInput.value = pal.horaire;
-      console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
-    }
-    if (profPrevueInput && pal.profondeurPrevue) {
-      profPrevueInput.value = pal.profondeurPrevue;
-      console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
-    }
-    if (dureePrevueInput && pal.dureePrevue) {
-      dureePrevueInput.value = pal.dureePrevue;
-      console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
-    }
-    if (profRealiseeInput && pal.profondeurRealisee) {
-      profRealiseeInput.value = pal.profondeurRealisee;
-      console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
-    }
-    if (dureeRealiseeInput && pal.dureeRealisee) {
-      dureeRealiseeInput.value = pal.dureeRealisee;
-      console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
-    }
-    if (paliersInput && pal.paliers) {
-      paliersInput.value = pal.paliers;
-      console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
-    }
-  });
-  
-  console.log("✅ Restauration des paramètres terminée");
-}, 200);
-	////
-    // Sauvegarder dans Firebase si connecté
+    // Sauvegarder dans Firebase si connecté (SANS session automatique)
     if (typeof firebaseConnected !== 'undefined' && firebaseConnected && typeof db !== 'undefined' && db) {
       try {
         await Promise.all([
@@ -114,12 +123,7 @@ setTimeout(() => {
           db.ref('palanquees').set(palanquees)
         ]);
         
-        // Sauvegarder la session si les métadonnées sont remplies
-        if (typeof saveSessionData === 'function') {
-          await saveSessionData();
-        }
-        
-        console.log("✅ Sauvegarde Firebase réussie");
+        console.log("✅ Sauvegarde Firebase réussie (données seulement)");
         
       } catch (error) {
         console.error("❌ Erreur sync Firebase:", error.message);
@@ -232,13 +236,10 @@ function showAuthError(message) {
   }
 }
 
-// ===== CORRECTION DE LA RÉCUPÉRATION DU NOM DU DP =====
-
-// Version corrigée de saveSessionData avec capture des paramètres
+// ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
-  console.log("💾 Sauvegarde session avec capture complète des paramètres...");
+  console.log("💾 Sauvegarde session avec protection...");
   
-  // CORRECTION : Récupérer le nom du DP depuis le select
   const dpNom = getSelectedDPName();
   const dpDate = document.getElementById("dp-date")?.value;
   const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
@@ -260,15 +261,22 @@ async function saveSessionData() {
     return false;
   }
   
-  console.log("📋 Informations DP:", { dpNom, dpDate, dpLieu, dpPlongee });
+  // CORRECTION : Créer une nouvelle clé si la session a été modifiée
+  const baseKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
+  let sessionKey;
   
-  // Créer la clé avec le VRAI nom du DP
-  const dpKey = dpNom.split(' ')[0].substring(0, 8);
-  const sessionKey = `${dpDate}_${dpKey}_${dpPlongee}`;
+  if (sessionModified && currentSessionKey) {
+    // Session modifiée : créer une nouvelle clé avec timestamp
+    const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '');
+    sessionKey = `${baseKey}_modif_${timestamp}`;
+    console.log(`🔄 Session modifiée, nouvelle clé: ${sessionKey}`);
+  } else {
+    sessionKey = baseKey;
+  }
   
   console.log("🔑 Clé de session:", sessionKey);
   
-  // ===== MODIFICATION PRINCIPALE : CAPTURE DES PARAMÈTRES DEPUIS L'INTERFACE =====
+  // ===== CAPTURE DES PARAMÈTRES DEPUIS L'INTERFACE =====
   const palanqueesData = [];
   
   if (palanquees && Array.isArray(palanquees)) {
@@ -327,15 +335,15 @@ async function saveSessionData() {
   
   const sessionData = {
     meta: {
-      dp: dpNom,  // Le VRAI nom du DP sélectionné
+      dp: dpNom,
       date: dpDate,
       lieu: dpLieu || "Non défini",
       plongee: dpPlongee,
       timestamp: Date.now(),
       sessionKey: sessionKey
     },
-    plongeurs: plongeurs || [], // Plongeurs non assignés
-    palanquees: palanqueesData, // Palanquées avec paramètres capturés
+    plongeurs: plongeurs || [],
+    palanquees: palanqueesData,
     stats: {
       totalPlongeurs: (plongeurs?.length || 0) + 
                      palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0),
@@ -344,13 +352,12 @@ async function saveSessionData() {
     }
   };
   
-  // Log pour vérification
   console.log("📋 Données complètes à sauvegarder:", sessionData);
   
   try {
     // Sauvegarder dans Firebase
     await db.ref(`sessions/${sessionKey}`).set(sessionData);
-    console.log("✅ Session sauvegardée avec DP:", dpNom);
+    console.log("✅ Session sauvegardée:", sessionKey);
     
     // Sauvegarder les infos DP
     await db.ref(`dpInfo/${sessionKey}`).set({
@@ -362,9 +369,14 @@ async function saveSessionData() {
       validated: true
     });
     
-    // Affichage de confirmation amélioré
+    // CORRECTION : Mettre à jour le tracking
+    currentSessionKey = sessionKey;
+    sessionModified = false;
+    
+    // Affichage de confirmation modifié
     const dpMessage = document.getElementById("dp-message");
     if (dpMessage) {
+      const isNewSession = sessionKey.includes('_modif_');
       dpMessage.innerHTML = `
         <div style="
           background: #28a745;
@@ -373,7 +385,8 @@ async function saveSessionData() {
           border-radius: 5px;
           margin: 10px 0;
         ">
-          ✅ <strong>SESSION SAUVEGARDÉE COMPLÈTE!</strong><br>
+          ✅ <strong>${isNewSession ? 'NOUVELLE SESSION CRÉÉE!' : 'SESSION SAUVEGARDÉE!'}</strong><br>
+          ${isNewSession ? '🆕 Session originale préservée<br>' : ''}
           📋 DP: ${dpNom}<br>
           📅 Date: ${dpDate} (${dpPlongee})<br>
           📍 Lieu: ${dpLieu}<br>
@@ -387,7 +400,7 @@ async function saveSessionData() {
       
       setTimeout(() => {
         dpMessage.style.display = 'none';
-      }, 8000);
+      }, 10000);
     }
     
     return true;
@@ -399,7 +412,7 @@ async function saveSessionData() {
   }
 }
 
-// Fonction pour charger une session
+// Fonction pour charger une session MODIFIÉE AVEC TRACKING
 async function loadSession(sessionKey) {
   console.log("📥 Chargement session:", sessionKey);
   
@@ -475,7 +488,62 @@ async function loadSession(sessionKey) {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    console.log("✅ Session chargée - DP:", sessionData.meta?.dp);
+    // CORRECTION : Restauration forcée des paramètres dans l'interface
+    setTimeout(() => {
+      console.log("🔄 Restauration forcée des paramètres d'interface...");
+      
+      palanquees.forEach((pal, index) => {
+        if (!pal || !Array.isArray(pal)) return;
+        
+        // Chercher les champs de saisie pour cette palanquée
+        const horaireInput = document.getElementById(`horaire-${index}`) || 
+                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
+        const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
+                               document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`);
+        const dureePrevueInput = document.getElementById(`duree-prevue-${index}`) || 
+                                document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`);
+        const profRealiseeInput = document.getElementById(`profondeur-realisee-${index}`) || 
+                                 document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`);
+        const dureeRealiseeInput = document.getElementById(`duree-realisee-${index}`) || 
+                                  document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`);
+        const paliersInput = document.getElementById(`paliers-${index}`) || 
+                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
+        
+        // Restaurer les valeurs dans les champs
+        if (horaireInput && pal.horaire) {
+          horaireInput.value = pal.horaire;
+          console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
+        }
+        if (profPrevueInput && pal.profondeurPrevue) {
+          profPrevueInput.value = pal.profondeurPrevue;
+          console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
+        }
+        if (dureePrevueInput && pal.dureePrevue) {
+          dureePrevueInput.value = pal.dureePrevue;
+          console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
+        }
+        if (profRealiseeInput && pal.profondeurRealisee) {
+          profRealiseeInput.value = pal.profondeurRealisee;
+          console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
+        }
+        if (dureeRealiseeInput && pal.dureeRealisee) {
+          dureeRealiseeInput.value = pal.dureeRealisee;
+          console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
+        }
+        if (paliersInput && pal.paliers) {
+          paliersInput.value = pal.paliers;
+          console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
+        }
+      });
+      
+      console.log("✅ Restauration des paramètres terminée");
+    }, 300);
+    
+    // CORRECTION : Initialiser le tracking de session
+    currentSessionKey = sessionKey;
+    sessionModified = false;
+    
+    console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
     
     return true;
     
@@ -530,10 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (success) {
           newBtn.textContent = "✅ Sauvegardé !";
-          
-          if (typeof syncToDatabase === 'function') {
-            setTimeout(syncToDatabase, 500);
-          }
           
           setTimeout(() => {
             newBtn.disabled = false;
@@ -1176,6 +1240,10 @@ window.diagnosticJSAS = function() {
   
   const diagnostic = {
     timestamp: new Date().toISOString(),
+    session: {
+      currentKey: currentSessionKey,
+      modified: sessionModified
+    },
     variables: {
       plongeurs: typeof plongeurs !== 'undefined' ? plongeurs.length : 'undefined',
       palanquees: typeof palanquees !== 'undefined' ? palanquees.length : 'undefined',
@@ -1305,4 +1373,4 @@ window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.0.2 avec capture complète des paramètres");
+console.log("✅ Main Core sécurisé chargé - Version 3.1.0 avec protection des sessions");
