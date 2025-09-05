@@ -272,17 +272,29 @@ function exportPlongeursToJSON() {
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const fileName = `plongeurs-jsas-${dpDate || 'export'}-${dpPlongee}.json`;
+    
     a.href = url;
-    a.download = `plongeurs-jsas-${dpDate || 'export'}-${dpPlongee}.json`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
     
     console.log("📤 Export JSON plongeurs effectué");
+    
+    // ✅ AJOUT : Confirmation d'export réussi
+    alert(`✅ FICHIER ENREGISTRÉ !
+
+📁 Nom du fichier : ${fileName}
+📊 Contenu : ${plongeurs.length} plongeur(s)
+📂 Emplacement : Dossier Téléchargements
+
+Le fichier JSON est prêt à être utilisé.`);
+    
     return true;
     
   } catch (error) {
     console.error("❌ Erreur exportToJSON:", error);
-    alert("Erreur lors de l'export : " + error.message);
+    alert("❌ ERREUR D'ENREGISTREMENT\n\nLe fichier n'a pas pu être créé.\nErreur : " + error.message);
     return false;
   }
 }
