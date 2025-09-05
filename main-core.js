@@ -25,6 +25,7 @@ function getSelectedDPName() {
   
   return "";
 }
+
 // Mode production - logs réduits
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
@@ -32,6 +33,7 @@ if (window.location.hostname !== 'localhost' && window.location.hostname !== '12
     if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('❌'))) {
       originalConsoleLog.apply(console, arguments);
     }
+  }
 }
 
 // ===== SYNCHRONISATION BASE DE DONNÉES =====
@@ -168,7 +170,6 @@ async function loadFromFirebase() {
     console.error("❌ Erreur chargement Firebase:", error);
     handleError(error, "Chargement Firebase");
   }
-  };
 }
 
 // ===== FONCTIONS UTILITAIRES SÉCURISÉES =====
@@ -179,42 +180,12 @@ function showAuthError(message) {
     errorDiv.style.display = "block";
   }
 }
-//
+
 // ===== CORRECTION DE LA RÉCUPÉRATION DU NOM DU DP =====
 
-// Fonction pour récupérer le nom du DP sélectionné
-function getSelectedDPName() {
-  const dpSelect = document.getElementById('dp-select');
-  
-  if (!dpSelect || !dpSelect.value) {
-    console.warn("⚠️ Aucun DP sélectionné");
-    return "";
-  }
-  
-  // Récupérer le DP depuis la liste
-  if (typeof DP_LIST !== 'undefined') {
-    const selectedDP = DP_LIST.find(dp => dp.id === dpSelect.value);
-    if (selectedDP) {
-      console.log("✅ DP sélectionné:", selectedDP.nom);
-      return selectedDP.nom;
-    }
-  }
-  
-  // Fallback : extraire le nom depuis le texte de l'option
-  const selectedOption = dpSelect.options[dpSelect.selectedIndex];
-  if (selectedOption && selectedOption.text !== "-- Choisir un DP --") {
-    const nom = selectedOption.text.split(' (')[0]; // Enlever "(niveau)"
-    console.log("✅ DP extrait:", nom);
-    return nom;
-  }
-  
-  console.warn("⚠️ Impossible de récupérer le nom du DP");
-  return "";
-}
-
-// Version corrigée de saveSessionData
+// Version corrigée de saveSessionData avec capture des paramètres
 async function saveSessionData() {
-  console.log("💾 Sauvegarde session avec DP correct...");
+  console.log("💾 Sauvegarde session avec capture complète des paramètres...");
   
   // CORRECTION : Récupérer le nom du DP depuis le select
   const dpNom = getSelectedDPName();
@@ -246,7 +217,7 @@ async function saveSessionData() {
   
   console.log("🔑 Clé de session:", sessionKey);
   
-  // Préparer les palanquées
+  // ===== MODIFICATION PRINCIPALE : CAPTURE DES PARAMÈTRES DEPUIS L'INTERFACE =====
   const palanqueesData = [];
   
   if (palanquees && Array.isArray(palanquees)) {
@@ -255,15 +226,40 @@ async function saveSessionData() {
         index: index,
         plongeurs: [],
         parametres: {
-          horaire: pal.horaire || "",
-          profondeurPrevue: pal.profondeurPrevue || "",
-          dureePrevue: pal.dureePrevue || "",
-          profondeurRealisee: pal.profondeurRealisee || "",
-          dureeRealisee: pal.dureeRealisee || "",
-          paliers: pal.paliers || ""
+          horaire: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`) || 
+                          document.getElementById(`horaire-${index}`);
+            return input ? input.value.trim() : (pal.horaire || "");
+          })(),
+          profondeurPrevue: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`) || 
+                          document.getElementById(`profondeur-prevue-${index}`);
+            return input ? input.value.trim() : (pal.profondeurPrevue || "");
+          })(),
+          dureePrevue: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`) || 
+                          document.getElementById(`duree-prevue-${index}`);
+            return input ? input.value.trim() : (pal.dureePrevue || "");
+          })(),
+          profondeurRealisee: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`) || 
+                          document.getElementById(`profondeur-realisee-${index}`);
+            return input ? input.value.trim() : (pal.profondeurRealisee || "");
+          })(),
+          dureeRealisee: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`) || 
+                          document.getElementById(`duree-realisee-${index}`);
+            return input ? input.value.trim() : (pal.dureeRealisee || "");
+          })(),
+          paliers: (() => {
+            const input = document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`) || 
+                          document.getElementById(`paliers-${index}`);
+            return input ? input.value.trim() : (pal.paliers || "");
+          })()
         }
       };
       
+      // Ajouter les plongeurs
       for (let i = 0; i < pal.length; i++) {
         if (pal[i] && pal[i].nom) {
           palanqueeObj.plongeurs.push({
@@ -287,8 +283,8 @@ async function saveSessionData() {
       timestamp: Date.now(),
       sessionKey: sessionKey
     },
-    plongeurs: plongeurs || [],
-    palanquees: palanqueesData,
+    plongeurs: plongeurs || [], // Plongeurs non assignés
+    palanquees: palanqueesData, // Palanquées avec paramètres capturés
     stats: {
       totalPlongeurs: (plongeurs?.length || 0) + 
                      palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0),
@@ -296,6 +292,9 @@ async function saveSessionData() {
       plongeursNonAssignes: plongeurs?.length || 0
     }
   };
+  
+  // Log pour vérification
+  console.log("📋 Données complètes à sauvegarder:", sessionData);
   
   try {
     // Sauvegarder dans Firebase
@@ -312,7 +311,7 @@ async function saveSessionData() {
       validated: true
     });
     
-    // Affichage de confirmation
+    // Affichage de confirmation amélioré
     const dpMessage = document.getElementById("dp-message");
     if (dpMessage) {
       dpMessage.innerHTML = `
@@ -323,24 +322,28 @@ async function saveSessionData() {
           border-radius: 5px;
           margin: 10px 0;
         ">
-          ✅ <strong>Session sauvegardée avec succès!</strong><br>
+          ✅ <strong>SESSION SAUVEGARDÉE COMPLÈTE!</strong><br>
           📋 DP: ${dpNom}<br>
-          🔑 Session: ${sessionKey}<br>
-          👥 ${sessionData.stats.totalPlongeurs} plongeurs, ${sessionData.stats.nombrePalanquees} palanquées
+          📅 Date: ${dpDate} (${dpPlongee})<br>
+          📍 Lieu: ${dpLieu}<br>
+          👥 ${sessionData.stats.totalPlongeurs} plongeurs total<br>
+          🐠 ${sessionData.stats.nombrePalanquees} palanquées<br>
+          ⏳ ${sessionData.stats.plongeursNonAssignes} en attente<br>
+          🔑 Session: ${sessionKey}
         </div>
       `;
       dpMessage.style.display = 'block';
       
       setTimeout(() => {
         dpMessage.style.display = 'none';
-      }, 6000);
+      }, 8000);
     }
     
     return true;
     
   } catch (error) {
     console.error("❌ Erreur:", error);
-    alert(`Erreur lors de la sauvegarde:\n${error.message}`);
+    alert(`❌ ERREUR DE SAUVEGARDE\n\n${error.message}`);
     return false;
   }
 }
@@ -518,7 +521,7 @@ function testDPSelection() {
 
 console.log("✅ Système de récupération du DP corrigé");
 console.log("💡 Testez avec: testDPSelection()");
-//
+
 function handleError(error, context = "Application") {
   console.error(`❌ Erreur ${context}:`, error);
   
@@ -1192,11 +1195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Configurer le drag & drop
     setupDragAndDrop();
     
-    // 5. Initialiser les gestionnaires de modules
-    //if (typeof initializePlongeursManager === 'function') {
-    //  initializePlongeursManager();
-    //}
-    
+    // 5. Initialiser les gestionnaires de modules (SANS plongeurs manager pour éviter duplication)
     if (typeof initializeDPSessionsManager === 'function') {
       initializeDPSessionsManager();
     }
@@ -1251,5 +1250,8 @@ window.setupDragAndDrop = setupDragAndDrop;
 window.setupEventListeners = setupEventListeners;
 window.syncToDatabase = syncToDatabase;
 window.loadFromFirebase = loadFromFirebase;
+window.saveSessionData = saveSessionData;
+window.loadSession = loadSession;
+window.testDPSelection = testDPSelection;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.0.1");
+console.log("✅ Main Core sécurisé chargé - Version 3.0.2 avec capture complète des paramètres");
