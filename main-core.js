@@ -1193,9 +1193,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupDragAndDrop();
     
     // 5. Initialiser les gestionnaires de modules
-    if (typeof initializePlongeursManager === 'function') {
-      initializePlongeursManager();
-    }
+    //if (typeof initializePlongeursManager === 'function') {
+    //  initializePlongeursManager();
+    //}
     
     if (typeof initializeDPSessionsManager === 'function') {
       initializeDPSessionsManager();
