@@ -239,6 +239,29 @@ function showAuthError(message) {
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
+  // SOLUTION BRUTALE : mettre à jour toutes les prérogatives avant sauvegarde
+const allInputs = Array.from(document.querySelectorAll('input[type="text"]'));
+let prerogativesInputs = allInputs.filter(input => 
+  input.placeholder && 
+  (input.placeholder.toLowerCase().includes('prérogatives') || 
+   input.placeholder.toLowerCase().includes('prerogative'))
+);
+
+let inputIndex = 0;
+palanquees.forEach((pal, palIndex) => {
+  if (pal && Array.isArray(pal)) {
+    pal.forEach((plongeur, plongeurIndex) => {
+      if (plongeur && plongeur.nom && prerogativesInputs[inputIndex]) {
+        const oldValue = plongeur.pre;
+        plongeur.pre = prerogativesInputs[inputIndex].value.trim();
+        if (oldValue !== plongeur.pre) {
+          console.log(`Prérogatives mises à jour: ${plongeur.nom} "${oldValue}" -> "${plongeur.pre}"`);
+        }
+        inputIndex++;
+      }
+    });
+  }
+});
   
   const dpNom = getSelectedDPName();
   const dpDate = document.getElementById("dp-date")?.value;
