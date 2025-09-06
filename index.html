@@ -378,34 +378,28 @@
         // Vérifier que les données nécessaires sont présentes
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
-        const dpLieu = document.getElementById('dp-lieu');
-        const dpPlongee = document.getElementById('dp-plongee');
         
-        if (!dpSelect.value) {
+        if (!dpSelect || !dpSelect.value) {
           showFloatingNotification('❌ Veuillez sélectionner un Directeur de Plongée', 'error');
           return;
         }
         
-        if (!dpDate.value) {
+        if (!dpDate || !dpDate.value) {
           showFloatingNotification('❌ Veuillez saisir une date', 'error');
           return;
         }
         
-        // Déclencher la fonction de sauvegarde existante
-        if (originalBtn && originalBtn.onclick) {
-          originalBtn.onclick();
-        } else if (typeof window.saveCurrentSession === 'function') {
-          window.saveCurrentSession();
-        } else {
-          // Simuler un clic sur le bouton original
+        // Déclencher la fonction de sauvegarde existante en simulant un clic
+        if (originalBtn) {
           originalBtn.click();
         }
         
         // Afficher la notification de succès
-        showFloatingNotification(`✅ Session sauvegardée !<br><small>DP: ${dpSelect.options[dpSelect.selectedIndex].text}<br>Date: ${dpDate.value}</small>`);
+        const selectedDPText = dpSelect.options[dpSelect.selectedIndex]?.text || dpSelect.value;
+        showFloatingNotification(`✅ Session sauvegardée !<br><small>DP: ${selectedDPText}<br>Date: ${dpDate.value}</small>`);
         
       } catch (error) {
-        console.error('Erreur lors de la sauvegarde:', error);
+        console.error('Erreur lors de la sauvegarde depuis le bouton flottant:', error);
         showFloatingNotification('❌ Erreur lors de la sauvegarde', 'error');
       } finally {
         // Réactiver le bouton
@@ -442,10 +436,12 @@
       const mainApp = document.getElementById('main-app');
       const loadingScreen = document.getElementById('loading-screen');
       
+      if (!floatingBtn) return;
+      
       // Afficher le bouton seulement dans l'application principale
       if (mainApp && mainApp.style.display !== 'none' && 
-          (authContainer.style.display === 'none' || !authContainer.style.display) &&
-          (loadingScreen.style.display === 'none' || !loadingScreen.style.display)) {
+          authContainer && authContainer.style.display === 'none' &&
+          loadingScreen && loadingScreen.style.display === 'none') {
         floatingBtn.style.display = 'flex';
       } else {
         floatingBtn.style.display = 'none';
@@ -455,48 +451,97 @@
     // Fonction pour mettre à jour le texte du bouton selon l'état
     function updateFloatingButtonState() {
       const floatingBtn = document.getElementById('floating-save-btn');
+      const btnText = floatingBtn?.querySelector('.btn-text');
+      
+      if (!floatingBtn || !btnText) return;
+      
       const dpSelect = document.getElementById('dp-select');
       const dpDate = document.getElementById('dp-date');
-      const btnText = floatingBtn.querySelector('.btn-text');
       
-      if (dpSelect && dpDate) {
-        if (!dpSelect.value || !dpDate.value) {
-          floatingBtn.style.opacity = '0.7';
-          btnText.textContent = '⚠️ Compléter DP et Date';
+      // Vérifier si les éléments existent et ont des valeurs
+      const dpHasValue = dpSelect && dpSelect.value && dpSelect.value.trim() !== '';
+      const dateHasValue = dpDate && dpDate.value && dpDate.value.trim() !== '';
+      
+      console.log('État bouton flottant:', {
+        dpValue: dpSelect?.value,
+        dateValue: dpDate?.value,
+        dpHasValue,
+        dateHasValue
+      });
+      
+      if (dpHasValue && dateHasValue) {
+        floatingBtn.style.opacity = '1';
+        btnText.textContent = '💾 Sauvegarder Session + DP';
+      } else {
+        floatingBtn.style.opacity = '0.7';
+        if (!dpHasValue && !dateHasValue) {
+          btnText.textContent = '⚠️ Sélectionner DP et Date';
+        } else if (!dpHasValue) {
+          btnText.textContent = '⚠️ Sélectionner un DP';
         } else {
-          floatingBtn.style.opacity = '1';
-          btnText.textContent = '💾 Sauvegarder Session + DP';
+          btnText.textContent = '⚠️ Saisir une Date';
         }
       }
     }
     
-    // Initialisation du bouton flottant
+    // Fonction d'initialisation robuste
     function initFloatingButton() {
-      // Vérifier la visibilité régulièrement
-      setInterval(updateFloatingButtonVisibility, 500);
+      console.log('Initialisation du bouton flottant...');
       
-      // Mettre à jour l'état du bouton quand les champs changent
-      const dpSelect = document.getElementById('dp-select');
-      const dpDate = document.getElementById('dp-date');
-      const dpLieu = document.getElementById('dp-lieu');
-      const dpPlongee = document.getElementById('dp-plongee');
+      // Vérifier la visibilité et l'état plus fréquemment au début
+      const visibilityInterval = setInterval(updateFloatingButtonVisibility, 300);
+      const stateInterval = setInterval(updateFloatingButtonState, 500);
       
-      if (dpSelect) dpSelect.addEventListener('change', updateFloatingButtonState);
-      if (dpDate) dpDate.addEventListener('change', updateFloatingButtonState);
-      if (dpLieu) dpLieu.addEventListener('input', updateFloatingButtonState);
-      if (dpPlongee) dpPlongee.addEventListener('change', updateFloatingButtonState);
+      // Fonction pour ajouter les listeners sur les champs
+      function addFieldListeners() {
+        const dpSelect = document.getElementById('dp-select');
+        const dpDate = document.getElementById('dp-date');
+        const dpLieu = document.getElementById('dp-lieu');
+        const dpPlongee = document.getElementById('dp-plongee');
+        
+        // Ajouter les listeners pour tous les événements pertinents
+        [dpSelect, dpDate, dpLieu, dpPlongee].forEach(element => {
+          if (element) {
+            element.addEventListener('change', updateFloatingButtonState);
+            element.addEventListener('input', updateFloatingButtonState);
+            element.addEventListener('blur', updateFloatingButtonState);
+            console.log('Listener ajouté sur:', element.id);
+          }
+        });
+      }
       
-      // Observer les changements dans le DOM pour la visibilité
-      const observer = new MutationObserver(updateFloatingButtonVisibility);
+      // Essayer d'ajouter les listeners plusieurs fois si les éléments ne sont pas encore présents
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      function tryAddListeners() {
+        attempts++;
+        const dpSelect = document.getElementById('dp-select');
+        const dpDate = document.getElementById('dp-date');
+        
+        if ((dpSelect && dpDate) || attempts >= maxAttempts) {
+          addFieldListeners();
+          updateFloatingButtonState();
+          console.log('Listeners ajoutés après', attempts, 'tentatives');
+        } else {
+          setTimeout(tryAddListeners, 500);
+        }
+      }
+      
+      tryAddListeners();
+      
+      // Observer les changements dans le DOM
+      const observer = new MutationObserver(function(mutations) {
+        updateFloatingButtonVisibility();
+        updateFloatingButtonState();
+      });
+      
       observer.observe(document.body, {
         attributes: true,
         childList: true,
         subtree: true,
-        attributeFilter: ['style']
+        attributeFilter: ['style', 'value']
       });
-      
-      // Mettre à jour l'état initial
-      setTimeout(updateFloatingButtonState, 1000);
     }
     
     // Raccourci clavier pour sauvegarder (Ctrl+S)
@@ -504,21 +549,41 @@
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
         const floatingBtn = document.getElementById('floating-save-btn');
-        if (floatingBtn.style.display !== 'none' && !floatingBtn.disabled) {
+        if (floatingBtn && floatingBtn.style.display !== 'none' && !floatingBtn.disabled) {
           saveSessionFromFloatingButton();
         }
       }
     });
     
-    // Initialiser quand le DOM est prêt
+    // Initialiser quand le DOM est prêt avec plusieurs tentatives
     document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(initFloatingButton, 1000);
+      setTimeout(initFloatingButton, 500);
     });
+    
+    // Backup si DOMContentLoaded a déjà été déclenché
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFloatingButton);
+    } else {
+      setTimeout(initFloatingButton, 500);
+    }
     
     // Fonction utilitaire pour forcer la mise à jour (accessible depuis la console)
     window.updateFloatingButton = function() {
       updateFloatingButtonVisibility();
       updateFloatingButtonState();
+    };
+    
+    // Fonction pour déboguer (accessible depuis la console)
+    window.debugFloatingButton = function() {
+      const dpSelect = document.getElementById('dp-select');
+      const dpDate = document.getElementById('dp-date');
+      console.log('Debug bouton flottant:', {
+        dpSelect: dpSelect,
+        dpSelectValue: dpSelect?.value,
+        dpDate: dpDate,
+        dpDateValue: dpDate?.value,
+        floatingBtn: document.getElementById('floating-save-btn')
+      });
     };
   </script>
 
