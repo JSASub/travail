@@ -142,7 +142,7 @@ function renderPalanquees() {
                    value="${plongeur.pre || ''}" 
                    placeholder="PE40..."
                    title="Prérogatives du plongeur"
-                   oninput="updatePlongeurPrerogatives(${index}, ${originalIndex}, this.value || '')"
+                   oninput="updatePlongeurPrerogativesRealTime(${index}, ${originalIndex}, this.value || '')"
                    onclick="handlePalanqueeEdit(${index})" />
             <span class="plongeur-niveau">${plongeur.niveau}</span>
             <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
@@ -224,7 +224,19 @@ function renderPalanquees() {
     updateAlertes();
   }
 }
-
+//
+function updatePlongeurPrerogativesRealTime(palanqueeIndex, plongeurIndex, newValue) {
+  try {
+    const cleanValue = (newValue || "").toString().trim();
+    
+    if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+      palanquees[palanqueeIndex][plongeurIndex].pre = cleanValue;
+      // PAS de syncToDatabase() ici pour éviter le re-rendu
+    }
+  } catch (error) {
+    console.error("Erreur updatePlongeurPrerogativesRealTime:", error);
+  }
+}
 // ===== FONCTION DE STATISTIQUES DE BASE (FALLBACK) =====
 function getBasicStats(palanquee) {
   if (!Array.isArray(palanquee)) return "Stats indisponibles";
