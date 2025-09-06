@@ -226,6 +226,18 @@ async function loadFromFirebase() {
     handleError(error, "Chargement Firebase");
   }
 }
+// Synchro avant sauvegarde
+function syncPrerogativesFromInterface() {
+  // Trouve tous les inputs de prérogatives et les synchronise
+  document.querySelectorAll('.palanquee').forEach((palanqueeDiv, palIndex) => {
+    const inputs = palanqueeDiv.querySelectorAll('input[placeholder*="rérogative"]');
+    inputs.forEach((input, plongeurIndex) => {
+      if (palanquees[palIndex] && palanquees[palIndex][plongeurIndex]) {
+        palanquees[palIndex][plongeurIndex].pre = input.value.trim();
+      }
+    });
+  });
+}
 
 // ===== FONCTIONS UTILITAIRES SÉCURISÉES =====
 function showAuthError(message) {
@@ -240,29 +252,31 @@ function showAuthError(message) {
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
   // SOLUTION BRUTALE : mettre à jour toutes les prérogatives avant sauvegarde
-const allInputs = Array.from(document.querySelectorAll('input[type="text"]'));
-let prerogativesInputs = allInputs.filter(input => 
-  input.placeholder && 
-  (input.placeholder.toLowerCase().includes('prérogatives') || 
-   input.placeholder.toLowerCase().includes('prerogative'))
-);
+	const allInputs = Array.from(document.querySelectorAll('input[type="text"]'));
+	let prerogativesInputs = allInputs.filter(input => 
+		input.placeholder && 
+		(input.placeholder.toLowerCase().includes('prérogatives') || 
+		input.placeholder.toLowerCase().includes('prerogative'))
+	);
 
-let inputIndex = 0;
-palanquees.forEach((pal, palIndex) => {
-  if (pal && Array.isArray(pal)) {
-    pal.forEach((plongeur, plongeurIndex) => {
-      if (plongeur && plongeur.nom && prerogativesInputs[inputIndex]) {
-        const oldValue = plongeur.pre;
-        plongeur.pre = prerogativesInputs[inputIndex].value.trim();
-        if (oldValue !== plongeur.pre) {
-          console.log(`Prérogatives mises à jour: ${plongeur.nom} "${oldValue}" -> "${plongeur.pre}"`);
-        }
+	let inputIndex = 0;
+	palanquees.forEach((pal, palIndex) => {
+	if (pal && Array.isArray(pal)) {
+		pal.forEach((plongeur, plongeurIndex) => {
+			if (plongeur && plongeur.nom && prerogativesInputs[inputIndex]) {
+				const oldValue = plongeur.pre;
+				plongeur.pre = prerogativesInputs[inputIndex].value.trim();
+			if (oldValue !== plongeur.pre) {
+				console.log(`Prérogatives mises à jour: ${plongeur.nom} "${oldValue}" -> "${plongeur.pre}"`);
+			}
         inputIndex++;
       }
     });
   }
 });
-  
+  //
+  syncPrerogativesFromInterface();
+  //
   const dpNom = getSelectedDPName();
   const dpDate = document.getElementById("dp-date")?.value;
   const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
