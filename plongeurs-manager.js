@@ -453,35 +453,23 @@ function findPlongeurIndex(nom, niveau) {
   }
 }
 
-function updatePlongeurPrerogatives(index, newPrerogatives) {
+function updatePlongeurPrerogatives(palanqueeIndex, plongeurIndex, newValue) {
   try {
-    if (index >= 0 && index < plongeurs.length) {
-      plongeurs[index].pre = newPrerogatives.trim();
+    // Convertir en string et nettoyer la valeur
+    const cleanValue = (newValue || "").toString().trim();
+    
+    if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+      palanquees[palanqueeIndex][plongeurIndex].pre = cleanValue;
+      console.log(`Prérogatives mises à jour: ${palanquees[palanqueeIndex][plongeurIndex].nom} = "${cleanValue}"`);
       
-      // Mettre à jour aussi dans les originaux
-      const plongeur = plongeurs[index];
-      const origIndex = plongeursOriginaux.findIndex(p => 
-        p.nom === plongeur.nom && p.niveau === plongeur.niveau
-      );
-      
-      if (origIndex !== -1) {
-        plongeursOriginaux[origIndex].pre = newPrerogatives.trim();
-      }
-      
-      // Synchroniser
       if (typeof syncToDatabase === 'function') {
         syncToDatabase();
       }
-      
-      return true;
     }
-    return false;
   } catch (error) {
-    console.error("❌ Erreur updatePlongeurPrerogatives:", error);
-    return false;
+    console.error("Erreur updatePlongeurPrerogatives:", error);
   }
 }
-
 // ===== SETUP EVENT LISTENERS POUR LES PLONGEURS =====
 function setupPlongeursEventListeners() {
   console.log("🎛️ Configuration des event listeners plongeurs...");
