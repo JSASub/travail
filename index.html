@@ -14,6 +14,144 @@
   <!-- jsPDF pour l'export PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Styles pour le bouton de position -->
+  <style>
+    /* Bouton flottant de position en bas à droite */
+    .position-tracker-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 160px;
+      justify-content: center;
+    }
+
+    .position-tracker-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
+      background: linear-gradient(45deg, #0056b3, #007bff);
+    }
+
+    .position-tracker-btn:active {
+      transform: translateY(-1px);
+    }
+
+    /* Indicateur de position */
+    .position-info {
+      position: fixed;
+      bottom: 100px;
+      right: 30px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      min-width: 180px;
+      backdrop-filter: blur(5px);
+    }
+
+    .position-info.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .position-info div {
+      margin: 2px 0;
+    }
+
+    /* Notification de sauvegarde */
+    .position-save-notification {
+      position: fixed;
+      bottom: 100px;
+      right: 30px;
+      background: rgba(40, 167, 69, 0.95);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 1001;
+      opacity: 0;
+      transform: translateX(100px);
+      transition: all 0.4s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      backdrop-filter: blur(5px);
+    }
+
+    .position-save-notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Bouton de contrôle d'affichage */
+    .position-toggle-btn {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 11px;
+      z-index: 1000;
+      opacity: 0.7;
+      transition: all 0.3s ease;
+    }
+
+    .position-toggle-btn:hover {
+      opacity: 1;
+      background: #5a6268;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .position-tracker-btn {
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 14px;
+        font-size: 11px;
+        min-width: 140px;
+      }
+      
+      .position-toggle-btn {
+        bottom: 20px;
+        left: 20px;
+      }
+      
+      .position-info {
+        bottom: 80px;
+        right: 20px;
+        font-size: 10px;
+      }
+    }
+
+    /* Animation de chargement */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 
 <body>
@@ -24,13 +162,6 @@
       <p style="color: #666; font-size: 16px;">Chargement de l'application JSAS...</p>
     </div>
   </div>
-  
-  <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
 
   <!-- SECTION DE CONNEXION -->
   <div id="auth-container" style="display: none;">
@@ -66,7 +197,7 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <span id="user-info" style="color: #666; font-size: 14px;"></span>
       <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
-        🔐 MdP
+        🔑 MdP
       </button>
       <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
         Déconnexion
@@ -229,6 +360,33 @@
 
   </div> <!-- Fin main-app -->
 
+  <!-- BOUTONS FLOTTANTS POUR LE SUIVI DE POSITION -->
+  <div id="position-tracker-container">
+    <!-- Bouton principal de suivi de position -->
+    <button class="position-tracker-btn" id="position-tracker-btn" onclick="saveNavigatorPosition()">
+      📍 Position Navigateur
+    </button>
+
+    <!-- Bouton de contrôle d'affichage -->
+    <button class="position-toggle-btn" id="position-toggle-btn" onclick="togglePositionDisplay()">
+      👁️ Info
+    </button>
+
+    <!-- Affichage des informations de position -->
+    <div class="position-info" id="position-info">
+      <div><strong>📍 Position du Navigateur</strong></div>
+      <div>Scroll: <span id="scroll-pos">0</span>px</div>
+      <div>Fenêtre: <span id="window-pos">0, 0</span></div>
+      <div>Viewport: <span id="viewport-size">0x0</span></div>
+      <div>MAJ: <span id="last-update">--:--:--</span></div>
+    </div>
+
+    <!-- Notification de sauvegarde -->
+    <div class="position-save-notification" id="position-save-notification">
+      ✅ Position sauvegardée !
+    </div>
+  </div>
+
   <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
   <script src="config-firebase.js"></script>
   <script src="ui-interface.js"></script>
@@ -244,6 +402,217 @@
   <!-- NOUVEAU MODULE DE GESTION DES DP -->
   <script src="dp-management.js"></script>
   <script src="dp-save-improved.js"></script>
+
+  <!-- SCRIPT DE SUIVI DE POSITION NAVIGATEUR -->
+  <script>
+    // Variables globales pour le suivi de position
+    let navigatorPositionData = {
+      saves: [],
+      startTime: new Date().toISOString(),
+      sessionId: Date.now()
+    };
+
+    let positionDisplayVisible = false;
+    let positionUpdateInterval;
+
+    // Initialiser le système de suivi de position
+    function initPositionTracker() {
+      loadExistingPositionData();
+      updatePositionDisplay();
+      startPositionUpdates();
+      
+      // Masquer les boutons pendant la connexion
+      const container = document.getElementById('position-tracker-container');
+      const authContainer = document.getElementById('auth-container');
+      const mainApp = document.getElementById('main-app');
+      
+      if (authContainer && authContainer.style.display !== 'none') {
+        container.style.display = 'none';
+      } else {
+        container.style.display = 'block';
+      }
+    }
+
+    // Charger les données de position existantes
+    function loadExistingPositionData() {
+      try {
+        const saved = sessionStorage.getItem('jsas_navigator_position_data');
+        if (saved) {
+          navigatorPositionData = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.warn('Erreur lors du chargement des données de position:', e);
+      }
+    }
+
+    // Démarrer les mises à jour automatiques de position
+    function startPositionUpdates() {
+      if (positionUpdateInterval) {
+        clearInterval(positionUpdateInterval);
+      }
+      positionUpdateInterval = setInterval(updatePositionDisplay, 250);
+    }
+
+    // Mettre à jour l'affichage des informations de position
+    function updatePositionDisplay() {
+      const scrollX = window.scrollX || document.documentElement.scrollLeft;
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      const windowX = window.screenX || window.screenLeft || 0;
+      const windowY = window.screenY || window.screenTop || 0;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const now = new Date();
+
+      // Mettre à jour l'affichage
+      document.getElementById('scroll-pos').textContent = scrollY;
+      document.getElementById('window-pos').textContent = `${windowX}, ${windowY}`;
+      document.getElementById('viewport-size').textContent = `${viewportWidth}x${viewportHeight}`;
+      document.getElementById('last-update').textContent = now.toLocaleTimeString();
+    }
+
+    // Basculer l'affichage des informations de position
+    function togglePositionDisplay() {
+      positionDisplayVisible = !positionDisplayVisible;
+      const display = document.getElementById('position-info');
+      
+      if (positionDisplayVisible) {
+        display.classList.add('visible');
+      } else {
+        display.classList.remove('visible');
+      }
+    }
+
+    // Sauvegarder la position actuelle du navigateur
+    function saveNavigatorPosition() {
+      const now = new Date();
+      const positionSnapshot = {
+        // Données de position du navigateur
+        scrollX: window.scrollX || document.documentElement.scrollLeft,
+        scrollY: window.scrollY || document.documentElement.scrollTop,
+        windowX: window.screenX || window.screenLeft || 0,
+        windowY: window.screenY || window.screenTop || 0,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        pixelRatio: window.devicePixelRatio || 1,
+        
+        // Données de session JSAS
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: now.toISOString(),
+        saveId: Date.now(),
+        sessionId: navigatorPositionData.sessionId,
+        
+        // Données contextuelles
+        title: document.title,
+        domain: window.location.hostname,
+        referrer: document.referrer,
+        
+        // Informations JSAS spécifiques
+        jsasContext: {
+          dpSelected: document.getElementById('dp-select')?.value || '',
+          dateSession: document.getElementById('dp-date')?.value || '',
+          lieuPlongee: document.getElementById('dp-lieu')?.value || '',
+          typePlongee: document.getElementById('dp-plongee')?.value || '',
+          nombrePlongeurs: document.getElementById('compteur-plongeurs')?.textContent || '0',
+          nombrePalanquees: document.getElementById('compteur-palanquees')?.textContent || '0'
+        }
+      };
+
+      // Ajouter à l'historique
+      navigatorPositionData.saves.push(positionSnapshot);
+      
+      // Limiter à 25 sauvegardes pour éviter un stockage trop volumineux
+      if (navigatorPositionData.saves.length > 25) {
+        navigatorPositionData.saves = navigatorPositionData.saves.slice(-25);
+      }
+
+      // Sauvegarder dans sessionStorage
+      try {
+        sessionStorage.setItem('jsas_navigator_position_data', JSON.stringify(navigatorPositionData));
+        showPositionSaveNotification();
+        console.log('📍 Position navigateur sauvegardée:', positionSnapshot);
+      } catch (e) {
+        console.error('Erreur lors de la sauvegarde de position:', e);
+        showPositionSaveNotification('❌ Erreur de sauvegarde');
+      }
+    }
+
+    // Afficher la notification de sauvegarde
+    function showPositionSaveNotification(message = '✅ Position sauvegardée !') {
+      const notification = document.getElementById('position-save-notification');
+      notification.innerHTML = `
+        <div>${message}</div>
+        <div style="font-size:11px; opacity:0.9; margin-top:4px;">
+          📊 ${navigatorPositionData.saves.length} positions enregistrées
+        </div>
+      `;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3500);
+    }
+
+    // Gérer la visibilité des boutons selon l'état de l'application
+    function handleAppStateChange() {
+      const container = document.getElementById('position-tracker-container');
+      const authContainer = document.getElementById('auth-container');
+      const mainApp = document.getElementById('main-app');
+      
+      // Masquer pendant la connexion, afficher dans l'app principale
+      if (authContainer && authContainer.style.display !== 'none') {
+        container.style.display = 'none';
+      } else if (mainApp && mainApp.style.display !== 'none') {
+        container.style.display = 'block';
+      }
+    }
+
+    // Nettoyage avant fermeture de page
+    function cleanupPositionTracker() {
+      if (positionUpdateInterval) {
+        clearInterval(positionUpdateInterval);
+      }
+      // Sauvegarde automatique avant fermeture
+      saveNavigatorPosition();
+    }
+
+    // Initialisation et événements
+    document.addEventListener('DOMContentLoaded', function() {
+      initPositionTracker();
+      
+      // Observer les changements d'état de l'application
+      const observer = new MutationObserver(handleAppStateChange);
+      observer.observe(document.body, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ['style']
+      });
+      
+      // Événements de position
+      window.addEventListener('scroll', updatePositionDisplay);
+      window.addEventListener('resize', updatePositionDisplay);
+      window.addEventListener('beforeunload', cleanupPositionTracker);
+    });
+
+    // Fonction utilitaire pour exporter les données de position (debug)
+    function exportPositionData() {
+      const dataStr = JSON.stringify(navigatorPositionData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `jsas_position_data_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Ajouter la fonction export à l'objet global pour debug
+    window.exportPositionData = exportPositionData;
+  </script>
+
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
 <div id="dp-modal">
   <div class="dp-modal-content">
@@ -275,3 +644,6 @@
     </div>
   </div>
 </div>
+
+</body>
+</html>
