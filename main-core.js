@@ -358,23 +358,22 @@ async function saveSessionData() {
       // Ajouter les plongeurs
 for (let i = 0; i < pal.length; i++) {
   if (pal[i] && pal[i].nom) {
-    let prerogativesValue = pal[i].pre || "";
+    // Capture brutale : chercher TOUS les inputs de prérogatives de la page
+    const allPrerogativesInputs = Array.from(document.querySelectorAll('input.plongeur-prerogatives-editable'));
     
-    // MÉTHODE BRUTALE : capturer toutes les prérogatives depuis l'interface
-    const allPrerogativesInputs = document.querySelectorAll('input[placeholder*="prérogatives"], input[placeholder*="Prérogatives"], input[name*="prerogatives"], input[id*="prerogatives"]');
-    
-    // Associer par position dans la page
-    let inputIndex = 0;
-    for (let palIdx = 0; palIdx < index; palIdx++) {
-      if (palanquees[palIdx]) {
-        inputIndex += palanquees[palIdx].length;
+    // Calculer l'index global de cet input
+    let globalInputIndex = 0;
+    for (let prevPalIndex = 0; prevPalIndex < index; prevPalIndex++) {
+      if (palanquees[prevPalIndex]) {
+        globalInputIndex += palanquees[prevPalIndex].length;
       }
     }
-    inputIndex += i;
+    globalInputIndex += i;
     
-    if (allPrerogativesInputs[inputIndex]) {
-      prerogativesValue = allPrerogativesInputs[inputIndex].value.trim();
-      console.log(`Prérogatives capturées pour ${pal[i].nom}: "${prerogativesValue}"`);
+    // Récupérer la valeur depuis l'interface
+    let prerogativesValue = pal[i].pre || "";
+    if (allPrerogativesInputs[globalInputIndex]) {
+      prerogativesValue = allPrerogativesInputs[globalInputIndex].value.trim();
     }
     
     palanqueeObj.plongeurs.push({
