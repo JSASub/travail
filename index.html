@@ -15,72 +15,51 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Styles pour le bouton de position -->
+  <!-- Styles pour le bouton flottant de sauvegarde -->
   <style>
-    /* Bouton flottant de position en bas à droite */
-    .position-tracker-btn {
+    /* Bouton flottant de sauvegarde en bas à droite */
+    .floating-save-btn {
       position: fixed;
       bottom: 30px;
       right: 30px;
-      background: linear-gradient(45deg, #007bff, #0056b3);
+      background: linear-gradient(45deg, #28a745, #20c997);
       color: white;
       border: none;
-      padding: 12px 18px;
+      padding: 15px 20px;
       border-radius: 50px;
       cursor: pointer;
       font-weight: bold;
-      font-size: 13px;
-      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+      font-size: 14px;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
       transition: all 0.3s ease;
       z-index: 1000;
       display: flex;
       align-items: center;
       gap: 8px;
-      min-width: 160px;
+      min-width: 200px;
       justify-content: center;
+      text-decoration: none;
     }
 
-    .position-tracker-btn:hover {
+    .floating-save-btn:hover {
       transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
-      background: linear-gradient(45deg, #0056b3, #007bff);
+      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+      background: linear-gradient(45deg, #20c997, #28a745);
     }
 
-    .position-tracker-btn:active {
+    .floating-save-btn:active {
       transform: translateY(-1px);
     }
 
-    /* Indicateur de position */
-    .position-info {
-      position: fixed;
-      bottom: 100px;
-      right: 30px;
-      background: rgba(0,0,0,0.85);
-      color: white;
-      padding: 12px 15px;
-      border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      z-index: 999;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s ease;
-      pointer-events: none;
-      min-width: 180px;
-      backdrop-filter: blur(5px);
-    }
-
-    .position-info.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .position-info div {
-      margin: 2px 0;
+    .floating-save-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     /* Notification de sauvegarde */
-    .position-save-notification {
+    .save-notification {
       position: fixed;
       bottom: 100px;
       right: 30px;
@@ -95,54 +74,32 @@
       transition: all 0.4s ease;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
       backdrop-filter: blur(5px);
+      max-width: 280px;
     }
 
-    .position-save-notification.show {
+    .save-notification.show {
       opacity: 1;
       transform: translateX(0);
     }
 
-    /* Bouton de contrôle d'affichage */
-    .position-toggle-btn {
-      position: fixed;
-      bottom: 30px;
-      left: 30px;
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 11px;
-      z-index: 1000;
-      opacity: 0.7;
-      transition: all 0.3s ease;
-    }
-
-    .position-toggle-btn:hover {
-      opacity: 1;
-      background: #5a6268;
+    .save-notification.error {
+      background: rgba(220, 53, 69, 0.95);
     }
 
     /* Responsive */
     @media (max-width: 768px) {
-      .position-tracker-btn {
+      .floating-save-btn {
         bottom: 20px;
         right: 20px;
-        padding: 10px 14px;
-        font-size: 11px;
-        min-width: 140px;
+        padding: 12px 16px;
+        font-size: 12px;
+        min-width: 160px;
       }
       
-      .position-toggle-btn {
-        bottom: 20px;
-        left: 20px;
-      }
-      
-      .position-info {
+      .save-notification {
         bottom: 80px;
         right: 20px;
-        font-size: 10px;
+        max-width: 250px;
       }
     }
 
@@ -150,6 +107,25 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    /* Indicateur de chargement pour le bouton */
+    .floating-save-btn .loading-icon {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .floating-save-btn.loading .loading-icon {
+      display: block;
+    }
+
+    .floating-save-btn.loading .btn-text {
+      display: none;
     }
   </style>
 </head>
@@ -360,31 +336,15 @@
 
   </div> <!-- Fin main-app -->
 
-  <!-- BOUTONS FLOTTANTS POUR LE SUIVI DE POSITION -->
-  <div id="position-tracker-container">
-    <!-- Bouton principal de suivi de position -->
-    <button class="position-tracker-btn" id="position-tracker-btn" onclick="saveNavigatorPosition()">
-      📍 Position Navigateur
-    </button>
+  <!-- BOUTON FLOTTANT DE SAUVEGARDE SESSION -->
+  <button class="floating-save-btn" id="floating-save-btn" onclick="saveSessionFromFloatingButton()" style="display: none;">
+    <div class="loading-icon"></div>
+    <span class="btn-text">💾 Sauvegarder Session + DP</span>
+  </button>
 
-    <!-- Bouton de contrôle d'affichage -->
-    <button class="position-toggle-btn" id="position-toggle-btn" onclick="togglePositionDisplay()">
-      👁️ Info
-    </button>
-
-    <!-- Affichage des informations de position -->
-    <div class="position-info" id="position-info">
-      <div><strong>📍 Position du Navigateur</strong></div>
-      <div>Scroll: <span id="scroll-pos">0</span>px</div>
-      <div>Fenêtre: <span id="window-pos">0, 0</span></div>
-      <div>Viewport: <span id="viewport-size">0x0</span></div>
-      <div>MAJ: <span id="last-update">--:--:--</span></div>
-    </div>
-
-    <!-- Notification de sauvegarde -->
-    <div class="position-save-notification" id="position-save-notification">
-      ✅ Position sauvegardée !
-    </div>
+  <!-- NOTIFICATION DE SAUVEGARDE -->
+  <div class="save-notification" id="save-notification">
+    ✅ Session sauvegardée !
   </div>
 
   <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
@@ -403,187 +363,131 @@
   <script src="dp-management.js"></script>
   <script src="dp-save-improved.js"></script>
 
-  <!-- SCRIPT DE SUIVI DE POSITION NAVIGATEUR -->
+  <!-- SCRIPT POUR LE BOUTON FLOTTANT DE SAUVEGARDE -->
   <script>
-    // Variables globales pour le suivi de position
-    let navigatorPositionData = {
-      saves: [],
-      startTime: new Date().toISOString(),
-      sessionId: Date.now()
-    };
-
-    let positionDisplayVisible = false;
-    let positionUpdateInterval;
-
-    // Initialiser le système de suivi de position
-    function initPositionTracker() {
-      loadExistingPositionData();
-      updatePositionDisplay();
-      startPositionUpdates();
+    // Fonction principale pour sauvegarder depuis le bouton flottant
+    function saveSessionFromFloatingButton() {
+      const floatingBtn = document.getElementById('floating-save-btn');
+      const originalBtn = document.getElementById('valider-dp');
       
-      // Masquer les boutons pendant la connexion
-      const container = document.getElementById('position-tracker-container');
-      const authContainer = document.getElementById('auth-container');
-      const mainApp = document.getElementById('main-app');
+      // Désactiver le bouton et afficher le chargement
+      floatingBtn.disabled = true;
+      floatingBtn.classList.add('loading');
       
-      if (authContainer && authContainer.style.display !== 'none') {
-        container.style.display = 'none';
-      } else {
-        container.style.display = 'block';
-      }
-    }
-
-    // Charger les données de position existantes
-    function loadExistingPositionData() {
       try {
-        const saved = sessionStorage.getItem('jsas_navigator_position_data');
-        if (saved) {
-          navigatorPositionData = JSON.parse(saved);
+        // Vérifier que les données nécessaires sont présentes
+        const dpSelect = document.getElementById('dp-select');
+        const dpDate = document.getElementById('dp-date');
+        const dpLieu = document.getElementById('dp-lieu');
+        const dpPlongee = document.getElementById('dp-plongee');
+        
+        if (!dpSelect.value) {
+          showFloatingNotification('❌ Veuillez sélectionner un Directeur de Plongée', 'error');
+          return;
         }
-      } catch (e) {
-        console.warn('Erreur lors du chargement des données de position:', e);
+        
+        if (!dpDate.value) {
+          showFloatingNotification('❌ Veuillez saisir une date', 'error');
+          return;
+        }
+        
+        // Déclencher la fonction de sauvegarde existante
+        if (originalBtn && originalBtn.onclick) {
+          originalBtn.onclick();
+        } else if (typeof window.saveCurrentSession === 'function') {
+          window.saveCurrentSession();
+        } else {
+          // Simuler un clic sur le bouton original
+          originalBtn.click();
+        }
+        
+        // Afficher la notification de succès
+        showFloatingNotification(`✅ Session sauvegardée !<br><small>DP: ${dpSelect.options[dpSelect.selectedIndex].text}<br>Date: ${dpDate.value}</small>`);
+        
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde:', error);
+        showFloatingNotification('❌ Erreur lors de la sauvegarde', 'error');
+      } finally {
+        // Réactiver le bouton
+        setTimeout(() => {
+          floatingBtn.disabled = false;
+          floatingBtn.classList.remove('loading');
+        }, 1000);
       }
     }
-
-    // Démarrer les mises à jour automatiques de position
-    function startPositionUpdates() {
-      if (positionUpdateInterval) {
-        clearInterval(positionUpdateInterval);
-      }
-      positionUpdateInterval = setInterval(updatePositionDisplay, 250);
-    }
-
-    // Mettre à jour l'affichage des informations de position
-    function updatePositionDisplay() {
-      const scrollX = window.scrollX || document.documentElement.scrollLeft;
-      const scrollY = window.scrollY || document.documentElement.scrollTop;
-      const windowX = window.screenX || window.screenLeft || 0;
-      const windowY = window.screenY || window.screenTop || 0;
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const now = new Date();
-
-      // Mettre à jour l'affichage
-      document.getElementById('scroll-pos').textContent = scrollY;
-      document.getElementById('window-pos').textContent = `${windowX}, ${windowY}`;
-      document.getElementById('viewport-size').textContent = `${viewportWidth}x${viewportHeight}`;
-      document.getElementById('last-update').textContent = now.toLocaleTimeString();
-    }
-
-    // Basculer l'affichage des informations de position
-    function togglePositionDisplay() {
-      positionDisplayVisible = !positionDisplayVisible;
-      const display = document.getElementById('position-info');
+    
+    // Fonction pour afficher les notifications
+    function showFloatingNotification(message, type = 'success') {
+      const notification = document.getElementById('save-notification');
+      notification.innerHTML = message;
       
-      if (positionDisplayVisible) {
-        display.classList.add('visible');
+      // Appliquer le style selon le type
+      if (type === 'error') {
+        notification.classList.add('error');
       } else {
-        display.classList.remove('visible');
+        notification.classList.remove('error');
       }
-    }
-
-    // Sauvegarder la position actuelle du navigateur
-    function saveNavigatorPosition() {
-      const now = new Date();
-      const positionSnapshot = {
-        // Données de position du navigateur
-        scrollX: window.scrollX || document.documentElement.scrollLeft,
-        scrollY: window.scrollY || document.documentElement.scrollTop,
-        windowX: window.screenX || window.screenLeft || 0,
-        windowY: window.screenY || window.screenTop || 0,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-        screenWidth: window.screen.width,
-        screenHeight: window.screen.height,
-        pixelRatio: window.devicePixelRatio || 1,
-        
-        // Données de session JSAS
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: now.toISOString(),
-        saveId: Date.now(),
-        sessionId: navigatorPositionData.sessionId,
-        
-        // Données contextuelles
-        title: document.title,
-        domain: window.location.hostname,
-        referrer: document.referrer,
-        
-        // Informations JSAS spécifiques
-        jsasContext: {
-          dpSelected: document.getElementById('dp-select')?.value || '',
-          dateSession: document.getElementById('dp-date')?.value || '',
-          lieuPlongee: document.getElementById('dp-lieu')?.value || '',
-          typePlongee: document.getElementById('dp-plongee')?.value || '',
-          nombrePlongeurs: document.getElementById('compteur-plongeurs')?.textContent || '0',
-          nombrePalanquees: document.getElementById('compteur-palanquees')?.textContent || '0'
-        }
-      };
-
-      // Ajouter à l'historique
-      navigatorPositionData.saves.push(positionSnapshot);
       
-      // Limiter à 25 sauvegardes pour éviter un stockage trop volumineux
-      if (navigatorPositionData.saves.length > 25) {
-        navigatorPositionData.saves = navigatorPositionData.saves.slice(-25);
-      }
-
-      // Sauvegarder dans sessionStorage
-      try {
-        sessionStorage.setItem('jsas_navigator_position_data', JSON.stringify(navigatorPositionData));
-        showPositionSaveNotification();
-        console.log('📍 Position navigateur sauvegardée:', positionSnapshot);
-      } catch (e) {
-        console.error('Erreur lors de la sauvegarde de position:', e);
-        showPositionSaveNotification('❌ Erreur de sauvegarde');
-      }
-    }
-
-    // Afficher la notification de sauvegarde
-    function showPositionSaveNotification(message = '✅ Position sauvegardée !') {
-      const notification = document.getElementById('position-save-notification');
-      notification.innerHTML = `
-        <div>${message}</div>
-        <div style="font-size:11px; opacity:0.9; margin-top:4px;">
-          📊 ${navigatorPositionData.saves.length} positions enregistrées
-        </div>
-      `;
       notification.classList.add('show');
       
       setTimeout(() => {
         notification.classList.remove('show');
-      }, 3500);
+      }, 4000);
     }
-
-    // Gérer la visibilité des boutons selon l'état de l'application
-    function handleAppStateChange() {
-      const container = document.getElementById('position-tracker-container');
+    
+    // Fonction pour gérer la visibilité du bouton flottant
+    function updateFloatingButtonVisibility() {
+      const floatingBtn = document.getElementById('floating-save-btn');
       const authContainer = document.getElementById('auth-container');
       const mainApp = document.getElementById('main-app');
+      const loadingScreen = document.getElementById('loading-screen');
       
-      // Masquer pendant la connexion, afficher dans l'app principale
-      if (authContainer && authContainer.style.display !== 'none') {
-        container.style.display = 'none';
-      } else if (mainApp && mainApp.style.display !== 'none') {
-        container.style.display = 'block';
+      // Afficher le bouton seulement dans l'application principale
+      if (mainApp && mainApp.style.display !== 'none' && 
+          (authContainer.style.display === 'none' || !authContainer.style.display) &&
+          (loadingScreen.style.display === 'none' || !loadingScreen.style.display)) {
+        floatingBtn.style.display = 'flex';
+      } else {
+        floatingBtn.style.display = 'none';
       }
     }
-
-    // Nettoyage avant fermeture de page
-    function cleanupPositionTracker() {
-      if (positionUpdateInterval) {
-        clearInterval(positionUpdateInterval);
-      }
-      // Sauvegarde automatique avant fermeture
-      saveNavigatorPosition();
-    }
-
-    // Initialisation et événements
-    document.addEventListener('DOMContentLoaded', function() {
-      initPositionTracker();
+    
+    // Fonction pour mettre à jour le texte du bouton selon l'état
+    function updateFloatingButtonState() {
+      const floatingBtn = document.getElementById('floating-save-btn');
+      const dpSelect = document.getElementById('dp-select');
+      const dpDate = document.getElementById('dp-date');
+      const btnText = floatingBtn.querySelector('.btn-text');
       
-      // Observer les changements d'état de l'application
-      const observer = new MutationObserver(handleAppStateChange);
+      if (dpSelect && dpDate) {
+        if (!dpSelect.value || !dpDate.value) {
+          floatingBtn.style.opacity = '0.7';
+          btnText.textContent = '⚠️ Compléter DP et Date';
+        } else {
+          floatingBtn.style.opacity = '1';
+          btnText.textContent = '💾 Sauvegarder Session + DP';
+        }
+      }
+    }
+    
+    // Initialisation du bouton flottant
+    function initFloatingButton() {
+      // Vérifier la visibilité régulièrement
+      setInterval(updateFloatingButtonVisibility, 500);
+      
+      // Mettre à jour l'état du bouton quand les champs changent
+      const dpSelect = document.getElementById('dp-select');
+      const dpDate = document.getElementById('dp-date');
+      const dpLieu = document.getElementById('dp-lieu');
+      const dpPlongee = document.getElementById('dp-plongee');
+      
+      if (dpSelect) dpSelect.addEventListener('change', updateFloatingButtonState);
+      if (dpDate) dpDate.addEventListener('change', updateFloatingButtonState);
+      if (dpLieu) dpLieu.addEventListener('input', updateFloatingButtonState);
+      if (dpPlongee) dpPlongee.addEventListener('change', updateFloatingButtonState);
+      
+      // Observer les changements dans le DOM pour la visibilité
+      const observer = new MutationObserver(updateFloatingButtonVisibility);
       observer.observe(document.body, {
         attributes: true,
         childList: true,
@@ -591,26 +495,31 @@
         attributeFilter: ['style']
       });
       
-      // Événements de position
-      window.addEventListener('scroll', updatePositionDisplay);
-      window.addEventListener('resize', updatePositionDisplay);
-      window.addEventListener('beforeunload', cleanupPositionTracker);
-    });
-
-    // Fonction utilitaire pour exporter les données de position (debug)
-    function exportPositionData() {
-      const dataStr = JSON.stringify(navigatorPositionData, null, 2);
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `jsas_position_data_${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
+      // Mettre à jour l'état initial
+      setTimeout(updateFloatingButtonState, 1000);
     }
-
-    // Ajouter la fonction export à l'objet global pour debug
-    window.exportPositionData = exportPositionData;
+    
+    // Raccourci clavier pour sauvegarder (Ctrl+S)
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        const floatingBtn = document.getElementById('floating-save-btn');
+        if (floatingBtn.style.display !== 'none' && !floatingBtn.disabled) {
+          saveSessionFromFloatingButton();
+        }
+      }
+    });
+    
+    // Initialiser quand le DOM est prêt
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initFloatingButton, 1000);
+    });
+    
+    // Fonction utilitaire pour forcer la mise à jour (accessible depuis la console)
+    window.updateFloatingButton = function() {
+      updateFloatingButtonVisibility();
+      updateFloatingButtonState();
+    };
   </script>
 
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
