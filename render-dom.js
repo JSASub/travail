@@ -142,7 +142,7 @@ function renderPalanquees() {
                    value="${plongeur.pre || ''}" 
                    placeholder="PE40..."
                    title="Prérogatives du plongeur"
-                   oninput="updatePlongeurPrerogatives(${index}, ${originalIndex}, this.value)"
+                   oninput="updatePlongeurPrerogatives(${index}, ${originalIndex}, this.value || '')"
                    onclick="handlePalanqueeEdit(${index})" />
             <span class="plongeur-niveau">${plongeur.niveau}</span>
             <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
