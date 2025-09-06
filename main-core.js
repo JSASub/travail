@@ -319,29 +319,34 @@ async function saveSessionData() {
       };
       
       // Ajouter les plongeurs
-      for (let i = 0; i < pal.length; i++) {
-		if (pal[i] && pal[i].nom) {
-			// Chercher le champ de prérogatives de ce plongeur spécifique
-			const prerogativesInput = document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[placeholder*="Prérogatives"]`) ||
-                             document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[placeholder*="prérogatives"]`) ||
-                             document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[name*="prerogatives"]`) ||
-                             document.getElementById(`prerogatives-${index}-${i}`);
+for (let i = 0; i < pal.length; i++) {
+  if (pal[i] && pal[i].nom) {
+    let prerogativesValue = pal[i].pre || "";
     
-			const prerogativesValue = prerogativesInput ? prerogativesInput.value.trim() : (pal[i].pre || "");
+    // MÉTHODE BRUTALE : capturer toutes les prérogatives depuis l'interface
+    const allPrerogativesInputs = document.querySelectorAll('input[placeholder*="prérogatives"], input[placeholder*="Prérogatives"], input[name*="prerogatives"], input[id*="prerogatives"]');
     
-			palanqueeObj.plongeurs.push({
-				nom: pal[i].nom,
-				niveau: pal[i].niveau || "",
-				pre: prerogativesValue
-			});
+    // Associer par position dans la page
+    let inputIndex = 0;
+    for (let palIdx = 0; palIdx < index; palIdx++) {
+      if (palanquees[palIdx]) {
+        inputIndex += palanquees[palIdx].length;
+      }
+    }
+    inputIndex += i;
     
-			// Mettre à jour aussi l'objet JavaScript pour cohérence
-			if (prerogativesInput && prerogativesInput.value.trim() !== pal[i].pre) {
-				pal[i].pre = prerogativesInput.value.trim();
-				console.log(`✅ Prérogatives mises à jour pour ${pal[i].nom}: ${prerogativesInput.value.trim()}`);
-			}
-		}
-	  }
+    if (allPrerogativesInputs[inputIndex]) {
+      prerogativesValue = allPrerogativesInputs[inputIndex].value.trim();
+      console.log(`Prérogatives capturées pour ${pal[i].nom}: "${prerogativesValue}"`);
+    }
+    
+    palanqueeObj.plongeurs.push({
+      nom: pal[i].nom,
+      niveau: pal[i].niveau || "",
+      pre: prerogativesValue
+    });
+  }
+}
       
       palanqueesData.push(palanqueeObj);
     });
