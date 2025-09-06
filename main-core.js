@@ -320,14 +320,28 @@ async function saveSessionData() {
       
       // Ajouter les plongeurs
       for (let i = 0; i < pal.length; i++) {
-        if (pal[i] && pal[i].nom) {
-          palanqueeObj.plongeurs.push({
-            nom: pal[i].nom,
-            niveau: pal[i].niveau || "",
-            pre: pal[i].pre || ""
-          });
-        }
-      }
+		if (pal[i] && pal[i].nom) {
+			// Chercher le champ de prérogatives de ce plongeur spécifique
+			const prerogativesInput = document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[placeholder*="Prérogatives"]`) ||
+                             document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[placeholder*="prérogatives"]`) ||
+                             document.querySelector(`[data-palanquee="${index}"][data-plongeur="${i}"] input[name*="prerogatives"]`) ||
+                             document.getElementById(`prerogatives-${index}-${i}`);
+    
+			const prerogativesValue = prerogativesInput ? prerogativesInput.value.trim() : (pal[i].pre || "");
+    
+			palanqueeObj.plongeurs.push({
+				nom: pal[i].nom,
+				niveau: pal[i].niveau || "",
+				pre: prerogativesValue
+			});
+    
+			// Mettre à jour aussi l'objet JavaScript pour cohérence
+			if (prerogativesInput && prerogativesInput.value.trim() !== pal[i].pre) {
+				pal[i].pre = prerogativesInput.value.trim();
+				console.log(`✅ Prérogatives mises à jour pour ${pal[i].nom}: ${prerogativesInput.value.trim()}`);
+			}
+		}
+	  }
       
       palanqueesData.push(palanqueeObj);
     });
