@@ -1,6 +1,6 @@
 :root {
   --floating-elements-width: 200px;
-  --floating-save-bottom: 10px; /* 30px - 20px */
+  --floating-save-bottom: 15px; /* 30px - 20px */
   --floating-plongeurs-bottom: 90px; /* 110px - 20px */
 }
 
@@ -1464,7 +1464,7 @@ header div h2 {
 @media (max-width: 768px) {
   :root {
     --floating-elements-width: 160px;
-    --floating-save-bottom: 0px; /* 20px - 20px */
+    --floating-save-bottom: 10px; /* 20px - 20px */
     --floating-plongeurs-bottom: 70px; /* 90px - 20px */
   }
 }
