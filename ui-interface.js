@@ -503,7 +503,7 @@ function exportToJSON() {
         date: dpDate,
         lieu: dpLieu,
         plongee: dpPlongee,
-        version: "2.5.1",
+        version: "7.7.1",
         exportDate: new Date().toISOString()
       },
       plongeurs: plongeurs.map(p => ({

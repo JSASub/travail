@@ -232,7 +232,7 @@ function emergencyLocalSave() {
         lieu: document.getElementById("dp-lieu")?.value || "",
         plongee: document.getElementById("dp-plongee")?.value || "matin"
       },
-      version: "2.5.0-offline",
+      version: "7.7.1-offline",
       userEmail: currentUser.email
     };
     

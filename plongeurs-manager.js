@@ -256,7 +256,7 @@ function exportPlongeursToJSON() {
         date: dpDate,
         lieu: dpLieu,
         plongee: dpPlongee,
-        version: "3.0.1",
+        version: "7.7.1",
         exportDate: new Date().toISOString(),
         type: "plongeurs_only"
       },
