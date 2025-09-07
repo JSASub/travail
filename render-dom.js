@@ -334,3 +334,17 @@ function validateDropToPalanquee(palanqueeIndex, plongeur) {
 }
 
 console.log("🎨 Module de rendu DOM avec nouvelles règles chargé");
+
+// Rendre tout le header cliquable quand le menu est collapsed
+document.addEventListener('DOMContentLoaded', function() {
+  const header = document.getElementById('floating-plongeurs-header');
+  
+  if (header) {
+    header.addEventListener('click', function(e) {
+      // Éviter le double clic si on clique directement sur le bouton toggle
+      if (e.target.id !== 'toggle-plongeurs-menu' && plongeursMenuCollapsed) {
+        togglePlongeursMenu();
+      }
+    });
+  }
+});
