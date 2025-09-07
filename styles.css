@@ -23,12 +23,12 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background-image: url('images/logo-jsas.png');
   background-repeat: no-repeat;
   background-position: left center;
-  background-size: 50px;
+  background-size: 80px;
   padding-left: 70px;
 }
 
 .logo {
-  height: 50px; /* Ajustez selon vos besoins */
+  height: 80px; /* Ajustez selon vos besoins */
   width: auto;
   object-fit: contain;
 }
