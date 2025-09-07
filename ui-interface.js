@@ -465,6 +465,10 @@ function sortPlongeurs(type) {
         plongeurs = [...plongeursOriginaux];
         break;
     }
+	// Mettre à jour le menu flottant avec le même tri
+	if (typeof updateFloatingPlongeursList === 'function') {
+		setTimeout(updateFloatingPlongeursList, 100);
+	}
     
     if (typeof renderPlongeurs === 'function') {
       renderPlongeurs();
@@ -472,6 +476,7 @@ function sortPlongeurs(type) {
   } catch (error) {
     console.error("❌ Erreur sortPlongeurs:", error);
   }
+
 }
 
 // ===== EXPORT JSON =====

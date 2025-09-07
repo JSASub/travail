@@ -482,57 +482,72 @@ function updateFloatingPlongeursList() {
   const floatingList = document.getElementById('floating-plongeurs-list');
   const floatingCount = document.getElementById('floating-plongeurs-count');
   
-  if (!floatingList || !floatingCount) {
-    console.warn('Éléments du menu flottant non trouvés');
-    return;
+  if (!floatingList || !floatingCount) return;
+  
+  // Obtenir les plongeurs depuis la variable globale
+  let plongeurs = window.plongeurs || [];
+  
+  // Appliquer le même tri que la liste principale
+  const currentSortBtn = document.querySelector('.sort-btn.active');
+  const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
+  
+  // Copier les plongeurs pour ne pas modifier l'original
+  let plongeursTriés = [...plongeurs];
+  
+  // Appliquer le tri selon le type actuel
+  switch(currentSort) {
+    case 'nom':
+      plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
+      break;
+    case 'niveau':
+      const niveauOrder = {
+        'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+        'N3': 7, 'N2': 8, 'N1': 9,
+        'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+        'Déb.': 13, 'débutant': 14, 'Déb': 15
+      };
+      plongeursTriés.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
+      break;
+    case 'none':
+    default:
+      // Utiliser l'ordre original
+      plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
+      break;
   }
   
-  // Vérifier que la variable globale plongeurs existe
-  if (typeof window.plongeurs === 'undefined') {
-    window.plongeurs = [];
-  }
-  
-  const plongeursCount = window.plongeurs.length;
-  
-  console.log('Mise à jour menu flottant:', plongeursCount, 'plongeurs');
-  
-  // Mettre à jour le compteur
-  floatingCount.textContent = `(${plongeursCount})`;
-  
-  // Vider la liste flottante
+  // Mettre à jour l'affichage
+  floatingCount.textContent = `(${plongeursTriés.length})`;
   floatingList.innerHTML = '';
   
-  if (plongeursCount === 0) {
+  if (plongeursTriés.length === 0) {
     floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
     return;
   }
   
-  // Ajouter chaque plongeur à la liste flottante - ACCÈS DIRECT AUX DONNÉES
-  window.plongeurs.forEach((plongeur, index) => {
-    // Accès direct aux propriétés de l'objet plongeur
+  // Créer les éléments triés
+  plongeursTriés.forEach((plongeur, index) => {
+    // Trouver l'index original pour le drag & drop
+    const originalIndex = window.plongeurs.findIndex(p => 
+      p.nom === plongeur.nom && p.niveau === plongeur.niveau
+    );
+    
     const nom = plongeur.nom || 'Nom inconnu';
     const niveau = plongeur.niveau || 'N/A';
     
-    console.log(`Plongeur ${index}:`, nom, '-', niveau);
-    
-    // Créer l'élément flottant
     const floatingItem = document.createElement('div');
     floatingItem.className = 'floating-plongeur-item';
     floatingItem.draggable = true;
-    floatingItem.dataset.plongeurIndex = index;
-    floatingItem.dataset.plongeurNom = nom;
-    floatingItem.dataset.plongeurNiveau = niveau;
+    floatingItem.dataset.plongeurIndex = originalIndex; // Index original pour le drag & drop
     
     floatingItem.innerHTML = `
       <span class="floating-plongeur-nom">${nom}</span>
       <span class="floating-plongeur-niveau">${niveau}</span>
     `;
     
-    // Ajouter les événements de drag & drop - VERSION CORRIGÉE
+    // Events de drag & drop avec l'index original
     floatingItem.addEventListener('dragstart', function(e) {
       floatingItem.classList.add('dragging');
       
-      // Préparer les données pour le drag & drop
       const dragData = {
         type: "fromMainList",
         plongeur: {
@@ -540,52 +555,27 @@ function updateFloatingPlongeursList() {
           niveau: plongeur.niveau,
           pre: plongeur.pre || ''
         },
-        originalIndex: index
+        originalIndex: originalIndex // Utiliser l'index original
       };
       
-      // Stocker dans dataTransfer ET variable globale pour compatibilité
       try {
         e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
         e.dataTransfer.effectAllowed = 'move';
-        
-        // Variable globale comme backup
         window.dragData = dragData;
-        
-        console.log('Drag depuis menu flottant:', nom, '(index:', index, ')');
       } catch (error) {
-        console.error('Erreur dataTransfer:', error);
-        // Au minimum, stocker dans la variable globale
         window.dragData = dragData;
       }
     });
     
     floatingItem.addEventListener('dragend', function(e) {
       floatingItem.classList.remove('dragging');
-      // Nettoyer les données de drag
       window.dragData = null;
-    });
-    
-    // Double-clic pour localiser le plongeur dans la liste principale
-    floatingItem.addEventListener('dblclick', function() {
-      const originalList = document.getElementById('listePlongeurs');
-      if (originalList) {
-        const listItems = originalList.querySelectorAll('li');
-        if (listItems[index]) {
-          listItems[index].scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-          // Effet de surbrillance
-          listItems[index].style.background = '#fff3cd';
-          setTimeout(() => {
-            listItems[index].style.background = '';
-          }, 2000);
-        }
-      }
     });
     
     floatingList.appendChild(floatingItem);
   });
+  
+  console.log('Menu mis à jour avec tri:', currentSort, '-', plongeursTriés.length, 'plongeurs');
 }
 
 // Fonction pour gérer la visibilité du menu des plongeurs
