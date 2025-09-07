@@ -404,7 +404,47 @@
       
       // Initialiser la gestion du statut des sessions
       initSessionStatusManager();
+      
+      // Initialiser les boutons PDF
+      initPDFButtons();
     });
+
+    // ===== INITIALISATION DES BOUTONS PDF =====
+    function initPDFButtons() {
+      console.log("Initialisation des boutons PDF...");
+      
+      // Bouton aperçu PDF
+      const generatePDFBtn = document.getElementById('generatePDF');
+      if (generatePDFBtn) {
+        generatePDFBtn.addEventListener('click', function() {
+          console.log("Clic sur bouton aperçu PDF");
+          if (typeof generatePDFPreview === 'function') {
+            generatePDFPreview();
+          } else {
+            console.error("Fonction generatePDFPreview non trouvée");
+            alert("Erreur: Fonction d'aperçu PDF non disponible. Vérifiez que pdf-manager.js est chargé.");
+          }
+        });
+        console.log("Bouton aperçu PDF initialisé");
+      }
+      
+      // Bouton export PDF
+      const exportPDFBtn = document.getElementById('exportPDF');
+      if (exportPDFBtn) {
+        exportPDFBtn.addEventListener('click', function() {
+          console.log("Clic sur bouton export PDF");
+          if (typeof exportToPDF === 'function') {
+            exportToPDF();
+          } else {
+            console.error("Fonction exportToPDF non trouvée");
+            alert("Erreur: Fonction d'export PDF non disponible. Vérifiez que pdf-manager.js est chargé.");
+          }
+        });
+        console.log("Bouton export PDF initialisé");
+      }
+      
+      console.log("Boutons PDF initialisés avec succès");
+    }
 
     // ===== GESTION DU STATUT DES SESSIONS =====
     function initSessionStatusManager() {
