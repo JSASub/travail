@@ -14,120 +14,6 @@
   <!-- jsPDF pour l'export PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- Styles pour le bouton flottant de sauvegarde -->
-  <style>
-    /* Bouton flottant de sauvegarde en bas à droite */
-    .floating-save-btn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background: linear-gradient(45deg, #28a745, #20c997);
-      color: white;
-      border: none;
-      padding: 15px 20px;
-      border-radius: 50px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
-      transition: all 0.3s ease;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 200px;
-      justify-content: center;
-      text-decoration: none;
-    }
-
-    .floating-save-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
-      background: linear-gradient(45deg, #20c997, #28a745);
-    }
-
-    .floating-save-btn:active {
-      transform: translateY(-1px);
-    }
-
-    .floating-save-btn:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-
-    /* Notification de sauvegarde */
-    .save-notification {
-      position: fixed;
-      bottom: 100px;
-      right: 30px;
-      background: rgba(40, 167, 69, 0.95);
-      color: white;
-      padding: 12px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      z-index: 1001;
-      opacity: 0;
-      transform: translateX(100px);
-      transition: all 0.4s ease;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      backdrop-filter: blur(5px);
-      max-width: 280px;
-    }
-
-    .save-notification.show {
-      opacity: 1;
-      transform: translateX(0);
-    }
-
-    .save-notification.error {
-      background: rgba(220, 53, 69, 0.95);
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .floating-save-btn {
-        bottom: 20px;
-        right: 20px;
-        padding: 12px 16px;
-        font-size: 12px;
-        min-width: 160px;
-      }
-      
-      .save-notification {
-        bottom: 80px;
-        right: 20px;
-        max-width: 250px;
-      }
-    }
-
-    /* Animation de chargement */
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Indicateur de chargement pour le bouton */
-    .floating-save-btn .loading-icon {
-      display: none;
-      width: 16px;
-      height: 16px;
-      border: 2px solid transparent;
-      border-top: 2px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .floating-save-btn.loading .loading-icon {
-      display: block;
-    }
-
-    .floating-save-btn.loading .btn-text {
-      display: none;
-    }
-  </style>
 </head>
 
 <body>
@@ -138,6 +24,13 @@
       <p style="color: #666; font-size: 16px;">Chargement de l'application JSAS...</p>
     </div>
   </div>
+  
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 
   <!-- SECTION DE CONNEXION -->
   <div id="auth-container" style="display: none;">
@@ -342,6 +235,17 @@
     <span class="btn-text">💾 Sauvegarder Session + DP</span>
   </button>
 
+  <!-- MENU FLOTTANT DES PLONGEURS -->
+  <div class="floating-plongeurs-menu" id="floating-plongeurs-menu" style="display: none;">
+    <div class="floating-plongeurs-header" id="floating-plongeurs-header">
+      <span>🤿 Plongeurs <span class="floating-plongeurs-count" id="floating-plongeurs-count">(0)</span></span>
+      <button class="toggle-btn" id="toggle-plongeurs-menu" onclick="togglePlongeursMenu()">−</button>
+    </div>
+    <div class="floating-plongeurs-list" id="floating-plongeurs-list">
+      <div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>
+    </div>
+  </div>
+
   <!-- NOTIFICATION DE SAUVEGARDE -->
   <div class="save-notification" id="save-notification">
     ✅ Session sauvegardée !
@@ -434,9 +338,7 @@
     // Fonction pour gérer la visibilité du bouton flottant
     function updateFloatingButtonVisibility() {
       const floatingBtn = document.getElementById('floating-save-btn');
-      const authContainer = document.getElementById('auth-container');
       const mainApp = document.getElementById('main-app');
-      const loadingScreen = document.getElementById('loading-screen');
       
       if (!floatingBtn) return;
       
@@ -496,33 +398,18 @@
     window.addEventListener('load', function() {
       setTimeout(initFloatingButton, 2000);
     });
-    
-    // Fonction de debug simple
-    window.testFloatingButton = function() {
-      const dpSelect = document.getElementById('dp-select');
-      const dpDate = document.getElementById('dp-date');
-      const floatingBtn = document.getElementById('floating-save-btn');
-      
-      console.log('Test bouton flottant:', {
-        dpSelect: !!dpSelect,
-        dpValue: dpSelect?.value,
-        dpDate: !!dpDate,
-        dateValue: dpDate?.value,
-        floatingBtn: !!floatingBtn,
-        btnVisible: floatingBtn?.style.display
-      });
-    };
 
     // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
     
     let plongeursMenuCollapsed = false;
-    let originalListePlongeurs = null;
     
     // Fonction pour basculer l'affichage du menu des plongeurs
     function togglePlongeursMenu() {
       const menu = document.getElementById('floating-plongeurs-menu');
       const list = document.getElementById('floating-plongeurs-list');
       const toggleBtn = document.getElementById('toggle-plongeurs-menu');
+      
+      if (!menu || !list || !toggleBtn) return;
       
       plongeursMenuCollapsed = !plongeursMenuCollapsed;
       
@@ -542,9 +429,8 @@
       const originalList = document.getElementById('listePlongeurs');
       const floatingList = document.getElementById('floating-plongeurs-list');
       const floatingCount = document.getElementById('floating-plongeurs-count');
-      const floatingEmpty = document.getElementById('floating-plongeurs-empty');
       
-      if (!originalList || !floatingList) return;
+      if (!originalList || !floatingList || !floatingCount) return;
       
       const plongeurs = originalList.querySelectorAll('li');
       const plongeursCount = plongeurs.length;
@@ -556,91 +442,72 @@
       floatingList.innerHTML = '';
       
       if (plongeursCount === 0) {
-        floatingList.appendChild(floatingEmpty);
+        floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
         return;
       }
       
       // Ajouter chaque plongeur à la liste flottante
       plongeurs.forEach((plongeur, index) => {
-        const plongeurData = extractPlongeurData(plongeur);
-        if (plongeurData) {
-          const floatingItem = createFloatingPlongeurItem(plongeurData, index);
-          floatingList.appendChild(floatingItem);
-        }
-      });
-    }
-    
-    // Fonction pour extraire les données d'un plongeur
-    function extractPlongeurData(plongeurElement) {
-      const text = plongeurElement.textContent || plongeurElement.innerText;
-      const parts = text.split(' - ');
-      
-      if (parts.length >= 2) {
-        return {
-          nom: parts[0].trim(),
-          niveau: parts[1].trim(),
-          prerogatives: parts[2] ? parts[2].trim() : '',
-          originalElement: plongeurElement
-        };
-      }
-      return null;
-    }
-    
-    // Fonction pour créer un élément plongeur flottant
-    function createFloatingPlongeurItem(plongeurData, index) {
-      const item = document.createElement('div');
-      item.className = 'floating-plongeur-item';
-      item.draggable = true;
-      item.dataset.plongeurIndex = index;
-      
-      item.innerHTML = `
-        <span class="floating-plongeur-nom">${plongeurData.nom}</span>
-        <span class="floating-plongeur-niveau">${plongeurData.niveau}</span>
-      `;
-      
-      // Ajouter les événements de drag & drop
-      item.addEventListener('dragstart', function(e) {
-        item.classList.add('dragging');
+        const plongeurText = plongeur.textContent || plongeur.innerText;
         
-        // Utiliser les mêmes données que le système existant
-        e.dataTransfer.setData('text/plain', plongeurData.originalElement.outerHTML);
-        e.dataTransfer.setData('text/index', index);
-        e.dataTransfer.effectAllowed = 'move';
+        // Extraire nom et niveau du texte (format: "NOM Prénom - Niveau - Prérogatives")
+        const parts = plongeurText.split(' - ');
+        const nom = parts[0] ? parts[0].trim() : 'Nom inconnu';
+        const niveau = parts[1] ? parts[1].trim() : 'N/A';
         
-        console.log('Drag depuis menu flottant:', plongeurData.nom);
-      });
-      
-      item.addEventListener('dragend', function(e) {
-        item.classList.remove('dragging');
-      });
-      
-      // Double-clic pour faire défiler vers l'élément original
-      item.addEventListener('dblclick', function() {
-        if (plongeurData.originalElement) {
-          plongeurData.originalElement.scrollIntoView({
+        // Créer l'élément flottant
+        const floatingItem = document.createElement('div');
+        floatingItem.className = 'floating-plongeur-item';
+        floatingItem.draggable = true;
+        floatingItem.dataset.plongeurIndex = index;
+        
+        floatingItem.innerHTML = `
+          <span class="floating-plongeur-nom">${nom}</span>
+          <span class="floating-plongeur-niveau">${niveau}</span>
+        `;
+        
+        // Ajouter les événements de drag & drop
+        floatingItem.addEventListener('dragstart', function(e) {
+          floatingItem.classList.add('dragging');
+          
+          // Copier les données du plongeur original
+          e.dataTransfer.setData('text/plain', plongeur.outerHTML);
+          e.dataTransfer.setData('text/index', index);
+          e.dataTransfer.effectAllowed = 'move';
+          
+          console.log('Drag depuis menu flottant:', nom);
+        });
+        
+        floatingItem.addEventListener('dragend', function(e) {
+          floatingItem.classList.remove('dragging');
+        });
+        
+        // Double-clic pour faire défiler vers l'élément original
+        floatingItem.addEventListener('dblclick', function() {
+          plongeur.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
           });
           // Effet de surbrillance
-          plongeurData.originalElement.style.background = '#fff3cd';
+          plongeur.style.background = '#fff3cd';
           setTimeout(() => {
-            plongeurData.originalElement.style.background = '';
+            plongeur.style.background = '';
           }, 2000);
-        }
+        });
+        
+        floatingList.appendChild(floatingItem);
       });
-      
-      return item;
     }
     
     // Fonction pour gérer la visibilité du menu des plongeurs
     function updateFloatingPlongeursVisibility() {
       const menu = document.getElementById('floating-plongeurs-menu');
-      const saveBtn = document.getElementById('floating-save-btn');
+      const mainApp = document.getElementById('main-app');
       
-      if (!menu || !saveBtn) return;
+      if (!menu) return;
       
-      // Afficher le menu seulement si le bouton de sauvegarde est visible
-      if (saveBtn.style.display === 'flex') {
+      // Afficher le menu si l'application principale est visible
+      if (mainApp && mainApp.style.display !== 'none') {
         menu.style.display = 'flex';
       } else {
         menu.style.display = 'none';
@@ -649,29 +516,40 @@
     
     // Fonction pour initialiser le menu des plongeurs
     function initFloatingPlongeursMenu() {
-      // Mettre à jour la liste régulièrement
-      setInterval(updateFloatingPlongeursList, 1000);
+      console.log('Initialisation du menu des plongeurs...');
       
-      // Synchroniser la visibilité avec le bouton de sauvegarde
+      // Mettre à jour la liste immédiatement puis régulièrement
+      updateFloatingPlongeursList();
+      setInterval(updateFloatingPlongeursList, 2000);
+      
+      // Synchroniser la visibilité
       setInterval(updateFloatingPlongeursVisibility, 1000);
       
       // Observer les changements dans la liste originale
       const originalList = document.getElementById('listePlongeurs');
       if (originalList) {
-        const observer = new MutationObserver(updateFloatingPlongeursList);
+        console.log('Observer ajouté sur la liste des plongeurs');
+        const observer = new MutationObserver(function(mutations) {
+          console.log('Changement détecté dans la liste des plongeurs');
+          updateFloatingPlongeursList();
+        });
         observer.observe(originalList, {
           childList: true,
           subtree: true,
           characterData: true
         });
+      } else {
+        console.log('Liste des plongeurs non trouvée pour observer');
       }
       
       // Rendre le menu déplaçable par le header
       makeMenuDraggable();
       
       // Mise à jour initiale
-      updateFloatingPlongeursList();
-      updateFloatingPlongeursVisibility();
+      setTimeout(() => {
+        updateFloatingPlongeursList();
+        updateFloatingPlongeursVisibility();
+      }, 1000);
     }
     
     // Fonction pour rendre le menu déplaçable
@@ -717,24 +595,42 @@
     
     // Initialiser le menu des plongeurs après le chargement
     window.addEventListener('load', function() {
-      setTimeout(initFloatingPlongeursMenu, 2500);
+      setTimeout(initFloatingPlongeursMenu, 3000);
     });
     
-    // Fonction de debug pour le menu des plongeurs
+    // Fonctions de debug
+    window.testFloatingButton = function() {
+      const dpSelect = document.getElementById('dp-select');
+      const dpDate = document.getElementById('dp-date');
+      const floatingBtn = document.getElementById('floating-save-btn');
+      
+      console.log('=== DEBUG BOUTON FLOTTANT ===');
+      console.log('dpSelect:', !!dpSelect, 'Value:', dpSelect?.value);
+      console.log('dpDate:', !!dpDate, 'Value:', dpDate?.value);
+      console.log('floatingBtn:', !!floatingBtn, 'Visible:', floatingBtn?.style.display);
+    };
+    
     window.testPlongeursMenu = function() {
       const menu = document.getElementById('floating-plongeurs-menu');
       const originalList = document.getElementById('listePlongeurs');
+      const plongeurs = originalList ? originalList.querySelectorAll('li') : [];
       
-      console.log('Test menu plongeurs:', {
-        menu: !!menu,
-        menuVisible: menu?.style.display,
-        originalList: !!originalList,
-        plongeursCount: originalList?.children.length || 0
+      console.log('=== DEBUG MENU PLONGEURS ===');
+      console.log('Menu:', !!menu, 'Visible:', menu?.style.display);
+      console.log('Liste originale:', !!originalList);
+      console.log('Nombre de plongeurs:', plongeurs.length);
+      
+      plongeurs.forEach((plongeur, index) => {
+        const text = plongeur.textContent || plongeur.innerText;
+        console.log(`Plongeur ${index}:`, text);
       });
+      
+      // Forcer la mise à jour
+      updateFloatingPlongeursList();
     };
   </script>
 
-<!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
+<!-- Modal pour ajouter/modifier un DP -->
 <div id="dp-modal">
   <div class="dp-modal-content">
     <div class="dp-modal-header">
@@ -763,16 +659,6 @@
       <button type="button" id="cancel-dp-btn" class="dp-btn">Annuler</button>
       <button type="button" id="save-dp-btn" class="dp-btn">Sauvegarder</button>
     </div>
-  </div>
-</div>
-<!-- MENU FLOTTANT DES PLONGEURS -->
-<div class="floating-plongeurs-menu" id="floating-plongeurs-menu">
-  <div class="floating-plongeurs-header">
-    <span>🤿 Plongeurs <span id="floating-plongeurs-count">(0)</span></span>
-    <button onclick="togglePlongeursMenu()">−</button>
-  </div>
-  <div class="floating-plongeurs-list" id="floating-plongeurs-list">
-    <div>Aucun plongeur ajouté</div>
   </div>
 </div>
 
