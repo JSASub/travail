@@ -401,7 +401,61 @@
     // Initialiser après le chargement complet
     window.addEventListener('load', function() {
       setTimeout(initFloatingButton, 2000);
+      
+      // Initialiser la gestion du statut des sessions
+      initSessionStatusManager();
     });
+
+    // ===== GESTION DU STATUT DES SESSIONS =====
+    function initSessionStatusManager() {
+      const sessionSelector = document.getElementById('session-selector');
+      const loadButton = document.getElementById('load-session');
+      const statusIndicator = document.getElementById('session-status');
+      
+      if (!sessionSelector || !loadButton || !statusIndicator) return;
+      
+      // Gérer le changement de sélection
+      sessionSelector.addEventListener('change', function() {
+        if (sessionSelector.value) {
+          // Une session est sélectionnée
+          loadButton.textContent = 'Charger la session';
+          loadButton.disabled = false;
+          statusIndicator.style.display = 'none';
+        } else {
+          // Aucune session sélectionnée
+          loadButton.textContent = 'Sélectionner une session';
+          loadButton.disabled = true;
+          statusIndicator.style.display = 'none';
+        }
+      });
+      
+      // Gérer le clic sur le bouton de chargement
+      loadButton.addEventListener('click', function() {
+        if (sessionSelector.value) {
+          // Simuler le chargement
+          loadButton.textContent = 'Chargement...';
+          loadButton.disabled = true;
+          
+          // Après le chargement (à adapter selon votre logique existante)
+          setTimeout(() => {
+            loadButton.textContent = 'Session chargée';
+            statusIndicator.style.display = 'inline';
+            
+            // Optionnel : remettre le bouton en état après quelques secondes
+            setTimeout(() => {
+              if (sessionSelector.value) {
+                loadButton.textContent = 'Recharger la session';
+                loadButton.disabled = false;
+              }
+            }, 2000);
+          }, 1000);
+        }
+      });
+      
+      // État initial
+      loadButton.textContent = 'Sélectionner une session';
+      loadButton.disabled = true;
+    }
 
     // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
     
