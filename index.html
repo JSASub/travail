@@ -405,7 +405,6 @@
 
 let plongeursMenuCollapsed = false;
 
-//
 // CORRECTION PERMANENTE - Synchronisation automatique du menu des plongeurs
 window.addEventListener('DOMContentLoaded', function() {
   // Fonction de synchronisation automatique
@@ -461,8 +460,9 @@ function togglePlongeursMenu() {
   const menu = document.getElementById('floating-plongeurs-menu');
   const list = document.getElementById('floating-plongeurs-list');
   const toggleBtn = document.getElementById('toggle-plongeurs-menu');
+  const header = document.getElementById('floating-plongeurs-header');
   
-  if (!menu || !list || !toggleBtn) return;
+  if (!menu || !list || !toggleBtn || !header) return;
   
   plongeursMenuCollapsed = !plongeursMenuCollapsed;
   
@@ -470,10 +470,12 @@ function togglePlongeursMenu() {
     list.style.display = 'none';
     toggleBtn.textContent = '+';
     menu.style.maxHeight = '35px';
+    header.style.padding = '4px 12px'; // Réduire le padding
   } else {
     list.style.display = 'block';
     toggleBtn.textContent = '−';
     menu.style.maxHeight = '200px';
+    header.style.padding = '6px 12px'; // Padding normal
   }
 }
 
