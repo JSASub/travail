@@ -29,7 +29,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .logo {
-  height: 50px; /* Ajustez la taille selon le titre */
+  height: 80px; /* Ajustez la taille selon le titre */
   width: auto;
   object-fit: contain;
   vertical-align: left; /* Assurance supplémentaire */
