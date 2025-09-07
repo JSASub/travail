@@ -1,5 +1,7 @@
 :root {
   --floating-elements-width: 200px;
+  --floating-save-bottom: 10px; /* 30px - 20px */
+  --floating-plongeurs-bottom: 90px; /* 110px - 20px */
 }
 
 body {
@@ -1460,10 +1462,16 @@ header div h2 {
 
 /* Responsive global pour les éléments flottants */
 @media (max-width: 768px) {
-	  :root {
+  :root {
     --floating-elements-width: 160px;
+    --floating-save-bottom: 0px; /* 20px - 20px */
+    --floating-plongeurs-bottom: 70px; /* 90px - 20px */
   }
+}
   .floating-save-btn {
+	position: fixed;
+	bottom: calc(var(--floating-save-bottom) - 20px); /* -20px = -7mm */
+	right: 30px;
     min-width: var(--floating-elements-width);
   }
   
@@ -1474,6 +1482,9 @@ header div h2 {
   }
 
   .floating-plongeurs-menu {
+	position: fixed;
+	bottom: calc(var(--floating-plongeurs-bottom) - 20px); /* -20px = -7mm */
+    right: 30px;
     width: var(--floating-elements-width);
   }
 }
