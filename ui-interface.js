@@ -451,15 +451,25 @@ function sortPlongeurs(type) {
         plongeurs.sort((a, b) => a.nom.localeCompare(b.nom));
         break;
       case 'niveau':
-        // Nouvel ordre de tri avec les niveaux jeunes plongeurs
-        const niveauOrder = {
-          'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-          'N3': 7, 'N2': 8, 'N1': 9,
-          'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-          'Déb.': 13, 'débutant': 14, 'Déb': 15
-        };
-        plongeurs.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
-        break;
+		const niveauOrder = {
+			'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+			'N3': 7, 'N2': 8, 'N1': 9,
+			'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+			'Déb.': 13, 'débutant': 14, 'Déb': 15
+	  };
+  
+	  plongeurs.sort((a, b) => {
+		const orderA = niveauOrder[a.niveau] || 99;
+		const orderB = niveauOrder[b.niveau] || 99;
+    
+		// Si même niveau, trier par nom
+		if (orderA === orderB) {
+			return a.nom.localeCompare(b.nom);
+		}
+    
+		return orderA - orderB;
+	});
+	break;
       case 'none':
       default:
         plongeurs = [...plongeursOriginaux];
