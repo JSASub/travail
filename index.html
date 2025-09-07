@@ -69,7 +69,7 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <span id="user-info" style="color: #666; font-size: 14px;"></span>
       <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
-        🔒 MdP
+        🔑 MdP
       </button>
       <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
         Déconnexion
@@ -78,8 +78,10 @@
   </div>
   
   <div class="header-container">
-  	<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
-	<h2 style="margin: 0; color: #004080; font-size: 20px;">🤿 Palanquées JSAS</h2>
+	<div style="margin-top: 5px; margin-bottom: 15px;">
+  		<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
+		<h2 style="text-align: left; margin: 0; color: #004080; font-size: 20px;">🤿 Palanquées JSAS</h2>
+	</div>
   </div>
   
   <hr>
@@ -401,104 +403,7 @@
     // Initialiser après le chargement complet
     window.addEventListener('load', function() {
       setTimeout(initFloatingButton, 2000);
-      
-      // Initialiser la gestion du statut des sessions
-      initSessionStatusManager();
-      
-      // Vérifier le chargement des modules
-      setTimeout(checkModulesLoading, 1000);
-      
-      // Initialiser les boutons PDF
-      setTimeout(initPDFButtons, 1500);
     });
-
-    // ===== INITIALISATION DES BOUTONS PDF =====
-    function initPDFButtons() {
-      console.log("Initialisation des boutons PDF...");
-      
-      // Bouton aperçu PDF
-      const generatePDFBtn = document.getElementById('generatePDF');
-      if (generatePDFBtn) {
-        generatePDFBtn.addEventListener('click', function() {
-          console.log("Clic sur bouton aperçu PDF");
-          if (typeof generatePDFPreview === 'function') {
-            generatePDFPreview();
-          } else {
-            console.error("Fonction generatePDFPreview non trouvée");
-            alert("Erreur: Fonction d'aperçu PDF non disponible. Vérifiez que pdf-manager.js est chargé.");
-          }
-        });
-        console.log("Bouton aperçu PDF initialisé");
-      }
-      
-      // Bouton export PDF
-      const exportPDFBtn = document.getElementById('exportPDF');
-      if (exportPDFBtn) {
-        exportPDFBtn.addEventListener('click', function() {
-          console.log("Clic sur bouton export PDF");
-          if (typeof exportToPDF === 'function') {
-            exportToPDF();
-          } else {
-            console.error("Fonction exportToPDF non trouvée");
-            alert("Erreur: Fonction d'export PDF non disponible. Vérifiez que pdf-manager.js est chargé.");
-          }
-        });
-        console.log("Bouton export PDF initialisé");
-      }
-      
-      console.log("Boutons PDF initialisés avec succès");
-    }
-
-    // ===== GESTION DU STATUT DES SESSIONS =====
-    function initSessionStatusManager() {
-      const sessionSelector = document.getElementById('session-selector');
-      const loadButton = document.getElementById('load-session');
-      const statusIndicator = document.getElementById('session-status');
-      
-      if (!sessionSelector || !loadButton || !statusIndicator) return;
-      
-      // Gérer le changement de sélection
-      sessionSelector.addEventListener('change', function() {
-        if (sessionSelector.value) {
-          // Une session est sélectionnée
-          loadButton.textContent = 'Charger la session';
-          loadButton.disabled = false;
-          statusIndicator.style.display = 'none';
-        } else {
-          // Aucune session sélectionnée
-          loadButton.textContent = 'Sélectionner une session';
-          loadButton.disabled = true;
-          statusIndicator.style.display = 'none';
-        }
-      });
-      
-      // Gérer le clic sur le bouton de chargement
-      loadButton.addEventListener('click', function() {
-        if (sessionSelector.value) {
-          // Simuler le chargement
-          loadButton.textContent = 'Chargement...';
-          loadButton.disabled = true;
-          
-          // Après le chargement (à adapter selon votre logique existante)
-          setTimeout(() => {
-            loadButton.textContent = 'Session chargée';
-            statusIndicator.style.display = 'inline';
-            
-            // Optionnel : remettre le bouton en état après quelques secondes
-            setTimeout(() => {
-              if (sessionSelector.value) {
-                loadButton.textContent = 'Recharger la session';
-                loadButton.disabled = false;
-              }
-            }, 2000);
-          }, 1000);
-        }
-      });
-      
-      // État initial
-      loadButton.textContent = 'Sélectionner une session';
-      loadButton.disabled = true;
-    }
 
     // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
     

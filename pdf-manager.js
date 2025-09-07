@@ -1,118 +1,14 @@
-// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp + correction polices)
+// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp)
 
-// ===== CONFIGURATION POLICES UTF-8 =====
-function setupPDFFont(doc) {
-  try {
-    // Essayer d'utiliser une police qui supporte l'UTF-8
-    doc.setFont("helvetica");
-    console.log("Police Helvetica configurée pour UTF-8");
-  } catch (error) {
-    console.warn("Erreur configuration police:", error);
-    // Fallback vers la police par défaut
-    doc.setFont("times");
-  }
-}
-
-// Fonction pour nettoyer les caractères accentués si nécessaire
-function cleanText(text) {
-  if (!text || typeof text !== 'string') return '';
-  
-  // Remplacements des caractères problématiques courants
-  const replacements = {
-    'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
-    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
-    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
-    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-    'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
-    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-    'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
-    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-    'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
-    'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-    'Ç': 'C', 'ç': 'c',
-    'Ñ': 'N', 'ñ': 'n',
-    'Ÿ': 'Y', 'ÿ': 'y',
-    '«': '"', '»': '"',
-    ''': "'", ''': "'", '"': '"', '"': '"'
-  };
-  
-  // Appliquer les remplacements seulement si nécessaire
-  let cleaned = text;
-  for (const [accented, clean] of Object.entries(replacements)) {
-    cleaned = cleaned.replace(new RegExp(accented, 'g'), clean);
-  }
-  
-  return cleaned;
-}
-
-// Fonction intelligente pour ajouter du texte avec gestion des accents
-function addTextSmart(doc, text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-  try {
-    // D'abord essayer avec le texte original
-    addTextWithFont(doc, text, x, y, fontSize, fontStyle, color);
-  } catch (error) {
-    console.warn("Erreur avec texte original, nettoyage des accents:", error);
-    // Si erreur, utiliser la version nettoyée
-    const cleanedText = cleanText(text);
-    addTextWithFont(doc, cleanedText, x, y, fontSize, fontStyle, color);
-  }
-}
-
-// Fonction pour ajouter du texte avec police configurée
-function addTextWithFont(doc, text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-  const colors = {
-    primaryR: 0, primaryG: 64, primaryB: 128,
-    secondaryR: 0, secondaryG: 123, secondaryB: 255,
-    successR: 40, successG: 167, successB: 69,
-    dangerR: 220, dangerG: 53, dangerB: 69,
-    darkR: 52, darkG: 58, darkB: 64,
-    grayR: 108, grayG: 117, grayB: 125
-  };
-  
-  doc.setFontSize(fontSize);
-  
-  // Configurer la police avec support UTF-8
-  try {
-    doc.setFont("helvetica", fontStyle);
-  } catch (e) {
-    doc.setFont(undefined, fontStyle);
-  }
-  
-  switch(color) {
-    case 'primary':
-      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-      break;
-    case 'secondary':
-      doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-      break;
-    case 'success':
-      doc.setTextColor(colors.successR, colors.successG, colors.successB);
-      break;
-    case 'danger':
-      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-      break;
-    case 'gray':
-      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-      break;
-    case 'white':
-      doc.setTextColor(255, 255, 255);
-      break;
-    default:
-      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-  }
-  
-  doc.text(text, x, y);
-}
-
-// ===== EXPORT PDF SÉCURISÉ AVEC CORRECTION POLICES =====
+// ===== EXPORT PDF SÉCURISÉ =====
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
   if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
-    console.log("Export PDF bloqué - page en cours de chargement");
+    console.log("🚫 Export PDF bloqué - page en cours de chargement");
     return;
   }
     
-  console.log("Génération du PDF professionnel avec support UTF-8...");
+  console.log("📄 Génération du PDF professionnel...");
   
   // Fonction helper sécurisée pour getElementById
   function $(id) {
@@ -139,9 +35,6 @@ function exportToPDF() {
       unit: 'mm',
       format: 'a4'
     });
-    
-    // NOUVELLE : Configuration des polices pour UTF-8
-    setupPDFFont(doc);
     
     const colors = {
       primaryR: 0, primaryG: 64, primaryB: 128,
@@ -180,9 +73,11 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        addTextSmart(doc, "Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10, 7, 'normal', 'gray');
-        addTextSmart(doc, "Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10, 7, 'normal', 'gray');
-        yPosition = 15;
+        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
+        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
+        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
+        yPosition = 15; // RÉDUIT de 18 à 15
       }
     }
     
@@ -197,9 +92,34 @@ function exportToPDF() {
       }
     }
     
-    // NOUVELLE : Fonction addText avec gestion intelligente des accents
     function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      addTextSmart(doc, text, x, y, fontSize, fontStyle, color);
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, fontStyle);
+      
+      switch(color) {
+        case 'primary':
+          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+          break;
+        case 'secondary':
+          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+          break;
+        case 'success':
+          doc.setTextColor(colors.successR, colors.successG, colors.successB);
+          break;
+        case 'danger':
+          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+          break;
+        case 'gray':
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          break;
+        case 'white':
+          doc.setTextColor(255, 255, 255);
+          break;
+        default:
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      }
+      
+      doc.text(text, x, y);
     }
     
     // Vérifier que les variables globales existent
@@ -316,18 +236,18 @@ function exportToPDF() {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
           yPosition += spacing.lineHeight + 3; // Espacement réduit pour cohérence
         } else {
-          // Définir l'ordre de tri des niveaux (du plus capable au moins capable)
+          // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
           const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
           
           // Fonction de tri par niveau
-          const plongeursTries = [...pal].sort((a, b) => {
+          const plongeursTriés = [...pal].sort((a, b) => {
             const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
             const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
             return indexA - indexB;
           });
           
-          for (let j = 0; j < plongeursTries.length; j++) {
-            const p = plongeursTries[j];
+          for (let j = 0; j < plongeursTriés.length; j++) {
+            const p = plongeursTriés[j];
             if (!p || !p.nom) continue;
             
             const nomClean = p.nom.replace(/'/g, "'");
@@ -480,28 +400,28 @@ function exportToPDF() {
     const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-compact.pdf';
     doc.save(fileName);
     
-    console.log("PDF généré avec espacement réduit et support UTF-8:", fileName);
+    console.log("✅ PDF généré avec espacement réduit:", fileName);
     
-    const alertesText = alertesTotal.length > 0 ? '\n' + alertesTotal.length + ' alerte(s) détectée(s)' : '\nAucune alerte';
-    alert('PDF généré avec succès !\n\n' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\nFichier: ' + fileName);
+    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
+    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
     
   } catch (error) {
-    console.error("Erreur PDF:", error);
+    console.error("❌ Erreur PDF:", error);
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
 
-// ===== FONCTIONS WHATSAPP GLOBALES INTÉGRÉES =====
+// ===== FONCTIONS WHATSAPP GLOBALES INTEGRÉES =====
 function shareToWhatsApp() {
-  console.log("Partage WhatsApp démarré...");
+  console.log("💬 Partage WhatsApp démarré...");
   
   try {
     // Proposer les options à l'utilisateur - CORRIGÉ : OK/ANNULER au lieu de OUI/NON
     const choix = confirm(
-      "PARTAGE WHATSAPP\n\n" +
+      "📱 PARTAGE WHATSAPP\n\n" +
       "Choisissez votre méthode préférée :\n\n" +
-      "OK = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
-      "ANNULER = Télécharger le PDF (partager comme document)\n\n" +
+      "✅ OK = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
+      "❌ ANNULER = Télécharger le PDF (partager comme document)\n\n" +
       "Le texte est plus pratique pour les messages rapides !"
     );
 
@@ -517,14 +437,14 @@ function shareToWhatsApp() {
     }
     
   } catch (error) {
-    console.error("Erreur partage WhatsApp:", error);
+    console.error("❌ Erreur partage WhatsApp:", error);
     alert("Erreur lors de la préparation pour WhatsApp : " + error.message);
   }
 }
 
 // NOUVELLE FONCTION : Copier le texte des palanquées dans le presse-papier
 function copyPalanqueesToClipboard() {
-  console.log("Copie du texte des palanquées...");
+  console.log("📋 Copie du texte des palanquées...");
   
   try {
     // Récupérer les données
@@ -571,42 +491,42 @@ function copyPalanqueesToClipboard() {
     }
 
     // Créer le texte formaté pour WhatsApp
-    let texte = "*PALANQUÉES JSAS*\n\n";
-    texte += `*${formatDateFrench(dpDate)} - ${capitalize(dpPlongee)}*\n`;
-    texte += `*${dpLieu}*\n`;
-    texte += `*DP: ${dpNom}*\n\n`;
+    let texte = "🏊‍♂️ *PALANQUÉES JSAS*\n\n";
+    texte += `📅 *${formatDateFrench(dpDate)} - ${capitalize(dpPlongee)}*\n`;
+    texte += `📍 *${dpLieu}*\n`;
+    texte += `👤 *DP: ${dpNom}*\n\n`;
     
     // Résumé
-    texte += "*RÉSUMÉ*\n";
+    texte += "📊 *RÉSUMÉ*\n";
     texte += `• Total plongeurs: *${totalPlongeurs}*\n`;
     texte += `• Palanquées: *${palanqueesLocal.length}*\n`;
     if (alertesTotal.length > 0) {
-      texte += `• Alertes: *${alertesTotal.length}*\n`;
+      texte += `⚠️ Alertes: *${alertesTotal.length}*\n`;
     }
     texte += "\n";
 
     // Alertes si présentes
     if (alertesTotal.length > 0) {
-      texte += "*ALERTES*\n";
+      texte += "🚨 *ALERTES*\n";
       alertesTotal.forEach(alerte => {
-        texte += `• ${alerte}\n`;
+        texte += `⚠️ ${alerte}\n`;
       });
       texte += "\n";
     }
 
     // Palanquées
     if (palanqueesLocal.length === 0) {
-      texte += "*Aucune palanquée créée*\n";
+      texte += "⏳ *Aucune palanquée créée*\n";
     } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          texte += `*Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
+          texte += `🐠 *Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
           
           if (pal.length === 0) {
             texte += "   _Aucun plongeur assigné_\n";
           } else {
-            const plongeursTries = trierPlongeursParGrade(pal);
-            plongeursTries.forEach(p => {
+            const plongeursTriés = trierPlongeursParGrade(pal);
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
                 texte += `   • ${p.nom} (${p.niveau})`;
                 if (p.pre) {
@@ -623,9 +543,9 @@ function copyPalanqueesToClipboard() {
 
     // Plongeurs en attente
     if (plongeursLocal.length > 0) {
-      texte += "*PLONGEURS EN ATTENTE*\n";
-      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
-      plongeursTries.forEach(p => {
+      texte += "⏳ *PLONGEURS EN ATTENTE*\n";
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      plongeursTriés.forEach(p => {
         if (p && p.nom) {
           texte += `• ${p.nom} (${p.niveau})`;
           if (p.pre) {
@@ -643,17 +563,17 @@ function copyPalanqueesToClipboard() {
     if (navigator.clipboard && window.isSecureContext) {
       // Méthode moderne
       navigator.clipboard.writeText(texte).then(() => {
-        showTextForManualCopy(texte); // Afficher la modal même si copie réussie
-      }).catch(err => {
-        fallbackCopyTextToClipboard(texte);
-      });
+		showTextForManualCopy(texte); // Afficher la modal même si copie réussie
+		}).catch(err => {
+			fallbackCopyTextToClipboard(texte);
+	});
     } else {
       // Fallback pour navigateurs plus anciens
       fallbackCopyTextToClipboard(texte);
     }
 
   } catch (error) {
-    console.error("Erreur copie texte:", error);
+    console.error("❌ Erreur copie texte:", error);
     alert("Erreur lors de la copie du texte : " + error.message);
   }
 }
@@ -675,11 +595,11 @@ function fallbackCopyTextToClipboard(text) {
   try {
     const successful = document.execCommand('copy');
     if (successful) {
-      // Copie réussie, mais on affiche quand même la modal
-      showTextForManualCopy(text);
-    } else {
-      throw new Error('Commande copy non supportée');
-    }
+	// Copie réussie, mais on affiche quand même la modal
+	showTextForManualCopy(text);
+	} else {
+	throw new Error('Commande copy non supportée');
+	}
   } catch (err) {
     console.error('Erreur fallback copie:', err);
     // Dernière solution : afficher le texte pour copie manuelle
@@ -717,7 +637,7 @@ function showTextForManualCopy(text) {
   `;
   
   const title = document.createElement('h3');
-  title.textContent = 'Texte pour WhatsApp';
+  title.textContent = '📋 Texte pour WhatsApp';
   title.style.cssText = `
     margin-bottom: 15px;
     color: #25D366;
@@ -766,7 +686,7 @@ function showTextForManualCopy(text) {
   
   // Bouton Copier (principal)
   const copyButton = document.createElement('button');
-  copyButton.textContent = 'Copier le texte';
+  copyButton.textContent = '📋 Copier le texte';
   copyButton.style.cssText = `
     padding: 12px 20px;
     background: #25D366;
@@ -784,11 +704,11 @@ function showTextForManualCopy(text) {
       // Tenter la copie moderne d'abord
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
-        copyButton.textContent = 'Copié !';
+        copyButton.textContent = '✅ Copié !';
         copyButton.style.background = '#28a745';
         // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
         setTimeout(() => {
-          copyButton.textContent = 'Copier le texte';
+          copyButton.textContent = '📋 Copier le texte';
           copyButton.style.background = '#25D366';
         }, 2000);
       } else {
@@ -798,22 +718,22 @@ function showTextForManualCopy(text) {
         textarea.setSelectionRange(0, text.length);
         const successful = document.execCommand('copy');
         if (successful) {
-          copyButton.textContent = 'Copié !';
+          copyButton.textContent = '✅ Copié !';
           copyButton.style.background = '#28a745';
           // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
           setTimeout(() => {
-            copyButton.textContent = 'Copier le texte';
+            copyButton.textContent = '📋 Copier le texte';
             copyButton.style.background = '#25D366';
           }, 2000);
         } else {
-          copyButton.textContent = 'Échec - Sélectionnez et Ctrl+C';
+          copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
           copyButton.style.background = '#dc3545';
           textarea.focus();
           textarea.select();
         }
       }
     } catch (err) {
-      copyButton.textContent = 'Échec - Sélectionnez et Ctrl+C';
+      copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
       copyButton.style.background = '#dc3545';
       textarea.focus();
       textarea.select();
@@ -821,14 +741,14 @@ function showTextForManualCopy(text) {
   };
   
   copyButton.onmouseover = () => {
-    if (copyButton.textContent === 'Copier le texte') {
+    if (copyButton.textContent === '📋 Copier le texte') {
       copyButton.style.background = '#128C7E';
       copyButton.style.transform = 'translateY(-1px)';
     }
   };
   
   copyButton.onmouseout = () => {
-    if (copyButton.textContent === 'Copier le texte') {
+    if (copyButton.textContent === '📋 Copier le texte') {
       copyButton.style.background = '#25D366';
       copyButton.style.transform = 'translateY(0)';
     }
@@ -836,7 +756,7 @@ function showTextForManualCopy(text) {
   
   // Bouton Sélectionner tout
   const selectButton = document.createElement('button');
-  selectButton.textContent = 'Sélectionner tout';
+  selectButton.textContent = '🔍 Sélectionner tout';
   selectButton.style.cssText = `
     padding: 12px 20px;
     background: #007bff;
@@ -853,23 +773,23 @@ function showTextForManualCopy(text) {
     textarea.focus();
     textarea.select();
     textarea.setSelectionRange(0, text.length);
-    selectButton.textContent = 'Sélectionné';
+    selectButton.textContent = '✅ Sélectionné';
     selectButton.style.background = '#28a745';
     setTimeout(() => {
-      selectButton.textContent = 'Sélectionner tout';
+      selectButton.textContent = '🔍 Sélectionner tout';
       selectButton.style.background = '#007bff';
     }, 1500);
   };
   
   selectButton.onmouseover = () => {
-    if (selectButton.textContent === 'Sélectionner tout') {
+    if (selectButton.textContent === '🔍 Sélectionner tout') {
       selectButton.style.background = '#0056b3';
       selectButton.style.transform = 'translateY(-1px)';
     }
   };
   
   selectButton.onmouseout = () => {
-    if (selectButton.textContent === 'Sélectionner tout') {
+    if (selectButton.textContent === '🔍 Sélectionner tout') {
       selectButton.style.background = '#007bff';
       selectButton.style.transform = 'translateY(0)';
     }
@@ -877,7 +797,7 @@ function showTextForManualCopy(text) {
   
   // Bouton Fermer
   const closeButton = document.createElement('button');
-  closeButton.textContent = 'Fermer';
+  closeButton.textContent = '✕ Fermer';
   closeButton.style.cssText = `
     padding: 12px 20px;
     background: #6c757d;
@@ -925,11 +845,11 @@ function showTextForManualCopy(text) {
     } else if (e.ctrlKey && e.key === 'c') {
       // Laisser le navigateur gérer Ctrl+C normalement
       setTimeout(() => {
-        copyButton.textContent = 'Copié avec Ctrl+C !';
+        copyButton.textContent = '✅ Copié avec Ctrl+C !';
         copyButton.style.background = '#28a745';
         // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
         setTimeout(() => {
-          copyButton.textContent = 'Copier le texte';
+          copyButton.textContent = '📋 Copier le texte';
           copyButton.style.background = '#25D366';
         }, 2000);
       }, 100);
@@ -945,7 +865,7 @@ function showTextForManualCopy(text) {
 }
 
 function generatePDFForWhatsApp() {
-  console.log("Génération PDF optimisé pour WhatsApp avec support UTF-8...");
+  console.log("📱 Génération PDF optimisé pour WhatsApp...");
   
   try {
     // Vérifier que jsPDF est disponible
@@ -1001,9 +921,6 @@ function generatePDFForWhatsApp() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
 
-    // NOUVELLE : Configuration des polices pour UTF-8
-    setupPDFFont(doc);
-
     let yPosition = 20;
     const margin = 20;
     const pageWidth = 210;
@@ -1019,7 +936,10 @@ function generatePDFForWhatsApp() {
     }
 
     function addText(text, x, y, size = 10, style = 'normal', colorR = 0, colorG = 0, colorB = 0) {
-      addTextSmart(doc, text, x, y, size, style, colorR === 255 && colorG === 255 && colorB === 255 ? 'white' : 'dark');
+      doc.setFontSize(size);
+      doc.setFont(undefined, style);
+      doc.setTextColor(colorR, colorG, colorB);
+      doc.text(text, x, y);
     }
 
     // En-tête avec couleur WhatsApp
@@ -1052,7 +972,7 @@ function generatePDFForWhatsApp() {
       addText('ALERTES', margin, yPosition, 14, 'bold', 220, 53, 69);
       yPosition += 8;
       alertesTotal.forEach(alerte => {
-        addText('• ' + alerte, margin + 5, yPosition, 10, 'normal', 220, 53, 69);
+        addText('⚠️ ' + alerte, margin + 5, yPosition, 10, 'normal', 220, 53, 69);
         yPosition += 6;
       });
       yPosition += 10;
@@ -1078,9 +998,9 @@ function generatePDFForWhatsApp() {
             yPosition += 8;
           } else {
             // Trier et afficher les plongeurs
-            const plongeursTries = trierPlongeursParGrade(pal);
+            const plongeursTriés = trierPlongeursParGrade(pal);
             
-            plongeursTries.forEach(p => {
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
                 const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
                 addText(textLine, margin + 5, yPosition, 10);
@@ -1100,9 +1020,9 @@ function generatePDFForWhatsApp() {
       addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold', 37, 211, 102);
       yPosition += 8;
       
-      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursTries.forEach(p => {
+      plongeursTriés.forEach(p => {
         if (p && p.nom) {
           const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
           addText(textLine, margin + 5, yPosition, 10);
@@ -1114,41 +1034,41 @@ function generatePDFForWhatsApp() {
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(128, 128, 128);
-    addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, pageHeight - 15, 8, 'normal', 128, 128, 128);
+    doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, pageHeight - 15);
 
     // Télécharger le PDF
     const fileName = 'palanquees-jsas-whatsapp-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("PDF WhatsApp généré avec support UTF-8:", fileName);
+    console.log("✅ PDF WhatsApp généré:", fileName);
     return fileName;
 
   } catch (error) {
-    console.error("Erreur PDF WhatsApp:", error);
+    console.error("❌ Erreur PDF WhatsApp:", error);
     throw error;
   }
 }
 
 // CORRIGÉ : Plus de proposition WhatsApp Web
 function showWhatsAppInstructions() {
-  alert(`PDF généré pour WhatsApp !
+  alert(`📱 PDF généré pour WhatsApp !
 
-Instructions pour partager :
+📋 Instructions pour partager :
 
-1. Ouvrez WhatsApp sur votre téléphone
-2. Sélectionnez le contact ou groupe
-3. Appuyez sur l'icône de pièce jointe
-4. Choisissez "Document" 
-5. Sélectionnez le PDF téléchargé
-6. Ajoutez un message si désiré
-7. Envoyez !
+1️⃣ Ouvrez WhatsApp sur votre téléphone
+2️⃣ Sélectionnez le contact ou groupe
+3️⃣ Appuyez sur 📎 (pièce jointe)
+4️⃣ Choisissez "Document" 
+5️⃣ Sélectionnez le PDF téléchargé
+6️⃣ Ajoutez un message si désiré
+7️⃣ Envoyez ! 🚀
 
-Le fichier se trouve dans vos Téléchargements`);
+💡 Le fichier se trouve dans vos Téléchargements`);
 }
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
 function generatePDFPreview() {
-  console.log("Génération de l'aperçu PDF professionnel avec WhatsApp et support UTF-8...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp...");
   
   try {
     // Récupération spéciale pour le directeur de plongée
@@ -1518,9 +1438,9 @@ function generatePDFPreview() {
     htmlContent += '<header class="preview-header">';
     htmlContent += '<h1 class="preview-title">Aperçu des Palanquées</h1>';
     htmlContent += '<div class="preview-buttons">';
-    htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">Fermer</button>';
-    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">Générer PDF</button>';
-    htmlContent += '<button id="btn-whatsapp" class="preview-btn btn-whatsapp" onclick="shareToWhatsAppFromPreview()" title="Partager sur WhatsApp">WhatsApp</button>';
+    htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕ Fermer</button>';
+    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">📄 Générer PDF</button>';
+    htmlContent += '<button id="btn-whatsapp" class="preview-btn btn-whatsapp" onclick="shareToWhatsAppFromPreview()" title="Partager sur WhatsApp">💬 WhatsApp</button>';
     htmlContent += '</div>';
     htmlContent += '</header>';
     
@@ -1533,7 +1453,7 @@ function generatePDFPreview() {
     
     htmlContent += '<main class="content">';
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">Résumé</h2>';
+    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
     htmlContent += '<p><strong>Total plongeurs:</strong> ' + totalPlongeurs + '</p>';
     htmlContent += '<p><strong>Palanquées:</strong> ' + palanqueesLocal.length + '</p>';
     htmlContent += '<p><strong>Alertes:</strong> ' + alertesTotal.length + '</p>';
@@ -1541,7 +1461,7 @@ function generatePDFPreview() {
     
     if (alertesTotal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">Alertes</h2>';
+      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
       alertesTotal.forEach(alerte => {
         htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
       });
@@ -1549,7 +1469,7 @@ function generatePDFPreview() {
     }
     
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">Palanquées</h2>';
+    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
       htmlContent += '<p>Aucune palanquée créée.</p>';
@@ -1567,9 +1487,9 @@ function generatePDFPreview() {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
             // MODIFICATION: Trier les plongeurs par grade avant affichage
-            const plongeursTries = trierPlongeursParGrade(pal);
+            const plongeursTriés = trierPlongeursParGrade(pal);
             
-            plongeursTries.forEach(p => {
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
                 htmlContent += '<div class="plongeur-item">';
                 htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
@@ -1592,12 +1512,12 @@ function generatePDFPreview() {
     
     if (plongeursLocal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">Plongeurs en Attente</h2>';
+      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
       
       // MODIFICATION: Trier aussi les plongeurs en attente par grade
-      const plongeursEnAttenteTries = trierPlongeursParGrade(plongeursLocal);
+      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursEnAttenteTries.forEach(p => {
+      plongeursEnAttenteTriés.forEach(p => {
         if (p && p.nom) {
           htmlContent += '<div class="plongeur-item">';
           htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
@@ -1625,7 +1545,7 @@ function generatePDFPreview() {
         
         // Feedback visuel
         btn.disabled = true;
-        btn.innerHTML = 'Génération...';
+        btn.innerHTML = '⏳ Génération...';
 
         try {
           // Appeler la fonction du parent
@@ -1641,7 +1561,7 @@ function generatePDFPreview() {
           // Restaurer l'interface
           setTimeout(() => {
             btn.disabled = false;
-            btn.innerHTML = 'WhatsApp';
+            btn.innerHTML = '💬 WhatsApp';
           }, 2000);
         }
       }
@@ -1657,7 +1577,7 @@ function generatePDFPreview() {
         btn.disabled = true;
         if (whatsappBtn) whatsappBtn.disabled = true;
         
-        btn.innerHTML = 'Génération...';
+        btn.innerHTML = '⏳ Génération...';
 
         try {
           // Appeler la fonction du parent
@@ -1675,7 +1595,7 @@ function generatePDFPreview() {
             btn.disabled = false;
             if (whatsappBtn) whatsappBtn.disabled = false;
             
-            btn.innerHTML = 'Générer PDF';
+            btn.innerHTML = '📄 Générer PDF';
           }, 1500);
         }
       }
@@ -1698,23 +1618,23 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("Aperçu PDF généré avec tri par grade, support UTF-8, en-tête intégré et bouton WhatsApp corrigé");
+      console.log("✅ Aperçu PDF généré avec tri par grade, en-tête intégré et bouton WhatsApp corrigé");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("Éléments d'aperçu non trouvés");
+      console.error("❌ Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("Erreur génération aperçu PDF:", error);
+    console.error("❌ Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
 
-// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉE AVEC TRI ET UTF-8 =====
+// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
 function generatePDFFromPreview() {
-  console.log("Génération PDF simplifié avec tri par niveau et support UTF-8...");
+  console.log("📄 Génération PDF simplifié avec tri par niveau...");
   
   try {
     // Vérifier que jsPDF est disponible
@@ -1770,9 +1690,6 @@ function generatePDFFromPreview() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
 
-    // NOUVELLE : Configuration des polices pour UTF-8
-    setupPDFFont(doc);
-
     let yPosition = 20;
     const margin = 20;
     const pageWidth = 210;
@@ -1788,19 +1705,23 @@ function generatePDFFromPreview() {
     }
 
     function addText(text, x, y, size = 10, style = 'normal') {
-      addTextSmart(doc, text, x, y, size, style, 'dark');
+      doc.setFontSize(size);
+      doc.setFont(undefined, style);
+      doc.text(text, x, y);
     }
 
     // En-tête
     doc.setFillColor(0, 64, 128);
     doc.rect(0, 0, pageWidth, 50, 'F');
     
-    addTextSmart(doc, 'Palanquées JSAS', margin, 20, 18, 'bold', 'white');
-    addTextSmart(doc, 'DP: ' + dpNom, margin, 30, 12, 'normal', 'white');
-    addTextSmart(doc, 'Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10, 'normal', 'white');
-    addTextSmart(doc, 'Lieu: ' + dpLieu, margin, 46, 10, 'normal', 'white');
+    doc.setTextColor(255, 255, 255);
+    addText('Palanquées JSAS', margin, 20, 18, 'bold');
+    addText('DP: ' + dpNom, margin, 30, 12);
+    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10);
+    addText('Lieu: ' + dpLieu, margin, 46, 10);
     
     yPosition = 65;
+    doc.setTextColor(0, 0, 0);
 
     // Résumé
     addText('RÉSUMÉ', margin, yPosition, 14, 'bold');
@@ -1844,9 +1765,9 @@ function generatePDFFromPreview() {
             yPosition += 8;
           } else {
             // Trier et afficher les plongeurs
-            const plongeursTries = trierPlongeursParGrade(pal);
+            const plongeursTriés = trierPlongeursParGrade(pal);
             
-            plongeursTries.forEach(p => {
+            plongeursTriés.forEach(p => {
               if (p && p.nom) {
                 const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
                 addText(textLine, margin + 5, yPosition);
@@ -1866,9 +1787,9 @@ function generatePDFFromPreview() {
       addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold');
       yPosition += 8;
       
-      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
+      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursTries.forEach(p => {
+      plongeursTriés.forEach(p => {
         if (p && p.nom) {
           const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
           addText(textLine, margin + 5, yPosition);
@@ -1881,19 +1802,21 @@ function generatePDFFromPreview() {
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      addTextSmart(doc, new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10, 8, 'normal', 'gray');
-      addTextSmart(doc, 'Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8, 'normal', 'gray');
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10);
+      doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
     }
 
     // Télécharger
     const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("PDF aperçu généré avec support UTF-8:", fileName);
+    console.log("✅ PDF aperçu généré:", fileName);
     alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
 
   } catch (error) {
-    console.error("Erreur PDF aperçu:", error);
+    console.error("❌ Erreur PDF aperçu:", error);
     alert("Erreur lors de la génération du PDF: " + error.message);
   }
 }
@@ -1908,10 +1831,137 @@ function closePDFPreview() {
     if (pdfPreview) {
       pdfPreview.src = "";
     }
-    console.log("Aperçu PDF fermé");
+    console.log("✅ Aperçu PDF fermé");
   }
 }
+//// FONCTION CORRIGÉE - Modal qui ne se ferme JAMAIS automatiquement
+function showTextForManualCopy(text) {
+  // Supprimer toute modal existante d'abord
+  const existingModal = document.getElementById('whatsapp-text-modal');
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
 
+  const modal = document.createElement('div');
+  modal.id = 'whatsapp-text-modal';
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+    justify-content: center; align-items: center;
+  `;
+  
+  const container = document.createElement('div');
+  container.style.cssText = `
+    background: white; padding: 20px; border-radius: 10px;
+    max-width: 90%; max-height: 80%; overflow: auto; text-align: center;
+  `;
+  
+  container.innerHTML = `
+    <h3 style="margin-bottom: 15px; color: #25D366; font-size: 18px;">📋 Texte pour WhatsApp</h3>
+    <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Copiez ce texte et collez-le dans WhatsApp :</p>
+    <textarea id="whatsapp-textarea" style="
+      width: 100%; height: 300px; border: 2px solid #25D366; border-radius: 8px;
+      padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px;
+      line-height: 1.4; resize: vertical; outline: none; margin-bottom: 15px;
+    ">${text}</textarea>
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <button id="copy-btn" style="
+        padding: 12px 20px; background: #25D366; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">📋 Copier le texte</button>
+      <button id="select-btn" style="
+        padding: 12px 20px; background: #007bff; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">🔍 Sélectionner tout</button>
+      <button id="close-btn" style="
+        padding: 12px 20px; background: #6c757d; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">✕ Fermer</button>
+    </div>
+  `;
+  
+  modal.appendChild(container);
+  document.body.appendChild(modal);
+  
+  // Sélection automatique au début
+  const textarea = document.getElementById('whatsapp-textarea');
+  setTimeout(() => {
+    textarea.focus();
+    textarea.select();
+  }, 100);
+  
+  // Bouton Copier - NE FERME JAMAIS LA MODAL
+  document.getElementById('copy-btn').onclick = async () => {
+    const btn = document.getElementById('copy-btn');
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = '✅ Copié !';
+        btn.style.background = '#28a745';
+        // IMPORTANT : PAS de fermeture automatique !
+        setTimeout(() => {
+          btn.textContent = '📋 Copier le texte';
+          btn.style.background = '#25D366';
+        }, 2000);
+      } else {
+        textarea.select();
+        const success = document.execCommand('copy');
+        if (success) {
+          btn.textContent = '✅ Copié !';
+          btn.style.background = '#28a745';
+          // IMPORTANT : PAS de fermeture automatique !
+          setTimeout(() => {
+            btn.textContent = '📋 Copier le texte';
+            btn.style.background = '#25D366';
+          }, 2000);
+        } else {
+          btn.textContent = '❌ Utilisez Ctrl+C';
+          btn.style.background = '#dc3545';
+        }
+      }
+    } catch (err) {
+      btn.textContent = '❌ Utilisez Ctrl+C';
+      btn.style.background = '#dc3545';
+      textarea.select();
+    }
+  };
+  
+  // Bouton Sélectionner
+  document.getElementById('select-btn').onclick = () => {
+    textarea.focus();
+    textarea.select();
+    const btn = document.getElementById('select-btn');
+    btn.textContent = '✅ Sélectionné';
+    btn.style.background = '#28a745';
+    setTimeout(() => {
+      btn.textContent = '🔍 Sélectionner tout';
+      btn.style.background = '#007bff';
+    }, 1500);
+  };
+  
+  // Bouton Fermer - SEULE façon de fermer
+  document.getElementById('close-btn').onclick = () => {
+    document.body.removeChild(modal);
+  };
+  
+  // Raccourci Escape pour fermer
+  modal.onkeydown = (e) => {
+    if (e.key === 'Escape') {
+      document.body.removeChild(modal);
+    } else if (e.ctrlKey && e.key === 'c') {
+      const btn = document.getElementById('copy-btn');
+      setTimeout(() => {
+        btn.textContent = '✅ Copié avec Ctrl+C !';
+        btn.style.background = '#28a745';
+        // IMPORTANT : PAS de fermeture automatique !
+        setTimeout(() => {
+          btn.textContent = '📋 Copier le texte';
+          btn.style.background = '#25D366';
+        }, 2000);
+      }, 100);
+    }
+  };
+}
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
@@ -1922,4 +1972,4 @@ window.generatePDFForWhatsApp = generatePDFForWhatsApp;
 window.showWhatsAppInstructions = showWhatsAppInstructions;
 window.copyPalanqueesToClipboard = copyPalanqueesToClipboard;
 
-console.log("Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel et support UTF-8 complet");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel");

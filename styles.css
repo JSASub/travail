@@ -21,8 +21,8 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 .header-container {
   display: flex;
-  align-items: center; /* Aligne verticalement au centre */
-  justify-content: flex-start; /* Aligne l'ensemble à gauche */
+  align-items: left; /* Aligne verticalement au centre */
+  justify-content: center; /* Centre l'ensemble horizontalement */
   gap: 15px; /* Espace entre le logo et le titre */
   margin-bottom: 20px;
   padding: 20px;
