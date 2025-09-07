@@ -1493,3 +1493,22 @@ header div h2 {
     max-height: 130px;
   }
 }
+
+#toggle-plongeurs-menu {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  background: transparent;
+}
+
+#toggle-plongeurs-menu:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
