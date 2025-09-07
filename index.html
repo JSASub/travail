@@ -487,35 +487,47 @@ function updateFloatingPlongeursList() {
   // Obtenir les plongeurs depuis la variable globale
   let plongeurs = window.plongeurs || [];
   
-  // Appliquer le même tri que la liste principale
+  // Obtenir le tri actuel de la liste principale
   const currentSortBtn = document.querySelector('.sort-btn.active');
   const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
   
   // Copier les plongeurs pour ne pas modifier l'original
   let plongeursTriés = [...plongeurs];
   
-  // Appliquer le tri selon le type actuel
+  // Appliquer EXACTEMENT le même tri que la liste principale
   switch(currentSort) {
     case 'nom':
       plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
       break;
     case 'niveau':
+      // Ordre de priorité identique à ui-interface.js
       const niveauOrder = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
         'N3': 7, 'N2': 8, 'N1': 9,
         'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
         'Déb.': 13, 'débutant': 14, 'Déb': 15
       };
-      plongeursTriés.sort((a, b) => (niveauOrder[a.niveau] || 99) - (niveauOrder[b.niveau] || 99));
+      
+      plongeursTriés.sort((a, b) => {
+        const orderA = niveauOrder[a.niveau] || 99;
+        const orderB = niveauOrder[b.niveau] || 99;
+        
+        // Si même niveau, trier par nom (critère secondaire)
+        if (orderA === orderB) {
+          return a.nom.localeCompare(b.nom);
+        }
+        
+        return orderA - orderB;
+      });
       break;
     case 'none':
     default:
-      // Utiliser l'ordre original
+      // Utiliser l'ordre original exact
       plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
       break;
   }
   
-  // Mettre à jour l'affichage
+  // Mettre à jour l'affichage avec l'ordre correct
   floatingCount.textContent = `(${plongeursTriés.length})`;
   floatingList.innerHTML = '';
   
@@ -524,11 +536,11 @@ function updateFloatingPlongeursList() {
     return;
   }
   
-  // Créer les éléments triés
-  plongeursTriés.forEach((plongeur, index) => {
-    // Trouver l'index original pour le drag & drop
+  // Créer les éléments dans l'ordre trié
+  plongeursTriés.forEach((plongeur, sortedIndex) => {
+    // Trouver l'index original dans window.plongeurs pour le drag & drop
     const originalIndex = window.plongeurs.findIndex(p => 
-      p.nom === plongeur.nom && p.niveau === plongeur.niveau
+      p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
     );
     
     const nom = plongeur.nom || 'Nom inconnu';
@@ -537,14 +549,15 @@ function updateFloatingPlongeursList() {
     const floatingItem = document.createElement('div');
     floatingItem.className = 'floating-plongeur-item';
     floatingItem.draggable = true;
-    floatingItem.dataset.plongeurIndex = originalIndex; // Index original pour le drag & drop
+    floatingItem.dataset.originalIndex = originalIndex;
+    floatingItem.dataset.sortedIndex = sortedIndex;
     
     floatingItem.innerHTML = `
       <span class="floating-plongeur-nom">${nom}</span>
       <span class="floating-plongeur-niveau">${niveau}</span>
     `;
     
-    // Events de drag & drop avec l'index original
+    // Events de drag & drop
     floatingItem.addEventListener('dragstart', function(e) {
       floatingItem.classList.add('dragging');
       
@@ -555,7 +568,7 @@ function updateFloatingPlongeursList() {
           niveau: plongeur.niveau,
           pre: plongeur.pre || ''
         },
-        originalIndex: originalIndex // Utiliser l'index original
+        originalIndex: originalIndex
       };
       
       try {
@@ -575,7 +588,7 @@ function updateFloatingPlongeursList() {
     floatingList.appendChild(floatingItem);
   });
   
-  console.log('Menu mis à jour avec tri:', currentSort, '-', plongeursTriés.length, 'plongeurs');
+  console.log('Menu synchronisé - Tri:', currentSort, '- Premier plongeur:', plongeursTriés[0]?.nom);
 }
 
 // Fonction pour gérer la visibilité du menu des plongeurs
