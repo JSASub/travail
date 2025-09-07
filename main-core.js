@@ -2,6 +2,41 @@
 // Ajouter cette variable globale au début du fichier
 let currentSessionKey = null;
 let sessionModified = false;
+//
+// Forcer l'initialisation des variables globales
+document.addEventListener('DOMContentLoaded', function() {
+  // S'assurer que les variables existent
+  if (typeof window.plongeurs === 'undefined') {
+    window.plongeurs = [];
+  }
+  
+  // Si la liste DOM a des éléments mais pas la variable globale, reconstruire
+  const listDOM = document.getElementById('listePlongeurs');
+  if (listDOM && listDOM.children.length > 0 && window.plongeurs.length === 0) {
+    console.log('Reconstruction des données plongeurs depuis le DOM...');
+    
+    Array.from(listDOM.children).forEach(li => {
+      const text = li.textContent || li.innerText;
+      const parts = text.split(' - ');
+      
+      if (parts.length >= 2) {
+        window.plongeurs.push({
+          nom: parts[0].trim(),
+          niveau: parts[1].trim(),
+          pre: parts[2] ? parts[2].replace('[', '').replace(']', '').trim() : ''
+        });
+      }
+    });
+    
+    console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+    
+    // Forcer la mise à jour du menu
+    if (typeof updateFloatingPlongeursList === 'function') {
+      updateFloatingPlongeursList();
+    }
+  }
+});
+//
 
 function getSelectedDPName() {
   const dpSelect = document.getElementById('dp-select');
