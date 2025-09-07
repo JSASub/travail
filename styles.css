@@ -21,19 +21,24 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 .header-container {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 15px;
+  align-items: center; /* Aligne verticalement au centre */
+  justify-content: center; /* Centre l'ensemble horizontalement */
+  gap: 15px; /* Espace entre le logo et le titre */
+  margin-bottom: 20px;
+  padding: 20px;
 }
 
 .logo {
-  height: 80px; /* Ajustez selon vos besoins */
+  height: 50px; /* Ajustez la taille selon le titre */
   width: auto;
   object-fit: contain;
+  vertical-align: middle; /* Assurance supplémentaire */
 }
 
 .header-container h2 {
-  margin: 0;
+  margin: 0; /* Supprime les marges par défaut du h1 */
+  padding: 0; /* Supprime les paddings par défaut */
+  line-height: 1; /* Contrôle précis de la hauteur de ligne */
   font-size: 2.5em;
   color: #2c3e50;
 }
