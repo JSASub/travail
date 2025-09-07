@@ -512,6 +512,226 @@
         btnVisible: floatingBtn?.style.display
       });
     };
+
+    // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
+    
+    let plongeursMenuCollapsed = false;
+    let originalListePlongeurs = null;
+    
+    // Fonction pour basculer l'affichage du menu des plongeurs
+    function togglePlongeursMenu() {
+      const menu = document.getElementById('floating-plongeurs-menu');
+      const list = document.getElementById('floating-plongeurs-list');
+      const toggleBtn = document.getElementById('toggle-plongeurs-menu');
+      
+      plongeursMenuCollapsed = !plongeursMenuCollapsed;
+      
+      if (plongeursMenuCollapsed) {
+        list.style.display = 'none';
+        toggleBtn.textContent = '+';
+        menu.style.maxHeight = '35px';
+      } else {
+        list.style.display = 'block';
+        toggleBtn.textContent = '−';
+        menu.style.maxHeight = '200px';
+      }
+    }
+    
+    // Fonction pour mettre à jour la liste des plongeurs flottante
+    function updateFloatingPlongeursList() {
+      const originalList = document.getElementById('listePlongeurs');
+      const floatingList = document.getElementById('floating-plongeurs-list');
+      const floatingCount = document.getElementById('floating-plongeurs-count');
+      const floatingEmpty = document.getElementById('floating-plongeurs-empty');
+      
+      if (!originalList || !floatingList) return;
+      
+      const plongeurs = originalList.querySelectorAll('li');
+      const plongeursCount = plongeurs.length;
+      
+      // Mettre à jour le compteur
+      floatingCount.textContent = `(${plongeursCount})`;
+      
+      // Vider la liste flottante
+      floatingList.innerHTML = '';
+      
+      if (plongeursCount === 0) {
+        floatingList.appendChild(floatingEmpty);
+        return;
+      }
+      
+      // Ajouter chaque plongeur à la liste flottante
+      plongeurs.forEach((plongeur, index) => {
+        const plongeurData = extractPlongeurData(plongeur);
+        if (plongeurData) {
+          const floatingItem = createFloatingPlongeurItem(plongeurData, index);
+          floatingList.appendChild(floatingItem);
+        }
+      });
+    }
+    
+    // Fonction pour extraire les données d'un plongeur
+    function extractPlongeurData(plongeurElement) {
+      const text = plongeurElement.textContent || plongeurElement.innerText;
+      const parts = text.split(' - ');
+      
+      if (parts.length >= 2) {
+        return {
+          nom: parts[0].trim(),
+          niveau: parts[1].trim(),
+          prerogatives: parts[2] ? parts[2].trim() : '',
+          originalElement: plongeurElement
+        };
+      }
+      return null;
+    }
+    
+    // Fonction pour créer un élément plongeur flottant
+    function createFloatingPlongeurItem(plongeurData, index) {
+      const item = document.createElement('div');
+      item.className = 'floating-plongeur-item';
+      item.draggable = true;
+      item.dataset.plongeurIndex = index;
+      
+      item.innerHTML = `
+        <span class="floating-plongeur-nom">${plongeurData.nom}</span>
+        <span class="floating-plongeur-niveau">${plongeurData.niveau}</span>
+      `;
+      
+      // Ajouter les événements de drag & drop
+      item.addEventListener('dragstart', function(e) {
+        item.classList.add('dragging');
+        
+        // Utiliser les mêmes données que le système existant
+        e.dataTransfer.setData('text/plain', plongeurData.originalElement.outerHTML);
+        e.dataTransfer.setData('text/index', index);
+        e.dataTransfer.effectAllowed = 'move';
+        
+        console.log('Drag depuis menu flottant:', plongeurData.nom);
+      });
+      
+      item.addEventListener('dragend', function(e) {
+        item.classList.remove('dragging');
+      });
+      
+      // Double-clic pour faire défiler vers l'élément original
+      item.addEventListener('dblclick', function() {
+        if (plongeurData.originalElement) {
+          plongeurData.originalElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+          // Effet de surbrillance
+          plongeurData.originalElement.style.background = '#fff3cd';
+          setTimeout(() => {
+            plongeurData.originalElement.style.background = '';
+          }, 2000);
+        }
+      });
+      
+      return item;
+    }
+    
+    // Fonction pour gérer la visibilité du menu des plongeurs
+    function updateFloatingPlongeursVisibility() {
+      const menu = document.getElementById('floating-plongeurs-menu');
+      const saveBtn = document.getElementById('floating-save-btn');
+      
+      if (!menu || !saveBtn) return;
+      
+      // Afficher le menu seulement si le bouton de sauvegarde est visible
+      if (saveBtn.style.display === 'flex') {
+        menu.style.display = 'flex';
+      } else {
+        menu.style.display = 'none';
+      }
+    }
+    
+    // Fonction pour initialiser le menu des plongeurs
+    function initFloatingPlongeursMenu() {
+      // Mettre à jour la liste régulièrement
+      setInterval(updateFloatingPlongeursList, 1000);
+      
+      // Synchroniser la visibilité avec le bouton de sauvegarde
+      setInterval(updateFloatingPlongeursVisibility, 1000);
+      
+      // Observer les changements dans la liste originale
+      const originalList = document.getElementById('listePlongeurs');
+      if (originalList) {
+        const observer = new MutationObserver(updateFloatingPlongeursList);
+        observer.observe(originalList, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+      }
+      
+      // Rendre le menu déplaçable par le header
+      makeMenuDraggable();
+      
+      // Mise à jour initiale
+      updateFloatingPlongeursList();
+      updateFloatingPlongeursVisibility();
+    }
+    
+    // Fonction pour rendre le menu déplaçable
+    function makeMenuDraggable() {
+      const menu = document.getElementById('floating-plongeurs-menu');
+      const header = document.getElementById('floating-plongeurs-header');
+      
+      if (!menu || !header) return;
+      
+      let isDragging = false;
+      let startX, startY, startLeft, startTop;
+      
+      header.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('toggle-btn')) return;
+        
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(window.getComputedStyle(menu).right);
+        startTop = parseInt(window.getComputedStyle(menu).bottom);
+        
+        header.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      
+      document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const deltaX = startX - e.clientX;
+        const deltaY = e.clientY - startY;
+        
+        menu.style.right = (startLeft + deltaX) + 'px';
+        menu.style.bottom = (startTop - deltaY) + 'px';
+      });
+      
+      document.addEventListener('mouseup', function() {
+        if (isDragging) {
+          isDragging = false;
+          header.style.cursor = 'move';
+        }
+      });
+    }
+    
+    // Initialiser le menu des plongeurs après le chargement
+    window.addEventListener('load', function() {
+      setTimeout(initFloatingPlongeursMenu, 2500);
+    });
+    
+    // Fonction de debug pour le menu des plongeurs
+    window.testPlongeursMenu = function() {
+      const menu = document.getElementById('floating-plongeurs-menu');
+      const originalList = document.getElementById('listePlongeurs');
+      
+      console.log('Test menu plongeurs:', {
+        menu: !!menu,
+        menuVisible: menu?.style.display,
+        originalList: !!originalList,
+        plongeursCount: originalList?.children.length || 0
+      });
+    };
   </script>
 
 <!-- Modal pour ajouter/modifier un DP (à ajouter juste avant la fermeture </body>) -->
