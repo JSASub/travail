@@ -92,35 +92,127 @@ function exportToPDF() {
       }
     }
     
-    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
-      
-      switch(color) {
-        case 'primary':
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          break;
-        case 'secondary':
-          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          break;
-        case 'success':
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          break;
-        case 'danger':
-          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          break;
-        case 'gray':
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          break;
-        case 'white':
-          doc.setTextColor(255, 255, 255);
-          break;
-        default:
-          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      }
-      
-      doc.text(text, x, y);
+function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
+  // Configuration de la police et couleur d'abord
+  doc.setFontSize(fontSize);
+  doc.setFont(undefined, fontStyle);
+  
+  switch(color) {
+    case 'primary':
+      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+      break;
+    case 'secondary':
+      doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+      break;
+    case 'success':
+      doc.setTextColor(colors.successR, colors.successG, colors.successB);
+      break;
+    case 'danger':
+      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      break;
+    case 'gray':
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+      break;
+    case 'white':
+      doc.setTextColor(255, 255, 255);
+      break;
+    default:
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+  }
+  
+  // NOUVELLE APPROCHE : Essayer d'abord avec les accents
+  try {
+    // Tenter d'ajouter le texte original avec accents
+    doc.text(text, x, y);
+    return; // Si ça marche, on s'arrête là
+  } catch (error) {
+    console.warn("Accents non supportés pour:", text, "- Nettoyage automatique");
+  }
+  
+  // FALLBACK : Si échec, nettoyer seulement les caractères problématiques
+  const cleanProblematicChars = (str) => {
+    if (!str || typeof str !== 'string') return '';
+    
+    // Ne nettoyer QUE les caractères qui causent vraiment des problèmes
+    const problematicReplacements = {
+      // Garder les accents courants, remplacer seulement les caractères exotiques
+      '€': 'EUR',
+      '…': '...',
+      '–': '-',
+      '—': '-',
+      ''': "'",
+      ''': "'",
+      '"': '"',
+      '"': '"',
+      '«': '"',
+      '»': '"'
+    };
+    
+    let cleaned = str;
+    for (const [problematic, clean] of Object.entries(problematicReplacements)) {
+      cleaned = cleaned.replace(new RegExp(problematic, 'g'), clean);
     }
+    
+    return cleaned;
+  };
+  
+  // Essayer avec nettoyage minimal
+  const minimalClean = cleanProblematicChars(text);
+  try {
+    doc.text(minimalClean, x, y);
+    return;
+  } catch (error) {
+    console.warn("Nettoyage minimal insuffisant pour:", text);
+  }
+  
+  // DERNIER RECOURS : Nettoyage complet des accents
+  const fullCleanAccents = (str) => {
+    const replacements = {
+      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+      'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+      'Ç': 'C', 'Ñ': 'N',
+      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+      'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+      'ç': 'c', 'ñ': 'n', 'ÿ': 'y'
+    };
+    
+    let cleaned = str;
+    for (const [accented, clean] of Object.entries(replacements)) {
+      cleaned = cleaned.replace(new RegExp(accented, 'g'), clean);
+    }
+    return cleaned;
+  };
+  
+  const fullyClean = fullCleanAccents(minimalClean);
+  doc.text(fullyClean, x, y);
+}
+
+// ALTERNATIVE : Améliorer la configuration UTF-8 de jsPDF
+// Ajoutez cette fonction au début de votre fonction exportToPDF (après la création du doc) :
+
+function configureUTF8Support(doc) {
+  try {
+    // Essayer de forcer l'encodage UTF-8
+    doc.setFont("helvetica");
+    
+    // Alternative : spécifier explicitement l'encodage
+    if (doc.internal && doc.internal.events) {
+      doc.internal.events.subscribe('addPage', function() {
+        doc.setFont("helvetica");
+      });
+    }
+    
+    console.log("Support UTF-8 configuré");
+  } catch (error) {
+    console.warn("Impossible de configurer UTF-8:", error);
+  }
+}
     
     // Vérifier que les variables globales existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
