@@ -1356,3 +1356,58 @@ header h2 {
 header div h2 {
   margin-top: 8 !important;
 }
+
+/* Menu flottant des plongeurs */
+.floating-plongeurs-menu {
+  position: fixed;
+  bottom: 110px;
+  right: 30px;
+  width: 280px;
+  max-height: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #007bff;
+  border-radius: 10px;
+  z-index: 999;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.floating-plongeurs-header {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  color: white;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+}
+
+.floating-plongeurs-list {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 5px;
+  background: rgba(255,255,255,0.9);
+}
+
+.floating-plongeur-item {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin: 3px 0;
+  cursor: grab;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.floating-plongeur-item:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
