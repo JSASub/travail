@@ -648,7 +648,15 @@ function initFloatingPlongeursMenu() {
   
   // Rendre le menu déplaçable
   makeMenuDraggable();
-  
+  //
+  setTimeout(() => {
+  const saveBtn = document.getElementById('floating-save-btn');
+  const menu = document.getElementById('floating-plongeurs-menu');
+  if (saveBtn && menu) {
+    menu.style.width = saveBtn.offsetWidth + 'px';
+  }
+}, 500);
+  //
   console.log('Menu des plongeurs initialisé avec succès');
 }
 
