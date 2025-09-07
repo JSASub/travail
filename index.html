@@ -469,13 +469,17 @@ function togglePlongeursMenu() {
   if (plongeursMenuCollapsed) {
     list.style.display = 'none';
     toggleBtn.textContent = '+';
-    menu.style.maxHeight = '35px';
-    header.style.padding = '4px 12px'; // Réduire le padding
+    toggleBtn.title = 'Agrandir le menu'; // Tooltip
+    menu.style.maxHeight = '40px'; // Légèrement plus haut
+    header.style.padding = '6px 12px'; // Garder un padding décent
+    header.style.cursor = 'pointer'; // Rendre tout le header cliquable
   } else {
     list.style.display = 'block';
     toggleBtn.textContent = '−';
+    toggleBtn.title = 'Réduire le menu';
     menu.style.maxHeight = '200px';
-    header.style.padding = '6px 12px'; // Padding normal
+    header.style.padding = '6px 12px';
+    header.style.cursor = 'default';
   }
 }
 
