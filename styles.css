@@ -1343,13 +1343,19 @@ header div h2 {
 .floating-plongeurs-header {
   background: linear-gradient(45deg, #007bff, #0056b3);
   color: white;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-weight: bold;
   font-size: 13px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: move;
+}
+
+/* Ajustement quand le menu est réduit */
+.floating-plongeurs-menu[style*="max-height: 35px"] .floating-plongeurs-header {
+  padding: 4px 12px; /* Padding encore plus réduit quand le menu est fermé */
+  min-height: 27px; /* Hauteur minimale adaptée */
 }
 
 .floating-plongeurs-header .toggle-btn {
