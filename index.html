@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gestion de Palanquées JSAS</title>
+  <title>Gestion de PalanquÃ©es JSAS</title>
   <link rel="stylesheet" href="styles.css?v=102" />
   
   <!-- Firebase SDK version 8 (compatible syntaxe classique) -->
@@ -37,7 +37,7 @@
 		<div style="max-width: 400px; margin: 50px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
 		<div class="header-container">
 			<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
-			<h2 style="text-align: center; color: #004080; margin-bottom: 30px;">🤿 Connexion JSAS</h2>
+			<h2 style="text-align: center; color: #004080; margin-bottom: 30px;">ðŸ¤¿ Connexion JSAS</h2>
 	    </div>
      
       <form id="login-form">
@@ -49,7 +49,7 @@
         <div style="margin-bottom: 20px;">
           <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mot de passe :</label>
           <input type="password" id="login-password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-		  <a href="reset_password.html" style="font-size:12px; opacity:0.8; text-decoration:underline; padding:4px 2px;">J'ai oublié mon mot de passe</a>
+		  <a href="reset_password.html" style="font-size:12px; opacity:0.8; text-decoration:underline; padding:4px 2px;">J'ai oubliÃ© mon mot de passe</a>
         </div>
         
         <button type="submit" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
@@ -69,24 +69,22 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <span id="user-info" style="color: #666; font-size: 14px;"></span>
       <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
-        🔑 MdP
+        ðŸ"' MdP
       </button>
       <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
-        Déconnexion
+        DÃ©connexion
       </button>
     </div>
   </div>
   
   <div class="header-container">
-	<div style="margin-top: 5px; margin-bottom: 15px;">
-  		<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
-		<h2 style="text-align: left; margin: 0; color: #004080; font-size: 20px;">🤿 Palanquées JSAS</h2>
-	</div>
+  	<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
+	<h2 style="margin: 0; color: #004080; font-size: 20px;">ðŸ¤¿ PalanquÃ©es JSAS</h2>
   </div>
   
   <hr>
   <div style="text-align: center; margin: 28px 0;">
-	<h1 style="margin: 0; color: #004080;">Création des<br>FICHES de SÉCURITÉ</h1>
+	<h1 style="margin: 0; color: #004080;">CrÃ©ation des<br>FICHES de SÃ‰CURITÃ‰</h1>
   </div>
   <hr>
     <section id="sessions-manager">
@@ -95,37 +93,37 @@
       <select id="session-selector" style="margin: 5px 10px;">
         <option value="">-- Charger une session --</option>
       </select>
-      <button id="load-session" class="btn-secondary">Charger une plongée enregistrée</button>
+      <button id="load-session" class="btn-secondary">Charger une plongÃ©e enregistrÃ©e</button>
     </div>
     <div style="margin: 10px 0; font-size: 0.7em; color: #666;">
-      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+      Les sessions sont automatiquement sauvegardÃ©es par date et directeur de plongÃ©e.
     </div>
   </section>
   <br>
   <hr> 
 <div id="meta-info">
-  <label><strong>Directeur de Plongée</strong>
+  <label><strong>Directeur de PlongÃ©e</strong>
     <div>
       <select id="dp-select">
         <option value="">-- Choisir un DP --</option>
       </select>
       <button type="button" id="add-dp-btn" class="dp-btn dp-btn-add" title="Ajouter un DP">
-        ➕ <span>Nouveau</span>
+        âž• <span>Nouveau</span>
       </button>
       <button type="button" id="edit-dp-btn" class="dp-btn dp-btn-edit" title="Modifier le DP" disabled>
-        ✏️ <span>Modifier</span>
+        âœï¸ <span>Modifier</span>
       </button>
       <button type="button" id="delete-dp-btn" class="dp-btn dp-btn-delete" title="Supprimer le DP" disabled>
-        🗑️ <span>Supprimer</span>
+        ðŸ—'ï¸ <span>Supprimer</span>
       </button>
     </div>
   </label>
   <label>Date : <input type="date" id="dp-date" /></label>
-  <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
-  <label>Plongée : 
+  <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongÃ©e" /></label>
+  <label>PlongÃ©e : 
     <select id="dp-plongee">
       <option value="matin">Matin</option>
-      <option value="apres-midi">Après-midi</option>
+      <option value="apres-midi">AprÃ¨s-midi</option>
       <option value="soir">Soir</option>
       <option value="nuit">Nuit</option>
       <option value="plg1">Plg1</option>
@@ -144,7 +142,7 @@
 
   <!-- SECTION ALERTES -->
   <div id="alertes-section" class="alert-section alert-hidden">
-    <div class="alert-title">⚠️ Alertes Palanquées</div>
+    <div class="alert-title">âš ï¸ Alertes PalanquÃ©es</div>
     <div id="alertes-content"></div>
   </div>
 
@@ -152,7 +150,7 @@
     <br><br><hr>
     <strong>Liste des plongeurs <span id="compteur-plongeurs" style="color: #007bff;">(0)</span></strong>
     
-    <!-- CONTRÔLES DE TRI -->
+    <!-- CONTRÃ"LES DE TRI -->
     <div class="sort-controls">
       <span>Trier par :</span>
       <button class="sort-btn active" data-sort="none">Ordre d'ajout</button>
@@ -161,10 +159,10 @@
     </div>
     
 	<form id="addForm">  
-    <input type="text" id="nom" placeholder="NOM & Prénom" required />
+    <input type="text" id="nom" placeholder="NOM & PrÃ©nom" required />
 	<select id="niveau" required>
-		<option value="">-- Sélectionner le niveau --</option>
-		<option>Déb.</option>
+		<option value="">-- SÃ©lectionner le niveau --</option>
+		<option>DÃ©b.</option>
 		<option>Plg.Br</option>
 		<option>Plg.Ar</option>
 		<option>Plg.Or</option>
@@ -179,7 +177,7 @@
 		<option>E4</option>
 	</select>
     
-    Prérogatives : 
+    PrÃ©rogatives : 
 	<input type="text" id="pre" placeholder="PE20, PA40 ..." />
     <br>
 	<button type="submit" id="ajouter-plongeur">Ajouter</button>
@@ -196,15 +194,15 @@
   <hr>
   <br>
   <section id="palanquees">
-    <h2><strong>Palanquées <span id="compteur-palanquees" style="color: #28a745;">(0 plongeurs dans 0 palanquées)</span></strong></h2>
-    <button id="addPalanquee">Nouvelle palanquée</button>
+    <h2><strong>PalanquÃ©es <span id="compteur-palanquees" style="color: #28a745;">(0 plongeurs dans 0 palanquÃ©es)</span></strong></h2>
+    <button id="addPalanquee">Nouvelle palanquÃ©e</button>
     <br><br>    
     <div id="palanqueesContainer"></div>
     
     <br><br><hr>
-	<div><strong>Création PDF de la Fiche de Sécurité</strong></div>
-    <button id="generatePDF" class="btn-secondary">Aperçu des palanquées PDF</button>
-    <button id="exportPDF" class="btn-success">Télécharger Fiche de Sécu PDF</button>
+	<div><strong>CrÃ©ation PDF de la Fiche de SÃ©curitÃ©</strong></div>
+    <button id="generatePDF" class="btn-secondary">AperÃ§u des palanquÃ©es PDF</button>
+    <button id="exportPDF" class="btn-success">TÃ©lÃ©charger Fiche de SÃ©cu PDF</button>
    </section>
   </main><br><br>
   <div id="previewContainer" style="display:none;">
@@ -215,13 +213,13 @@
   <section id="sessions-manager-extended">
     <strong>Nettoyage des Sessions</strong>
     <div style="margin: 10px 0;">
-      <label>Sélectionner les sessions à supprimer :</label>
+      <label>SÃ©lectionner les sessions Ã  supprimer :</label>
       <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
         <em>Chargement automatique...</em>
       </div>
-      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
-      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
-      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
+      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sÃ©lectionner</button>
+      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout dÃ©sÃ©lectionner</button>
+      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">ðŸ—'ï¸ Supprimer sÃ©lectionnÃ©es</button>
       <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
     </div>
   </section>
@@ -238,23 +236,23 @@
   <!-- BOUTON FLOTTANT DE SAUVEGARDE SESSION -->
   <button class="floating-save-btn" id="floating-save-btn" onclick="saveSessionFromFloatingButton()" style="display: none;">
     <div class="loading-icon"></div>
-    <span class="btn-text">💾 Save Session + DP</span>
+    <span class="btn-text">ðŸ'¾ Save Session + DP</span>
   </button>
 
   <!-- MENU FLOTTANT DES PLONGEURS -->
   <div class="floating-plongeurs-menu" id="floating-plongeurs-menu" style="display: none;">
     <div class="floating-plongeurs-header" id="floating-plongeurs-header">
-      <span>🤿 Plongeurs <span class="floating-plongeurs-count" id="floating-plongeurs-count">(0)</span></span>
-      <button class="toggle-btn" id="toggle-plongeurs-menu" onclick="togglePlongeursMenu()">−</button>
+      <span>ðŸ¤¿ Plongeurs <span class="floating-plongeurs-count" id="floating-plongeurs-count">(0)</span></span>
+      <button class="toggle-btn" id="toggle-plongeurs-menu" onclick="togglePlongeursMenu()">âˆ'</button>
     </div>
     <div class="floating-plongeurs-list" id="floating-plongeurs-list">
-      <div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>
+      <div class="floating-plongeurs-empty">Aucun plongeur ajoutÃ©</div>
     </div>
   </div>
 
   <!-- NOTIFICATION DE SAUVEGARDE -->
   <div class="save-notification" id="save-notification">
-    ✅ Session sauvegardée !
+    âœ… Session sauvegardÃ©e !
   </div>
 
   <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
@@ -280,39 +278,39 @@
       const floatingBtn = document.getElementById('floating-save-btn');
       const originalBtn = document.getElementById('valider-dp');
       
-      // Désactiver le bouton et afficher le chargement
+      // DÃ©sactiver le bouton et afficher le chargement
       floatingBtn.disabled = true;
       floatingBtn.classList.add('loading');
       
       try {
-        // Vérifier que les données nécessaires sont présentes
+        // VÃ©rifier que les donnÃ©es nÃ©cessaires sont prÃ©sentes
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
         
         if (!dpSelect || !dpSelect.value) {
-          showFloatingNotification('❌ Veuillez sélectionner un Directeur de Plongée', 'error');
+          showFloatingNotification('âŒ Veuillez sÃ©lectionner un Directeur de PlongÃ©e', 'error');
           return;
         }
         
         if (!dpDate || !dpDate.value) {
-          showFloatingNotification('❌ Veuillez saisir une date', 'error');
+          showFloatingNotification('âŒ Veuillez saisir une date', 'error');
           return;
         }
         
-        // Déclencher la fonction de sauvegarde existante en simulant un clic
+        // DÃ©clencher la fonction de sauvegarde existante en simulant un clic
         if (originalBtn) {
           originalBtn.click();
         }
         
-        // Afficher la notification de succès
+        // Afficher la notification de succÃ¨s
         const selectedDPText = dpSelect.options[dpSelect.selectedIndex]?.text || dpSelect.value;
-        showFloatingNotification(`✅ Session sauvegardée !<br><small>DP: ${selectedDPText}<br>Date: ${dpDate.value}</small>`);
+        showFloatingNotification(`âœ… Session sauvegardÃ©e !<br><small>DP: ${selectedDPText}<br>Date: ${dpDate.value}</small>`);
         
       } catch (error) {
         console.error('Erreur lors de la sauvegarde depuis le bouton flottant:', error);
-        showFloatingNotification('❌ Erreur lors de la sauvegarde', 'error');
+        showFloatingNotification('âŒ Erreur lors de la sauvegarde', 'error');
       } finally {
-        // Réactiver le bouton
+        // RÃ©activer le bouton
         setTimeout(() => {
           floatingBtn.disabled = false;
           floatingBtn.classList.remove('loading');
@@ -341,7 +339,7 @@
       }, 4000);
     }
     
-    // Fonction pour gérer la visibilité du bouton flottant
+    // Fonction pour gÃ©rer la visibilitÃ© du bouton flottant
     function updateFloatingButtonVisibility() {
       const floatingBtn = document.getElementById('floating-save-btn');
       const mainApp = document.getElementById('main-app');
@@ -356,7 +354,7 @@
       }
     }
     
-    // Fonction pour mettre à jour le texte du bouton selon l'état
+    // Fonction pour mettre Ã  jour le texte du bouton selon l'Ã©tat
     function updateFloatingButtonState() {
       const floatingBtn = document.getElementById('floating-save-btn');
       const btnText = floatingBtn?.querySelector('.btn-text');
@@ -366,25 +364,25 @@
       const dpSelect = document.getElementById('dp-select');
       const dpDate = document.getElementById('dp-date');
       
-      // Vérification simple
+      // VÃ©rification simple
       if (dpSelect && dpDate && dpSelect.value && dpDate.value) {
         floatingBtn.style.opacity = '1';
-        btnText.textContent = '💾 Save Session + DP';
+        btnText.textContent = 'ðŸ'¾ Save Session + DP';
       } else {
         floatingBtn.style.opacity = '0.8';
-        btnText.textContent = '💾 Save Session + DP';
+        btnText.textContent = 'ðŸ'¾ Save Session + DP';
       }
     }
     
     // Initialisation simple du bouton flottant
     function initFloatingButton() {
-      // Vérifier la visibilité du bouton
+      // VÃ©rifier la visibilitÃ© du bouton
       setInterval(updateFloatingButtonVisibility, 1000);
       
-      // Mettre à jour l'état du bouton
+      // Mettre Ã  jour l'Ã©tat du bouton
       setInterval(updateFloatingButtonState, 1000);
       
-      // Mise à jour immédiate
+      // Mise Ã  jour immÃ©diate
       updateFloatingButtonVisibility();
       updateFloatingButtonState();
     }
@@ -400,14 +398,14 @@
       }
     });
     
-    // Initialiser après le chargement complet
+    // Initialiser aprÃ¨s le chargement complet
     window.addEventListener('load', function() {
       setTimeout(initFloatingButton, 2000);
     });
 
     // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
     
-// ===== GESTION DU MENU FLOTTANT DES PLONGEURS - VERSION CORRIGÉE =====
+// ===== GESTION DU MENU FLOTTANT DES PLONGEURS - VERSION CORRIGÃ‰E =====
 
 let plongeursMenuCollapsed = false;
 
@@ -415,7 +413,7 @@ let plongeursMenuCollapsed = false;
 window.addEventListener('DOMContentLoaded', function() {
   // Fonction de synchronisation automatique
   function autoSyncPlongeursMenu() {
-    // Vérifier si les variables globales existent et sont synchronisées
+    // VÃ©rifier si les variables globales existent et sont synchronisÃ©es
     if (typeof window.plongeurs === 'undefined') {
       window.plongeurs = [];
     }
@@ -424,9 +422,9 @@ window.addEventListener('DOMContentLoaded', function() {
     const domCount = listDOM ? listDOM.children.length : 0;
     const globalCount = window.plongeurs.length;
     
-    // Si désynchronisation détectée, corriger
+    // Si dÃ©synchronisation dÃ©tectÃ©e, corriger
     if (domCount > 0 && (globalCount === 0 || domCount !== globalCount)) {
-      console.log('Désynchronisation détectée - Correction automatique...');
+      console.log('DÃ©synchronisation dÃ©tectÃ©e - Correction automatique...');
       window.plongeurs = [];
       
       Array.from(listDOM.children).forEach(li => {
@@ -445,19 +443,19 @@ window.addEventListener('DOMContentLoaded', function() {
       
       window.plongeursOriginaux = [...window.plongeurs];
       
-      // Mettre à jour le menu flottant
+      // Mettre Ã  jour le menu flottant
       if (typeof updateFloatingPlongeursList === 'function') {
         updateFloatingPlongeursList();
       }
       
-      console.log('Synchronisation automatique terminée:', window.plongeurs.length, 'plongeurs');
+      console.log('Synchronisation automatique terminÃ©e:', window.plongeurs.length, 'plongeurs');
     }
   }
   
   // Surveiller les changements toutes les 2 secondes
   setInterval(autoSyncPlongeursMenu, 2000);
   
-  // Première synchronisation après 3 secondes
+  // PremiÃ¨re synchronisation aprÃ¨s 3 secondes
   setTimeout(autoSyncPlongeursMenu, 3000);
 });
 //
@@ -476,20 +474,20 @@ function togglePlongeursMenu() {
     list.style.display = 'none';
     toggleBtn.textContent = '+';
     toggleBtn.title = 'Agrandir le menu'; // Tooltip
-    menu.style.maxHeight = '40px'; // Légèrement plus haut
-    header.style.padding = '6px 12px'; // Garder un padding décent
+    menu.style.maxHeight = '40px'; // LÃ©gÃ¨rement plus haut
+    header.style.padding = '6px 12px'; // Garder un padding dÃ©cent
     header.style.cursor = 'pointer'; // Rendre tout le header cliquable
   } else {
     list.style.display = 'block';
-    toggleBtn.textContent = '−';
-    toggleBtn.title = 'Réduire le menu';
+    toggleBtn.textContent = 'âˆ'';
+    toggleBtn.title = 'RÃ©duire le menu';
     menu.style.maxHeight = '200px';
     header.style.padding = '6px 12px';
     header.style.cursor = 'default';
   }
 }
 
-// Fonction CORRIGÉE pour mettre à jour la liste des plongeurs flottante
+// Fonction CORRIGÃ‰E pour mettre Ã  jour la liste des plongeurs flottante
 function updateFloatingPlongeursList() {
   const floatingList = document.getElementById('floating-plongeurs-list');
   const floatingCount = document.getElementById('floating-plongeurs-count');
@@ -504,27 +502,27 @@ function updateFloatingPlongeursList() {
   const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
   
   // Copier les plongeurs pour ne pas modifier l'original
-  let plongeursTriés = [...plongeurs];
+  let plongeursTriÃ©s = [...plongeurs];
   
-  // Appliquer EXACTEMENT le même tri que la liste principale
+  // Appliquer EXACTEMENT le mÃªme tri que la liste principale
   switch(currentSort) {
     case 'nom':
-      plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
+      plongeursTriÃ©s.sort((a, b) => a.nom.localeCompare(b.nom));
       break;
     case 'niveau':
-      // Ordre de priorité identique à ui-interface.js
+      // Ordre de prioritÃ© identique Ã  ui-interface.js
       const niveauOrder = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
         'N3': 7, 'N2': 8, 'N1': 9,
         'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-        'Déb.': 13, 'débutant': 14, 'Déb': 15
+        'DÃ©b.': 13, 'dÃ©butant': 14, 'DÃ©b': 15
       };
       
-      plongeursTriés.sort((a, b) => {
+      plongeursTriÃ©s.sort((a, b) => {
         const orderA = niveauOrder[a.niveau] || 99;
         const orderB = niveauOrder[b.niveau] || 99;
         
-        // Si même niveau, trier par nom (critère secondaire)
+        // Si mÃªme niveau, trier par nom (critÃ¨re secondaire)
         if (orderA === orderB) {
           return a.nom.localeCompare(b.nom);
         }
@@ -535,21 +533,21 @@ function updateFloatingPlongeursList() {
     case 'none':
     default:
       // Utiliser l'ordre original exact
-      plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
+      plongeursTriÃ©s = [...(window.plongeursOriginaux || plongeurs)];
       break;
   }
   
-  // Mettre à jour l'affichage avec l'ordre correct
-  floatingCount.textContent = `(${plongeursTriés.length})`;
+  // Mettre Ã  jour l'affichage avec l'ordre correct
+  floatingCount.textContent = `(${plongeursTriÃ©s.length})`;
   floatingList.innerHTML = '';
   
-  if (plongeursTriés.length === 0) {
-    floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
+  if (plongeursTriÃ©s.length === 0) {
+    floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajoutÃ©</div>';
     return;
   }
   
-  // Créer les éléments dans l'ordre trié
-  plongeursTriés.forEach((plongeur, sortedIndex) => {
+  // CrÃ©er les Ã©lÃ©ments dans l'ordre triÃ©
+  plongeursTriÃ©s.forEach((plongeur, sortedIndex) => {
     // Trouver l'index original dans window.plongeurs pour le drag & drop
     const originalIndex = window.plongeurs.findIndex(p => 
       p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
@@ -600,10 +598,10 @@ function updateFloatingPlongeursList() {
     floatingList.appendChild(floatingItem);
   });
   
-  console.log('Menu synchronisé - Tri:', currentSort, '- Premier plongeur:', plongeursTriés[0]?.nom);
+  console.log('Menu synchronisÃ© - Tri:', currentSort, '- Premier plongeur:', plongeursTriÃ©s[0]?.nom);
 }
 
-// Fonction pour gérer la visibilité du menu des plongeurs
+// Fonction pour gÃ©rer la visibilitÃ© du menu des plongeurs
 function updateFloatingPlongeursVisibility() {
   const menu = document.getElementById('floating-plongeurs-menu');
   const mainApp = document.getElementById('main-app');
@@ -622,16 +620,16 @@ function updateFloatingPlongeursVisibility() {
 function initFloatingPlongeursMenu() {
   console.log('Initialisation du menu des plongeurs...');
   
-  // Vérifier que les variables globales existent
+  // VÃ©rifier que les variables globales existent
   if (typeof window.plongeurs === 'undefined') {
     window.plongeurs = [];
   }
   
-  // Mettre à jour immédiatement
+  // Mettre Ã  jour immÃ©diatement
   updateFloatingPlongeursList();
   updateFloatingPlongeursVisibility();
   
-  // Mettre à jour régulièrement
+  // Mettre Ã  jour rÃ©guliÃ¨rement
   setInterval(updateFloatingPlongeursList, 3000);
   setInterval(updateFloatingPlongeursVisibility, 1000);
   
@@ -641,7 +639,7 @@ function initFloatingPlongeursMenu() {
   
   setInterval(() => {
     if (typeof window.plongeurs !== 'undefined' && window.plongeurs.length !== lastPlongeursLength) {
-      console.log('Changement détecté dans plongeurs:', lastPlongeursLength, '->', window.plongeurs.length);
+      console.log('Changement dÃ©tectÃ© dans plongeurs:', lastPlongeursLength, '->', window.plongeurs.length);
       lastPlongeursLength = window.plongeurs.length;
       updateFloatingPlongeursList();
     }
@@ -650,9 +648,9 @@ function initFloatingPlongeursMenu() {
   // Observer les changements dans le DOM de la liste principale (backup)
   const originalList = document.getElementById('listePlongeurs');
   if (originalList) {
-    console.log('Observer ajouté sur la liste des plongeurs');
+    console.log('Observer ajoutÃ© sur la liste des plongeurs');
     const observer = new MutationObserver(function(mutations) {
-      console.log('Changement DOM détecté dans la liste des plongeurs');
+      console.log('Changement DOM dÃ©tectÃ© dans la liste des plongeurs');
       setTimeout(updateFloatingPlongeursList, 100);
     });
     observer.observe(originalList, {
@@ -661,7 +659,7 @@ function initFloatingPlongeursMenu() {
     });
   }
   
-  // Rendre le menu déplaçable
+  // Rendre le menu dÃ©plaÃ§able
   makeMenuDraggable();
   //
   setTimeout(() => {
@@ -672,10 +670,10 @@ function initFloatingPlongeursMenu() {
   }
 }, 500);
   //
-  console.log('Menu des plongeurs initialisé avec succès');
+  console.log('Menu des plongeurs initialisÃ© avec succÃ¨s');
 }
 
-// Fonction pour rendre le menu déplaçable
+// Fonction pour rendre le menu dÃ©plaÃ§able
 function makeMenuDraggable() {
   const menu = document.getElementById('floating-plongeurs-menu');
   const header = document.getElementById('floating-plongeurs-header');
@@ -716,20 +714,20 @@ function makeMenuDraggable() {
   });
 }
 
-// CORRECTION DU DRAG & DROP - Améliorer la gestion dans main-core.js
-// Fonction pour améliorer la compatibilité du drag & drop
+// CORRECTION DU DRAG & DROP - AmÃ©liorer la gestion dans main-core.js
+// Fonction pour amÃ©liorer la compatibilitÃ© du drag & drop
 function enhanceDragDropCompatibility() {
   // S'assurer que la variable globale dragData existe
   if (typeof window.dragData === 'undefined') {
     window.dragData = null;
   }
   
-  // Améliorer les handlers existants pour supporter le menu flottant
+  // AmÃ©liorer les handlers existants pour supporter le menu flottant
   const originalHandleDrop = window.handleDrop;
   
   if (originalHandleDrop) {
     window.handleDrop = function(e) {
-      console.log('Drop amélioré détecté');
+      console.log('Drop amÃ©liorÃ© dÃ©tectÃ©');
       
       // Essayer d'abord la logique originale
       try {
@@ -744,7 +742,7 @@ function enhanceDragDropCompatibility() {
   }
 }
 
-// Handler de drop spécifique pour le menu flottant
+// Handler de drop spÃ©cifique pour le menu flottant
 function handleFloatingMenuDrop(e) {
   e.preventDefault();
   
@@ -753,7 +751,7 @@ function handleFloatingMenuDrop(e) {
   
   dropZone.classList.remove('drag-over');
   
-  // Récupérer les données
+  // RÃ©cupÃ©rer les donnÃ©es
   let data = window.dragData;
   
   if (!data) {
@@ -769,7 +767,7 @@ function handleFloatingMenuDrop(e) {
   
   if (!data) return;
   
-  console.log('Données de drop:', data);
+  console.log('DonnÃ©es de drop:', data);
   
   // S'assurer que les variables globales existent
   if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
@@ -778,13 +776,13 @@ function handleFloatingMenuDrop(e) {
   // Drop vers la liste principale
   if (dropZone.id === 'listePlongeurs') {
     console.log('Drop vers liste principale');
-    return; // La logique principale devrait gérer cela
+    return; // La logique principale devrait gÃ©rer cela
   } else {
-    // Drop vers une palanquée
+    // Drop vers une palanquÃ©e
     const palanqueeIndex = parseInt(dropZone.dataset.index);
     if (isNaN(palanqueeIndex)) return;
     
-    console.log('Drop vers palanquée', palanqueeIndex);
+    console.log('Drop vers palanquÃ©e', palanqueeIndex);
     
     if (data.type === "fromMainList") {
       // Trouver et supprimer le plongeur de la liste principale
@@ -793,11 +791,11 @@ function handleFloatingMenuDrop(e) {
       if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
         const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
         
-        // Ajouter à la palanquée
+        // Ajouter Ã  la palanquÃ©e
         if (window.palanquees[palanqueeIndex]) {
           window.palanquees[palanqueeIndex].push(plongeur);
           
-          console.log('Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
+          console.log('Plongeur dÃ©placÃ©:', plongeur.nom, 'vers palanquÃ©e', palanqueeIndex + 1);
           
           // Synchroniser
           if (typeof window.syncToDatabase === 'function') {
@@ -812,7 +810,7 @@ function handleFloatingMenuDrop(e) {
   window.dragData = null;
 }
 
-// Initialiser le menu des plongeurs après le chargement
+// Initialiser le menu des plongeurs aprÃ¨s le chargement
 window.addEventListener('load', function() {
   setTimeout(() => {
     initFloatingPlongeursMenu();
@@ -820,7 +818,7 @@ window.addEventListener('load', function() {
   }, 3000);
 });
 
-// Fonctions de debug améliorées
+// Fonctions de debug amÃ©liorÃ©es
 window.testPlongeursMenu = function() {
   console.log('=== DEBUG MENU PLONGEURS ===');
   console.log('Plongeurs globaux:', window.plongeurs);
@@ -829,14 +827,14 @@ window.testPlongeursMenu = function() {
   const menu = document.getElementById('floating-plongeurs-menu');
   console.log('Menu visible:', menu?.style.display);
   
-  // Forcer la mise à jour
+  // Forcer la mise Ã  jour
   updateFloatingPlongeursList();
   
   console.log('=== FIN DEBUG ===');
 };
 
 window.forceUpdatePlongeursMenu = function() {
-  console.log('Mise à jour forcée du menu des plongeurs');
+  console.log('Mise Ã  jour forcÃ©e du menu des plongeurs');
   updateFloatingPlongeursList();
   updateFloatingPlongeursVisibility();
 };
