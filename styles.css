@@ -21,18 +21,14 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 .header-container {
   display: flex;
-  align-items: center; /* Aligne verticalement au centre */
-  justify-content: center; /* Centre l'ensemble horizontalement */
-  gap: 15px; /* Espace entre le logo et le titre */
-  margin-bottom: 20px;
-  padding: 20px;
+  align-items: baseline; /* Aligne sur la ligne de base du texte */
+  justify-content: center;
+  gap: 15px;
 }
 
 .logo {
-  height: 50px; /* Ajustez la taille selon le titre */
+  height: 1em; /* Même hauteur que la police */
   width: auto;
-  object-fit: contain;
-  vertical-align: middle; /* Assurance supplémentaire */
 }
 
 .header-container h2 {
