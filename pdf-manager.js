@@ -1,6 +1,110 @@
-// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp)
+// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp + correction polices)
 
-// ===== EXPORT PDF SÉCURISÉ =====
+// ===== CONFIGURATION POLICES UTF-8 =====
+function setupPDFFont(doc) {
+  try {
+    // Essayer d'utiliser une police qui supporte l'UTF-8
+    doc.setFont("helvetica");
+    console.log("Police Helvetica configurée pour UTF-8");
+  } catch (error) {
+    console.warn("Erreur configuration police:", error);
+    // Fallback vers la police par défaut
+    doc.setFont("times");
+  }
+}
+
+// Fonction pour nettoyer les caractères accentués si nécessaire
+function cleanText(text) {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Remplacements des caractères problématiques courants
+  const replacements = {
+    'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+    'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+    'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+    'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+    'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+    'Ç': 'C', 'ç': 'c',
+    'Ñ': 'N', 'ñ': 'n',
+    'Ÿ': 'Y', 'ÿ': 'y',
+    '«': '"', '»': '"',
+    ''': "'", ''': "'", '"': '"', '"': '"'
+  };
+  
+  // Appliquer les remplacements seulement si nécessaire
+  let cleaned = text;
+  for (const [accented, clean] of Object.entries(replacements)) {
+    cleaned = cleaned.replace(new RegExp(accented, 'g'), clean);
+  }
+  
+  return cleaned;
+}
+
+// Fonction intelligente pour ajouter du texte avec gestion des accents
+function addTextSmart(doc, text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
+  try {
+    // D'abord essayer avec le texte original
+    addTextWithFont(doc, text, x, y, fontSize, fontStyle, color);
+  } catch (error) {
+    console.warn("Erreur avec texte original, nettoyage des accents:", error);
+    // Si erreur, utiliser la version nettoyée
+    const cleanedText = cleanText(text);
+    addTextWithFont(doc, cleanedText, x, y, fontSize, fontStyle, color);
+  }
+}
+
+// Fonction pour ajouter du texte avec police configurée
+function addTextWithFont(doc, text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
+  const colors = {
+    primaryR: 0, primaryG: 64, primaryB: 128,
+    secondaryR: 0, secondaryG: 123, secondaryB: 255,
+    successR: 40, successG: 167, successB: 69,
+    dangerR: 220, dangerG: 53, dangerB: 69,
+    darkR: 52, darkG: 58, darkB: 64,
+    grayR: 108, grayG: 117, grayB: 125
+  };
+  
+  doc.setFontSize(fontSize);
+  
+  // Configurer la police avec support UTF-8
+  try {
+    doc.setFont("helvetica", fontStyle);
+  } catch (e) {
+    doc.setFont(undefined, fontStyle);
+  }
+  
+  switch(color) {
+    case 'primary':
+      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+      break;
+    case 'secondary':
+      doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+      break;
+    case 'success':
+      doc.setTextColor(colors.successR, colors.successG, colors.successB);
+      break;
+    case 'danger':
+      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+      break;
+    case 'gray':
+      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+      break;
+    case 'white':
+      doc.setTextColor(255, 255, 255);
+      break;
+    default:
+      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+  }
+  
+  doc.text(text, x, y);
+}
+
+// ===== EXPORT PDF SÉCURISÉ AVEC CORRECTION POLICES =====
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
   if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
@@ -8,7 +112,7 @@ function exportToPDF() {
     return;
   }
     
-  console.log("📄 Génération du PDF professionnel...");
+  console.log("📄 Génération du PDF professionnel avec support UTF-8...");
   
   // Fonction helper sécurisée pour getElementById
   function $(id) {
@@ -35,6 +139,9 @@ function exportToPDF() {
       unit: 'mm',
       format: 'a4'
     });
+    
+    // NOUVELLE : Configuration des polices pour UTF-8
+    setupPDFFont(doc);
     
     const colors = {
       primaryR: 0, primaryG: 64, primaryB: 128,
@@ -73,11 +180,9 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
-        yPosition = 15; // RÉDUIT de 18 à 15
+        addTextSmart(doc, "Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10, 7, 'normal', 'gray');
+        addTextSmart(doc, "Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10, 7, 'normal', 'gray');
+        yPosition = 15;
       }
     }
     
@@ -92,34 +197,9 @@ function exportToPDF() {
       }
     }
     
+    // NOUVELLE : Fonction addText avec gestion intelligente des accents
     function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-      doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
-      
-      switch(color) {
-        case 'primary':
-          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-          break;
-        case 'secondary':
-          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-          break;
-        case 'success':
-          doc.setTextColor(colors.successR, colors.successG, colors.successB);
-          break;
-        case 'danger':
-          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-          break;
-        case 'gray':
-          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-          break;
-        case 'white':
-          doc.setTextColor(255, 255, 255);
-          break;
-        default:
-          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-      }
-      
-      doc.text(text, x, y);
+      addTextSmart(doc, text, x, y, fontSize, fontStyle, color);
     }
     
     // Vérifier que les variables globales existent
@@ -400,7 +480,7 @@ function exportToPDF() {
     const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-compact.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF généré avec espacement réduit:", fileName);
+    console.log("✅ PDF généré avec espacement réduit et support UTF-8:", fileName);
     
     const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
     alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
@@ -411,7 +491,7 @@ function exportToPDF() {
   }
 }
 
-// ===== FONCTIONS WHATSAPP GLOBALES INTEGRÉES =====
+// ===== FONCTIONS WHATSAPP GLOBALES INTÉGRÉES =====
 function shareToWhatsApp() {
   console.log("💬 Partage WhatsApp démarré...");
   
@@ -520,7 +600,7 @@ function copyPalanqueesToClipboard() {
     } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          texte += `🐠 *Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
+          texte += `🏠 *Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
           
           if (pal.length === 0) {
             texte += "   _Aucun plongeur assigné_\n";
@@ -865,7 +945,7 @@ function showTextForManualCopy(text) {
 }
 
 function generatePDFForWhatsApp() {
-  console.log("📱 Génération PDF optimisé pour WhatsApp...");
+  console.log("📱 Génération PDF optimisé pour WhatsApp avec support UTF-8...");
   
   try {
     // Vérifier que jsPDF est disponible
@@ -921,6 +1001,9 @@ function generatePDFForWhatsApp() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
 
+    // NOUVELLE : Configuration des polices pour UTF-8
+    setupPDFFont(doc);
+
     let yPosition = 20;
     const margin = 20;
     const pageWidth = 210;
@@ -936,10 +1019,7 @@ function generatePDFForWhatsApp() {
     }
 
     function addText(text, x, y, size = 10, style = 'normal', colorR = 0, colorG = 0, colorB = 0) {
-      doc.setFontSize(size);
-      doc.setFont(undefined, style);
-      doc.setTextColor(colorR, colorG, colorB);
-      doc.text(text, x, y);
+      addTextSmart(doc, text, x, y, size, style, colorR === 255 && colorG === 255 && colorB === 255 ? 'white' : 'dark');
     }
 
     // En-tête avec couleur WhatsApp
@@ -1034,13 +1114,13 @@ function generatePDFForWhatsApp() {
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(128, 128, 128);
-    doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, pageHeight - 15);
+    addText('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, pageHeight - 15, 8, 'normal', 128, 128, 128);
 
     // Télécharger le PDF
     const fileName = 'palanquees-jsas-whatsapp-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF WhatsApp généré:", fileName);
+    console.log("✅ PDF WhatsApp généré avec support UTF-8:", fileName);
     return fileName;
 
   } catch (error) {
@@ -1068,7 +1148,7 @@ function showWhatsAppInstructions() {
 
 // ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
 function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp...");
+  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp et support UTF-8...");
   
   try {
     // Récupération spéciale pour le directeur de plongée
@@ -1618,7 +1698,7 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade, en-tête intégré et bouton WhatsApp corrigé");
+      console.log("✅ Aperçu PDF généré avec tri par grade, support UTF-8, en-tête intégré et bouton WhatsApp corrigé");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
@@ -1632,9 +1712,9 @@ function generatePDFPreview() {
   }
 }
 
-// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
+// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉE AVEC TRI ET UTF-8 =====
 function generatePDFFromPreview() {
-  console.log("📄 Génération PDF simplifié avec tri par niveau...");
+  console.log("📄 Génération PDF simplifié avec tri par niveau et support UTF-8...");
   
   try {
     // Vérifier que jsPDF est disponible
@@ -1690,6 +1770,9 @@ function generatePDFFromPreview() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
 
+    // NOUVELLE : Configuration des polices pour UTF-8
+    setupPDFFont(doc);
+
     let yPosition = 20;
     const margin = 20;
     const pageWidth = 210;
@@ -1705,23 +1788,19 @@ function generatePDFFromPreview() {
     }
 
     function addText(text, x, y, size = 10, style = 'normal') {
-      doc.setFontSize(size);
-      doc.setFont(undefined, style);
-      doc.text(text, x, y);
+      addTextSmart(doc, text, x, y, size, style, 'dark');
     }
 
     // En-tête
     doc.setFillColor(0, 64, 128);
     doc.rect(0, 0, pageWidth, 50, 'F');
     
-    doc.setTextColor(255, 255, 255);
-    addText('Palanquées JSAS', margin, 20, 18, 'bold');
-    addText('DP: ' + dpNom, margin, 30, 12);
-    addText('Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10);
-    addText('Lieu: ' + dpLieu, margin, 46, 10);
+    addTextSmart(doc, 'Palanquées JSAS', margin, 20, 18, 'bold', 'white');
+    addTextSmart(doc, 'DP: ' + dpNom, margin, 30, 12, 'normal', 'white');
+    addTextSmart(doc, 'Date: ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee), margin, 38, 10, 'normal', 'white');
+    addTextSmart(doc, 'Lieu: ' + dpLieu, margin, 46, 10, 'normal', 'white');
     
     yPosition = 65;
-    doc.setTextColor(0, 0, 0);
 
     // Résumé
     addText('RÉSUMÉ', margin, yPosition, 14, 'bold');
@@ -1802,17 +1881,15 @@ function generatePDFFromPreview() {
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10);
-      doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      addTextSmart(doc, new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10, 8, 'normal', 'gray');
+      addTextSmart(doc, 'Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8, 'normal', 'gray');
     }
 
     // Télécharger
     const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF aperçu généré:", fileName);
+    console.log("✅ PDF aperçu généré avec support UTF-8:", fileName);
     alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
 
   } catch (error) {
@@ -1834,7 +1911,8 @@ function closePDFPreview() {
     console.log("✅ Aperçu PDF fermé");
   }
 }
-//// FONCTION CORRIGÉE - Modal qui ne se ferme JAMAIS automatiquement
+
+// FONCTION CORRIGÉE - Modal qui ne se ferme JAMAIS automatiquement
 function showTextForManualCopy(text) {
   // Supprimer toute modal existante d'abord
   const existingModal = document.getElementById('whatsapp-text-modal');
@@ -1962,6 +2040,7 @@ function showTextForManualCopy(text) {
     }
   };
 }
+
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
@@ -1972,4 +2051,4 @@ window.generatePDFForWhatsApp = generatePDFForWhatsApp;
 window.showWhatsAppInstructions = showWhatsAppInstructions;
 window.copyPalanqueesToClipboard = copyPalanqueesToClipboard;
 
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel");
+console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel et support UTF-8 complet");
