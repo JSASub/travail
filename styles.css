@@ -36,7 +36,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .header-container h2 {
-  margin: 0; /* Supprime les marges par défaut du h1 */
+  margin: 0; /* Supprime les marges par défaut du h2 */
   padding: 0; /* Supprime les paddings par défaut */
   line-height: 1; /* Contrôle précis de la hauteur de ligne */
   font-size: 2.5em;
@@ -56,7 +56,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   
   .header-container h1 {
     font-size: 2em;
-    text-align: center;
+    text-align: left;
   }
 }
 
