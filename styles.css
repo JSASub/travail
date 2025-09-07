@@ -1,3 +1,7 @@
+:root {
+  --floating-elements-width: 200px;
+}
+
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
@@ -1244,6 +1248,7 @@ header div h2 {
   min-width: 200px;
   justify-content: center;
   text-decoration: none;
+  min-width: var(--floating-elements-width);
 }
 
 .floating-save-btn:hover {
@@ -1321,7 +1326,7 @@ header div h2 {
   position: fixed;
   bottom: 110px;
   right: 30px;
-  width: 280px;
+  width: 200px;
   max-height: 200px;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid #007bff;
@@ -1332,6 +1337,7 @@ header div h2 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: var(--floating-elements-width);
 }
 
 .floating-plongeurs-header {
@@ -1448,12 +1454,11 @@ header div h2 {
 
 /* Responsive global pour les éléments flottants */
 @media (max-width: 768px) {
+	  :root {
+    --floating-elements-width: 160px;
+  }
   .floating-save-btn {
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 16px;
-    font-size: 12px;
-    min-width: 160px;
+    min-width: var(--floating-elements-width);
   }
   
   .save-notification {
@@ -1463,11 +1468,9 @@ header div h2 {
   }
 
   .floating-plongeurs-menu {
-    bottom: 90px;
-    right: 20px;
-    width: 250px;
-    max-height: 180px;
+    width: var(--floating-elements-width);
   }
+}
 
   .floating-plongeurs-list {
     max-height: 130px;
