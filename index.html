@@ -405,8 +405,11 @@
       // Initialiser la gestion du statut des sessions
       initSessionStatusManager();
       
+      // Vérifier le chargement des modules
+      setTimeout(checkModulesLoading, 1000);
+      
       // Initialiser les boutons PDF
-      initPDFButtons();
+      setTimeout(initPDFButtons, 1500);
     });
 
     // ===== INITIALISATION DES BOUTONS PDF =====
