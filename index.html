@@ -405,6 +405,57 @@
 
 let plongeursMenuCollapsed = false;
 
+//
+// CORRECTION PERMANENTE - Synchronisation automatique du menu des plongeurs
+window.addEventListener('DOMContentLoaded', function() {
+  // Fonction de synchronisation automatique
+  function autoSyncPlongeursMenu() {
+    // Vérifier si les variables globales existent et sont synchronisées
+    if (typeof window.plongeurs === 'undefined') {
+      window.plongeurs = [];
+    }
+    
+    const listDOM = document.getElementById('listePlongeurs');
+    const domCount = listDOM ? listDOM.children.length : 0;
+    const globalCount = window.plongeurs.length;
+    
+    // Si désynchronisation détectée, corriger
+    if (domCount > 0 && (globalCount === 0 || domCount !== globalCount)) {
+      console.log('Désynchronisation détectée - Correction automatique...');
+      window.plongeurs = [];
+      
+      Array.from(listDOM.children).forEach(li => {
+        const nomSpan = li.querySelector('.plongeur-nom');
+        const niveauSpan = li.querySelector('.plongeur-niveau');
+        const preSpan = li.querySelector('.plongeur-prerogatives');
+        
+        if (nomSpan && niveauSpan) {
+          window.plongeurs.push({
+            nom: nomSpan.textContent.trim(),
+            niveau: niveauSpan.textContent.trim(),
+            pre: preSpan ? preSpan.textContent.replace(/[\[\]]/g, '').trim() : ''
+          });
+        }
+      });
+      
+      window.plongeursOriginaux = [...window.plongeurs];
+      
+      // Mettre à jour le menu flottant
+      if (typeof updateFloatingPlongeursList === 'function') {
+        updateFloatingPlongeursList();
+      }
+      
+      console.log('Synchronisation automatique terminée:', window.plongeurs.length, 'plongeurs');
+    }
+  }
+  
+  // Surveiller les changements toutes les 2 secondes
+  setInterval(autoSyncPlongeursMenu, 2000);
+  
+  // Première synchronisation après 3 secondes
+  setTimeout(autoSyncPlongeursMenu, 3000);
+});
+//
 // Fonction pour basculer l'affichage du menu des plongeurs
 function togglePlongeursMenu() {
   const menu = document.getElementById('floating-plongeurs-menu');

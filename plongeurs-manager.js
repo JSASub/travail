@@ -46,7 +46,10 @@ function addPlongeur(nom, niveau, prerogatives = "") {
     if (typeof syncToDatabase === 'function') {
       syncToDatabase();
     }
-    
+    // Forcer la mise à jour du menu flottant
+	if (typeof updateFloatingPlongeursList === 'function') {
+		setTimeout(updateFloatingPlongeursList, 100);
+	}
     return true;
   } catch (error) {
     console.error("❌ Erreur ajout plongeur:", error);

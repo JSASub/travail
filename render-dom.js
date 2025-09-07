@@ -43,6 +43,10 @@ function renderPlongeurs() {
   if (typeof updateCompteurs === 'function') {
     updateCompteurs();
   }
+  // Synchroniser le menu flottant après le rendu
+  if (typeof updateFloatingPlongeursList === 'function') {
+	setTimeout(updateFloatingPlongeursList, 200);
+  }
 }
 
 function renderPalanquees() {
