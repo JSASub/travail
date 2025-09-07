@@ -1,22 +1,41 @@
-// pdf-manager.js - Gestion complète des PDF (version améliorée avec WhatsApp)
+// pdf-manager.js - Gestion complète des PDF avec Open Sans UTF-8
 
-// ===== EXPORT PDF SÉCURISÉ =====
+// ===== CONFIGURATION POLICE OPEN SANS UTF-8 =====
+function setupCustomFont(doc) {
+  try {
+    // Essayer d'utiliser Open Sans (nécessite le fichier OpenSans-Regular-normal.js)
+    doc.setFont("OpenSans-Regular");
+    console.log("Police Open Sans configurée - Support UTF-8 complet");
+    return true;
+  } catch (error) {
+    console.warn("Open Sans non disponible, fallback vers helvetica:", error);
+    try {
+      doc.setFont("helvetica");
+      return false;
+    } catch (e) {
+      doc.setFont("times");
+      return false;
+    }
+  }
+}
+
+// ===== EXPORT PDF SÉCURISÉ AVEC OPEN SANS =====
 function exportToPDF() {
   // Vérifier que pageLoadTime existe
   if (typeof pageLoadTime !== 'undefined' && Date.now() - pageLoadTime < 3000) {
-    console.log("🚫 Export PDF bloqué - page en cours de chargement");
+    console.log("Export PDF bloqué - page en cours de chargement");
     return;
   }
     
-  console.log("📄 Génération du PDF professionnel...");
+  console.log("Génération du PDF professionnel avec Open Sans UTF-8...");
   
   // Fonction helper sécurisée pour getElementById
   function $(id) {
     const element = document.getElementById(id);
-    return element || { value: "" }; // Retourne un objet avec value vide si élément non trouvé
+    return element || { value: "" };
   }
   
-  // Récupération spéciale pour le directeur de plongée (texte affiché, pas value)
+  // Récupération spéciale pour le directeur de plongée
   const dpSelect = document.getElementById("dp-select");
   const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
   const dpDate = $("dp-date").value || "Non définie";
@@ -36,6 +55,9 @@ function exportToPDF() {
       format: 'a4'
     });
     
+    // NOUVEAU : Configuration police Open Sans UTF-8
+    const hasOpenSans = setupCustomFont(doc);
+    
     const colors = {
       primaryR: 0, primaryG: 64, primaryB: 128,
       secondaryR: 0, secondaryG: 123, secondaryB: 255,
@@ -51,14 +73,13 @@ function exportToPDF() {
     const margin = 20;
     const contentWidth = pageWidth - (2 * margin);
     
-    // MODIFICATION : Constantes pour l'espacement RÉDUIT
     const spacing = {
       lineHeight: 6,
-      sectionGap: 8, // RÉDUIT de 12 à 8
-      subsectionGap: 6, // RÉDUIT de 8 à 6
+      sectionGap: 8,
+      subsectionGap: 6,
       headerHeight: 60,
       footerHeight: 25,
-      palanqueeGap: 6 // NOUVEAU : espacement spécifique entre palanquées
+      palanqueeGap: 6
     };
     
     function checkPageBreak(heightNeeded, forceNewPage = false) {
@@ -73,11 +94,9 @@ function exportToPDF() {
     
     function addPageHeader() {
       if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-        doc.setFontSize(7); // RÉDUIT de 8 à 7 pour header pages 2+
-        doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-        doc.text("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10); // RÉDUIT de 12 à 10
-        doc.text("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10); // RÉDUIT de 12 à 10
-        yPosition = 15; // RÉDUIT de 18 à 15
+        addText("Palanquées JSAS - " + dpDate + " (" + dpPlongee + ")", margin, 10, 7, 'normal', 'gray');
+        addText("Page " + doc.internal.getCurrentPageInfo().pageNumber, pageWidth - margin - 20, 10, 7, 'normal', 'gray');
+        yPosition = 15;
       }
     }
     
@@ -86,15 +105,26 @@ function exportToPDF() {
       try {
         const date = new Date(dateString);
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
+        return date.toLocaleDateString('fr-FR', options);
       } catch (error) {
         return dateString;
       }
     }
     
+    // NOUVELLE FONCTION : addText avec Open Sans et fallback intelligent
     function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
       doc.setFontSize(fontSize);
-      doc.setFont(undefined, fontStyle);
+      
+      // Utiliser Open Sans si disponible, sinon helvetica
+      if (hasOpenSans) {
+        try {
+          doc.setFont("OpenSans-Regular", fontStyle);
+        } catch (e) {
+          doc.setFont("helvetica", fontStyle);
+        }
+      } else {
+        doc.setFont("helvetica", fontStyle);
+      }
       
       switch(color) {
         case 'primary':
@@ -119,7 +149,19 @@ function exportToPDF() {
           doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
       }
       
-      doc.text(text, x, y);
+      // Si Open Sans est disponible, pas de nettoyage nécessaire
+      if (hasOpenSans) {
+        doc.text(text, x, y);
+      } else {
+        // Fallback avec nettoyage minimal pour helvetica
+        const cleanText = text
+          .replace(/É/g, 'E').replace(/é/g, 'e')
+          .replace(/È/g, 'E').replace(/è/g, 'e')
+          .replace(/À/g, 'A').replace(/à/g, 'a')
+          .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+          .replace(/Ù/g, 'U').replace(/ù/g, 'u');
+        doc.text(cleanText, x, y);
+      }
     }
     
     // Vérifier que les variables globales existent
@@ -176,8 +218,7 @@ function exportToPDF() {
       yPosition += 20;
       
       for (let i = 0; i < alertesTotal.length; i++) {
-        const alerteClean = alertesTotal[i].replace(/'/g, "'");
-        addText("• " + alerteClean, margin + 5, yPosition, 10, 'normal');
+        addText("• " + alertesTotal[i], margin + 5, yPosition, 10, 'normal');
         yPosition += spacing.lineHeight;
       }
       
@@ -187,9 +228,9 @@ function exportToPDF() {
     // === PALANQUÉES DÉTAILLÉES ===
     checkPageBreak(40, true);
     
-    yPosition += 3; // AJOUT de 3mm d'espacement avant le titre
+    yPosition += 3;
     addText('Organisation des Palanquées', margin, yPosition, 14, 'bold', 'primary');
-    yPosition += 3; // RÉDUIT de 6 à 3 (descendre de 3mm)
+    yPosition += 3;
     
     if (palanqueesLocal.length === 0) {
       doc.setDrawColor(255, 193, 7);
@@ -203,77 +244,70 @@ function exportToPDF() {
         const pal = palanqueesLocal[i];
         if (!pal || !Array.isArray(pal)) continue;
         
-        // MODIFICATION : Calculer la hauteur nécessaire pour cette palanquée (ENCORE PLUS RÉDUITE)
-        let palanqueeHeight = 12; // Header RÉDUIT de 14 à 12
-        palanqueeHeight += (pal.length * spacing.lineHeight) + 3; // Plongeurs + espacement réduit
-        palanqueeHeight += 26; // Paramètres RÉDUIT de 30 à 26
-        palanqueeHeight += spacing.palanqueeGap; // NOUVEAU : espacement spécifique entre palanquées
+        let palanqueeHeight = 12;
+        palanqueeHeight += (pal.length * spacing.lineHeight) + 3;
+        palanqueeHeight += 26;
+        palanqueeHeight += spacing.palanqueeGap;
         
         checkPageBreak(palanqueeHeight + 10);
         
         const isAlert = typeof checkAlert === 'function' ? checkAlert(pal) : false;
         
-        // En-tête de palanquée ULTRA RÉDUIT
+        // En-tête de palanquée
         if (isAlert) {
           doc.setFillColor(colors.dangerR, colors.dangerG, colors.dangerB);
         } else {
           doc.setFillColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
         }
-        doc.rect(margin, yPosition, contentWidth, 7, 'F'); // Hauteur RÉDUITE de 8 à 7
+        doc.rect(margin, yPosition, contentWidth, 7, 'F');
         
-        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white'); // Position Y ajustée
+        addText('Palanquée ' + (i + 1) + ' - ' + pal.length + ' plongeurs', margin + 5, yPosition + 5, 12, 'bold', 'white');
         
         const gps = pal.filter(p => p && ["N4/GP", "N4", "E2", "E3", "E4"].includes(p.niveau));
         const n1s = pal.filter(p => p && p.niveau === "N1");
         const autonomes = pal.filter(p => p && ["N2", "N3"].includes(p.niveau));
         
-        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white'); // Position Y ajustée
+        addText('GP: ' + gps.length + ' | N1: ' + n1s.length + ' | Autonomes: ' + autonomes.length, margin + 100, yPosition + 5, 10, 'normal', 'white');
         
-        yPosition += 12; // RÉDUIT : Espacement entre cadre bleu et premier plongeur
+        yPosition += 12;
         
         // Liste des plongeurs (triés par niveau)
         if (pal.length === 0) {
           addText('Aucun plongeur assigné', margin + 10, yPosition, 11, 'normal', 'gray');
-          yPosition += spacing.lineHeight + 3; // Espacement réduit pour cohérence
+          yPosition += spacing.lineHeight + 3;
         } else {
-          // Définir l'ordre de tri des niveaux (du plus capé au moins capé)
+          // Tri par niveau
           const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
           
-          // Fonction de tri par niveau
-          const plongeursTriés = [...pal].sort((a, b) => {
+          const plongeursTries = [...pal].sort((a, b) => {
             const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
             const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
             return indexA - indexB;
           });
           
-          for (let j = 0; j < plongeursTriés.length; j++) {
-            const p = plongeursTriés[j];
+          for (let j = 0; j < plongeursTries.length; j++) {
+            const p = plongeursTries[j];
             if (!p || !p.nom) continue;
             
-            const nomClean = p.nom.replace(/'/g, "'");
-            const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
+            addText('• ' + p.nom, margin + 5, yPosition, 11, 'bold');
             
-            addText('• ' + nomClean, margin + 5, yPosition, 11, 'bold');
-            
-            if (preClean) {
-              addText('Prérogative: ' + preClean, margin + 80, yPosition, 10, 'normal');
+            if (p.pre) {
+              addText('Prérogative: ' + p.pre, margin + 80, yPosition, 10, 'normal');
             }
             
             addText('Niveau: ' + p.niveau, margin + 140, yPosition, 10, 'normal', 'gray');
             
             yPosition += spacing.lineHeight;
           }
-          yPosition += 3; // RÉDUIT : Espacement entre dernier plongeur et paramètres
+          yPosition += 3;
         }
         
-        // MODIFICATION : Paramètres de plongée (TAILLE ET ESPACEMENT RÉDUITS)
-        
-        // Ligne 1: Horaire de mise à l'eau
-        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT de 10 à 9
+        // Paramètres de plongée
+        addText('Horaire mise à l\'eau:', margin + 5, yPosition, 9, 'bold', 'primary');
         
         if (pal.horaire && pal.horaire.trim()) {
-          addText(pal.horaire, margin + 50, yPosition, 9, 'normal'); // RÉDUIT à 9
-          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
+          addText(pal.horaire, margin + 50, yPosition, 9, 'normal');
+          addText('Correction: ', margin + 80, yPosition, 8, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 105, yPosition, margin + 140, yPosition);
@@ -281,61 +315,59 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 50, yPosition, margin + 85, yPosition);
-          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('(HH:MM)', margin + 88, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 2: Profondeurs et durées prévues
-        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        // Profondeurs et durées
+        addText('Prof. prévue: ', margin + 5, yPosition, 9, 'bold', 'primary');
         if (pal.profondeurPrevue && pal.profondeurPrevue.trim()) {
-          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.profondeurPrevue + ' m', margin + 35, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 35, yPosition, margin + 55, yPosition);
-          addText('m', margin + 57, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('m', margin + 57, yPosition, 9, 'normal', 'gray');
         }
         
-        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        addText('Durée prévue:', margin + 80, yPosition, 9, 'bold', 'primary');
         if (pal.dureePrevue && pal.dureePrevue.trim()) {
-          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.dureePrevue + ' min', margin + 115, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 115, yPosition, margin + 140, yPosition);
-          addText('min', margin + 142, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('min', margin + 142, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 3: Profondeurs et durées réalisées
-        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
+        addText('Prof. réalisée:', margin + 5, yPosition, 9, 'bold', 'success');
         if (pal.profondeurRealisee && pal.profondeurRealisee.trim()) {
-          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.profondeurRealisee + ' m', margin + 40, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 40, yPosition, margin + 60, yPosition);
-          addText('m', margin + 62, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('m', margin + 62, yPosition, 9, 'normal', 'gray');
         }
         
-        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success'); // RÉDUIT à 9
+        addText('Durée réalisée:', margin + 80, yPosition, 9, 'bold', 'success');
         if (pal.dureeRealisee && pal.dureeRealisee.trim()) {
-          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal'); // RÉDUIT à 9
+          addText(pal.dureeRealisee + ' min', margin + 120, yPosition, 9, 'normal');
         } else {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 120, yPosition, margin + 145, yPosition);
-          addText('min', margin + 147, yPosition, 9, 'normal', 'gray'); // RÉDUIT à 9
+          addText('min', margin + 147, yPosition, 9, 'normal', 'gray');
         }
-        yPosition += 3.5; // RÉDUIT de 4 à 3.5
+        yPosition += 3.5;
         
-        // Ligne 4: Paliers
-        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary'); // RÉDUIT à 9
+        // Paliers
+        addText('Paliers:', margin + 5, yPosition, 9, 'bold', 'primary');
         
         if (pal.paliers && pal.paliers.trim()) {
-          addText(pal.paliers, margin + 25, yPosition, 8, 'normal'); // RÉDUIT à 8
-          // Correction rapprochée
-          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray'); // RÉDUIT à 8
+          addText(pal.paliers, margin + 25, yPosition, 8, 'normal');
+          addText('Correction:', margin + 70, yPosition, 8, 'bold', 'gray');
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 95, yPosition, margin + 140, yPosition);
@@ -343,12 +375,11 @@ function exportToPDF() {
           doc.setDrawColor(180, 180, 180);
           doc.setLineWidth(0.3);
           doc.line(margin + 25, yPosition, margin + 65, yPosition);
-          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray'); // RÉDUIT à 8
+          addText('(ex: 3 min à 3 m) | Correction:', margin + 70, yPosition, 8, 'normal', 'gray');
           doc.line(margin + 130, yPosition, margin + 150, yPosition);
         }
         
-        // MODIFICATION MAJEURE : Espacement réduit entre palanquées
-        yPosition += spacing.lineHeight + spacing.palanqueeGap; // Utilise le nouvel espacement spécifique
+        yPosition += spacing.lineHeight + spacing.palanqueeGap;
       }
     }
     
@@ -369,9 +400,7 @@ function exportToPDF() {
         const p = plongeursLocal[i];
         if (!p || !p.nom) continue;
         
-        const nomClean = p.nom.replace(/'/g, "'");
-        const preClean = p.pre ? p.pre.replace(/'/g, "'") : '';
-        const textLine = '• ' + nomClean + '   (' + p.niveau + ')' + (preClean ? '   - ' + preClean : '');
+        const textLine = '• ' + p.nom + '   (' + p.niveau + ')' + (p.pre ? '   - ' + p.pre : '');
         addText(textLine, margin + 5, yPosition, 10, 'normal');
         yPosition += spacing.lineHeight;
       }
@@ -379,7 +408,7 @@ function exportToPDF() {
       yPosition += spacing.subsectionGap;
     }
     
-    // === FOOTER REORGANISÉ ===
+    // === FOOTER ===
     const totalPages = doc.internal.getCurrentPageInfo().pageNumber;
     
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
@@ -389,47 +418,42 @@ function exportToPDF() {
       doc.setLineWidth(0.3);
       doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
       
-      // Date et heure à gauche
       addText(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}), margin, pageHeight - 6, 6, 'normal', 'gray');
-      
-      // Numérotation à droite
       addText('Page ' + pageNum + '/' + totalPages, pageWidth - margin - 25, pageHeight - 6, 6, 'normal', 'gray');
     }
     
     // === TÉLÉCHARGEMENT ===
-    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-compact.pdf';
+    const fileName = 'palanquees-jsas-' + (dpDate || 'export') + '-' + dpPlongee + '-utf8.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF généré avec espacement réduit:", fileName);
+    console.log("PDF généré avec Open Sans UTF-8:", fileName);
     
-    const alertesText = alertesTotal.length > 0 ? '\n⚠️ ' + alertesTotal.length + ' alerte(s) détectée(s)' : '\n✅ Aucune alerte';
-    alert('PDF généré avec succès !\n\n📊 ' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\n📁 Fichier: ' + fileName);
+    const alertesText = alertesTotal.length > 0 ? '\n' + alertesTotal.length + ' alerte(s) détectée(s)' : '\nAucune alerte';
+    const fontText = hasOpenSans ? '\nPolice: Open Sans (UTF-8)' : '\nPolice: Helvetica (fallback)';
+    alert('PDF généré avec succès !' + fontText + '\n\n' + totalPlongeurs + ' plongeurs dans ' + palanqueesLocal.length + ' palanquées' + alertesText + '\n\nFichier: ' + fileName);
     
   } catch (error) {
-    console.error("❌ Erreur PDF:", error);
+    console.error("Erreur PDF:", error);
     alert("Erreur lors de la génération du PDF : " + error.message + "\n\nVérifiez que jsPDF est bien chargé.");
   }
 }
 
-// ===== FONCTIONS WHATSAPP GLOBALES INTEGRÉES =====
+// ===== FONCTIONS WHATSAPP GLOBALES INTÉGRÉES =====
 function shareToWhatsApp() {
-  console.log("💬 Partage WhatsApp démarré...");
+  console.log("Partage WhatsApp démarré...");
   
   try {
-    // Proposer les options à l'utilisateur - CORRIGÉ : OK/ANNULER au lieu de OUI/NON
     const choix = confirm(
-      "📱 PARTAGE WHATSAPP\n\n" +
+      "PARTAGE WHATSAPP\n\n" +
       "Choisissez votre méthode préférée :\n\n" +
-      "✅ OK = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
-      "❌ ANNULER = Télécharger le PDF (partager comme document)\n\n" +
+      "OK = Copier le texte des palanquées (coller directement dans WhatsApp)\n" +
+      "ANNULER = Télécharger le PDF (partager comme document)\n\n" +
       "Le texte est plus pratique pour les messages rapides !"
     );
 
     if (choix) {
-      // Option 1 : Copier le texte formaté
       copyPalanqueesToClipboard();
     } else {
-      // Option 2 : Générer le PDF
       generatePDFForWhatsApp();
       setTimeout(() => {
         showWhatsAppInstructions();
@@ -437,17 +461,15 @@ function shareToWhatsApp() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur partage WhatsApp:", error);
+    console.error("Erreur partage WhatsApp:", error);
     alert("Erreur lors de la préparation pour WhatsApp : " + error.message);
   }
 }
 
-// NOUVELLE FONCTION : Copier le texte des palanquées dans le presse-papier
 function copyPalanqueesToClipboard() {
-  console.log("📋 Copie du texte des palanquées...");
+  console.log("Copie du texte des palanquées...");
   
   try {
-    // Récupérer les données
     const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
@@ -491,42 +513,39 @@ function copyPalanqueesToClipboard() {
     }
 
     // Créer le texte formaté pour WhatsApp
-    let texte = "🏊‍♂️ *PALANQUÉES JSAS*\n\n";
-    texte += `📅 *${formatDateFrench(dpDate)} - ${capitalize(dpPlongee)}*\n`;
-    texte += `📍 *${dpLieu}*\n`;
-    texte += `👤 *DP: ${dpNom}*\n\n`;
+    let texte = "*PALANQUÉES JSAS*\n\n";
+    texte += `*${formatDateFrench(dpDate)} - ${capitalize(dpPlongee)}*\n`;
+    texte += `*${dpLieu}*\n`;
+    texte += `*DP: ${dpNom}*\n\n`;
     
-    // Résumé
-    texte += "📊 *RÉSUMÉ*\n";
+    texte += "*RÉSUMÉ*\n";
     texte += `• Total plongeurs: *${totalPlongeurs}*\n`;
     texte += `• Palanquées: *${palanqueesLocal.length}*\n`;
     if (alertesTotal.length > 0) {
-      texte += `⚠️ Alertes: *${alertesTotal.length}*\n`;
+      texte += `• Alertes: *${alertesTotal.length}*\n`;
     }
     texte += "\n";
 
-    // Alertes si présentes
     if (alertesTotal.length > 0) {
-      texte += "🚨 *ALERTES*\n";
+      texte += "*ALERTES*\n";
       alertesTotal.forEach(alerte => {
-        texte += `⚠️ ${alerte}\n`;
+        texte += `• ${alerte}\n`;
       });
       texte += "\n";
     }
 
-    // Palanquées
     if (palanqueesLocal.length === 0) {
-      texte += "⏳ *Aucune palanquée créée*\n";
+      texte += "*Aucune palanquée créée*\n";
     } else {
       palanqueesLocal.forEach((pal, i) => {
         if (pal && Array.isArray(pal)) {
-          texte += `🐠 *Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
+          texte += `*Palanquée ${i + 1}* (${pal.length} plongeur${pal.length > 1 ? 's' : ''})\n`;
           
           if (pal.length === 0) {
             texte += "   _Aucun plongeur assigné_\n";
           } else {
-            const plongeursTriés = trierPlongeursParGrade(pal);
-            plongeursTriés.forEach(p => {
+            const plongeursTries = trierPlongeursParGrade(pal);
+            plongeursTries.forEach(p => {
               if (p && p.nom) {
                 texte += `   • ${p.nom} (${p.niveau})`;
                 if (p.pre) {
@@ -541,11 +560,10 @@ function copyPalanqueesToClipboard() {
       });
     }
 
-    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
-      texte += "⏳ *PLONGEURS EN ATTENTE*\n";
-      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
-      plongeursTriés.forEach(p => {
+      texte += "*PLONGEURS EN ATTENTE*\n";
+      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
+      plongeursTries.forEach(p => {
         if (p && p.nom) {
           texte += `• ${p.nom} (${p.niveau})`;
           if (p.pre) {
@@ -559,31 +577,25 @@ function copyPalanqueesToClipboard() {
 
     texte += `_Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}_`;
 
-    // Copier dans le presse-papier
     if (navigator.clipboard && window.isSecureContext) {
-      // Méthode moderne
       navigator.clipboard.writeText(texte).then(() => {
-		showTextForManualCopy(texte); // Afficher la modal même si copie réussie
-		}).catch(err => {
-			fallbackCopyTextToClipboard(texte);
-	});
+        showTextForManualCopy(texte);
+      }).catch(err => {
+        fallbackCopyTextToClipboard(texte);
+      });
     } else {
-      // Fallback pour navigateurs plus anciens
       fallbackCopyTextToClipboard(texte);
     }
 
   } catch (error) {
-    console.error("❌ Erreur copie texte:", error);
+    console.error("Erreur copie texte:", error);
     alert("Erreur lors de la copie du texte : " + error.message);
   }
 }
 
-// Fonction fallback pour copier le texte (anciens navigateurs)
 function fallbackCopyTextToClipboard(text) {
   const textArea = document.createElement("textarea");
   textArea.value = text;
-  
-  // Éviter de faire défiler vers l'élément
   textArea.style.top = "0";
   textArea.style.left = "0";
   textArea.style.position = "fixed";
@@ -595,268 +607,136 @@ function fallbackCopyTextToClipboard(text) {
   try {
     const successful = document.execCommand('copy');
     if (successful) {
-	// Copie réussie, mais on affiche quand même la modal
-	showTextForManualCopy(text);
-	} else {
-	throw new Error('Commande copy non supportée');
-	}
+      showTextForManualCopy(text);
+    } else {
+      throw new Error('Commande copy non supportée');
+    }
   } catch (err) {
     console.error('Erreur fallback copie:', err);
-    // Dernière solution : afficher le texte pour copie manuelle
     showTextForManualCopy(text);
   }
   
   document.body.removeChild(textArea);
 }
 
-// Afficher le texte pour copie manuelle - VERSION AMÉLIORÉE QUI RESTE OUVERTE
 function showTextForManualCopy(text) {
+  const existingModal = document.getElementById('whatsapp-text-modal');
+  if (existingModal) {
+    document.body.removeChild(existingModal);
+  }
+
   const modal = document.createElement('div');
+  modal.id = 'whatsapp-text-modal';
   modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+    justify-content: center; align-items: center;
   `;
   
   const container = document.createElement('div');
   container.style.cssText = `
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    max-width: 90%;
-    max-height: 80%;
-    overflow: auto;
-    text-align: center;
+    background: white; padding: 20px; border-radius: 10px;
+    max-width: 90%; max-height: 80%; overflow: auto; text-align: center;
   `;
   
-  const title = document.createElement('h3');
-  title.textContent = '📋 Texte pour WhatsApp';
-  title.style.cssText = `
-    margin-bottom: 15px;
-    color: #25D366;
-    font-size: 18px;
+  container.innerHTML = `
+    <h3 style="margin-bottom: 15px; color: #25D366; font-size: 18px;">Texte pour WhatsApp</h3>
+    <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Copiez ce texte et collez-le dans WhatsApp :</p>
+    <textarea id="whatsapp-textarea" style="
+      width: 100%; height: 300px; border: 2px solid #25D366; border-radius: 8px;
+      padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px;
+      line-height: 1.4; resize: vertical; outline: none; margin-bottom: 15px;
+    ">${text}</textarea>
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <button id="copy-btn" style="
+        padding: 12px 20px; background: #25D366; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">Copier le texte</button>
+      <button id="select-btn" style="
+        padding: 12px 20px; background: #007bff; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">Sélectionner tout</button>
+      <button id="close-btn" style="
+        padding: 12px 20px; background: #6c757d; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+      ">Fermer</button>
+    </div>
   `;
   
-  const instructions = document.createElement('p');
-  instructions.textContent = 'Copiez ce texte et collez-le dans WhatsApp :';
-  instructions.style.cssText = `
-    margin-bottom: 15px;
-    color: #666;
-    font-size: 14px;
-  `;
-  
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.style.cssText = `
-    width: 100%;
-    height: 300px;
-    border: 2px solid #25D366;
-    border-radius: 8px;
-    padding: 15px;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1.4;
-    resize: vertical;
-    outline: none;
-    margin-bottom: 15px;
-  `;
-  
-  // Auto-sélection améliorée
-  setTimeout(() => {
-    textarea.focus();
-    textarea.select();
-    textarea.setSelectionRange(0, text.length);
-  }, 100);
-  
-  // Container pour les boutons
-  const buttonContainer = document.createElement('div');
-  buttonContainer.style.cssText = `
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-  `;
-  
-  // Bouton Copier (principal)
-  const copyButton = document.createElement('button');
-  copyButton.textContent = '📋 Copier le texte';
-  copyButton.style.cssText = `
-    padding: 12px 20px;
-    background: #25D366;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-  `;
-  
-  copyButton.onclick = async () => {
-    try {
-      // Tenter la copie moderne d'abord
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        copyButton.textContent = '✅ Copié !';
-        copyButton.style.background = '#28a745';
-        // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
-        setTimeout(() => {
-          copyButton.textContent = '📋 Copier le texte';
-          copyButton.style.background = '#25D366';
-        }, 2000);
-      } else {
-        // Fallback avec selection
-        textarea.focus();
-        textarea.select();
-        textarea.setSelectionRange(0, text.length);
-        const successful = document.execCommand('copy');
-        if (successful) {
-          copyButton.textContent = '✅ Copié !';
-          copyButton.style.background = '#28a745';
-          // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
-          setTimeout(() => {
-            copyButton.textContent = '📋 Copier le texte';
-            copyButton.style.background = '#25D366';
-          }, 2000);
-        } else {
-          copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
-          copyButton.style.background = '#dc3545';
-          textarea.focus();
-          textarea.select();
-        }
-      }
-    } catch (err) {
-      copyButton.textContent = '❌ Échec - Sélectionnez et Ctrl+C';
-      copyButton.style.background = '#dc3545';
-      textarea.focus();
-      textarea.select();
-    }
-  };
-  
-  copyButton.onmouseover = () => {
-    if (copyButton.textContent === '📋 Copier le texte') {
-      copyButton.style.background = '#128C7E';
-      copyButton.style.transform = 'translateY(-1px)';
-    }
-  };
-  
-  copyButton.onmouseout = () => {
-    if (copyButton.textContent === '📋 Copier le texte') {
-      copyButton.style.background = '#25D366';
-      copyButton.style.transform = 'translateY(0)';
-    }
-  };
-  
-  // Bouton Sélectionner tout
-  const selectButton = document.createElement('button');
-  selectButton.textContent = '🔍 Sélectionner tout';
-  selectButton.style.cssText = `
-    padding: 12px 20px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-  `;
-  
-  selectButton.onclick = () => {
-    textarea.focus();
-    textarea.select();
-    textarea.setSelectionRange(0, text.length);
-    selectButton.textContent = '✅ Sélectionné';
-    selectButton.style.background = '#28a745';
-    setTimeout(() => {
-      selectButton.textContent = '🔍 Sélectionner tout';
-      selectButton.style.background = '#007bff';
-    }, 1500);
-  };
-  
-  selectButton.onmouseover = () => {
-    if (selectButton.textContent === '🔍 Sélectionner tout') {
-      selectButton.style.background = '#0056b3';
-      selectButton.style.transform = 'translateY(-1px)';
-    }
-  };
-  
-  selectButton.onmouseout = () => {
-    if (selectButton.textContent === '🔍 Sélectionner tout') {
-      selectButton.style.background = '#007bff';
-      selectButton.style.transform = 'translateY(0)';
-    }
-  };
-  
-  // Bouton Fermer
-  const closeButton = document.createElement('button');
-  closeButton.textContent = '✕ Fermer';
-  closeButton.style.cssText = `
-    padding: 12px 20px;
-    background: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-  `;
-  
-  closeButton.onclick = () => document.body.removeChild(modal);
-  
-  closeButton.onmouseover = () => {
-    closeButton.style.background = '#545b62';
-    closeButton.style.transform = 'translateY(-1px)';
-  };
-  
-  closeButton.onmouseout = () => {
-    closeButton.style.background = '#6c757d';
-    closeButton.style.transform = 'translateY(0)';
-  };
-  
-  // Assemblage
-  buttonContainer.appendChild(copyButton);
-  buttonContainer.appendChild(selectButton);
-  buttonContainer.appendChild(closeButton);
-  
-  container.appendChild(title);
-  container.appendChild(instructions);
-  container.appendChild(textarea);
-  container.appendChild(buttonContainer);
   modal.appendChild(container);
   document.body.appendChild(modal);
   
-  // Raccourcis clavier
+  const textarea = document.getElementById('whatsapp-textarea');
+  setTimeout(() => {
+    textarea.focus();
+    textarea.select();
+  }, 100);
+  
+  document.getElementById('copy-btn').onclick = async () => {
+    const btn = document.getElementById('copy-btn');
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copié !';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.textContent = 'Copier le texte';
+          btn.style.background = '#25D366';
+        }, 2000);
+      } else {
+        textarea.select();
+        const success = document.execCommand('copy');
+        if (success) {
+          btn.textContent = 'Copié !';
+          btn.style.background = '#28a745';
+          setTimeout(() => {
+            btn.textContent = 'Copier le texte';
+            btn.style.background = '#25D366';
+          }, 2000);
+        } else {
+          btn.textContent = 'Utilisez Ctrl+C';
+          btn.style.background = '#dc3545';
+        }
+      }
+    } catch (err) {
+      btn.textContent = 'Utilisez Ctrl+C';
+      btn.style.background = '#dc3545';
+      textarea.select();
+    }
+  };
+  
+  document.getElementById('select-btn').onclick = () => {
+    textarea.focus();
+    textarea.select();
+    const btn = document.getElementById('select-btn');
+    btn.textContent = 'Sélectionné';
+    btn.style.background = '#28a745';
+    setTimeout(() => {
+      btn.textContent = 'Sélectionner tout';
+      btn.style.background = '#007bff';
+    }, 1500);
+  };
+  
+  document.getElementById('close-btn').onclick = () => {
+    document.body.removeChild(modal);
+  };
+  
   modal.onkeydown = (e) => {
     if (e.key === 'Escape') {
       document.body.removeChild(modal);
-    } else if (e.ctrlKey && e.key === 'a') {
-      e.preventDefault();
-      textarea.focus();
-      textarea.select();
     } else if (e.ctrlKey && e.key === 'c') {
-      // Laisser le navigateur gérer Ctrl+C normalement
+      const btn = document.getElementById('copy-btn');
       setTimeout(() => {
-        copyButton.textContent = '✅ Copié avec Ctrl+C !';
-        copyButton.style.background = '#28a745';
-        // CHANGEMENT PRINCIPAL : Ne plus fermer automatiquement la modal
+        btn.textContent = 'Copié avec Ctrl+C !';
+        btn.style.background = '#28a745';
         setTimeout(() => {
-          copyButton.textContent = '📋 Copier le texte';
-          copyButton.style.background = '#25D366';
+          btn.textContent = 'Copier le texte';
+          btn.style.background = '#25D366';
         }, 2000);
       }, 100);
     }
   };
   
-  // Fermeture en cliquant à l'extérieur
   modal.onclick = (e) => {
     if (e.target === modal) {
       document.body.removeChild(modal);
@@ -865,15 +745,13 @@ function showTextForManualCopy(text) {
 }
 
 function generatePDFForWhatsApp() {
-  console.log("📱 Génération PDF optimisé pour WhatsApp...");
+  console.log("Génération PDF optimisé pour WhatsApp avec Open Sans...");
   
   try {
-    // Vérifier que jsPDF est disponible
     if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
       throw new Error("jsPDF non disponible");
     }
 
-    // Récupérer les données
     const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
@@ -896,7 +774,6 @@ function generatePDFForWhatsApp() {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 
-    // Fonction de tri par grade pour WhatsApp
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -917,9 +794,10 @@ function generatePDFForWhatsApp() {
       });
     }
 
-    // Créer le PDF optimisé pour WhatsApp
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
+
+    const hasOpenSans = setupCustomFont(doc);
 
     let yPosition = 20;
     const margin = 20;
@@ -937,12 +815,24 @@ function generatePDFForWhatsApp() {
 
     function addText(text, x, y, size = 10, style = 'normal', colorR = 0, colorG = 0, colorB = 0) {
       doc.setFontSize(size);
-      doc.setFont(undefined, style);
+      
+      if (hasOpenSans) {
+        try {
+          doc.setFont("OpenSans-Regular", style);
+        } catch (e) {
+          doc.setFont("helvetica", style);
+        }
+      } else {
+        doc.setFont("helvetica", style);
+        // Nettoyage fallback
+        text = text.replace(/É/g, 'E').replace(/é/g, 'e').replace(/è/g, 'e').replace(/à/g, 'a').replace(/ç/g, 'c');
+      }
+      
       doc.setTextColor(colorR, colorG, colorB);
       doc.text(text, x, y);
     }
 
-    // En-tête avec couleur WhatsApp
+    // En-tête WhatsApp
     doc.setFillColor(37, 211, 102);
     doc.rect(0, 0, pageWidth, 50, 'F');
     
@@ -953,7 +843,6 @@ function generatePDFForWhatsApp() {
     
     yPosition = 60;
 
-    // Résumé
     addText('RÉSUMÉ', margin, yPosition, 14, 'bold', 37, 211, 102);
     yPosition += 8;
     addText('• Total plongeurs: ' + totalPlongeurs, margin + 5, yPosition, 11);
@@ -966,19 +855,17 @@ function generatePDFForWhatsApp() {
     }
     yPosition += 10;
 
-    // Alertes si présentes
     if (alertesTotal.length > 0) {
       checkPageBreak(20 + alertesTotal.length * 6);
       addText('ALERTES', margin, yPosition, 14, 'bold', 220, 53, 69);
       yPosition += 8;
       alertesTotal.forEach(alerte => {
-        addText('⚠️ ' + alerte, margin + 5, yPosition, 10, 'normal', 220, 53, 69);
+        addText('• ' + alerte, margin + 5, yPosition, 10, 'normal', 220, 53, 69);
         yPosition += 6;
       });
       yPosition += 10;
     }
 
-    // Palanquées
     addText('PALANQUÉES', margin, yPosition, 14, 'bold', 37, 211, 102);
     yPosition += 10;
 
@@ -997,10 +884,9 @@ function generatePDFForWhatsApp() {
             addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic', 108, 117, 125);
             yPosition += 8;
           } else {
-            // Trier et afficher les plongeurs
-            const plongeursTriés = trierPlongeursParGrade(pal);
+            const plongeursTries = trierPlongeursParGrade(pal);
             
-            plongeursTriés.forEach(p => {
+            plongeursTries.forEach(p => {
               if (p && p.nom) {
                 const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
                 addText(textLine, margin + 5, yPosition, 10);
@@ -1013,16 +899,15 @@ function generatePDFForWhatsApp() {
       });
     }
 
-    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
       checkPageBreak(15 + plongeursLocal.length * 5);
       
       addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold', 37, 211, 102);
       yPosition += 8;
       
-      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursTriés.forEach(p => {
+      plongeursTries.forEach(p => {
         if (p && p.nom) {
           const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
           addText(textLine, margin + 5, yPosition, 10);
@@ -1031,62 +916,56 @@ function generatePDFForWhatsApp() {
       });
     }
 
-    // Footer
     doc.setFontSize(8);
     doc.setTextColor(128, 128, 128);
-    doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp', margin, pageHeight - 15);
+    const footerText = 'Généré le ' + new Date().toLocaleDateString('fr-FR') + ' pour WhatsApp' + (hasOpenSans ? ' (UTF-8)' : ' (ASCII)');
+    addText(footerText, margin, pageHeight - 15, 8, 'normal', 128, 128, 128);
 
-    // Télécharger le PDF
     const fileName = 'palanquees-jsas-whatsapp-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF WhatsApp généré:", fileName);
+    console.log("PDF WhatsApp généré avec Open Sans:", fileName);
     return fileName;
 
   } catch (error) {
-    console.error("❌ Erreur PDF WhatsApp:", error);
+    console.error("Erreur PDF WhatsApp:", error);
     throw error;
   }
 }
 
-// CORRIGÉ : Plus de proposition WhatsApp Web
 function showWhatsAppInstructions() {
-  alert(`📱 PDF généré pour WhatsApp !
+  alert(`PDF généré pour WhatsApp !
 
-📋 Instructions pour partager :
+Instructions pour partager :
 
-1️⃣ Ouvrez WhatsApp sur votre téléphone
-2️⃣ Sélectionnez le contact ou groupe
-3️⃣ Appuyez sur 📎 (pièce jointe)
-4️⃣ Choisissez "Document" 
-5️⃣ Sélectionnez le PDF téléchargé
-6️⃣ Ajoutez un message si désiré
-7️⃣ Envoyez ! 🚀
+1. Ouvrez WhatsApp sur votre téléphone
+2. Sélectionnez le contact ou groupe
+3. Appuyez sur l'icône de pièce jointe
+4. Choisissez "Document" 
+5. Sélectionnez le PDF téléchargé
+6. Ajoutez un message si désiré
+7. Envoyez !
 
-💡 Le fichier se trouve dans vos Téléchargements`);
+Le fichier se trouve dans vos Téléchargements`);
 }
 
-// ===== GÉNÉRATION PDF PREVIEW SÉCURISÉE AVEC WHATSAPP =====
+// ===== GÉNÉRATION PDF PREVIEW AVEC OPEN SANS =====
 function generatePDFPreview() {
-  console.log("🎨 Génération de l'aperçu PDF professionnel avec WhatsApp...");
+  console.log("Génération de l'aperçu PDF avec Open Sans UTF-8...");
   
   try {
-    // Récupération spéciale pour le directeur de plongée
     const dpSelect = document.getElementById("dp-select");
     const dpNom = dpSelect && dpSelect.selectedIndex > 0 ? dpSelect.options[dpSelect.selectedIndex].text : "Non défini";
     const dpDate = document.getElementById("dp-date")?.value || "Non définie";
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
-    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
-    const plongeursEnPalanquees = palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
     
-    // NOUVEAU: Fonction de tri par grade pour l'aperçu
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -1100,7 +979,6 @@ function generatePDFPreview() {
         const ordreB = ordreNiveaux[b.niveau] || 99;
         
         if (ordreA === ordreB) {
-          // Si même niveau, trier par nom
           return a.nom.localeCompare(b.nom);
         }
         
@@ -1137,7 +1015,6 @@ function generatePDFPreview() {
           position: relative;
         }
         
-        /* EN-TÊTE AVEC BOUTONS INTÉGRÉS */
         .preview-header {
           background: linear-gradient(135deg, #004080 0%, #007bff 100%);
           color: white;
@@ -1212,24 +1089,6 @@ function generatePDFPreview() {
           box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3);
         }
         
-        .btn-whatsapp:disabled {
-          background: #6c757d;
-          border-color: #6c757d;
-          cursor: not-allowed;
-          transform: none;
-          opacity: 0.7;
-        }
-        
-        .loading-icon {
-          animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        /* CONTENU PRINCIPAL */
         .content { 
           padding: 40px; 
         }
@@ -1312,104 +1171,6 @@ function generatePDFPreview() {
           color: #dc3545 !important;
         }
         
-        /* RESPONSIVE DESIGN */
-        @media screen and (max-width: 768px) {
-          .container {
-            max-width: 100% !important;
-            margin: 0 !important;
-            box-shadow: none !important;
-          }
-          
-          .preview-header {
-            flex-direction: column;
-            gap: 10px;
-            padding: 10px 15px;
-          }
-          
-          .preview-title {
-            font-size: 16px;
-            text-align: center;
-          }
-          
-          .preview-buttons {
-            width: 100%;
-            justify-content: center;
-            gap: 8px;
-          }
-          
-          .preview-btn {
-            flex: 1;
-            min-width: 80px;
-            font-size: 12px;
-            padding: 6px 12px;
-          }
-          
-          .content {
-            padding: 15px !important;
-          }
-          
-          .section {
-            margin-bottom: 25px !important;
-          }
-          
-          .section-title {
-            font-size: 16px !important;
-            margin-bottom: 15px !important;
-          }
-          
-          .palanquee-box {
-            margin: 15px 0 !important;
-            padding: 15px !important;
-          }
-          
-          .palanquee-title {
-            font-size: 16px !important;
-            margin-bottom: 12px !important;
-          }
-          
-          .plongeur-item {
-            padding: 10px 8px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-          }
-          
-          .plongeur-nom {
-            font-size: 14px !important;
-          }
-          
-          .plongeur-niveau {
-            font-size: 11px !important;
-            padding: 3px 6px !important;
-          }
-          
-          .plongeur-prerogatives {
-            font-size: 10px !important;
-          }
-        }
-        
-        @media screen and (max-width: 480px) {
-          .preview-header {
-            padding: 8px 10px !important;
-          }
-          
-          .preview-title {
-            font-size: 14px !important;
-          }
-          
-          .content {
-            padding: 10px !important;
-          }
-          
-          .section-title {
-            font-size: 14px !important;
-          }
-          
-          .palanquee-title {
-            font-size: 14px !important;
-          }
-        }
-        
         @media print {
           body { 
             background: white !important; 
@@ -1434,17 +1195,15 @@ function generatePDFPreview() {
     
     htmlContent += '<div class="container">';
     
-    // EN-TÊTE AVEC BOUTONS INTÉGRÉS
     htmlContent += '<header class="preview-header">';
-    htmlContent += '<h1 class="preview-title">Aperçu des Palanquées</h1>';
+    htmlContent += '<h1 class="preview-title">Aperçu des Palanquées (UTF-8)</h1>';
     htmlContent += '<div class="preview-buttons">';
-    htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()" title="Fermer l\'aperçu">✕ Fermer</button>';
-    htmlContent += '<button id="btn-generer-pdf" class="preview-btn btn-pdf" onclick="generatePDFFromPreview()" title="Générer le PDF d\'aperçu">📄 Générer PDF</button>';
-    htmlContent += '<button id="btn-whatsapp" class="preview-btn btn-whatsapp" onclick="shareToWhatsAppFromPreview()" title="Partager sur WhatsApp">💬 WhatsApp</button>';
+    htmlContent += '<button class="preview-btn btn-close" onclick="window.parent.closePDFPreview()">Fermer</button>';
+    htmlContent += '<button class="preview-btn btn-pdf" onclick="generatePDFFromPreview()">Générer PDF</button>';
+    htmlContent += '<button class="preview-btn btn-whatsapp" onclick="shareToWhatsAppFromPreview()">WhatsApp</button>';
     htmlContent += '</div>';
     htmlContent += '</header>';
     
-    // INFO DIRECTEUR DE PLONGÉE
     htmlContent += '<div style="background: linear-gradient(135deg, #004080 0%, #007bff 100%); color: white; padding: 20px; margin-top: 0;">';
     htmlContent += '<p style="margin: 0; font-size: 14px;"><strong>Directeur de Plongée:</strong> ' + dpNom + '</p>';
     htmlContent += '<p style="margin: 5px 0 0 0; font-size: 14px;"><strong>Date:</strong> ' + formatDateFrench(dpDate) + ' - ' + capitalize(dpPlongee) + '</p>';
@@ -1453,7 +1212,7 @@ function generatePDFPreview() {
     
     htmlContent += '<main class="content">';
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">📊 Résumé</h2>';
+    htmlContent += '<h2 class="section-title">Résumé</h2>';
     htmlContent += '<p><strong>Total plongeurs:</strong> ' + totalPlongeurs + '</p>';
     htmlContent += '<p><strong>Palanquées:</strong> ' + palanqueesLocal.length + '</p>';
     htmlContent += '<p><strong>Alertes:</strong> ' + alertesTotal.length + '</p>';
@@ -1461,7 +1220,7 @@ function generatePDFPreview() {
     
     if (alertesTotal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⚠️ Alertes</h2>';
+      htmlContent += '<h2 class="section-title">Alertes</h2>';
       alertesTotal.forEach(alerte => {
         htmlContent += '<p style="color: red;">• ' + alerte + '</p>';
       });
@@ -1469,7 +1228,7 @@ function generatePDFPreview() {
     }
     
     htmlContent += '<section class="section">';
-    htmlContent += '<h2 class="section-title">🏊‍♂️ Palanquées</h2>';
+    htmlContent += '<h2 class="section-title">Palanquées</h2>';
     
     if (palanqueesLocal.length === 0) {
       htmlContent += '<p>Aucune palanquée créée.</p>';
@@ -1486,10 +1245,9 @@ function generatePDFPreview() {
           if (pal.length === 0) {
             htmlContent += '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">Aucun plongeur assigné</p>';
           } else {
-            // MODIFICATION: Trier les plongeurs par grade avant affichage
-            const plongeursTriés = trierPlongeursParGrade(pal);
+            const plongeursTries = trierPlongeursParGrade(pal);
             
-            plongeursTriés.forEach(p => {
+            plongeursTries.forEach(p => {
               if (p && p.nom) {
                 htmlContent += '<div class="plongeur-item">';
                 htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
@@ -1512,12 +1270,11 @@ function generatePDFPreview() {
     
     if (plongeursLocal.length > 0) {
       htmlContent += '<section class="section">';
-      htmlContent += '<h2 class="section-title">⏳ Plongeurs en Attente</h2>';
+      htmlContent += '<h2 class="section-title">Plongeurs en Attente</h2>';
       
-      // MODIFICATION: Trier aussi les plongeurs en attente par grade
-      const plongeursEnAttenteTriés = trierPlongeursParGrade(plongeursLocal);
+      const plongeursEnAttenteTries = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursEnAttenteTriés.forEach(p => {
+      plongeursEnAttenteTries.forEach(p => {
         if (p && p.nom) {
           htmlContent += '<div class="plongeur-item">';
           htmlContent += '<span class="plongeur-nom">' + p.nom + '</span>';
@@ -1536,19 +1293,9 @@ function generatePDFPreview() {
     htmlContent += '</main>';
     htmlContent += '</div>';
     
-    // JAVASCRIPT INTÉGRÉ CORRIGÉ
     htmlContent += `<script>
-      // Fonction pour partager sur WhatsApp depuis l'aperçu
       function shareToWhatsAppFromPreview() {
-        const btn = document.getElementById('btn-whatsapp');
-        if (!btn) return;
-        
-        // Feedback visuel
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Génération...';
-
         try {
-          // Appeler la fonction du parent
           if (typeof window.parent.shareToWhatsApp === 'function') {
             window.parent.shareToWhatsApp();
           } else {
@@ -1556,31 +1303,11 @@ function generatePDFPreview() {
           }
         } catch (error) {
           alert('Erreur lors de la préparation pour WhatsApp: ' + error.message);
-          console.error('Erreur WhatsApp:', error);
-        } finally {
-          // Restaurer l'interface
-          setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = '💬 WhatsApp';
-          }, 2000);
         }
       }
 
-      // Fonction pour générer le PDF depuis l'aperçu
       function generatePDFFromPreview() {
-        const btn = document.getElementById('btn-generer-pdf');
-        const whatsappBtn = document.getElementById('btn-whatsapp');
-        
-        if (!btn) return;
-        
-        // Feedback visuel
-        btn.disabled = true;
-        if (whatsappBtn) whatsappBtn.disabled = true;
-        
-        btn.innerHTML = '⏳ Génération...';
-
         try {
-          // Appeler la fonction du parent
           if (typeof window.parent.generatePDFFromPreview === 'function') {
             window.parent.generatePDFFromPreview();
           } else {
@@ -1588,15 +1315,6 @@ function generatePDFPreview() {
           }
         } catch (error) {
           alert('Erreur lors de la génération du PDF');
-          console.error('Erreur PDF:', error);
-        } finally {
-          // Restaurer l'interface
-          setTimeout(() => {
-            btn.disabled = false;
-            if (whatsappBtn) whatsappBtn.disabled = false;
-            
-            btn.innerHTML = '📄 Générer PDF';
-          }, 1500);
         }
       }
     </script>`;
@@ -1618,26 +1336,24 @@ function generatePDFPreview() {
         block: 'start'
       });
       
-      console.log("✅ Aperçu PDF généré avec tri par grade, en-tête intégré et bouton WhatsApp corrigé");
+      console.log("Aperçu PDF généré avec support UTF-8 complet");
       setTimeout(() => URL.revokeObjectURL(url), 30000);
       
     } else {
-      console.error("❌ Éléments d'aperçu non trouvés");
+      console.error("Éléments d'aperçu non trouvés");
       alert("Erreur: impossible d'afficher l'aperçu PDF");
     }
     
   } catch (error) {
-    console.error("❌ Erreur génération aperçu PDF:", error);
+    console.error("Erreur génération aperçu PDF:", error);
     alert("Erreur lors de la génération de l'aperçu: " + error.message);
   }
 }
 
-// ===== NOUVELLE FONCTION : GÉNÉRATION PDF SIMPLIFIÉ AVEC TRI =====
 function generatePDFFromPreview() {
-  console.log("📄 Génération PDF simplifié avec tri par niveau...");
+  console.log("Génération PDF depuis aperçu avec Open Sans...");
   
   try {
-    // Vérifier que jsPDF est disponible
     if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
       throw new Error("jsPDF non disponible");
     }
@@ -1648,14 +1364,12 @@ function generatePDFFromPreview() {
     const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
     const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
 
-    // S'assurer que les variables existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     
     const totalPlongeurs = plongeursLocal.length + palanqueesLocal.reduce((total, pal) => total + (pal?.length || 0), 0);
     const alertesTotal = typeof checkAllAlerts === 'function' ? checkAllAlerts() : [];
 
-    // Fonction de tri par grade
     function trierPlongeursParGrade(plongeurs) {
       const ordreNiveaux = {
         'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
@@ -1686,9 +1400,10 @@ function generatePDFFromPreview() {
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 
-    // Créer le PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('portrait', 'mm', 'a4');
+
+    const hasOpenSans = setupCustomFont(doc);
 
     let yPosition = 20;
     const margin = 20;
@@ -1706,7 +1421,18 @@ function generatePDFFromPreview() {
 
     function addText(text, x, y, size = 10, style = 'normal') {
       doc.setFontSize(size);
-      doc.setFont(undefined, style);
+      
+      if (hasOpenSans) {
+        try {
+          doc.setFont("OpenSans-Regular", style);
+        } catch (e) {
+          doc.setFont("helvetica", style);
+        }
+      } else {
+        doc.setFont("helvetica", style);
+        text = text.replace(/É/g, 'E').replace(/é/g, 'e').replace(/è/g, 'e').replace(/à/g, 'a').replace(/ç/g, 'c');
+      }
+      
       doc.text(text, x, y);
     }
 
@@ -1723,7 +1449,6 @@ function generatePDFFromPreview() {
     yPosition = 65;
     doc.setTextColor(0, 0, 0);
 
-    // Résumé
     addText('RÉSUMÉ', margin, yPosition, 14, 'bold');
     yPosition += 8;
     addText('Total plongeurs: ' + totalPlongeurs, margin, yPosition);
@@ -1733,7 +1458,6 @@ function generatePDFFromPreview() {
     addText('Alertes: ' + alertesTotal.length, margin, yPosition);
     yPosition += 15;
 
-    // Alertes
     if (alertesTotal.length > 0) {
       checkPageBreak(20 + alertesTotal.length * 6);
       addText('ALERTES', margin, yPosition, 14, 'bold');
@@ -1745,7 +1469,6 @@ function generatePDFFromPreview() {
       yPosition += 10;
     }
 
-    // Palanquées
     addText('PALANQUÉES', margin, yPosition, 14, 'bold');
     yPosition += 10;
 
@@ -1764,10 +1487,9 @@ function generatePDFFromPreview() {
             addText('Aucun plongeur assigné', margin + 10, yPosition, 10, 'italic');
             yPosition += 8;
           } else {
-            // Trier et afficher les plongeurs
-            const plongeursTriés = trierPlongeursParGrade(pal);
+            const plongeursTries = trierPlongeursParGrade(pal);
             
-            plongeursTriés.forEach(p => {
+            plongeursTries.forEach(p => {
               if (p && p.nom) {
                 const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
                 addText(textLine, margin + 5, yPosition);
@@ -1780,16 +1502,15 @@ function generatePDFFromPreview() {
       });
     }
 
-    // Plongeurs en attente
     if (plongeursLocal.length > 0) {
       checkPageBreak(15 + plongeursLocal.length * 6);
       
       addText('PLONGEURS EN ATTENTE', margin, yPosition, 14, 'bold');
       yPosition += 8;
       
-      const plongeursTriés = trierPlongeursParGrade(plongeursLocal);
+      const plongeursTries = trierPlongeursParGrade(plongeursLocal);
       
-      plongeursTriés.forEach(p => {
+      plongeursTries.forEach(p => {
         if (p && p.nom) {
           const textLine = '• ' + p.nom + ' (' + (p.niveau || 'N?') + ')' + (p.pre ? ' - ' + p.pre : '');
           addText(textLine, margin + 5, yPosition);
@@ -1798,30 +1519,28 @@ function generatePDFFromPreview() {
       });
     }
 
-    // Footer sur toutes les pages
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(128, 128, 128);
-      doc.text(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10);
-      doc.text('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10);
+      addText(new Date().toLocaleDateString('fr-FR'), margin, pageHeight - 10, 8);
+      addText('Page ' + i + '/' + totalPages, pageWidth - margin - 20, pageHeight - 10, 8);
     }
 
-    // Télécharger
-    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '.pdf';
+    const fileName = 'palanquees-jsas-apercu-' + formatDateFrench(dpDate).replace(/\//g, '-') + '-' + dpPlongee + '-utf8.pdf';
     doc.save(fileName);
     
-    console.log("✅ PDF aperçu généré:", fileName);
-    alert('PDF de l\'aperçu généré avec succès !\n\nAvec tri automatique des plongeurs par niveau\n\nFichier: ' + fileName);
+    console.log("PDF aperçu généré avec Open Sans:", fileName);
+    const fontInfo = hasOpenSans ? 'avec accents préservés (Open Sans)' : 'avec fallback helvetica';
+    alert('PDF de l\'aperçu généré avec succès ' + fontInfo + '!\n\nFichier: ' + fileName);
 
   } catch (error) {
-    console.error("❌ Erreur PDF aperçu:", error);
+    console.error("Erreur PDF aperçu:", error);
     alert("Erreur lors de la génération du PDF: " + error.message);
   }
 }
 
-// Fonction pour fermer l'aperçu PDF
 function closePDFPreview() {
   const previewContainer = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
@@ -1831,137 +1550,10 @@ function closePDFPreview() {
     if (pdfPreview) {
       pdfPreview.src = "";
     }
-    console.log("✅ Aperçu PDF fermé");
+    console.log("Aperçu PDF fermé");
   }
 }
-//// FONCTION CORRIGÉE - Modal qui ne se ferme JAMAIS automatiquement
-function showTextForManualCopy(text) {
-  // Supprimer toute modal existante d'abord
-  const existingModal = document.getElementById('whatsapp-text-modal');
-  if (existingModal) {
-    document.body.removeChild(existingModal);
-  }
 
-  const modal = document.createElement('div');
-  modal.id = 'whatsapp-text-modal';
-  modal.style.cssText = `
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
-    justify-content: center; align-items: center;
-  `;
-  
-  const container = document.createElement('div');
-  container.style.cssText = `
-    background: white; padding: 20px; border-radius: 10px;
-    max-width: 90%; max-height: 80%; overflow: auto; text-align: center;
-  `;
-  
-  container.innerHTML = `
-    <h3 style="margin-bottom: 15px; color: #25D366; font-size: 18px;">📋 Texte pour WhatsApp</h3>
-    <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Copiez ce texte et collez-le dans WhatsApp :</p>
-    <textarea id="whatsapp-textarea" style="
-      width: 100%; height: 300px; border: 2px solid #25D366; border-radius: 8px;
-      padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px;
-      line-height: 1.4; resize: vertical; outline: none; margin-bottom: 15px;
-    ">${text}</textarea>
-    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-      <button id="copy-btn" style="
-        padding: 12px 20px; background: #25D366; color: white; border: none;
-        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
-      ">📋 Copier le texte</button>
-      <button id="select-btn" style="
-        padding: 12px 20px; background: #007bff; color: white; border: none;
-        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
-      ">🔍 Sélectionner tout</button>
-      <button id="close-btn" style="
-        padding: 12px 20px; background: #6c757d; color: white; border: none;
-        border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
-      ">✕ Fermer</button>
-    </div>
-  `;
-  
-  modal.appendChild(container);
-  document.body.appendChild(modal);
-  
-  // Sélection automatique au début
-  const textarea = document.getElementById('whatsapp-textarea');
-  setTimeout(() => {
-    textarea.focus();
-    textarea.select();
-  }, 100);
-  
-  // Bouton Copier - NE FERME JAMAIS LA MODAL
-  document.getElementById('copy-btn').onclick = async () => {
-    const btn = document.getElementById('copy-btn');
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        btn.textContent = '✅ Copié !';
-        btn.style.background = '#28a745';
-        // IMPORTANT : PAS de fermeture automatique !
-        setTimeout(() => {
-          btn.textContent = '📋 Copier le texte';
-          btn.style.background = '#25D366';
-        }, 2000);
-      } else {
-        textarea.select();
-        const success = document.execCommand('copy');
-        if (success) {
-          btn.textContent = '✅ Copié !';
-          btn.style.background = '#28a745';
-          // IMPORTANT : PAS de fermeture automatique !
-          setTimeout(() => {
-            btn.textContent = '📋 Copier le texte';
-            btn.style.background = '#25D366';
-          }, 2000);
-        } else {
-          btn.textContent = '❌ Utilisez Ctrl+C';
-          btn.style.background = '#dc3545';
-        }
-      }
-    } catch (err) {
-      btn.textContent = '❌ Utilisez Ctrl+C';
-      btn.style.background = '#dc3545';
-      textarea.select();
-    }
-  };
-  
-  // Bouton Sélectionner
-  document.getElementById('select-btn').onclick = () => {
-    textarea.focus();
-    textarea.select();
-    const btn = document.getElementById('select-btn');
-    btn.textContent = '✅ Sélectionné';
-    btn.style.background = '#28a745';
-    setTimeout(() => {
-      btn.textContent = '🔍 Sélectionner tout';
-      btn.style.background = '#007bff';
-    }, 1500);
-  };
-  
-  // Bouton Fermer - SEULE façon de fermer
-  document.getElementById('close-btn').onclick = () => {
-    document.body.removeChild(modal);
-  };
-  
-  // Raccourci Escape pour fermer
-  modal.onkeydown = (e) => {
-    if (e.key === 'Escape') {
-      document.body.removeChild(modal);
-    } else if (e.ctrlKey && e.key === 'c') {
-      const btn = document.getElementById('copy-btn');
-      setTimeout(() => {
-        btn.textContent = '✅ Copié avec Ctrl+C !';
-        btn.style.background = '#28a745';
-        // IMPORTANT : PAS de fermeture automatique !
-        setTimeout(() => {
-          btn.textContent = '📋 Copier le texte';
-          btn.style.background = '#25D366';
-        }, 2000);
-      }, 100);
-    }
-  };
-}
 // Export des fonctions pour usage global
 window.exportToPDF = exportToPDF;
 window.generatePDFPreview = generatePDFPreview;
@@ -1972,4 +1564,4 @@ window.generatePDFForWhatsApp = generatePDFForWhatsApp;
 window.showWhatsAppInstructions = showWhatsAppInstructions;
 window.copyPalanqueesToClipboard = copyPalanqueesToClipboard;
 
-console.log("📄 Module PDF Manager chargé - Toutes fonctionnalités PDF disponibles avec WhatsApp fonctionnel");
+console.log("Module PDF Manager chargé avec Open Sans UTF-8 - Toutes fonctionnalités disponibles");
