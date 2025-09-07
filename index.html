@@ -401,233 +401,371 @@
 
     // ===== GESTION DU MENU FLOTTANT DES PLONGEURS =====
     
-    let plongeursMenuCollapsed = false;
+// ===== GESTION DU MENU FLOTTANT DES PLONGEURS - VERSION CORRIGÉE =====
+
+let plongeursMenuCollapsed = false;
+
+// Fonction pour basculer l'affichage du menu des plongeurs
+function togglePlongeursMenu() {
+  const menu = document.getElementById('floating-plongeurs-menu');
+  const list = document.getElementById('floating-plongeurs-list');
+  const toggleBtn = document.getElementById('toggle-plongeurs-menu');
+  
+  if (!menu || !list || !toggleBtn) return;
+  
+  plongeursMenuCollapsed = !plongeursMenuCollapsed;
+  
+  if (plongeursMenuCollapsed) {
+    list.style.display = 'none';
+    toggleBtn.textContent = '+';
+    menu.style.maxHeight = '35px';
+  } else {
+    list.style.display = 'block';
+    toggleBtn.textContent = '−';
+    menu.style.maxHeight = '200px';
+  }
+}
+
+// Fonction CORRIGÉE pour mettre à jour la liste des plongeurs flottante
+function updateFloatingPlongeursList() {
+  const floatingList = document.getElementById('floating-plongeurs-list');
+  const floatingCount = document.getElementById('floating-plongeurs-count');
+  
+  if (!floatingList || !floatingCount) {
+    console.warn('Éléments du menu flottant non trouvés');
+    return;
+  }
+  
+  // Vérifier que la variable globale plongeurs existe
+  if (typeof window.plongeurs === 'undefined') {
+    window.plongeurs = [];
+  }
+  
+  const plongeursCount = window.plongeurs.length;
+  
+  console.log('Mise à jour menu flottant:', plongeursCount, 'plongeurs');
+  
+  // Mettre à jour le compteur
+  floatingCount.textContent = `(${plongeursCount})`;
+  
+  // Vider la liste flottante
+  floatingList.innerHTML = '';
+  
+  if (plongeursCount === 0) {
+    floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
+    return;
+  }
+  
+  // Ajouter chaque plongeur à la liste flottante - ACCÈS DIRECT AUX DONNÉES
+  window.plongeurs.forEach((plongeur, index) => {
+    // Accès direct aux propriétés de l'objet plongeur
+    const nom = plongeur.nom || 'Nom inconnu';
+    const niveau = plongeur.niveau || 'N/A';
     
-    // Fonction pour basculer l'affichage du menu des plongeurs
-    function togglePlongeursMenu() {
-      const menu = document.getElementById('floating-plongeurs-menu');
-      const list = document.getElementById('floating-plongeurs-list');
-      const toggleBtn = document.getElementById('toggle-plongeurs-menu');
+    console.log(`Plongeur ${index}:`, nom, '-', niveau);
+    
+    // Créer l'élément flottant
+    const floatingItem = document.createElement('div');
+    floatingItem.className = 'floating-plongeur-item';
+    floatingItem.draggable = true;
+    floatingItem.dataset.plongeurIndex = index;
+    floatingItem.dataset.plongeurNom = nom;
+    floatingItem.dataset.plongeurNiveau = niveau;
+    
+    floatingItem.innerHTML = `
+      <span class="floating-plongeur-nom">${nom}</span>
+      <span class="floating-plongeur-niveau">${niveau}</span>
+    `;
+    
+    // Ajouter les événements de drag & drop - VERSION CORRIGÉE
+    floatingItem.addEventListener('dragstart', function(e) {
+      floatingItem.classList.add('dragging');
       
-      if (!menu || !list || !toggleBtn) return;
+      // Préparer les données pour le drag & drop
+      const dragData = {
+        type: "fromMainList",
+        plongeur: {
+          nom: plongeur.nom,
+          niveau: plongeur.niveau,
+          pre: plongeur.pre || ''
+        },
+        originalIndex: index
+      };
       
-      plongeursMenuCollapsed = !plongeursMenuCollapsed;
-      
-      if (plongeursMenuCollapsed) {
-        list.style.display = 'none';
-        toggleBtn.textContent = '+';
-        menu.style.maxHeight = '35px';
-      } else {
-        list.style.display = 'block';
-        toggleBtn.textContent = '−';
-        menu.style.maxHeight = '200px';
+      // Stocker dans dataTransfer ET variable globale pour compatibilité
+      try {
+        e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+        e.dataTransfer.effectAllowed = 'move';
+        
+        // Variable globale comme backup
+        window.dragData = dragData;
+        
+        console.log('Drag depuis menu flottant:', nom, '(index:', index, ')');
+      } catch (error) {
+        console.error('Erreur dataTransfer:', error);
+        // Au minimum, stocker dans la variable globale
+        window.dragData = dragData;
       }
-    }
+    });
     
-    // Fonction pour mettre à jour la liste des plongeurs flottante
-    function updateFloatingPlongeursList() {
+    floatingItem.addEventListener('dragend', function(e) {
+      floatingItem.classList.remove('dragging');
+      // Nettoyer les données de drag
+      window.dragData = null;
+    });
+    
+    // Double-clic pour localiser le plongeur dans la liste principale
+    floatingItem.addEventListener('dblclick', function() {
       const originalList = document.getElementById('listePlongeurs');
-      const floatingList = document.getElementById('floating-plongeurs-list');
-      const floatingCount = document.getElementById('floating-plongeurs-count');
-      
-      if (!originalList || !floatingList || !floatingCount) return;
-      
-      const plongeurs = originalList.querySelectorAll('li');
-      const plongeursCount = plongeurs.length;
-      
-      // Mettre à jour le compteur
-      floatingCount.textContent = `(${plongeursCount})`;
-      
-      // Vider la liste flottante
-      floatingList.innerHTML = '';
-      
-      if (plongeursCount === 0) {
-        floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
-        return;
-      }
-      
-      // Ajouter chaque plongeur à la liste flottante
-      plongeurs.forEach((plongeur, index) => {
-        const plongeurText = plongeur.textContent || plongeur.innerText;
-        
-        // Extraire nom et niveau du texte (format: "NOM Prénom - Niveau - Prérogatives")
-        const parts = plongeurText.split(' - ');
-        const nom = parts[0] ? parts[0].trim() : 'Nom inconnu';
-        const niveau = parts[1] ? parts[1].trim() : 'N/A';
-        
-        // Créer l'élément flottant
-        const floatingItem = document.createElement('div');
-        floatingItem.className = 'floating-plongeur-item';
-        floatingItem.draggable = true;
-        floatingItem.dataset.plongeurIndex = index;
-        
-        floatingItem.innerHTML = `
-          <span class="floating-plongeur-nom">${nom}</span>
-          <span class="floating-plongeur-niveau">${niveau}</span>
-        `;
-        
-        // Ajouter les événements de drag & drop
-        floatingItem.addEventListener('dragstart', function(e) {
-          floatingItem.classList.add('dragging');
-          
-          // Copier les données du plongeur original
-          e.dataTransfer.setData('text/plain', plongeur.outerHTML);
-          e.dataTransfer.setData('text/index', index);
-          e.dataTransfer.effectAllowed = 'move';
-          
-          console.log('Drag depuis menu flottant:', nom);
-        });
-        
-        floatingItem.addEventListener('dragend', function(e) {
-          floatingItem.classList.remove('dragging');
-        });
-        
-        // Double-clic pour faire défiler vers l'élément original
-        floatingItem.addEventListener('dblclick', function() {
-          plongeur.scrollIntoView({
+      if (originalList) {
+        const listItems = originalList.querySelectorAll('li');
+        if (listItems[index]) {
+          listItems[index].scrollIntoView({
             behavior: 'smooth',
             block: 'center'
           });
           // Effet de surbrillance
-          plongeur.style.background = '#fff3cd';
+          listItems[index].style.background = '#fff3cd';
           setTimeout(() => {
-            plongeur.style.background = '';
+            listItems[index].style.background = '';
           }, 2000);
-        });
-        
-        floatingList.appendChild(floatingItem);
-      });
-    }
-    
-    // Fonction pour gérer la visibilité du menu des plongeurs
-    function updateFloatingPlongeursVisibility() {
-      const menu = document.getElementById('floating-plongeurs-menu');
-      const mainApp = document.getElementById('main-app');
-      
-      if (!menu) return;
-      
-      // Afficher le menu si l'application principale est visible
-      if (mainApp && mainApp.style.display !== 'none') {
-        menu.style.display = 'flex';
-      } else {
-        menu.style.display = 'none';
-      }
-    }
-    
-    // Fonction pour initialiser le menu des plongeurs
-    function initFloatingPlongeursMenu() {
-      console.log('Initialisation du menu des plongeurs...');
-      
-      // Mettre à jour la liste immédiatement puis régulièrement
-      updateFloatingPlongeursList();
-      setInterval(updateFloatingPlongeursList, 2000);
-      
-      // Synchroniser la visibilité
-      setInterval(updateFloatingPlongeursVisibility, 1000);
-      
-      // Observer les changements dans la liste originale
-      const originalList = document.getElementById('listePlongeurs');
-      if (originalList) {
-        console.log('Observer ajouté sur la liste des plongeurs');
-        const observer = new MutationObserver(function(mutations) {
-          console.log('Changement détecté dans la liste des plongeurs');
-          updateFloatingPlongeursList();
-        });
-        observer.observe(originalList, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-      } else {
-        console.log('Liste des plongeurs non trouvée pour observer');
-      }
-      
-      // Rendre le menu déplaçable par le header
-      makeMenuDraggable();
-      
-      // Mise à jour initiale
-      setTimeout(() => {
-        updateFloatingPlongeursList();
-        updateFloatingPlongeursVisibility();
-      }, 1000);
-    }
-    
-    // Fonction pour rendre le menu déplaçable
-    function makeMenuDraggable() {
-      const menu = document.getElementById('floating-plongeurs-menu');
-      const header = document.getElementById('floating-plongeurs-header');
-      
-      if (!menu || !header) return;
-      
-      let isDragging = false;
-      let startX, startY, startLeft, startTop;
-      
-      header.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('toggle-btn')) return;
-        
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = parseInt(window.getComputedStyle(menu).right);
-        startTop = parseInt(window.getComputedStyle(menu).bottom);
-        
-        header.style.cursor = 'grabbing';
-        e.preventDefault();
-      });
-      
-      document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        
-        const deltaX = startX - e.clientX;
-        const deltaY = e.clientY - startY;
-        
-        menu.style.right = (startLeft + deltaX) + 'px';
-        menu.style.bottom = (startTop - deltaY) + 'px';
-      });
-      
-      document.addEventListener('mouseup', function() {
-        if (isDragging) {
-          isDragging = false;
-          header.style.cursor = 'move';
         }
-      });
-    }
-    
-    // Initialiser le menu des plongeurs après le chargement
-    window.addEventListener('load', function() {
-      setTimeout(initFloatingPlongeursMenu, 3000);
+      }
     });
     
-    // Fonctions de debug
-    window.testFloatingButton = function() {
-      const dpSelect = document.getElementById('dp-select');
-      const dpDate = document.getElementById('dp-date');
-      const floatingBtn = document.getElementById('floating-save-btn');
-      
-      console.log('=== DEBUG BOUTON FLOTTANT ===');
-      console.log('dpSelect:', !!dpSelect, 'Value:', dpSelect?.value);
-      console.log('dpDate:', !!dpDate, 'Value:', dpDate?.value);
-      console.log('floatingBtn:', !!floatingBtn, 'Visible:', floatingBtn?.style.display);
-    };
-    
-    window.testPlongeursMenu = function() {
-      const menu = document.getElementById('floating-plongeurs-menu');
-      const originalList = document.getElementById('listePlongeurs');
-      const plongeurs = originalList ? originalList.querySelectorAll('li') : [];
-      
-      console.log('=== DEBUG MENU PLONGEURS ===');
-      console.log('Menu:', !!menu, 'Visible:', menu?.style.display);
-      console.log('Liste originale:', !!originalList);
-      console.log('Nombre de plongeurs:', plongeurs.length);
-      
-      plongeurs.forEach((plongeur, index) => {
-        const text = plongeur.textContent || plongeur.innerText;
-        console.log(`Plongeur ${index}:`, text);
-      });
-      
-      // Forcer la mise à jour
+    floatingList.appendChild(floatingItem);
+  });
+}
+
+// Fonction pour gérer la visibilité du menu des plongeurs
+function updateFloatingPlongeursVisibility() {
+  const menu = document.getElementById('floating-plongeurs-menu');
+  const mainApp = document.getElementById('main-app');
+  
+  if (!menu) return;
+  
+  // Afficher le menu si l'application principale est visible
+  if (mainApp && mainApp.style.display !== 'none') {
+    menu.style.display = 'flex';
+  } else {
+    menu.style.display = 'none';
+  }
+}
+
+// Fonction pour initialiser le menu des plongeurs - VERSION ROBUSTE
+function initFloatingPlongeursMenu() {
+  console.log('Initialisation du menu des plongeurs...');
+  
+  // Vérifier que les variables globales existent
+  if (typeof window.plongeurs === 'undefined') {
+    window.plongeurs = [];
+  }
+  
+  // Mettre à jour immédiatement
+  updateFloatingPlongeursList();
+  updateFloatingPlongeursVisibility();
+  
+  // Mettre à jour régulièrement
+  setInterval(updateFloatingPlongeursList, 3000);
+  setInterval(updateFloatingPlongeursVisibility, 1000);
+  
+  // Observer les changements dans les variables globales
+  // Solution robuste : surveiller les changements de taille du tableau
+  let lastPlongeursLength = window.plongeurs.length;
+  
+  setInterval(() => {
+    if (typeof window.plongeurs !== 'undefined' && window.plongeurs.length !== lastPlongeursLength) {
+      console.log('Changement détecté dans plongeurs:', lastPlongeursLength, '->', window.plongeurs.length);
+      lastPlongeursLength = window.plongeurs.length;
       updateFloatingPlongeursList();
+    }
+  }, 500);
+  
+  // Observer les changements dans le DOM de la liste principale (backup)
+  const originalList = document.getElementById('listePlongeurs');
+  if (originalList) {
+    console.log('Observer ajouté sur la liste des plongeurs');
+    const observer = new MutationObserver(function(mutations) {
+      console.log('Changement DOM détecté dans la liste des plongeurs');
+      setTimeout(updateFloatingPlongeursList, 100);
+    });
+    observer.observe(originalList, {
+      childList: true,
+      subtree: true
+    });
+  }
+  
+  // Rendre le menu déplaçable
+  makeMenuDraggable();
+  
+  console.log('Menu des plongeurs initialisé avec succès');
+}
+
+// Fonction pour rendre le menu déplaçable
+function makeMenuDraggable() {
+  const menu = document.getElementById('floating-plongeurs-menu');
+  const header = document.getElementById('floating-plongeurs-header');
+  
+  if (!menu || !header) return;
+  
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+  
+  header.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('toggle-btn')) return;
+    
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseInt(window.getComputedStyle(menu).right);
+    startTop = parseInt(window.getComputedStyle(menu).bottom);
+    
+    header.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    
+    const deltaX = startX - e.clientX;
+    const deltaY = e.clientY - startY;
+    
+    menu.style.right = (startLeft + deltaX) + 'px';
+    menu.style.bottom = (startTop - deltaY) + 'px';
+  });
+  
+  document.addEventListener('mouseup', function() {
+    if (isDragging) {
+      isDragging = false;
+      header.style.cursor = 'move';
+    }
+  });
+}
+
+// CORRECTION DU DRAG & DROP - Améliorer la gestion dans main-core.js
+// Fonction pour améliorer la compatibilité du drag & drop
+function enhanceDragDropCompatibility() {
+  // S'assurer que la variable globale dragData existe
+  if (typeof window.dragData === 'undefined') {
+    window.dragData = null;
+  }
+  
+  // Améliorer les handlers existants pour supporter le menu flottant
+  const originalHandleDrop = window.handleDrop;
+  
+  if (originalHandleDrop) {
+    window.handleDrop = function(e) {
+      console.log('Drop amélioré détecté');
+      
+      // Essayer d'abord la logique originale
+      try {
+        originalHandleDrop.call(this, e);
+      } catch (error) {
+        console.warn('Erreur handler original:', error);
+        
+        // Fallback pour le menu flottant
+        handleFloatingMenuDrop(e);
+      }
     };
+  }
+}
+
+// Handler de drop spécifique pour le menu flottant
+function handleFloatingMenuDrop(e) {
+  e.preventDefault();
+  
+  const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
+  if (!dropZone) return;
+  
+  dropZone.classList.remove('drag-over');
+  
+  // Récupérer les données
+  let data = window.dragData;
+  
+  if (!data) {
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain');
+      if (dataStr) {
+        data = JSON.parse(dataStr);
+      }
+    } catch (error) {
+      console.warn('Erreur parsing dataTransfer:', error);
+    }
+  }
+  
+  if (!data) return;
+  
+  console.log('Données de drop:', data);
+  
+  // S'assurer que les variables globales existent
+  if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
+  if (typeof window.palanquees === 'undefined') window.palanquees = [];
+  
+  // Drop vers la liste principale
+  if (dropZone.id === 'listePlongeurs') {
+    console.log('Drop vers liste principale');
+    return; // La logique principale devrait gérer cela
+  } else {
+    // Drop vers une palanquée
+    const palanqueeIndex = parseInt(dropZone.dataset.index);
+    if (isNaN(palanqueeIndex)) return;
+    
+    console.log('Drop vers palanquée', palanqueeIndex);
+    
+    if (data.type === "fromMainList") {
+      // Trouver et supprimer le plongeur de la liste principale
+      const indexToRemove = data.originalIndex;
+      
+      if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
+        const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
+        
+        // Ajouter à la palanquée
+        if (window.palanquees[palanqueeIndex]) {
+          window.palanquees[palanqueeIndex].push(plongeur);
+          
+          console.log('Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
+          
+          // Synchroniser
+          if (typeof window.syncToDatabase === 'function') {
+            window.syncToDatabase();
+          }
+        }
+      }
+    }
+  }
+  
+  // Nettoyer
+  window.dragData = null;
+}
+
+// Initialiser le menu des plongeurs après le chargement
+window.addEventListener('load', function() {
+  setTimeout(() => {
+    initFloatingPlongeursMenu();
+    enhanceDragDropCompatibility();
+  }, 3000);
+});
+
+// Fonctions de debug améliorées
+window.testPlongeursMenu = function() {
+  console.log('=== DEBUG MENU PLONGEURS ===');
+  console.log('Plongeurs globaux:', window.plongeurs);
+  console.log('Nombre:', window.plongeurs?.length || 0);
+  
+  const menu = document.getElementById('floating-plongeurs-menu');
+  console.log('Menu visible:', menu?.style.display);
+  
+  // Forcer la mise à jour
+  updateFloatingPlongeursList();
+  
+  console.log('=== FIN DEBUG ===');
+};
+
+window.forceUpdatePlongeursMenu = function() {
+  console.log('Mise à jour forcée du menu des plongeurs');
+  updateFloatingPlongeursList();
+  updateFloatingPlongeursVisibility();
+};
   </script>
 
 <!-- Modal pour ajouter/modifier un DP -->
