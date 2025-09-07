@@ -92,67 +92,35 @@ function exportToPDF() {
       }
     }
     
-function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
-  // NOUVEAU : Nettoyage automatique des caractères accentués pour PDF
-  const cleanAccents = (str) => {
-    if (!str || typeof str !== 'string') return '';
-    
-    const replacements = {
-      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
-      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
-      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
-      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
-      'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
-      'Ç': 'C', 'Ñ': 'N',
-      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
-      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-      'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-      'ç': 'c', 'ñ': 'n', 'ÿ': 'y',
-      ''': "'", ''': "'", '"': '"', '"': '"'
-    };
-    
-    let cleaned = str;
-    for (const [accented, clean] of Object.entries(replacements)) {
-      cleaned = cleaned.replace(new RegExp(accented, 'g'), clean);
+    function addText(text, x, y, fontSize = 10, fontStyle = 'normal', color = 'dark') {
+      doc.setFontSize(fontSize);
+      doc.setFont(undefined, fontStyle);
+      
+      switch(color) {
+        case 'primary':
+          doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
+          break;
+        case 'secondary':
+          doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
+          break;
+        case 'success':
+          doc.setTextColor(colors.successR, colors.successG, colors.successB);
+          break;
+        case 'danger':
+          doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
+          break;
+        case 'gray':
+          doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
+          break;
+        case 'white':
+          doc.setTextColor(255, 255, 255);
+          break;
+        default:
+          doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
+      }
+      
+      doc.text(text, x, y);
     }
-    
-    return cleaned;
-  };
-  
-  // Nettoyer le texte avant de l'ajouter au PDF
-  const cleanedText = cleanAccents(text);
-  
-  doc.setFontSize(fontSize);
-  doc.setFont(undefined, fontStyle);
-  
-  switch(color) {
-    case 'primary':
-      doc.setTextColor(colors.primaryR, colors.primaryG, colors.primaryB);
-      break;
-    case 'secondary':
-      doc.setTextColor(colors.secondaryR, colors.secondaryG, colors.secondaryB);
-      break;
-    case 'success':
-      doc.setTextColor(colors.successR, colors.successG, colors.successB);
-      break;
-    case 'danger':
-      doc.setTextColor(colors.dangerR, colors.dangerG, colors.dangerB);
-      break;
-    case 'gray':
-      doc.setTextColor(colors.grayR, colors.grayG, colors.grayB);
-      break;
-    case 'white':
-      doc.setTextColor(255, 255, 255);
-      break;
-    default:
-      doc.setTextColor(colors.darkR, colors.darkG, colors.darkB);
-  }
-  
-  // Utiliser le texte nettoyé
-  doc.text(cleanedText, x, y);
-}
     
     // Vérifier que les variables globales existent
     const plongeursLocal = typeof plongeurs !== 'undefined' ? plongeurs : [];
