@@ -20,11 +20,41 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .header-container {
-  background-image: url('images/logo-jsas.png');
-  background-repeat: no-repeat;
-  background-position: left center;
-  background-size: 50px;
-  padding-left: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.logo {
+  height: 50px; /* Ajustez selon vos besoins */
+  width: auto;
+  object-fit: contain;
+}
+
+.header-container h2 {
+  margin: 0;
+  font-size: 2.5em;
+  color: #2c3e50;
+}
+
+/* Version responsive */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .logo {
+    height: 40px;
+  }
+  
+  .header-container h1 {
+    font-size: 2em;
+    text-align: center;
+  }
 }
 
 /* STYLES AMÉLIORÉS POUR LES ALERTES */
