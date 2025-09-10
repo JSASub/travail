@@ -176,17 +176,52 @@
         if (plongeursMenuCollapsed) {
             list.style.display = 'none';
             toggleBtn.textContent = '+';
-            toggleBtn.title = 'Agrandir le menu';
+            toggleBtn.title = 'Cliquer pour agrandir le menu';
             menu.style.maxHeight = '40px';
-            header.style.padding = '6px 12px';
+            header.style.padding = '8px 12px';
             header.style.cursor = 'pointer';
+            header.style.backgroundColor = '#f8f9fa';
+            header.style.borderRadius = '8px';
+            
+            // Rendre tout le header cliquable quand rétracté
+            header.onclick = function(e) {
+                // Éviter le double-clic si on clique sur le bouton
+                if (e.target === toggleBtn) return;
+                togglePlongeursMenu();
+            };
+            
+            // Ajouter un effet hover visible
+            header.onmouseenter = function() {
+                if (plongeursMenuCollapsed) {
+                    header.style.backgroundColor = '#e9ecef';
+                    header.style.transform = 'scale(1.02)';
+                    header.style.transition = 'all 0.2s ease';
+                }
+            };
+            
+            header.onmouseleave = function() {
+                if (plongeursMenuCollapsed) {
+                    header.style.backgroundColor = '#f8f9fa';
+                    header.style.transform = 'scale(1)';
+                }
+            };
+            
         } else {
             list.style.display = 'block';
             toggleBtn.textContent = '−';
             toggleBtn.title = 'Réduire le menu';
             menu.style.maxHeight = '200px';
             header.style.padding = '6px 12px';
-            header.style.cursor = 'default';
+            header.style.cursor = 'move';
+            header.style.backgroundColor = '';
+            header.style.borderRadius = '';
+            header.style.transform = '';
+            header.style.transition = '';
+            
+            // Désactiver le clic sur tout le header quand ouvert
+            header.onclick = null;
+            header.onmouseenter = null;
+            header.onmouseleave = null;
         }
     }
 
