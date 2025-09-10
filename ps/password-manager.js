@@ -157,7 +157,7 @@
     }
 
     /**
-     * Changer le mot de passe - VERSION CORRIGÉE
+     * Changer le mot de passe - VERSION CORRIGÉE ANTI-404
      */
     function changePassword() {
         const currentPassword = document.getElementById('current-password').value;
@@ -193,40 +193,71 @@
         
         // Obtenir l'utilisateur actuel
         const user = firebase.auth().currentUser;
-        if (!user) {
+        if (!user || !user.email) {
             showPasswordMessage('Erreur : utilisateur non connecté. Veuillez vous reconnecter.', 'error');
             resetSubmitButton();
             return;
         }
         
-        // Créer les credentials pour la ré-authentification
-        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+        console.log('Tentative de changement de mot de passe pour:', user.email);
         
-        // ÉTAPE 1: Ré-authentifier l'utilisateur avec le mot de passe actuel
-        user.reauthenticateWithCredential(credential)
-            .then(function() {
-                console.log('Ré-authentification réussie');
-                showPasswordMessage('Mot de passe actuel vérifié. Mise à jour...', 'info');
+        // Prévenir toute redirection pendant le processus
+        const originalOnBeforeUnload = window.onbeforeunload;
+        const originalLocationHref = window.location.href;
+        
+        try {
+            // Créer les credentials pour la ré-authentification - FIREBASE V8
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+            
+            // ÉTAPE 1: Ré-authentifier l'utilisateur avec le mot de passe actuel
+            user.reauthenticateWithCredential(credential)
+                .then(function(result) {
+                    console.log('Ré-authentification réussie');
+                    showPasswordMessage('Mot de passe actuel vérifié. Mise à jour...', 'info');
+                    
+                    // ÉTAPE 2: Changer le mot de passe
+                    return user.updatePassword(newPassword);
+                })
+                .then(function() {
+                    console.log('Mot de passe changé avec succès');
+                    showPasswordMessage('Mot de passe changé avec succès !', 'success');
+                    
+                    // Fermer la modal après 2 secondes
+                    setTimeout(() => {
+                        hidePasswordChangeModal();
+                    }, 2000);
+                })
+                .catch(function(error) {
+                    // EMPÊCHER TOUTE REDIRECTION
+                    if (window.location.href !== originalLocationHref) {
+                        window.history.pushState(null, '', originalLocationHref);
+                    }
+                    
+                    console.error('Erreur lors du changement de mot de passe:', error);
+                    console.error('Code d\'erreur:', error.code);
+                    console.error('Message d\'erreur:', error.message);
+                    
+                    // Gestion spécifique de l'erreur INVALID_LOGIN_CREDENTIALS
+                    if (error.message && error.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+                        showPasswordMessage('Le mot de passe actuel est incorrect. Veuillez vérifier et réessayer.', 'error');
+                        document.getElementById('current-password').style.borderColor = '#dc3545';
+                        document.getElementById('current-password').focus();
+                        document.getElementById('current-password').select();
+                    } else {
+                        handlePasswordChangeError(error);
+                    }
+                })
+                .finally(function() {
+                    resetSubmitButton();
+                    // Restaurer les handlers
+                    window.onbeforeunload = originalOnBeforeUnload;
+                });
                 
-                // ÉTAPE 2: Changer le mot de passe
-                return user.updatePassword(newPassword);
-            })
-            .then(function() {
-                console.log('Mot de passe changé avec succès');
-                showPasswordMessage('✅ Mot de passe changé avec succès !', 'success');
-                
-                // Fermer la modal après 2 secondes
-                setTimeout(() => {
-                    hidePasswordChangeModal();
-                }, 2000);
-            })
-            .catch(function(error) {
-                console.error('Erreur lors du changement de mot de passe:', error);
-                handlePasswordChangeError(error);
-            })
-            .finally(function() {
-                resetSubmitButton();
-            });
+        } catch (error) {
+            console.error('Erreur lors de la création des credentials:', error);
+            showPasswordMessage('Erreur technique. Veuillez réessayer.', 'error');
+            resetSubmitButton();
+        }
     }
 
     /**
