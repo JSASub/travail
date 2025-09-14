@@ -1,50 +1,26 @@
-console.log('🚀 DÉBUT Script emergency-save');
-
-try {
-    console.log('📦 Étape 1 : Définition classe...');
+// Version ultra-simple qui fonctionne
+(function() {
+    'use strict';
     
-    class EmergencySaveManager {
-        constructor() {
-            console.log('✅ Constructor start');
-            this.isInitialized = true;
+    function EmergencySaveManager() {
+        this.hasUnsavedChanges = false;
+        this.isInitialized = true;
+        
+        this.markNormalSaveComplete = function() {
             this.hasUnsavedChanges = false;
-            console.log('✅ Constructor end');
-        }
+            console.log('Sauvegarde normale marquée');
+        };
         
-        test() {
-            return 'OK TEST';
-        }
+        this.forceSave = function() {
+            console.log('Sauvegarde forcée');
+        };
         
-        markNormalSaveComplete() {
-            console.log('🔄 markNormalSaveComplete');
-        }
-        
-        forceSave() {
-            console.log('⚡ forceSave');
-        }
+        console.log('EmergencySaveManager initialisé');
     }
     
-    console.log('📦 Étape 2 : Classe définie');
-    
-    // Test création
-    console.log('📦 Étape 3 : Test création instance...');
-    const testInstance = new EmergencySaveManager();
-    console.log('📦 Étape 4 : Instance test créée');
-    
-    // Exposition
-    console.log('📦 Étape 5 : Exposition window...');
+    // Créer et exposer immédiatement
     window.EmergencySaveManager = EmergencySaveManager;
-    window.emergencySaveManager = testInstance;
+    window.emergencySaveManager = new EmergencySaveManager();
     
-    console.log('📦 Étape 6 : Variables exposées');
-    console.log('- Classe:', typeof window.EmergencySaveManager);
-    console.log('- Instance:', typeof window.emergencySaveManager);
-    
-    console.log('✅ Script emergency-save terminé avec succès');
-    
-} catch (error) {
-    console.error('❌ ERREUR dans script emergency-save:');
-    console.error('Message:', error.message);
-    console.error('Stack:', error.stack);
-    alert('ERREUR: ' + error.message);
-}
+    console.log('System ready:', typeof window.EmergencySaveManager, typeof window.emergencySaveManager);
+})();
