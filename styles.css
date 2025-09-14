@@ -1420,3 +1420,25 @@ button:hover {
   align-self: flex-start;
   margin-top: 0 !important;
 }
+
+
+
+/* CORRECTION SPÉCIFIQUE POUR span#user-info */
+span#user-info {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    position: relative !important;
+    top: -8px !important;
+    vertical-align: top !important;
+    line-height: 1 !important;
+    transform: translateY(-3px) !important;
+}
+
+/* Correction du conteneur parent si nécessaire */
+#user-info {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
