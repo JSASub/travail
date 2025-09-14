@@ -1451,3 +1451,14 @@ button:hover {
   display: inline-block !important;
   vertical-align: middle !important;
 }
+
+/* CORRECTION FORCÉE BOUTON VOUS SEUL */
+.dp-status-indicator,
+[style*="👨‍💼"] {
+    margin: 0 !important;
+    padding: 3px 8px !important;
+    position: relative !important;
+    top: -4px !important;
+    vertical-align: top !important;
+    line-height: 1.1 !important;
+}
