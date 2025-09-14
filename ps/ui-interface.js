@@ -3,32 +3,68 @@
 // ===== COMPTEURS D'AFFICHAGE =====
 function updateCompteurs() {
   try {
-    const compteurPlongeurs = $("compteur-plongeurs");
-    if (compteurPlongeurs) {
-      compteurPlongeurs.textContent = `(${plongeurs.length})`;
-      compteurPlongeurs.style.color = plongeurs.length === 0 ? "#28a745" : "#007bff";
-    }
+    // Compter les plongeurs de manière sécurisée
+    const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
     
-    const totalPlongeursEnPalanquees = palanquees.flat().length;
-    const nombrePalanquees = palanquees.length;
-    const compteurPalanquees = $("compteur-palanquees");
+    // Compter les palanquées de manière sécurisée - MÉTHODE HYBRIDE
+    let palanqueesCount = 0;
+    let plongeursEnPalanquees = 0;
     
-    if (compteurPalanquees) {
-      if (nombrePalanquees === 0) {
-        compteurPalanquees.textContent = "(Aucune palanquée)";
-        compteurPalanquees.style.color = "#666";
-      } else {
-        const plurielPlongeurs = totalPlongeursEnPalanquees > 1 ? "plongeurs" : "plongeur";
-        const plurielPalanquees = nombrePalanquees > 1 ? "palanquées" : "palanquée";
-        compteurPalanquees.textContent = `(${totalPlongeursEnPalanquees} ${plurielPlongeurs} dans ${nombrePalanquees} ${plurielPalanquees})`;
-        compteurPalanquees.style.color = "#28a745";
+    // Méthode 1: Depuis la variable globale
+    if (Array.isArray(window.palanquees)) {
+      palanqueesCount = window.palanquees.length;
+      
+      for (let i = 0; i < window.palanquees.length; i++) {
+        const pal = window.palanquees[i];
+        if (Array.isArray(pal)) {
+          plongeursEnPalanquees += pal.length;
+        } else if (pal && typeof pal.length === 'number') {
+          plongeursEnPalanquees += pal.length;
+        }
       }
     }
+    
+    // Méthode 2: Fallback depuis le DOM si variable globale vide
+    if (palanqueesCount === 0) {
+      const palanqueeElements = document.querySelectorAll('.palanquee');
+      palanqueesCount = palanqueeElements.length;
+      
+      // Compter les plongeurs dans le DOM
+      plongeursEnPalanquees = 0;
+      palanqueeElements.forEach(palanqueeEl => {
+        const plongeurItems = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+        plongeursEnPalanquees += plongeurItems.length;
+      });
+    }
+    
+    // Mettre à jour les compteurs dans l'interface
+    const compteurPlongeurs = document.getElementById('compteur-plongeurs');
+    if (compteurPlongeurs) {
+      compteurPlongeurs.textContent = `(${plongeursCount})`;
+    }
+    
+    const compteurPalanquees = document.getElementById('compteur-palanquees');
+    if (compteurPalanquees) {
+      compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+    }
+    
+    console.log(`Compteurs mis à jour: ${plongeursCount} plongeurs, ${palanqueesCount} palanquées, ${plongeursEnPalanquees} en palanquées`);
+    
   } catch (error) {
-    console.error("❌ Erreur updateCompteurs:", error);
+    console.error('Erreur updateCompteurs:', error);
+    
+    // Fallback sécurisé
+    const compteurPlongeurs = document.getElementById('compteur-plongeurs');
+    if (compteurPlongeurs) {
+      compteurPlongeurs.textContent = '(?)';
+    }
+    
+    const compteurPalanquees = document.getElementById('compteur-palanquees');
+    if (compteurPalanquees) {
+      compteurPalanquees.textContent = '(Erreur de comptage)';
+    }
   }
 }
-
 // ===== NOUVEAU : GESTION DES VERROUS UI (VERSION SÉCURISÉE) =====
 function updatePalanqueeLockUI() {
   if (!currentUser || typeof palanqueeLocks === 'undefined') {
