@@ -1,6 +1,13 @@
 // ps/emergency-save-improved.js - Version corrigée
 // Système de sauvegarde d'urgence amélioré pour JSAS
 
+alert('Script emergency-save se charge !');
+
+
+
+
+console.log('🚀 Début chargement emergency-save-improved.js');
+
 alert('SCRIPT EMERGENCY-SAVE SE CHARGE !');
 console.log('🚀 Début chargement emergency-save-improved.js');
 
@@ -35,6 +42,17 @@ try {
     console.error('❌ Stack:', error.stack);
     alert('ERREUR: ' + error.message);
 }
+        
+        this.MIN_SAVE_INTERVAL = 30000; // 30 secondes
+        this.MAX_RECOVERY_AGE = 24 * 60 * 60 * 1000; // 24 heures
+        this.lastSaveTime = 0;
+        this.hasUnsavedChanges = false;
+        this.isRecoveryInProgress = false;
+        this.currentSessionId = this.generateSessionId();
+        
+        console.log('✅ EmergencySaveManager créé avec succès');
+        this.init();
+    }
 
     init() {
         try {
