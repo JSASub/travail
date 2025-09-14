@@ -1385,7 +1385,22 @@ window.addEventListener('error', (event) => {
     lineno: event.lineno
   };
 });
-
+//
+function fixCompteurPalanquees() {
+  const palanqueesCount = document.querySelectorAll('.palanquee').length;
+  const compteurPalanquees = document.getElementById('compteur-palanquees');
+  
+  if (compteurPalanquees && palanqueesCount > 0) {
+    // Compter les plongeurs dans les palanquées
+    let plongeursEnPalanquees = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+      plongeursEnPalanquees += pal.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    
+    compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+    console.log(`Compteur corrigé: ${palanqueesCount} palanquées`);
+  }
+}
 // ===== INITIALISATION SÉCURISÉE DE L'APPLICATION =====
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("🚀 Initialisation sécurisée de l'application JSAS...");
