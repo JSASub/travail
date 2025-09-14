@@ -7,12 +7,12 @@
 
     // Configuration
     const CONFIG = {
-    STORAGE_KEY: 'jsas_auto_save',
-    MAX_AGE_HOURS: 48,              // ← 48h au lieu de 24h
-    MIN_DATA_THRESHOLD: 1,          // ← Plus sensible  
-    SAVE_DELAY: 1000,               // ← Plus rapide
-    SHOW_RESTORE_DELAY: 5000        // ← Plus de délai
-};
+        STORAGE_KEY: 'jsas_auto_save',
+        MAX_AGE_HOURS: 24,
+        MIN_DATA_THRESHOLD: 2, // Minimum de données pour déclencher une sauvegarde
+        SAVE_DELAY: 2000, // Délai avant sauvegarde automatique
+        SHOW_RESTORE_DELAY: 3000 // Délai avant affichage de la proposition de restauration
+    };
 
     // Variables globales du module
     let autoSaveTimeout = null;
@@ -590,13 +590,13 @@
             }
         });
 
-        // Observer les changements dans les variables globales
-        let lastPlongeursCount = window.plongeurs?.length || 0;
-        let lastPalanqueesCount = window.palanquees?.length || 0;
+        // Observer les changements dans les variables globales avec vérifications robustes
+        let lastPlongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
+        let lastPalanqueesCount = Array.isArray(window.palanquees) ? window.palanquees.length : 0;
         
         setInterval(() => {
-            const currentPlongeursCount = window.plongeurs?.length || 0;
-            const currentPalanqueesCount = window.palanquees?.length || 0;
+            const currentPlongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
+            const currentPalanqueesCount = Array.isArray(window.palanquees) ? window.palanquees.length : 0;
             
             if (currentPlongeursCount !== lastPlongeursCount || 
                 currentPalanqueesCount !== lastPalanqueesCount) {
