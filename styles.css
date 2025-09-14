@@ -1,14 +1,23 @@
+/* ===== STYLES.CSS - APPLICATION JSAS - VERSION PROPRE ===== */
+
 :root {
   --floating-elements-width: 200px;
-  --floating-save-bottom: 20px; /* 30px - 20px */
-  --floating-plongeurs-bottom: 90px; /* 110px - 20px */
+  --floating-save-bottom: 20px;
+  --floating-plongeurs-bottom: 90px;
+  --primary-blue: #007bff;
+  --success-green: #28a745;
+  --danger-red: #dc3545;
+  --warning-yellow: #ffc107;
+  --dark-blue: #003366;
+  --light-blue: #f7fcff;
 }
 
+/* ===== BASE STYLES ===== */
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-  background: #f7fcff;
-  color: #003366;
+  background: var(--light-blue);
+  color: var(--dark-blue);
 }
 
 h1, h2 {
@@ -19,51 +28,35 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   margin-top: 12mm !important;
 }
 
+/* ===== HEADER ===== */
 .header-container {
   display: flex;
-  align-items: center; /* Aligne verticalement au centre */
-  justify-content: flex-start; /* Aligne l'ensemble à gauche */
-  gap: 15px; /* Espace entre le logo et le titre */
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
   margin-bottom: 20px;
   padding: 20px;
 }
 
 .logo {
-  height: 80px; /* Ajustez la taille selon le titre */
+  height: 80px;
   width: auto;
   object-fit: contain;
-  vertical-align: left; /* Assurance supplémentaire */
+  vertical-align: middle;
 }
 
 .header-container h2 {
-  margin: 0; /* Supprime les marges par défaut du h2 */
-  padding: 0; /* Supprime les paddings par défaut */
-  line-height: 1; /* Contrôle précis de la hauteur de ligne */
+  margin: 0;
+  padding: 0;
+  line-height: 1;
   font-size: 2.5em;
   color: #2c3e50;
 }
 
-/* Version responsive */
-@media (max-width: 768px) {
-  .header-container {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .logo {
-    height: 40px;
-  }
-  
-  .header-container h1 {
-    font-size: 2em;
-    text-align: left;
-  }
-}
-
-/* STYLES AMÉLIORÉS POUR LES ALERTES */
+/* ===== ALERTS SECTION ===== */
 .alert-section {
   position: fixed;
-  top: 100px; /* ← Changer de 20px à 77px */
+  top: 100px;
   right: 20px;
   max-width: 350px;
   z-index: 1000;
@@ -71,31 +64,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 15px;
-  border-left: 4px solid #dc3545;
-}
-
-
-/* Version responsive pour mobile */
-/* STYLES AMÉLIORÉS POUR LES ALERTES - VERSION UNIQUE */
-.alert-section {
-  top: 100px !important; /* Force la valeur */
-}
-
-/* Desktop spécifique */
-@media (min-width: 768px) {
-    .alert-section {
-        top: 90px !important; /* Valeur pour desktop seulement */
-    }
-}
-
-/* Version responsive pour mobile */
-@media (max-width: 768px) {
-    .alert-section {
-        top: 80px !important;
-        right: 10px !important;
-        left: 10px !important;
-        max-width: none !important;
-    }
+  border-left: 4px solid var(--danger-red);
 }
 
 .alert-hidden {
@@ -104,7 +73,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 .alert-title {
   font-weight: bold;
-  color: #dc3545;
+  color: var(--danger-red);
   margin-bottom: 20px;
   font-size: 1.1em;
 }
@@ -119,9 +88,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   font-size: 0.9em;
 }
 
-/* ===== STYLES POUR LA GESTION AUTOMATISÉE DES DP ===== */
-
-/* Conteneur principal de sélection DP */
+/* ===== DP MANAGEMENT ===== */
 #meta-info label:first-child {
   position: relative;
 }
@@ -134,7 +101,6 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   margin-top: 5px;
 }
 
-/* Liste déroulante DP */
 #dp-select {
   flex: 1;
   min-width: 250px;
@@ -148,7 +114,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 
 #dp-select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary-blue);
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
 
@@ -156,205 +122,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   padding: 8px;
 }
 
-/* Boutons de gestion DP */
-.dp-management-btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-#dp-add-btn {
-  background: #28a745;
-  color: white;
-}
-
-#dp-add-btn:hover {
-  background: #218838;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-}
-
-#dp-edit-btn {
-  background: #ffc107;
-  color: #212529;
-}
-
-#dp-edit-btn:hover:not(:disabled) {
-  background: #e0a800;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
-}
-
-#dp-delete-btn {
-  background: #dc3545;
-  color: white;
-}
-
-#dp-delete-btn:hover:not(:disabled) {
-  background: #c82333;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-}
-
-/* États désactivés */
-#dp-edit-btn:disabled,
-#dp-delete-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* SOLUTION AMÉLIORÉE POUR LES BOUTONS DP MOBILE */
-@media (max-width: 768px) {
-  /* Container principal */
-  #meta-info label:first-child > div {
-    display: block !important;
-  }
-  
-  /* Select en haut sur toute la largeur */
-  #dp-select {
-    display: block !important;
-    width: 100% !important;
-    margin-bottom: 12px !important;
-    min-width: unset !important;
-  }
-  
-  /* Boutons alignés horizontalement - Optimisé iPhone */
-  #add-dp-btn,
-  #dp-add-btn,
-  #edit-dp-btn,
-  #dp-edit-btn, 
-  #delete-dp-btn,
-  #dp-delete-btn {
-    display: inline-block !important;
-    width: calc(32% - 2px) !important;
-    margin: 0 1px !important;
-    padding: 8px 2px !important;
-    font-size: 11px !important;
-    vertical-align: top !important;
-    text-align: center !important;
-    box-sizing: border-box !important;
-    white-space: nowrap !important;
-    line-height: 1.2 !important;
-  }
-  
-  /* Forcer l'affichage du texte sur mobile */
-  #add-dp-btn span,
-  #dp-add-btn span,
-  #edit-dp-btn span,
-  #dp-edit-btn span,
-  #delete-dp-btn span,
-  #dp-delete-btn span {
-    display: inline !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-  }
-  
-  /* Clearfix pour assurer l'alignement */
-  #meta-info label:first-child > div::after {
-    content: "";
-    display: table;
-    clear: both;
-  }
-}
-
-/* Très petit mobile */
-@media (max-width: 480px) {
-  #add-dp-btn,
-  #dp-add-btn,
-  #edit-dp-btn,
-  #dp-edit-btn, 
-  #delete-dp-btn,
-  #dp-delete-btn {
-    padding: 8px 2px !important;
-    font-size: 11px !important;
-  }
-  
-  #add-dp-btn span,
-  #dp-add-btn span,
-  #edit-dp-btn span,
-  #dp-edit-btn span,
-  #delete-dp-btn span,
-  #dp-delete-btn span {
-    font-size: 10px !important;
-  }
-}
-
-/* Modal DP */
-#dp-modal {
-  animation: fadeInModal 0.3s ease;
-}
-
-#dp-modal > div {
-  animation: slideInModal 0.3s ease;
-}
-
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideInModal {
-  from { 
-    transform: translateY(-50px); 
-    opacity: 0; 
-  }
-  to { 
-    transform: translateY(0); 
-    opacity: 1; 
-  }
-}
-
-/* Champs du modal */
-#dp-modal input,
-#dp-modal select {
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
-}
-
-#dp-modal input:focus,
-#dp-modal select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-}
-
-/* Boutons du modal */
-#dp-modal button {
-  transition: all 0.3s ease;
-}
-
-#dp-modal button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-#modal-save {
-  background: #007bff !important;
-}
-
-#modal-save:hover {
-  background: #0056b3 !important;
-}
-
-#modal-cancel {
-  background: #6c757d !important;
-}
-
-#modal-cancel:hover {
-  background: #545b62 !important;
-}
-
-/* Styles pour les boutons DP - Version consolidée */
+/* DP Buttons */
 .dp-btn {
   padding: 8px 12px;
   border: none;
@@ -385,7 +153,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .dp-btn-add {
-  background: linear-gradient(135deg, #28a745, #20c997);
+  background: linear-gradient(135deg, var(--success-green), #20c997);
   color: white;
   border: 1px solid #1e7e34;
 }
@@ -395,7 +163,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .dp-btn-edit {
-  background: linear-gradient(135deg, #ffc107, #fd7e14);
+  background: linear-gradient(135deg, var(--warning-yellow), #fd7e14);
   color: #212529;
   border: 1px solid #d39e00;
 }
@@ -405,7 +173,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .dp-btn-delete {
-  background: linear-gradient(135deg, #dc3545, #e83e8c);
+  background: linear-gradient(135deg, var(--danger-red), #e83e8c);
   color: white;
   border: 1px solid #bd2130;
 }
@@ -414,7 +182,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: linear-gradient(135deg, #c82333, #d91a72);
 }
 
-/* Modal DP - Version complète */
+/* DP Modal */
 #dp-modal {
   display: none;
   position: fixed;
@@ -439,7 +207,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 .dp-modal-header {
-  background: #007bff;
+  background: var(--primary-blue);
   color: white;
   padding: 15px 20px;
   border-radius: 8px 8px 0 0;
@@ -502,7 +270,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 .dp-form-group input:focus,
 .dp-form-group select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary-blue);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
@@ -517,7 +285,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
 }
 
 #save-dp-btn {
-  background: #007bff;
+  background: var(--primary-blue);
   color: white;
 }
 
@@ -534,164 +302,7 @@ h2[style*="color: #004080"][style*="font-size: 20px"] {
   background: #545b62;
 }
 
-/* Animations modal */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Notifications système */
-.dp-notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 10001;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transform: translateX(400px);
-  opacity: 0;
-  transition: all 0.3s ease;
-  max-width: 350px;
-  word-wrap: break-word;
-}
-
-.dp-notification-show {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.dp-notification-success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.dp-notification-error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.dp-notification-info {
-  background: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
-}
-
-/* NOUVEAU : STYLES POUR LE SYSTÈME DE VERROUS */
-.dp-status-indicator {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border: 1px solid #2196f3;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 10px 0;
-  font-size: 14px;
-}
-
-.dp-status-content {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dp-status-icon {
-  font-size: 18px;
-}
-
-.lock-indicator {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-size: 12px;
-  font-weight: bold;
-  z-index: 10;
-}
-
-.lock-indicator.editing-self {
-  background: #ffc107;
-  color: #856404;
-}
-
-.lock-indicator.editing-other {
-  background: #dc3545;
-  color: white;
-}
-
-.palanquee.editing-other {
-  background-color: #f8d7da !important;
-  border-color: #dc3545 !important;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.palanquee.editing-self {
-  background-color: #fff8e1 !important;
-  border-color: #ffc107 !important;
-  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
-}
-
-.locked-field {
-  background-color: #f5f5f5 !important;
-  color: #6c757d !important;
-  cursor: not-allowed !important;
-}
-
-.lock-notifications {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1500;
-  max-width: 400px;
-}
-
-.lock-notification {
-  background: white;
-  border-left: 4px solid #007bff;
-  border-radius: 4px;
-  padding: 15px;
-  margin: 10px 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.lock-notification.success {
-  border-left-color: #28a745;
-}
-
-.lock-notification.warning {
-  border-left-color: #ffc107;
-}
-
-.lock-notification.error {
-  border-left-color: #dc3545;
-}
-
-.notification-close {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
+/* ===== BASIC FORM ELEMENTS ===== */
 label {
   display: block;
   margin-top: 10px;
@@ -702,16 +313,10 @@ input, select {
   padding: 6px;
 }
 
-.success-icon::before {
-  content: "✓ ";
-  color: green;
-  font-weight: bold;
-}
-
 button {
   margin-top: 10px;
   padding: 8px 12px;
-  background-color: #007bff;
+  background-color: var(--primary-blue);
   color: white;
   border: none;
   border-radius: 4px;
@@ -731,7 +336,7 @@ button:hover {
 }
 
 .btn-success {
-  background-color: #28a745;
+  background-color: var(--success-green);
 }
 
 .btn-success:hover {
@@ -742,6 +347,7 @@ button:hover {
   margin-left: 10px;
 }
 
+/* ===== DRAG & DROP ZONES ===== */
 .dropzone, .palanquee {
   border: 2px dashed #ccc;
   min-height: 100px;
@@ -750,64 +356,47 @@ button:hover {
   background-color: #ffffff;
 }
 
-.plongeur {
-  margin: 5px 0;
-  padding: 6px;
-  background-color: #e0f0ff;
-  cursor: move;
-  position: relative;
-}
-
-.remove-btn {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  cursor: pointer;
-  color: red;
-  font-weight: bold;
-}
-
-.dp-valide {
-  color: green;
-  margin-top: 10px;
-}
-
 .palanquee {
-  border: 2px dashed #007bff;
+  border: 2px dashed var(--primary-blue);
   min-height: 80px;
   padding: 15px;
   margin: 10px 0;
   background-color: #f8f9fa;
   border-radius: 5px;
   transition: all 0.3s ease;
-  position: relative; /* IMPORTANT pour les indicateurs de verrous */
+  position: relative;
 }
 
 .palanquee-title {
   font-weight: bold;
-  color: #007bff;
+  color: var(--primary-blue);
   margin-bottom: 10px;
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 5px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative; /* Pour positionner les indicateurs de verrous */
+  position: relative;
 }
 
 .palanquee[data-alert="true"] {
-  border-color: #dc3545;
+  border-color: var(--danger-red);
   background-color: #fff5f5;
   animation: pulse-red 2s infinite;
 }
 
-@keyframes pulse-red {
-  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+.palanquee.drag-over {
+  background-color: #e3f2fd !important;
+  border-color: #2196f3 !important;
+  transform: scale(1.02);
 }
 
-/* STYLES POUR LES PLONGEURS */
+.dropzone.drag-over {
+  background-color: #e8f5e0;
+  border-color: #4caf50;
+}
+
+/* ===== PLONGEUR ITEMS ===== */
 .plongeur-item {
   list-style: none;
   margin: 3px 0;
@@ -815,7 +404,7 @@ button:hover {
   background-color: #e0f0ff;
   border-radius: 4px;
   cursor: move;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--primary-blue);
   transition: all 0.2s ease;
   user-select: none;
 }
@@ -835,21 +424,20 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px; 
+  font-size: 12px;
 }
 
 .plongeur-nom {
   order: 1;
   font-weight: bold;
-  color: #003366;
+  color: var(--dark-blue);
   font-size: 12px;
   flex: 1;
 }
 
-/* Pastilles dans la liste principale */
 #listePlongeurs .plongeur-niveau {
-  order:2 ;
-  background: #28a745;
+  order: 2;
+  background: var(--success-green);
   color: white;
   padding: 2px 6px;
   border-radius: 10px;
@@ -859,10 +447,9 @@ button:hover {
   text-align: center;
 }
 
-/* Pastilles dans les palanquées */
 #palanqueesContainer .plongeur-niveau {
   order: 3;
-background: #28a745 !important;
+  background: var(--success-green) !important;
   color: white !important;
   border-radius: 4px !important;
   font-size: 0.75em !important;
@@ -870,13 +457,9 @@ background: #28a745 !important;
   min-width: 25px !important;
   width: 45px !important;
   height: 26px !important;
-  
-  /* Centrage parfait */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  
-  /* Reset des autres propriétés */
   padding: 0px !important;
   margin: 0px !important;
   line-height: normal !important;
@@ -908,7 +491,6 @@ background: #28a745 !important;
   transform: scale(1.1);
 }
 
-/* STYLES POUR LES PLONGEURS DANS LES PALANQUÉES */
 .palanquee-plongeurs-list {
   list-style: none;
   padding: 0;
@@ -917,12 +499,34 @@ background: #28a745 !important;
 
 .palanquee-plongeur-item {
   background-color: #f0f8ff;
-  border-left: 4px solid #28a745;
+  border-left: 4px solid var(--success-green);
   margin: 2px 0;
 }
 
 .palanquee-plongeur-item:hover {
   background-color: #e8f5e8;
+}
+
+.palanquee-plongeur-item .plongeur-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.palanquee-plongeur-item .plongeur-nom {
+  flex: 1 !important;
+  order: 1 !important;
+  font-size: 15px !important;
+  font-weight: bold;
+  color: var(--dark-blue);
+}
+
+.palanquee-plongeur-item .plongeur-prerogatives-editable {
+  flex: 0 0 50px !important;
+  order: 2 !important;
+  font-size: 14px !important;
+  font-weight: bold;
+  color: var(--dark-blue);
 }
 
 .return-plongeur {
@@ -933,7 +537,7 @@ background: #28a745 !important;
   transition: all 0.2s ease;
   padding: 4px;
   border-radius: 3px;
-  color: #007bff;
+  color: var(--primary-blue);
   background: rgba(0, 123, 255, 0.1);
 }
 
@@ -941,6 +545,14 @@ background: #28a745 !important;
   opacity: 1;
   background: rgba(0, 123, 255, 0.2);
   transform: translateX(-2px);
+}
+
+.palanquee-plongeur-item .return-plongeur {
+  flex: 0 0 10px !important;
+  order: 4 !important;
+  font-size: 14px !important;
+  font-weight: bold;
+  color: var(--dark-blue);
 }
 
 .palanquee-empty {
@@ -954,7 +566,7 @@ background: #28a745 !important;
   background-color: #fafafa;
 }
 
-/* CHAMP ÉDITABLE POUR LES PRÉROGATIVES */
+/* ===== EDITABLE PREROGATIVES ===== */
 .plongeur-prerogatives-editable {
   width: 60px !important;
   min-width: 50px !important;
@@ -966,13 +578,13 @@ background: #28a745 !important;
 }
 
 .plongeur-prerogatives-editable:hover {
-  border-color: #007bff;
+  border-color: var(--primary-blue);
   background-color: rgba(255, 255, 255, 0.8);
 }
 
 .plongeur-prerogatives-editable:focus {
   outline: none;
-  border: 2px solid #007bff;
+  border: 2px solid var(--primary-blue);
   background-color: white;
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
@@ -982,7 +594,7 @@ background: #28a745 !important;
   font-style: italic;
 }
 
-/* STYLES POUR LE TRI */
+/* ===== SORT CONTROLS ===== */
 .sort-controls {
   margin: 10px 0;
   display: flex;
@@ -998,111 +610,17 @@ background: #28a745 !important;
 }
 
 .sort-btn.active {
-  background: #007bff;
+  background: var(--primary-blue);
 }
 
-/* DRAG & DROP AMÉLIORÉ */
-.palanquee.drag-over {
-  background-color: #e3f2fd !important;
-  border-color: #2196f3 !important;
-  transform: scale(1.02);
-}
-
-.dropzone.drag-over {
-  background-color: #e8f5e0;
-  border-color: #4caf50;
-}
-
-/* STYLES POUR LE NETTOYAGE */
-.cleanup-item {
-  display: block;
-  margin: 5px 0;
-  padding: 8px;
-  background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.cleanup-item:hover {
-  background: #f8f9fa;
-  border-color: #007bff;
-}
-
-.cleanup-item input[type="checkbox"] {
-  margin-right: 10px;
-  transform: scale(1.2);
-}
-
-.cleanup-item.selected {
-  background: #fff3cd;
-  border-color: #ffc107;
-}
-
-.cleanup-item .item-info {
-  display: inline-block;
-  font-size: 0.9em;
-}
-
-.cleanup-item .item-date {
-  font-weight: bold;
-  color: #007bff;
-  display: block;
-}
-
-.cleanup-item .item-details {
-  color: #666;
-  display: block;
-  margin-top: 2px;
-}
-
-.cleanup-item .item-meta {
-  font-size: 0.8em;
-  color: #999;
-  display: block;
-  margin-top: 2px;
-}
-
-/* Solution simple et efficace */
-.palanquee-plongeur-item .plongeur-content {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-}
-
-.palanquee-plongeur-item .plongeur-nom {
-  flex: 1 !important;
-  order: 1 !important;
-  font-size: 15px !important;
-  font-weight: bold;
-  color: #003366;
-}
-
-.palanquee-plongeur-item .plongeur-prerogatives-editable {
-  flex: 0 0 50px !important;
-  order: 2 !important;
-  font-size: 14px !important;
-  font-weight: bold;
-  color: #003366;
-}
-
-.palanquee-plongeur-item .return-plongeur {
-  flex: 0 0 10px !important;
-  order: 4 !important;
-  font-size: 14px !important;
-  font-weight: bold;
-  color: #003366;
-}
-
-/* STYLES POUR LES DÉTAILS DE PALANQUÉE */
+/* ===== PALANQUEE DETAILS ===== */
 .palanquee-details {
   background: #f8f9fa;
   padding: 15px;
   margin: 15px 0 0 0;
   border-radius: 5px;
   border: 1px solid #dee2e6;
-  border-top: 2px solid #007bff;
+  border-top: 2px solid var(--primary-blue);
 }
 
 .palanquee-details::before {
@@ -1110,7 +628,7 @@ background: #28a745 !important;
   display: block;
   font-size: 11px;
   font-weight: bold;
-  color: #007bff;
+  color: var(--primary-blue);
   margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1148,6 +666,7 @@ background: #28a745 !important;
 
 .palanquee-horaire {
   width: 100px;
+  background-color: #fff3e0;
 }
 
 .palanquee-paliers {
@@ -1175,106 +694,69 @@ background: #28a745 !important;
   background-color: #f3e5f5;
 }
 
-.palanquee-horaire {
-  background-color: #fff3e0;
-}
-
 .detail-row input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary-blue);
   box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
 }
 
-/* NOUVEAU : États verrouillés pour les champs de détails */
-.palanquee.editing-other .palanquee-horaire,
-.palanquee.editing-other .palanquee-prof-prevue,
-.palanquee.editing-other .palanquee-duree-prevue,
-.palanquee.editing-other .palanquee-prof-realisee,
-.palanquee.editing-other .palanquee-duree-realisee,
-.palanquee.editing-other .palanquee-paliers,
-.palanquee.editing-other .plongeur-prerogatives-editable {
-  background-color: #f5f5f5 !important;
-  color: #6c757d !important;
-  cursor: not-allowed !important;
-  border-color: #dee2e6 !important;
+/* ===== CLEANUP ITEMS ===== */
+.cleanup-item {
+  display: block;
+  margin: 5px 0;
+  padding: 8px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-/* Animation pour les palanquées en cours d'édition par soi-même */
-.palanquee.editing-self {
-  animation: pulse-yellow 3s infinite;
+.cleanup-item:hover {
+  background: #f8f9fa;
+  border-color: var(--primary-blue);
 }
 
-@keyframes pulse-yellow {
-  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+.cleanup-item input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2);
 }
 
-/* Responsive pour les détails */
-@media (max-width: 768px) {
-  .detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-  
-  .paliers-row {
-    flex-direction: column;
-  }
-  
-  .palanquee-horaire,
-  .palanquee-prof-prevue,
-  .palanquee-duree-prevue,
-  .palanquee-prof-realisee,
-  .palanquee-duree-realisee {
-    width: 100%;
-    max-width: 150px;
-  }
-  
-  .palanquee-paliers {
-    width: 100%;
-  }
-  
-  /* Adaptation mobile pour les indicateurs de verrous */
-  .lock-indicator {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin: 5px 0;
-    display: block;
-    text-align: center;
-  }
-  
-  .dp-status-indicator {
-    font-size: 12px;
-    padding: 8px;
-  }
-  
-  .dp-status-content {
-    flex-direction: column;
-    gap: 5px;
-    text-align: center;
-  }
+.cleanup-item.selected {
+  background: #fff3cd;
+  border-color: var(--warning-yellow);
 }
 
-header div[style*="margin-top: 5px"] h2 {
-  margin-top: 13px !important; /* 5px + 8mm ≈ 13px */
+.cleanup-item .item-info {
+  display: inline-block;
+  font-size: 0.9em;
 }
 
-header h2 {
-  margin-top: 8mm !important;
+.cleanup-item .item-date {
+  font-weight: bold;
+  color: var(--primary-blue);
+  display: block;
 }
 
-header div h2 {
-  margin-top: 8 !important;
+.cleanup-item .item-details {
+  color: #666;
+  display: block;
+  margin-top: 2px;
 }
 
-/* ===== STYLES POUR LE BOUTON FLOTTANT DE SAUVEGARDE ===== */
+.cleanup-item .item-meta {
+  font-size: 0.8em;
+  color: #999;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== FLOATING SAVE BUTTON ===== */
 .floating-save-btn {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background: linear-gradient(45deg, #28a745, #20c997);
+  background: linear-gradient(45deg, var(--success-green), #20c997);
   color: white;
   border: none;
   padding: 15px 20px;
@@ -1288,16 +770,15 @@ header div h2 {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 200px;
+  min-width: var(--floating-elements-width);
   justify-content: center;
   text-decoration: none;
-  min-width: var(--floating-elements-width);
 }
 
 .floating-save-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
-  background: linear-gradient(45deg, #20c997, #28a745);
+  background: linear-gradient(45deg, #20c997, var(--success-green));
 }
 
 .floating-save-btn:active {
@@ -1311,35 +792,6 @@ header div h2 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-/* Notification de sauvegarde */
-.save-notification {
-  position: fixed;
-  bottom: 100px;
-  right: 30px;
-  background: rgba(40, 167, 69, 0.95);
-  color: white;
-  padding: 12px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  z-index: 1001;
-  opacity: 0;
-  transform: translateX(100px);
-  transition: all 0.4s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  backdrop-filter: blur(5px);
-  max-width: 280px;
-}
-
-.save-notification.show {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.save-notification.error {
-  background: rgba(220, 53, 69, 0.95);
-}
-
-/* Indicateur de chargement pour le bouton */
 .floating-save-btn .loading-icon {
   display: none;
   width: 16px;
@@ -1358,21 +810,15 @@ header div h2 {
   display: none;
 }
 
-/* Animation de chargement */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ===== STYLES POUR LE MENU FLOTTANT DES PLONGEURS ===== */
+/* ===== FLOATING PLONGEURS MENU ===== */
 .floating-plongeurs-menu {
   position: fixed;
   bottom: 110px;
   right: 30px;
-  width: 200px;
+  width: var(--floating-elements-width);
   max-height: 200px;
   background: rgba(255, 255, 255, 0.95);
-  border: 2px solid #007bff;
+  border: 2px solid var(--primary-blue);
   border-radius: 10px;
   z-index: 999;
   backdrop-filter: blur(10px);
@@ -1380,11 +826,10 @@ header div h2 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  width: var(--floating-elements-width);
 }
 
 .floating-plongeurs-header {
-  background: linear-gradient(45deg, #007bff, #0056b3);
+  background: linear-gradient(45deg, var(--primary-blue), #0056b3);
   color: white;
   padding: 6px 12px;
   font-weight: bold;
@@ -1393,12 +838,6 @@ header div h2 {
   justify-content: space-between;
   align-items: center;
   cursor: move;
-}
-
-/* Ajustement quand le menu est réduit */
-.floating-plongeurs-menu[style*="max-height: 35px"] .floating-plongeurs-header {
-  padding: 4px 12px; /* Padding encore plus réduit quand le menu est fermé */
-  min-height: 27px; /* Hauteur minimale adaptée */
 }
 
 .floating-plongeurs-header .toggle-btn {
@@ -1440,7 +879,7 @@ header div h2 {
 
 .floating-plongeur-item:hover {
   background: #f8f9fa;
-  border-color: #007bff;
+  border-color: var(--primary-blue);
   transform: translateX(-2px);
   box-shadow: 2px 2px 8px rgba(0,123,255,0.2);
 }
@@ -1461,7 +900,7 @@ header div h2 {
 }
 
 .floating-plongeur-niveau {
-  background: #007bff;
+  background: var(--primary-blue);
   color: white;
   padding: 2px 6px;
   border-radius: 12px;
@@ -1482,7 +921,6 @@ header div h2 {
   opacity: 0.8;
 }
 
-/* Scrollbar personnalisée */
 .floating-plongeurs-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -1493,46 +931,12 @@ header div h2 {
 }
 
 .floating-plongeurs-list::-webkit-scrollbar-thumb {
-  background: #007bff;
+  background: var(--primary-blue);
   border-radius: 3px;
 }
 
 .floating-plongeurs-list::-webkit-scrollbar-thumb:hover {
   background: #0056b3;
-}
-
-/* Responsive global pour les éléments flottants */
-@media (max-width: 768px) {
-  :root {
-    --floating-elements-width: 160px;
-    --floating-save-bottom: 20px; /* 20px - 20px */
-    --floating-plongeurs-bottom: 70px; /* 90px - 20px */
-  }
-}
-  .floating-save-btn {
-	position: fixed;
-	bottom: calc(var(--floating-save-bottom) - 10px); /* -20px = -7mm */
-	right: 30px;
-    min-width: var(--floating-elements-width);
-  }
-  
-  .save-notification {
-    bottom: 80px;
-    right: 20px;
-    max-width: 250px;
-  }
-
-  .floating-plongeurs-menu {
-	position: fixed;
-	bottom: calc(var(--floating-plongeurs-bottom) - 10px); /* -20px = -7mm */
-    right: 30px;
-    width: var(--floating-elements-width);
-  }
-}
-
-  .floating-plongeurs-list {
-    max-height: 130px;
-  }
 }
 
 #toggle-plongeurs-menu {
@@ -1554,25 +958,378 @@ header div h2 {
   border-radius: 3px;
 }
 
-/* Indicateur de sauvegarde automatique */
+/* ===== SAVE NOTIFICATION ===== */
+.save-notification {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  background: rgba(40, 167, 69, 0.95);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 1001;
+  opacity: 0;
+  transform: translateX(100px);
+  transition: all 0.4s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  backdrop-filter: blur(5px);
+  max-width: 280px;
+}
+
+.save-notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.save-notification.error {
+  background: rgba(220, 53, 69, 0.95);
+}
+
+/* ===== AUTO SAVE INDICATOR ===== */
 .auto-save-indicator {
-    position: fixed;
-    bottom: 100px;
-    right: 20px;
-    background: rgba(40, 167, 69, 0.9);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    z-index: 999;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  background: rgba(40, 167, 69, 0.9);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
 }
 
 .auto-save-indicator.show {
-    opacity: 1;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+/* ===== LOCK SYSTEM STYLES ===== */
+.dp-status-indicator {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.dp-status-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-status-icon {
+  font-size: 18px;
+}
+
+.lock-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.lock-indicator.editing-self {
+  background: var(--warning-yellow);
+  color: #856404;
+}
+
+.lock-indicator.editing-other {
+  background: var(--danger-red);
+  color: white;
+}
+
+.palanquee.editing-other {
+  background-color: #f8d7da !important;
+  border-color: var(--danger-red) !important;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.palanquee.editing-self {
+  background-color: #fff8e1 !important;
+  border-color: var(--warning-yellow) !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+  animation: pulse-yellow 3s infinite;
+}
+
+.locked-field {
+  background-color: #f5f5f5 !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+}
+
+.palanquee.editing-other .palanquee-horaire,
+.palanquee.editing-other .palanquee-prof-prevue,
+.palanquee.editing-other .palanquee-duree-prevue,
+.palanquee.editing-other .palanquee-prof-realisee,
+.palanquee.editing-other .palanquee-duree-realisee,
+.palanquee.editing-other .palanquee-paliers,
+.palanquee.editing-other .plongeur-prerogatives-editable {
+  background-color: #f5f5f5 !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #dee2e6 !important;
+}
+
+/* ===== NOTIFICATIONS ===== */
+.dp-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  max-width: 350px;
+  word-wrap: break-word;
+}
+
+.dp-notification-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.dp-notification-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.dp-notification-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.dp-notification-info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  /* Header adjustments */
+  .header-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .logo {
+    height: 40px;
+  }
+  
+  .header-container h1 {
+    font-size: 2em;
+    text-align: left;
+  }
+  
+  /* Alert positioning */
+  .alert-section {
+    top: 80px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: none !important;
+  }
+  
+  /* DP buttons mobile layout */
+  #meta-info label:first-child > div {
+    display: block !important;
+  }
+  
+  #dp-select {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    min-width: unset !important;
+  }
+  
+  #add-dp-btn,
+  #dp-add-btn,
+  #edit-dp-btn,
+  #dp-edit-btn, 
+  #delete-dp-btn,
+  #dp-delete-btn {
+    display: inline-block !important;
+    width: calc(32% - 2px) !important;
+    margin: 0 1px !important;
+    padding: 8px 2px !important;
+    font-size: 11px !important;
+    vertical-align: top !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+  }
+  
+  #add-dp-btn span,
+  #dp-add-btn span,
+  #edit-dp-btn span,
+  #dp-edit-btn span,
+  #delete-dp-btn span,
+  #dp-delete-btn span {
+    display: inline !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+  }
+  
+  #meta-info label:first-child > div::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  
+  /* Palanquee details mobile */
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .paliers-row {
+    flex-direction: column;
+  }
+  
+  .palanquee-horaire,
+  .palanquee-prof-prevue,
+  .palanquee-duree-prevue,
+  .palanquee-prof-realisee,
+  .palanquee-duree-realisee {
+    width: 100%;
+    max-width: 150px;
+  }
+  
+  .palanquee-paliers {
+    width: 100%;
+  }
+  
+  /* Lock indicators mobile */
+  .lock-indicator {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 5px 0;
+    display: block;
+    text-align: center;
+  }
+  
+  .dp-status-indicator {
+    font-size: 12px;
+    padding: 8px;
+  }
+  
+  .dp-status-content {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
+  
+  /* Floating elements mobile */
+  :root {
+    --floating-elements-width: 160px;
+    --floating-save-bottom: 20px;
+    --floating-plongeurs-bottom: 70px;
+  }
+  
+  .floating-save-btn {
+    bottom: calc(var(--floating-save-bottom) - 10px);
+    right: 30px;
+    min-width: var(--floating-elements-width);
+  }
+  
+  .save-notification {
+    bottom: 80px;
+    right: 20px;
+    max-width: 250px;
+  }
+
+  .floating-plongeurs-menu {
+    bottom: calc(var(--floating-plongeurs-bottom) - 10px);
+    right: 30px;
+    width: var(--floating-elements-width);
+  }
+
+  .floating-plongeurs-list {
+    max-height: 130px;
+  }
+}
+
+/* Very small mobile */
+@media (max-width: 480px) {
+  #add-dp-btn,
+  #dp-add-btn,
+  #edit-dp-btn,
+  #dp-edit-btn, 
+  #delete-dp-btn,
+  #dp-delete-btn {
+    padding: 8px 2px !important;
+    font-size: 11px !important;
+  }
+  
+  #add-dp-btn span,
+  #dp-add-btn span,
+  #edit-dp-btn span,
+  #dp-edit-btn span,
+  #delete-dp-btn span,
+  #dp-delete-btn span {
+    font-size: 10px !important;
+  }
+}
+
+/* Desktop specific */
+@media (min-width: 768px) {
+  .alert-section {
+    top: 90px !important;
+  }
 }
