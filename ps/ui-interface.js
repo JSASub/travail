@@ -1015,3 +1015,245 @@ setTimeout(() => {
     console.log("Test correction immédiate...");
     corrigerFenetresSauvegarde();
 }, 3000);
+
+////
+// AJOUTEZ CE CODE À LA FIN DE VOTRE ui-interface.js
+// ===== CORRECTION DES BOUTONS DP INACTIFS APRÈS CHARGEMENT SESSION =====
+
+// 1. FONCTION POUR RÉACTIVER LES BOUTONS DP
+function reactiverBoutonsDP() {
+    try {
+        // Liste de tous les sélecteurs possibles pour les boutons DP
+        const selecteursBoutons = [
+            '#edit-dp-btn',
+            '#delete-dp-btn',
+            '#dp-edit-btn',
+            '#dp-delete-btn',
+            '.dp-btn-edit',
+            '.dp-btn-delete',
+            'button[onclick*="editDP"]',
+            'button[onclick*="deleteDP"]'
+        ];
+        
+        let boutonsReactives = 0;
+        
+        selecteursBoutons.forEach(selecteur => {
+            const boutons = document.querySelectorAll(selecteur);
+            boutons.forEach(bouton => {
+                if (bouton) {
+                    // Réactiver le bouton
+                    bouton.disabled = false;
+                    bouton.style.opacity = '1';
+                    bouton.style.pointerEvents = 'auto';
+                    bouton.style.cursor = 'pointer';
+                    
+                    // Supprimer les classes de désactivation
+                    bouton.classList.remove('disabled', 'dp-btn-disabled');
+                    
+                    // Ajouter les classes d'activation
+                    bouton.classList.add('active');
+                    
+                    boutonsReactives++;
+                    console.log(`Bouton DP réactivé: ${selecteur}`);
+                }
+            });
+        });
+        
+        if (boutonsReactives > 0) {
+            console.log(`✅ ${boutonsReactives} boutons DP réactivés`);
+        }
+        
+        // Vérifier qu'un DP est sélectionné pour activer les boutons
+        const dpSelect = document.getElementById('dp-select');
+        if (dpSelect && dpSelect.value && dpSelect.value !== '') {
+            enableDPButtons();
+        }
+        
+    } catch (error) {
+        console.error('Erreur reactiverBoutonsDP:', error);
+    }
+}
+
+// 2. FONCTION POUR ACTIVER LES BOUTONS DP
+function enableDPButtons() {
+    try {
+        const editBtn = document.getElementById('edit-dp-btn') || document.getElementById('dp-edit-btn');
+        const deleteBtn = document.getElementById('delete-dp-btn') || document.getElementById('dp-delete-btn');
+        
+        if (editBtn) {
+            editBtn.disabled = false;
+            editBtn.style.opacity = '1';
+            editBtn.style.cursor = 'pointer';
+            editBtn.classList.remove('disabled');
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.style.opacity = '1';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.classList.remove('disabled');
+        }
+        
+        console.log('Boutons DP activés manuellement');
+        
+    } catch (error) {
+        console.error('Erreur enableDPButtons:', error);
+    }
+}
+
+// 3. HOOK SUR LES FONCTIONS DE CHARGEMENT DE SESSION
+function hookLoadSession() {
+    try {
+        // Intercepter loadSession si elle existe
+        if (typeof window.loadSession === 'function') {
+            const originalLoadSession = window.loadSession;
+            window.loadSession = function() {
+                console.log('🔄 Chargement de session détecté...');
+                
+                const result = originalLoadSession.apply(this, arguments);
+                
+                // Réactiver les boutons après le chargement
+                setTimeout(() => {
+                    reactiverBoutonsDP();
+                }, 500);
+                
+                return result;
+            };
+            console.log('✅ loadSession interceptée pour réactivation des boutons DP');
+        }
+        
+        // Intercepter toute fonction de chargement
+        const fonctionsChargement = ['loadFromFirebase', 'restoreSession', 'loadSessionData'];
+        fonctionsChargement.forEach(nomFonction => {
+            if (typeof window[nomFonction] === 'function') {
+                const originalFunction = window[nomFonction];
+                window[nomFonction] = function() {
+                    const result = originalFunction.apply(this, arguments);
+                    setTimeout(reactiverBoutonsDP, 300);
+                    return result;
+                };
+                console.log(`✅ ${nomFonction} interceptée`);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erreur hookLoadSession:', error);
+    }
+}
+
+// 4. SURVEILLANCE DES CHANGEMENTS DU SELECT DP
+function surveillerSelectDP() {
+    try {
+        const dpSelect = document.getElementById('dp-select');
+        if (dpSelect) {
+            dpSelect.addEventListener('change', function() {
+                setTimeout(() => {
+                    if (this.value && this.value !== '' && this.value !== '-- Choisir un DP --') {
+                        reactiverBoutonsDP();
+                        console.log('DP sélectionné, boutons réactivés');
+                    }
+                }, 100);
+            });
+            console.log('✅ Surveillance du select DP activée');
+        }
+    } catch (error) {
+        console.error('Erreur surveillerSelectDP:', error);
+    }
+}
+
+// 5. SURVEILLANCE DES MUTATIONS DOM
+function surveillerMutationsDOM() {
+    try {
+        const observer = new MutationObserver((mutations) => {
+            let needReactivation = false;
+            
+            mutations.forEach((mutation) => {
+                // Vérifier si des boutons DP ont été modifiés
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.id && (node.id.includes('dp-') || node.id.includes('edit') || node.id.includes('delete'))) {
+                            needReactivation = true;
+                        }
+                        
+                        // Vérifier les enfants
+                        const dpButtons = node.querySelectorAll ? node.querySelectorAll('[id*="dp-"], [class*="dp-btn"]') : [];
+                        if (dpButtons.length > 0) {
+                            needReactivation = true;
+                        }
+                    }
+                });
+                
+                // Vérifier les changements d'attributs
+                if (mutation.type === 'attributes' && mutation.target.id && 
+                    (mutation.target.id.includes('dp-') || mutation.target.classList.contains('dp-btn'))) {
+                    needReactivation = true;
+                }
+            });
+            
+            if (needReactivation) {
+                setTimeout(reactiverBoutonsDP, 200);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['disabled', 'class', 'style']
+        });
+        
+        console.log('✅ Surveillance des mutations DOM pour boutons DP activée');
+        
+    } catch (error) {
+        console.error('Erreur surveillerMutationsDOM:', error);
+    }
+}
+
+// 6. CORRECTION PÉRIODIQUE
+function correctionPeriodique() {
+    // Vérifier et corriger toutes les 5 secondes
+    setInterval(() => {
+        const dpSelect = document.getElementById('dp-select');
+        if (dpSelect && dpSelect.value && dpSelect.value !== '' && dpSelect.value !== '-- Choisir un DP --') {
+            reactiverBoutonsDP();
+        }
+    }, 5000);
+    
+    console.log('✅ Correction périodique des boutons DP activée');
+}
+
+// 7. INITIALISATION COMPLÈTE
+function initialiserCorrectionsDP() {
+    console.log('🚀 Initialisation des corrections boutons DP...');
+    
+    // Correction immédiate
+    setTimeout(reactiverBoutonsDP, 1000);
+    
+    // Hooks et surveillances
+    setTimeout(hookLoadSession, 1500);
+    setTimeout(surveillerSelectDP, 2000);
+    setTimeout(surveillerMutationsDOM, 2500);
+    setTimeout(correctionPeriodique, 3000);
+    
+    console.log('✅ Corrections boutons DP initialisées');
+}
+
+// 8. DÉMARRAGE AUTOMATIQUE
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialiserCorrectionsDP);
+} else {
+    initialiserCorrectionsDP();
+}
+
+// 9. EXPOSER LES FONCTIONS POUR UTILISATION MANUELLE
+window.reactiverBoutonsDP = reactiverBoutonsDP;
+window.enableDPButtons = enableDPButtons;
+
+console.log('✅ Correction des boutons DP inactifs installée');
+console.log('💡 Commandes: reactiverBoutonsDP(), enableDPButtons()');
+
+// 10. TEST IMMÉDIAT
+setTimeout(() => {
+    console.log('🧪 Test automatique des boutons DP...');
+    reactiverBoutonsDP();
+}, 4000);
