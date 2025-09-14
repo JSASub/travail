@@ -1334,3 +1334,120 @@ button:hover {
     top: 90px !important;
   }
 }
+
+/* ===== CORRECTION 1: POSITIONNEMENT DU BOUTON COMPTEUR CONNECTÉS ===== */
+
+/* Améliorer le positionnement du bouton compteur de connectés */
+.dp-status-indicator {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 8px 12px; /* Réduire le padding vertical */
+  margin: 5px 0; /* Réduire les marges */
+  font-size: 14px;
+  position: relative; /* Assurer un positionnement correct */
+  top: 0; /* Éliminer tout décalage vertical */
+}
+
+.dp-status-content {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Réduire l'espacement */
+  line-height: 1.2; /* Améliorer la hauteur de ligne */
+}
+
+.dp-status-icon {
+  font-size: 16px; /* Réduire légèrement la taille de l'icône */
+  line-height: 1;
+}
+
+/* Si c'est dans le header, forcer le positionnement */
+.header-container .dp-status-indicator,
+#meta-info .dp-status-indicator {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+/* Correction spécifique pour l'élément en haut à gauche */
+.dp-status-indicator[style*="actif"] {
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  position: relative !important;
+  top: -2px !important; /* Remonter légèrement */
+}
+
+/* Alternative : si c'est un bouton spécifique */
+.user-status-indicator,
+.connected-users-indicator {
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: top !important;
+  position: relative !important;
+  top: -2px !important;
+}
+
+/* ===== CORRECTION 2: BOUTONS DP ACTIFS ===== */
+
+/* S'assurer que les boutons DP restent actifs après chargement de session */
+.dp-btn:not(.dp-btn-disabled) {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.dp-btn-edit:not(.dp-btn-disabled),
+.dp-btn-delete:not(.dp-btn-disabled),
+#edit-dp-btn:not(:disabled),
+#delete-dp-btn:not(:disabled),
+#dp-edit-btn:not(:disabled),
+#dp-delete-btn:not(:disabled) {
+  opacity: 1 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  background: linear-gradient(135deg, var(--warning-yellow), #fd7e14) !important;
+}
+
+.dp-btn-delete:not(.dp-btn-disabled),
+#delete-dp-btn:not(:disabled),
+#dp-delete-btn:not(:disabled) {
+  background: linear-gradient(135deg, var(--danger-red), #e83e8c) !important;
+  color: white !important;
+}
+
+/* Forcer l'état actif des boutons DP */
+.dp-buttons-container .dp-btn {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Corrections responsive pour le compteur connectés */
+@media (max-width: 768px) {
+  .dp-status-indicator {
+    font-size: 12px;
+    padding: 6px 8px;
+    margin: 2px 0;
+  }
+  
+  .dp-status-content {
+    gap: 6px;
+  }
+  
+  .dp-status-icon {
+    font-size: 14px;
+  }
+}
+
+/* Correction spécifique si l'élément est dans une zone particulière */
+.user-info .dp-status-indicator,
+.auth-info .dp-status-indicator,
+#auth-container .dp-status-indicator {
+  position: relative !important;
+  margin: 0 !important;
+  padding: 5px 8px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
