@@ -1401,6 +1401,10 @@ function fixCompteurPalanquees() {
     console.log(`Compteur corrigé: ${palanqueesCount} palanquées`);
   }
 }
+
+// Corriger le compteur toutes les 2 secondes
+setInterval(fixCompteurPalanquees, 2000);
+
 // ===== INITIALISATION SÉCURISÉE DE L'APPLICATION =====
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("🚀 Initialisation sécurisée de l'application JSAS...");
