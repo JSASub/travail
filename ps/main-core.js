@@ -1343,7 +1343,39 @@ function fixCompteurPalanquees() {
     console.log(`Compteur corrigé: ${palanqueesCount} palanquées`);
   }
 }
+// CORRECTION PERMANENTE DU COMPTEUR PALANQUÉES
+function surveillerCompteurPalanquees() {
+    const compteur = document.getElementById('compteur-palanquees');
+    const palanqueesReelles = document.querySelectorAll('.palanquee').length;
+    
+    if (compteur && palanqueesReelles > 0) {
+        let plongeursEnPalanquees = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursEnPalanquees += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        const texteCorrect = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesReelles} palanquées)`;
+        
+        // Ne mettre à jour que si différent (évite les conflits)
+        if (compteur.textContent !== texteCorrect) {
+            compteur.textContent = texteCorrect;
+            console.log('Compteur palanquées corrigé:', texteCorrect);
+        }
+    }
+}
 
+// Corriger toutes les 2 secondes
+setInterval(surveillerCompteurPalanquees, 2000);
+
+// Corriger aussi après chaque modification de palanquée
+const originalSyncToDatabase = window.syncToDatabase;
+if (originalSyncToDatabase) {
+    window.syncToDatabase = function() {
+        const result = originalSyncToDatabase.apply(this, arguments);
+        setTimeout(surveillerCompteurPalanquees, 100);
+        return result;
+    };
+}
 // Corriger le compteur toutes les 2 secondes
 setInterval(fixCompteurPalanquees, 2000);
 // ===== DIAGNOSTIC ET MONITORING =====
