@@ -619,3 +619,159 @@ function exportToJSON() {
 
 // Exposer la fonction de correction forcée
 window.forceUpdateCompteursFromDOM = forceUpdateCompteursFromDOM;
+
+//////
+// ===== SOLUTION PERMANENTE COMPTEUR PALANQUÉES =====
+
+// 1. FONCTION DE CORRECTION DIRECTE
+function fixCompteurPalanquees() {
+    try {
+        const compteur = document.getElementById('compteur-palanquees');
+        if (!compteur) {
+            console.warn("Compteur palanquées introuvable");
+            return;
+        }
+        
+        const palanqueeElements = document.querySelectorAll('.palanquee');
+        const palanqueesCount = palanqueeElements.length;
+        
+        if (palanqueesCount > 0) {
+            let plongeursCount = 0;
+            palanqueeElements.forEach(pal => {
+                plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+            });
+            
+            const texteCorrect = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
+            
+            if (compteur.textContent !== texteCorrect) {
+                compteur.textContent = texteCorrect;
+                console.log("Compteur palanquées corrigé:", texteCorrect);
+            }
+        }
+    } catch (error) {
+        console.error("Erreur fixCompteurPalanquees:", error);
+    }
+}
+
+// 2. OVERRIDE DE LA FONCTION UPDATECOMPTEURS ORIGINALE
+const originalUpdateCompteurs = updateCompteurs;
+updateCompteurs = function() {
+    try {
+        // Exécuter la fonction originale
+        originalUpdateCompteurs.apply(this, arguments);
+        
+        // Puis forcer la correction
+        setTimeout(() => {
+            fixCompteurPalanquees();
+        }, 50);
+        
+    } catch (error) {
+        console.error("Erreur updateCompteurs override:", error);
+        // Fallback direct
+        fixCompteurPalanquees();
+    }
+};
+
+// 3. PROTECTION CONTRE LES SETTERS
+function protectCompteur() {
+    const compteur = document.getElementById('compteur-palanquees');
+    if (!compteur) return;
+    
+    // Sauvegarder le setter original
+    const originalDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'textContent');
+    
+    // Créer un nouveau descriptor pour ce compteur spécifiquement
+    Object.defineProperty(compteur, 'textContent', {
+        set: function(value) {
+            const palanqueesCount = document.querySelectorAll('.palanquee').length;
+            
+            // Si on essaie de mettre "0 palanquées" alors qu'il y en a plus
+            if (typeof value === 'string' && value.includes('0 palanquées') && palanqueesCount > 0) {
+                console.log("TENTATIVE D'ÉCRASEMENT BLOQUÉE:", value);
+                
+                // Calculer la vraie valeur
+                let plongeursCount = 0;
+                document.querySelectorAll('.palanquee').forEach(pal => {
+                    plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+                });
+                
+                const bonneValeur = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
+                originalDescriptor.set.call(this, bonneValeur);
+                console.log("VALEUR CORRIGÉE:", bonneValeur);
+                return;
+            }
+            
+            // Sinon, comportement normal
+            originalDescriptor.set.call(this, value);
+        },
+        get: originalDescriptor.get,
+        configurable: true
+    });
+    
+    console.log("Protection du compteur activée");
+}
+
+// 4. SURVEILLANCE ET CORRECTION AUTOMATIQUE
+let surveillanceActive = false;
+
+function demarrerSurveillance() {
+    if (surveillanceActive) return;
+    surveillanceActive = true;
+    
+    console.log("Démarrage surveillance compteur palanquées");
+    
+    // Correction immédiate
+    fixCompteurPalanquees();
+    
+    // Protection
+    protectCompteur();
+    
+    // Surveillance continue
+    const interval = setInterval(() => {
+        fixCompteurPalanquees();
+    }, 3000);
+    
+    // Auto-stop après 10 minutes
+    setTimeout(() => {
+        clearInterval(interval);
+        surveillanceActive = false;
+        console.log("Surveillance compteur arrêtée");
+    }, 600000);
+}
+
+// 5. DÉMARRAGE AUTOMATIQUE
+// Démarrer quand le DOM est prêt
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(demarrerSurveillance, 1000);
+    });
+} else {
+    setTimeout(demarrerSurveillance, 1000);
+}
+
+// 6. EXPOSER LES FONCTIONS POUR UTILISATION MANUELLE
+window.fixCompteurPalanquees = fixCompteurPalanquees;
+window.demarrerSurveillance = demarrerSurveillance;
+window.protectCompteur = protectCompteur;
+
+console.log("✅ Solution permanente compteur palanquées installée");
+console.log("💡 Commandes disponibles: fixCompteurPalanquees(), demarrerSurveillance()");
+
+// 7. HOOK SUR LES FONCTIONS QUI MODIFIENT LES PALANQUÉES
+if (typeof renderPalanquees === 'function') {
+    const originalRenderPalanquees = renderPalanquees;
+    renderPalanquees = function() {
+        const result = originalRenderPalanquees.apply(this, arguments);
+        setTimeout(fixCompteurPalanquees, 100);
+        return result;
+    };
+}
+
+if (typeof syncToDatabase === 'function') {
+    const originalSyncToDatabase = syncToDatabase;
+    syncToDatabase = function() {
+        const result = originalSyncToDatabase.apply(this, arguments);
+        setTimeout(fixCompteurPalanquees, 100);
+        return result;
+    };
+}
