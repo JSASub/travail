@@ -447,6 +447,7 @@ button:hover {
   text-align: center;
 }
 
+/* CORRECTION - Styles pour les pastilles de niveau dans les palanquées */
 #palanqueesContainer .plongeur-niveau {
   order: 3;
   background: var(--success-green) !important;
