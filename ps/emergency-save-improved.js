@@ -1,33 +1,40 @@
 // ps/emergency-save-improved.js - Version corrigée
 // Système de sauvegarde d'urgence amélioré pour JSAS
 
-alert('Script emergency-save se charge !');
-
-
-
-
+alert('SCRIPT EMERGENCY-SAVE SE CHARGE !');
 console.log('🚀 Début chargement emergency-save-improved.js');
 
-class EmergencySaveManager {
-    constructor() {
-        console.log('📦 Création EmergencySaveManager...');
+try {
+    console.log('📦 Étape 1 : Définition de la classe...');
+    
+    class EmergencySaveManager {
+        constructor() {
+            console.log('✅ Constructor appelé');
+            this.isInitialized = true;
+        }
         
-        this.STORAGE_KEYS = {
-            EMERGENCY_DATA: 'jsas_emergency_save',
-            LAST_SAVE_TIME: 'jsas_last_emergency_save',
-            SESSION_ID: 'jsas_current_session_id'
-        };
+        markNormalSaveComplete() {
+            console.log('🔄 markNormalSaveComplete');
+        }
         
-        this.MIN_SAVE_INTERVAL = 30000; // 30 secondes
-        this.MAX_RECOVERY_AGE = 24 * 60 * 60 * 1000; // 24 heures
-        this.lastSaveTime = 0;
-        this.hasUnsavedChanges = false;
-        this.isRecoveryInProgress = false;
-        this.currentSessionId = this.generateSessionId();
-        
-        console.log('✅ EmergencySaveManager créé avec succès');
-        this.init();
+        forceSave() {
+            console.log('⚡ forceSave');
+        }
     }
+    
+    console.log('📦 Étape 2 : Classe définie avec succès');
+    console.log('📦 Étape 3 : Exposition vers window...');
+    
+    window.EmergencySaveManager = EmergencySaveManager;
+    
+    console.log('📦 Étape 4 : window.EmergencySaveManager =', typeof window.EmergencySaveManager);
+    console.log('✅ emergency-save-improved.js chargé avec succès');
+
+} catch (error) {
+    console.error('❌ ERREUR dans emergency-save-improved.js:', error);
+    console.error('❌ Stack:', error.stack);
+    alert('ERREUR: ' + error.message);
+}
 
     init() {
         try {
