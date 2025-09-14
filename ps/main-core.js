@@ -1449,6 +1449,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       "Erreur : " + error.message
     );
   }
+////
+// Sauvegarde simple avant fermeture
+window.addEventListener('beforeunload', () => {
+    if (document.querySelectorAll('#listePlongeurs li').length > 0) {
+        localStorage.setItem('jsas_last_session', JSON.stringify({
+            dp: document.getElementById('dp-select').value,
+            date: document.getElementById('dp-date').value,
+            lieu: document.getElementById('dp-lieu').value,
+            timestamp: Date.now()
+        }));
+    }
+});
+
+// Récupération au démarrage (optionnel)
+setTimeout(() => {
+    const saved = localStorage.getItem('jsas_last_session');
+    if (saved) {
+        const data = JSON.parse(saved);
+        const age = Date.now() - data.timestamp;
+        if (age < 24 * 60 * 60 * 1000 && !document.getElementById('dp-select').value) {
+            if (confirm('Session précédente trouvée. Restaurer les informations ?')) {
+                if (data.dp) document.getElementById('dp-select').value = data.dp;
+                if (data.date) document.getElementById('dp-date').value = data.date;  
+                if (data.lieu) document.getElementById('dp-lieu').value = data.lieu;
+            }
+        }
+        localStorage.removeItem('jsas_last_session');
+    }
+}, 3000);
+////
 });
 
 // ===== EXPORTS GLOBAUX =====
@@ -1462,15 +1492,5 @@ window.loadFromFirebase = loadFromFirebase;
 window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
-
-// Sauvegarde avant fermeture
-window.addEventListener('beforeunload', () => {
-    if (document.querySelectorAll('#listePlongeurs li').length > 0) {
-        localStorage.setItem('jsas_last_session', JSON.stringify({
-            dp: document.getElementById('dp-select').value,
-            timestamp: Date.now()
-        }));
-    }
-});
 
 console.log("✅ Main Core sécurisé chargé - Version 3.1.0 avec protection des sessions");
