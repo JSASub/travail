@@ -817,3 +817,201 @@ setTimeout(() => {
     console.log("🧪 Test automatique du compteur...");
     fixCompteurPalanquees();
 }, 5000);
+
+////
+// SOLUTION SPÉCIFIQUE POUR LES FENÊTRES DE SAUVEGARDE
+// Ajoutez ce code à la fin de ui-interface.js
+
+// ===== CORRECTION DES FENÊTRES DE SAUVEGARDE DYNAMIQUES =====
+
+// 1. FONCTION DE CORRECTION SPÉCIFIQUE AUX FENÊTRES DE SAUVEGARDE
+function corrigerFenetresSauvegarde() {
+    try {
+        const palanqueesCount = document.querySelectorAll('.palanquee').length;
+        let plongeursCount = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        const texteCorrect = `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`;
+        
+        // Chercher spécifiquement les fenêtres/modals qui contiennent "0 palanquée"
+        const selecteursSpecifiques = [
+            '.restore-notification',
+            '.notification',
+            '.modal',
+            '.popup',
+            '.dialog',
+            '[class*="restore"]',
+            '[class*="save"]',
+            '[class*="session"]'
+        ];
+        
+        let correctionCount = 0;
+        
+        selecteursSpecifiques.forEach(selecteur => {
+            const elements = document.querySelectorAll(selecteur);
+            elements.forEach(element => {
+                const texte = element.textContent;
+                if (texte && texte.includes('0 palanquée')) {
+                    // Remplacer toutes les occurrences de "X plongeurs dans 0 palanquées"
+                    const nouveauTexte = texte.replace(/\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, texteCorrect);
+                    
+                    if (nouveauTexte !== texte) {
+                        element.textContent = nouveauTexte;
+                        correctionCount++;
+                        console.log(`Fenêtre de sauvegarde corrigée: ${selecteur}`);
+                    }
+                }
+            });
+        });
+        
+        // Correction plus agressive : chercher TOUS les éléments contenant "0 palanquée"
+        const tousElements = document.querySelectorAll('*');
+        tousElements.forEach(element => {
+            if (element.children.length === 0) { // Seulement les feuilles (pas de sous-éléments)
+                const texte = element.textContent;
+                if (texte && texte.trim().includes('0 palanquée') && texte.length < 200) {
+                    const nouveauTexte = texte.replace(/0\s+palanquées?/gi, `${palanqueesCount} palanquées`);
+                    if (nouveauTexte !== texte) {
+                        element.textContent = nouveauTexte;
+                        correctionCount++;
+                        console.log(`Élément corrigé: "${texte}" → "${nouveauTexte}"`);
+                    }
+                }
+            }
+        });
+        
+        if (correctionCount > 0) {
+            console.log(`Total corrections fenêtres sauvegarde: ${correctionCount}`);
+        }
+        
+    } catch (error) {
+        console.error("Erreur corrigerFenetresSauvegarde:", error);
+    }
+}
+
+// 2. SURVEILLANCE SPÉCIFIQUE DES FENÊTRES QUI APPARAISSENT
+function surveillerNouvellesFenetres() {
+    try {
+        // Observer les changements dans le DOM
+        const observer = new MutationObserver((mutations) => {
+            let fenetreDetectee = false;
+            
+            mutations.forEach((mutation) => {
+                // Vérifier les nouveaux nœuds ajoutés
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        const texte = node.textContent;
+                        if (texte && (texte.includes('palanquée') || texte.includes('sauvegarde') || texte.includes('restore'))) {
+                            fenetreDetectee = true;
+                        }
+                    }
+                });
+                
+                // Vérifier les modifications de contenu
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    const texte = mutation.target.textContent;
+                    if (texte && texte.includes('0 palanquée')) {
+                        fenetreDetectee = true;
+                    }
+                }
+            });
+            
+            if (fenetreDetectee) {
+                console.log("Nouvelle fenêtre détectée, correction en cours...");
+                setTimeout(corrigerFenetresSauvegarde, 100);
+            }
+        });
+        
+        // Observer le document entier
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+        
+        console.log("Surveillance des nouvelles fenêtres activée");
+        
+    } catch (error) {
+        console.error("Erreur surveillerNouvellesFenetres:", error);
+    }
+}
+
+// 3. HOOK SUR LES FONCTIONS DE SAUVEGARDE/RESTAURATION
+function intercepterFonctionsSauvegarde() {
+    try {
+        // Intercepter saveSessionData si elle existe
+        if (typeof window.saveSessionData === 'function') {
+            const originalSaveSessionData = window.saveSessionData;
+            window.saveSessionData = function() {
+                const result = originalSaveSessionData.apply(this, arguments);
+                setTimeout(corrigerFenetresSauvegarde, 200);
+                return result;
+            };
+            console.log("saveSessionData interceptée");
+        }
+        
+        // Intercepter loadSession si elle existe
+        if (typeof window.loadSession === 'function') {
+            const originalLoadSession = window.loadSession;
+            window.loadSession = function() {
+                const result = originalLoadSession.apply(this, arguments);
+                setTimeout(corrigerFenetresSauvegarde, 200);
+                return result;
+            };
+            console.log("loadSession interceptée");
+        }
+        
+        // Intercepter toute fonction qui contient "session" dans le nom
+        Object.keys(window).forEach(key => {
+            if (typeof window[key] === 'function' && key.toLowerCase().includes('session')) {
+                const originalFunction = window[key];
+                window[key] = function() {
+                    const result = originalFunction.apply(this, arguments);
+                    setTimeout(corrigerFenetresSauvegarde, 200);
+                    return result;
+                };
+                console.log(`Fonction ${key} interceptée`);
+            }
+        });
+        
+    } catch (error) {
+        console.error("Erreur intercepterFonctionsSauvegarde:", error);
+    }
+}
+
+// 4. SURVEILLANCE AGRESSIVE SPÉCIFIQUE
+function surveillanceAgressive() {
+    // Correction immédiate
+    corrigerFenetresSauvegarde();
+    
+    // Correction répétée toutes les 2 secondes
+    setInterval(corrigerFenetresSauvegarde, 2000);
+    
+    // Surveillance des nouvelles fenêtres
+    surveillerNouvellesFenetres();
+    
+    // Interception des fonctions
+    setTimeout(intercepterFonctionsSauvegarde, 1000);
+    
+    console.log("Surveillance agressive des fenêtres de sauvegarde activée");
+}
+
+// 5. DÉMARRAGE AUTOMATIQUE
+setTimeout(() => {
+    surveillanceAgressive();
+}, 2000);
+
+// 6. EXPOSER LES FONCTIONS
+window.corrigerFenetresSauvegarde = corrigerFenetresSauvegarde;
+window.surveillanceAgressive = surveillanceAgressive;
+
+console.log("✅ Correction spécifique des fenêtres de sauvegarde installée");
+console.log("💡 Commande: corrigerFenetresSauvegarde()");
+
+// 7. CORRECTION IMMÉDIATE POUR TEST
+setTimeout(() => {
+    console.log("Test correction immédiate...");
+    corrigerFenetresSauvegarde();
+}, 3000);
