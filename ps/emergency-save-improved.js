@@ -1,26 +1,32 @@
-// Version ultra-simple qui fonctionne
-(function() {
-    'use strict';
-    
+function createEmergencyManager() {
     function EmergencySaveManager() {
         this.hasUnsavedChanges = false;
-        this.isInitialized = true;
-        
         this.markNormalSaveComplete = function() {
             this.hasUnsavedChanges = false;
-            console.log('Sauvegarde normale marquée');
         };
-        
         this.forceSave = function() {
             console.log('Sauvegarde forcée');
         };
-        
-        console.log('EmergencySaveManager initialisé');
     }
     
-    // Créer et exposer immédiatement
     window.EmergencySaveManager = EmergencySaveManager;
-    window.emergencySaveManager = new EmergencySaveManager();
     
-    console.log('System ready:', typeof window.EmergencySaveManager, typeof window.emergencySaveManager);
-})();
+    // Forcer la création plusieurs fois
+    for (let i = 0; i < 3; i++) {
+        try {
+            window.emergencySaveManager = new EmergencySaveManager();
+            if (window.emergencySaveManager) break;
+        } catch (e) {
+            console.error('Tentative', i+1, 'échouée:', e);
+        }
+    }
+}
+
+createEmergencyManager();
+
+// Re-essayer après 1 seconde si échec
+setTimeout(() => {
+    if (!window.emergencySaveManager) {
+        createEmergencyManager();
+    }
+}, 1000);
