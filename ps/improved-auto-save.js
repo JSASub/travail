@@ -7,12 +7,12 @@
 
     // Configuration
     const CONFIG = {
-        STORAGE_KEY: 'jsas_auto_save',
-        MAX_AGE_HOURS: 24,
-        MIN_DATA_THRESHOLD: 2, // Minimum de données pour déclencher une sauvegarde
-        SAVE_DELAY: 2000, // Délai avant sauvegarde automatique
-        SHOW_RESTORE_DELAY: 3000 // Délai avant affichage de la proposition de restauration
-    };
+    STORAGE_KEY: 'jsas_auto_save',
+    MAX_AGE_HOURS: 48,              // ← 48h au lieu de 24h
+    MIN_DATA_THRESHOLD: 1,          // ← Plus sensible  
+    SAVE_DELAY: 1000,               // ← Plus rapide
+    SHOW_RESTORE_DELAY: 5000        // ← Plus de délai
+};
 
     // Variables globales du module
     let autoSaveTimeout = null;
