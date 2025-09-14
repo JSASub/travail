@@ -1,6 +1,11 @@
 // ps/emergency-save-improved.js - Version corrigée
 // Système de sauvegarde d'urgence amélioré pour JSAS
 
+alert('Script emergency-save se charge !');
+
+
+
+
 console.log('🚀 Début chargement emergency-save-improved.js');
 
 class EmergencySaveManager {
