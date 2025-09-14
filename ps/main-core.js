@@ -3,10 +3,11 @@
 window.plongeurs = window.plongeurs || [];
 window.palanquees = window.palanquees || [];
 window.plongeursOriginaux = window.plongeursOriginaux || [];
+
 // Ajouter cette variable globale au début du fichier
 let currentSessionKey = null;
 let sessionModified = false;
-//
+
 // Forcer l'initialisation des variables globales
 document.addEventListener('DOMContentLoaded', function() {
   // S'assurer que les variables existent
@@ -40,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 });
-//
 
 function getSelectedDPName() {
   const dpSelect = document.getElementById('dp-select');
@@ -72,7 +72,7 @@ function getSelectedDPName() {
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
   console.log = function() {
-    if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('❌'))) {
+    if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('⚠'))) {
       originalConsoleLog.apply(console, arguments);
     }
   }
@@ -102,6 +102,13 @@ async function syncToDatabase() {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     if (typeof updateCompteurs === 'function') updateCompteurs();
+    
+    // NOUVELLE APPROCHE : Utiliser la fonction corrigée pour forcer la mise à jour des compteurs
+    setTimeout(() => {
+      if (typeof forceUpdateCompteursFromDOM === 'function') {
+        forceUpdateCompteursFromDOM();
+      }
+    }, 100);
     
     // CORRECTION : Forcer la restauration des paramètres dans l'interface
     setTimeout(() => {
@@ -165,7 +172,7 @@ async function syncToDatabase() {
         console.log("✅ Sauvegarde Firebase réussie (données seulement)");
         
       } catch (error) {
-        console.error("❌ Erreur sync Firebase:", error.message);
+        console.error("⚠ Erreur sync Firebase:", error.message);
         
         // Utiliser le gestionnaire d'erreurs si disponible
         if (typeof handleFirebaseError === 'function') {
@@ -177,7 +184,7 @@ async function syncToDatabase() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur syncToDatabase:", error);
+    console.error("⚠ Erreur syncToDatabase:", error);
     handleError(error, "Synchronisation base de données");
   }
 }
@@ -261,10 +268,11 @@ async function loadFromFirebase() {
     if (typeof updateCompteurs === 'function') updateCompteurs();
     
   } catch (error) {
-    console.error("❌ Erreur chargement Firebase:", error);
+    console.error("⚠ Erreur chargement Firebase:", error);
     handleError(error, "Chargement Firebase");
   }
 }
+
 // Synchro avant sauvegarde
 function syncPrerogativesFromInterface() {
   // Trouve tous les inputs de prérogatives et les synchronise
@@ -313,9 +321,9 @@ async function saveSessionData() {
     });
   }
 });
-  //
+  
   syncPrerogativesFromInterface();
-  //
+  
   const dpNom = getSelectedDPName();
   const dpDate = document.getElementById("dp-date")?.value;
   const dpLieu = document.getElementById("dp-lieu")?.value?.trim();
@@ -333,7 +341,7 @@ async function saveSessionData() {
   }
   
   if (!db || !firebaseConnected) {
-    console.error("❌ Firebase non disponible");
+    console.error("⚠ Firebase non disponible");
     return false;
   }
   
@@ -467,7 +475,7 @@ for (let i = 0; i < pal.length; i++) {
     currentSessionKey = sessionKey;
     sessionModified = false;
     
-    // Affichage de confirmation modifié
+    // Affichage de confirmation modifiée
     const dpMessage = document.getElementById("dp-message");
     if (dpMessage) {
       const isNewSession = sessionKey.includes('_modif_');
@@ -485,7 +493,7 @@ for (let i = 0; i < pal.length; i++) {
           📅 Date: ${dpDate} (${dpPlongee})<br>
           📍 Lieu: ${dpLieu}<br>
           👥 ${sessionData.stats.totalPlongeurs} plongeurs total<br>
-          🐠 ${sessionData.stats.nombrePalanquees} palanquées<br>
+          🏠 ${sessionData.stats.nombrePalanquees} palanquées<br>
           ⏳ ${sessionData.stats.plongeursNonAssignes} en attente<br>
           🔑 Session: ${sessionKey}
         </div>
@@ -500,15 +508,15 @@ for (let i = 0; i < pal.length; i++) {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur:", error);
-    alert(`❌ ERREUR DE SAUVEGARDE\n\n${error.message}`);
+    console.error("⚠ Erreur:", error);
+    alert(`⚠ ERREUR DE SAUVEGARDE\n\n${error.message}`);
     return false;
   }
 }
 
 // Fonction pour charger une session MODIFIÉE AVEC TRACKING
 async function loadSession(sessionKey) {
-  console.log("📥 Chargement session:", sessionKey);
+  console.log("🔥 Chargement session:", sessionKey);
   
   try {
     if (!db) {
@@ -642,7 +650,7 @@ async function loadSession(sessionKey) {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur:", error);
+    console.error("⚠ Erreur:", error);
     alert(`Erreur lors du chargement:\n${error.message}`);
     return false;
   }
@@ -703,7 +711,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
       } catch (error) {
         console.error("Erreur:", error);
-        newBtn.textContent = "❌ Erreur";
+        newBtn.textContent = "⚠ Erreur";
         
         setTimeout(() => {
           newBtn.disabled = false;
@@ -732,7 +740,7 @@ console.log("✅ Système de récupération du DP corrigé");
 console.log("💡 Testez avec: testDPSelection()");
 
 function handleError(error, context = "Application") {
-  console.error(`❌ Erreur ${context}:`, error);
+  console.error(`⚠ Erreur ${context}:`, error);
   
   // Utiliser le gestionnaire d'erreurs Firebase si disponible
   if (typeof FirebaseErrorHandler !== 'undefined') {
@@ -800,7 +808,7 @@ async function testFirebaseConnectionSafe() {
         if (!resolved) {
           resolved = true;
           clearTimeout(timeout);
-          console.error("❌ Erreur listener connexion:", error);
+          console.error("⚠ Erreur listener connexion:", error);
           resolve(false);
         }
       });
@@ -834,7 +842,7 @@ async function testFirebaseConnectionSafe() {
     return true;
     
   } catch (error) {
-    console.error("❌ Test Firebase échoué:", error.message);
+    console.error("⚠ Test Firebase échoué:", error.message);
     if (typeof FirebaseErrorHandler !== 'undefined') {
       FirebaseErrorHandler.handleError(error, 'Test connexion');
     }
@@ -846,7 +854,7 @@ async function testFirebaseConnectionSafe() {
 // ===== INITIALISATION SÉCURISÉE DES DONNÉES =====
 async function initializeAppData() {
   try {
-    console.log("📄 Initialisation sécurisée des données de l'application...");
+    console.log("🔄 Initialisation sécurisée des données de l'application...");
     
     // Vérifier que les variables globales sont initialisées
     if (typeof plongeurs === 'undefined') {
@@ -881,7 +889,7 @@ async function initializeAppData() {
         console.log("✅ Données Firebase chargées");
       }
     } catch (error) {
-      console.error("❌ Erreur chargement Firebase:", error);
+      console.error("⚠ Erreur chargement Firebase:", error);
       
       // Initialisation de secours
       if (typeof plongeurs === 'undefined') window.plongeurs = [];
@@ -896,7 +904,7 @@ async function initializeAppData() {
       if (typeof updateAlertes === 'function') updateAlertes();
       if (typeof updateCompteurs === 'function') updateCompteurs();
     } catch (renderError) {
-      console.error("❌ Erreur rendu initial:", renderError);
+      console.error("⚠ Erreur rendu initial:", renderError);
     }
     
     console.log("✅ Application initialisée avec système de verrous sécurisé!");
@@ -906,7 +914,7 @@ async function initializeAppData() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur critique initialisation données:", error);
+    console.error("⚠ Erreur critique initialisation données:", error);
     handleError(error, "Initialisation données");
     
     // Mode de récupération d'urgence
@@ -927,7 +935,7 @@ async function initializeAppData() {
       console.log("✅ Mode de récupération activé");
       
     } catch (recoveryError) {
-      console.error("❌ Échec du mode de récupération:", recoveryError);
+      console.error("⚠ Échec du mode de récupération:", recoveryError);
       
       // Dernière tentative - afficher une erreur à l'utilisateur
       const authError = document.getElementById("auth-error");
@@ -971,7 +979,7 @@ function setupDragAndDrop() {
     
     console.log("✅ Drag & drop configuré");
   } catch (error) {
-    console.error("❌ Erreur configuration drag & drop:", error);
+    console.error("⚠ Erreur configuration drag & drop:", error);
     handleError(error, "Configuration drag & drop");
   }
 }
@@ -1019,7 +1027,7 @@ function handleDragStart(e) {
       }
     }
   } catch (error) {
-    console.error("❌ Erreur handleDragStart:", error);
+    console.error("⚠ Erreur handleDragStart:", error);
     handleError(error, "Drag start");
   }
 }
@@ -1031,7 +1039,7 @@ function handleDragEnd(e) {
       e.target.style.opacity = '1';
     }
   } catch (error) {
-    console.error("❌ Erreur handleDragEnd:", error);
+    console.error("⚠ Erreur handleDragEnd:", error);
   }
 }
 
@@ -1046,7 +1054,7 @@ function handleDragOver(e) {
       dropZone.classList.add('drag-over');
     }
   } catch (error) {
-    console.error("❌ Erreur handleDragOver:", error);
+    console.error("⚠ Erreur handleDragOver:", error);
   }
 }
 
@@ -1057,7 +1065,7 @@ function handleDragLeave(e) {
       dropZone.classList.remove('drag-over');
     }
   } catch (error) {
-    console.error("❌ Erreur handleDragLeave:", error);
+    console.error("⚠ Erreur handleDragLeave:", error);
   }
 }
 
@@ -1136,7 +1144,7 @@ async function handleDrop(e) {
         const validation = validatePalanqueeAddition(palanqueeIndex, data.plongeur);
         if (!validation.valid) {
           const messageText = validation.messages.join('\n');
-          alert(`❌ Ajout impossible :\n\n${messageText}`);
+          alert(`⚠ Ajout impossible :\n\n${messageText}`);
           dragData = null;
           return;
         }
@@ -1168,7 +1176,7 @@ async function handleDrop(e) {
       }
     }
   } catch (error) {
-    console.error("❌ Erreur lors du drop:", error);
+    console.error("⚠ Erreur lors du drop:", error);
     handleError(error, "Handle drop");
   } finally {
     // Nettoyer les données de drag
@@ -1217,7 +1225,7 @@ function setupEventListeners() {
           }
           
         } catch (error) {
-          console.error("❌ Erreur connexion:", error);
+          console.error("⚠ Erreur connexion:", error);
           
           let message = "Erreur de connexion";
           if (error.code === 'auth/user-not-found') {
@@ -1246,7 +1254,7 @@ function setupEventListeners() {
             console.log("✅ Déconnexion réussie");
           }
         } catch (error) {
-          console.error("❌ Erreur déconnexion:", error);
+          console.error("⚠ Erreur déconnexion:", error);
         }
       });
     }
@@ -1275,7 +1283,7 @@ function setupEventListeners() {
           
           console.log("✅ Nouvelle palanquée créée");
         } catch (error) {
-          console.error("❌ Erreur création palanquée:", error);
+          console.error("⚠ Erreur création palanquée:", error);
           handleError(error, "Création palanquée");
         }
       });
@@ -1289,11 +1297,11 @@ function setupEventListeners() {
           if (typeof generatePDFPreview === 'function') {
             generatePDFPreview();
           } else {
-            console.error("❌ Fonction generatePDFPreview non disponible");
+            console.error("⚠ Fonction generatePDFPreview non disponible");
             alert("Erreur: Module PDF non chargé");
           }
         } catch (error) {
-          console.error("❌ Erreur génération aperçu PDF:", error);
+          console.error("⚠ Erreur génération aperçu PDF:", error);
           handleError(error, "Génération aperçu PDF");
         }
       });
@@ -1306,11 +1314,11 @@ function setupEventListeners() {
           if (typeof exportToPDF === 'function') {
             exportToPDF();
           } else {
-            console.error("❌ Fonction exportToPDF non disponible");
+            console.error("⚠ Fonction exportToPDF non disponible");
             alert("Erreur: Module PDF non chargé");
           }
         } catch (error) {
-          console.error("❌ Erreur export PDF:", error);
+          console.error("⚠ Erreur export PDF:", error);
           handleError(error, "Export PDF");
         }
       });
@@ -1322,62 +1330,61 @@ function setupEventListeners() {
     console.log("✅ Event listeners configurés avec succès");
     
   } catch (error) {
-    console.error("❌ Erreur configuration event listeners:", error);
+    console.error("⚠ Erreur configuration event listeners:", error);
     handleError(error, "Configuration event listeners");
   }
 }
-//
-//
-function fixCompteurPalanquees() {
-  const palanqueesCount = document.querySelectorAll('.palanquee').length;
-  const compteurPalanquees = document.getElementById('compteur-palanquees');
+
+// ===== CORRECTION INTELLIGENTE DU COMPTEUR PALANQUÉES =====
+// NOUVELLE APPROCHE: Surveillance intelligente avec intervalle optimisé
+function initCompteurCorrection() {
+  let lastCompteurValue = '';
+  let correctionCount = 0;
   
-  if (compteurPalanquees && palanqueesCount > 0) {
-    // Compter les plongeurs dans les palanquées
-    let plongeursEnPalanquees = 0;
-    document.querySelectorAll('.palanquee').forEach(pal => {
-      plongeursEnPalanquees += pal.querySelectorAll('.palanquee-plongeur-item').length;
-    });
-    
-    compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
-    console.log(`Compteur corrigé: ${palanqueesCount} palanquées`);
-  }
-}
-// CORRECTION PERMANENTE DU COMPTEUR PALANQUÉES
-function surveillerCompteurPalanquees() {
-    const compteur = document.getElementById('compteur-palanquees');
-    const palanqueesReelles = document.querySelectorAll('.palanquee').length;
-    
-    if (compteur && palanqueesReelles > 0) {
-        let plongeursEnPalanquees = 0;
+  function smartCompteurCorrection() {
+    try {
+      const compteur = document.getElementById('compteur-palanquees');
+      if (!compteur) return;
+      
+      const palanqueesCount = document.querySelectorAll('.palanquee').length;
+      
+      if (palanqueesCount > 0) {
+        let plongeursCount = 0;
         document.querySelectorAll('.palanquee').forEach(pal => {
-            plongeursEnPalanquees += pal.querySelectorAll('.palanquee-plongeur-item').length;
+          plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
         });
         
-        const texteCorrect = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesReelles} palanquées)`;
+        const texteCorrect = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
         
-        // Ne mettre à jour que si différent (évite les conflits)
-        if (compteur.textContent !== texteCorrect) {
-            compteur.textContent = texteCorrect;
-            console.log('Compteur palanquées corrigé:', texteCorrect);
+        // Ne corriger que si nécessaire et différent de la dernière valeur
+        if (compteur.textContent !== texteCorrect && compteur.textContent !== lastCompteurValue) {
+          compteur.textContent = texteCorrect;
+          lastCompteurValue = texteCorrect;
+          correctionCount++;
+          console.log(`🔧 Compteur palanquées corrigé (#${correctionCount}): ${texteCorrect}`);
         }
+      }
+    } catch (error) {
+      console.error('⚠ Erreur smartCompteurCorrection:', error);
     }
+  }
+  
+  // Correction initiale
+  smartCompteurCorrection();
+  
+  // Surveillance avec intervalle optimisé
+  const correctionInterval = setInterval(smartCompteurCorrection, 3000);
+  
+  // Arrêter la surveillance après 2 minutes (économie de ressources)
+  setTimeout(() => {
+    clearInterval(correctionInterval);
+    console.log(`🔧 Surveillance du compteur arrêtée après ${correctionCount} corrections`);
+  }, 120000);
+  
+  // Exposer la fonction pour utilisation manuelle
+  window.forceCompteurCorrection = smartCompteurCorrection;
 }
 
-// Corriger toutes les 2 secondes
-setInterval(surveillerCompteurPalanquees, 2000);
-
-// Corriger aussi après chaque modification de palanquée
-const originalSyncToDatabase = window.syncToDatabase;
-if (originalSyncToDatabase) {
-    window.syncToDatabase = function() {
-        const result = originalSyncToDatabase.apply(this, arguments);
-        setTimeout(surveillerCompteurPalanquees, 100);
-        return result;
-    };
-}
-// Corriger le compteur toutes les 2 secondes
-setInterval(fixCompteurPalanquees, 2000);
 // ===== DIAGNOSTIC ET MONITORING =====
 // Fonction de diagnostic pour le support technique
 window.diagnosticJSAS = function() {
@@ -1464,16 +1471,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       initializeDPSessionsManager();
     }
     
-    // 6. Ajouter les gestionnaires d'erreurs globaux
+    // 6. Initialiser la correction intelligente du compteur
+    setTimeout(() => {
+      initCompteurCorrection();
+    }, 1000);
+    
+    // 7. Ajouter les gestionnaires d'erreurs globaux
     window.addEventListener('error', (event) => {
-      console.error("❌ Erreur JavaScript globale:", event.error);
+      console.error("⚠ Erreur JavaScript globale:", event.error);
       handleError(event.error, "Erreur JavaScript globale");
     });
     
     console.log("✅ Application JSAS initialisée avec succès !");
     
   } catch (error) {
-    console.error("❌ Erreur critique initialisation:", error);
+    console.error("⚠ Erreur critique initialisation:", error);
     handleError(error, "Initialisation critique");
     
     // Mode de récupération d'urgence
@@ -1494,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Notification d'urgence
     alert(
-      "❌ ERREUR CRITIQUE D'INITIALISATION\n\n" +
+      "⚠ ERREUR CRITIQUE D'INITIALISATION\n\n" +
       "L'application n'a pas pu s'initialiser correctement.\n\n" +
       "Actions recommandées :\n" +
       "1. Actualisez la page (F5)\n" +
@@ -1518,4 +1530,4 @@ window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.1.0 avec protection des sessions");
+console.log("✅ Main Core sécurisé chargé - Version 3.2.0 avec correction intelligente du compteur");

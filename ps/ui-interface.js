@@ -1,17 +1,27 @@
 // ui-interface.js - Interface utilisateur et utilitaires avec système de verrous (VERSION SÉCURISÉE)
 
-// ===== COMPTEURS D'AFFICHAGE =====
+// ===== COMPTEURS D'AFFICHAGE CORRIGÉS =====
 function updateCompteurs() {
   try {
     // Compter les plongeurs de manière sécurisée
     const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
     
-    // Compter les palanquées de manière sécurisée - MÉTHODE HYBRIDE
+    // NOUVELLE MÉTHODE UNIFIÉE POUR COMPTER LES PALANQUÉES
     let palanqueesCount = 0;
     let plongeursEnPalanquees = 0;
     
-    // Méthode 1: Depuis la variable globale
-    if (Array.isArray(window.palanquees)) {
+    // Méthode 1: Depuis le DOM (plus fiable pour l'affichage)
+    const palanqueeElements = document.querySelectorAll('.palanquee');
+    palanqueesCount = palanqueeElements.length;
+    
+    // Compter les plongeurs dans le DOM
+    palanqueeElements.forEach(palanqueeEl => {
+      const plongeurItems = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+      plongeursEnPalanquees += plongeurItems.length;
+    });
+    
+    // Fallback: vérifier avec la variable globale si DOM vide
+    if (palanqueesCount === 0 && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
       palanqueesCount = window.palanquees.length;
       
       for (let i = 0; i < window.palanquees.length; i++) {
@@ -24,19 +34,6 @@ function updateCompteurs() {
       }
     }
     
-    // Méthode 2: Fallback depuis le DOM si variable globale vide
-    if (palanqueesCount === 0) {
-      const palanqueeElements = document.querySelectorAll('.palanquee');
-      palanqueesCount = palanqueeElements.length;
-      
-      // Compter les plongeurs dans le DOM
-      plongeursEnPalanquees = 0;
-      palanqueeElements.forEach(palanqueeEl => {
-        const plongeurItems = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-        plongeursEnPalanquees += plongeurItems.length;
-      });
-    }
-    
     // Mettre à jour les compteurs dans l'interface
     const compteurPlongeurs = document.getElementById('compteur-plongeurs');
     if (compteurPlongeurs) {
@@ -45,10 +42,17 @@ function updateCompteurs() {
     
     const compteurPalanquees = document.getElementById('compteur-palanquees');
     if (compteurPalanquees) {
-      compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+      // CORRECTION: S'assurer que le texte est correct
+      const texteCorrect = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+      
+      // Ne mettre à jour que si différent pour éviter les conflits
+      if (compteurPalanquees.textContent !== texteCorrect) {
+        compteurPalanquees.textContent = texteCorrect;
+        console.log(`✅ Compteur palanquées mis à jour: ${texteCorrect}`);
+      }
     }
     
-    console.log(`Compteurs mis à jour: ${plongeursCount} plongeurs, ${palanqueesCount} palanquées, ${plongeursEnPalanquees} en palanquées`);
+    console.log(`Compteurs: ${plongeursCount} plongeurs disponibles, ${palanqueesCount} palanquées, ${plongeursEnPalanquees} plongeurs assignés`);
     
   } catch (error) {
     console.error('Erreur updateCompteurs:', error);
@@ -65,6 +69,39 @@ function updateCompteurs() {
     }
   }
 }
+
+// NOUVELLE FONCTION: Force la mise à jour des compteurs depuis le DOM
+function forceUpdateCompteursFromDOM() {
+  try {
+    const palanqueeElements = document.querySelectorAll('.palanquee');
+    const palanqueesCount = palanqueeElements.length;
+    
+    let plongeursEnPalanquees = 0;
+    palanqueeElements.forEach(palanqueeEl => {
+      plongeursEnPalanquees += palanqueeEl.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    
+    const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
+    
+    // Mettre à jour immédiatement
+    const compteurPlongeurs = document.getElementById('compteur-plongeurs');
+    const compteurPalanquees = document.getElementById('compteur-palanquees');
+    
+    if (compteurPlongeurs) {
+      compteurPlongeurs.textContent = `(${plongeursCount})`;
+    }
+    
+    if (compteurPalanquees) {
+      compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+    }
+    
+    console.log(`🔄 Compteurs forcés depuis DOM: ${palanqueesCount} palanquées, ${plongeursEnPalanquees} plongeurs assignés`);
+    
+  } catch (error) {
+    console.error('Erreur forceUpdateCompteursFromDOM:', error);
+  }
+}
+
 // ===== NOUVEAU : GESTION DES VERROUS UI (VERSION SÉCURISÉE) =====
 function updatePalanqueeLockUI() {
   if (!currentUser || typeof palanqueeLocks === 'undefined') {
@@ -150,7 +187,7 @@ function updatePalanqueeLockUI() {
       }
     });
   } catch (error) {
-    console.error("❌ Erreur updatePalanqueeLockUI:", error);
+    console.error("⚠ Erreur updatePalanqueeLockUI:", error);
   }
 }
 
@@ -199,7 +236,7 @@ function showLockNotification(message, type = "info") {
       }
     }, 4000);
   } catch (error) {
-    console.error("❌ Erreur showLockNotification:", error);
+    console.error("⚠ Erreur showLockNotification:", error);
   }
 }
 
@@ -302,7 +339,7 @@ function checkAllAlerts() {
     
     return alertes;
   } catch (error) {
-    console.error("❌ Erreur checkAllAlerts:", error);
+    console.error("⚠ Erreur checkAllAlerts:", error);
     return [];
   }
 }
@@ -324,7 +361,7 @@ function updateAlertes() {
       }
     }
   } catch (error) {
-    console.error("❌ Erreur updateAlertes:", error);
+    console.error("⚠ Erreur updateAlertes:", error);
   }
 }
 
@@ -352,7 +389,7 @@ function checkAlert(palanquee) {
     
     return checkAlertForArray(palanquee);
   } catch (error) {
-    console.error("❌ Erreur checkAlert:", error);
+    console.error("⚠ Erreur checkAlert:", error);
     return false;
   }
 }
@@ -520,7 +557,7 @@ function sortPlongeurs(type) {
       renderPlongeurs();
     }
   } catch (error) {
-    console.error("❌ Erreur sortPlongeurs:", error);
+    console.error("⚠ Erreur sortPlongeurs:", error);
   }
 
 }
@@ -575,7 +612,10 @@ function exportToJSON() {
     
     console.log("📤 Export JSON effectué");
   } catch (error) {
-    console.error("❌ Erreur exportToJSON:", error);
+    console.error("⚠ Erreur exportToJSON:", error);
     alert("Erreur lors de l'export : " + error.message);
   }
 }
+
+// Exposer la fonction de correction forcée
+window.forceUpdateCompteursFromDOM = forceUpdateCompteursFromDOM;
