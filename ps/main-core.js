@@ -1,4 +1,8 @@
 // main-core.js - Fichier principal allégé (remplace main-complete.js)
+// PROTECTION ANTI-UNDEFINED
+window.plongeurs = window.plongeurs || [];
+window.palanquees = window.palanquees || [];
+window.plongeursOriginaux = window.plongeursOriginaux || [];
 // Ajouter cette variable globale au début du fichier
 let currentSessionKey = null;
 let sessionModified = false;
