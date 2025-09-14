@@ -1449,6 +1449,78 @@ document.addEventListener('DOMContentLoaded', async () => {
       "Erreur : " + error.message
     );
   }
+  
+  
+  ////
+  
+  // Système de sauvegarde d'urgence intégré
+const emergencySystem = {
+    hasUnsavedChanges: false,
+    lastSaveTime: 0,
+    MIN_SAVE_INTERVAL: 30000,
+    
+    markNormalSaveComplete() {
+        this.hasUnsavedChanges = false;
+        localStorage.removeItem('jsas_emergency_save');
+        console.log('Sauvegarde normale terminée');
+    },
+    
+    performSave() {
+        if (this.hasUnsavedChanges && Date.now() - this.lastSaveTime > this.MIN_SAVE_INTERVAL) {
+            const data = {
+                timestamp: Date.now(),
+                dp: document.getElementById('dp-select')?.value || '',
+                date: document.getElementById('dp-date')?.value || '',
+                lieu: document.getElementById('dp-lieu')?.value || ''
+            };
+            
+            localStorage.setItem('jsas_emergency_save', JSON.stringify(data));
+            this.lastSaveTime = Date.now();
+            this.hasUnsavedChanges = false;
+            console.log('Sauvegarde d\'urgence effectuée');
+        }
+    },
+    
+    init() {
+        // Observer les changements
+        document.addEventListener('input', () => {
+            this.hasUnsavedChanges = true;
+        });
+        
+        // Vérifier la récupération au démarrage
+        setTimeout(() => {
+            const saved = localStorage.getItem('jsas_emergency_save');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const age = Date.now() - data.timestamp;
+                if (age < 24 * 60 * 60 * 1000) { // 24h
+                    if (confirm('Session précédente trouvée. Restaurer ?')) {
+                        if (data.dp) document.getElementById('dp-select').value = data.dp;
+                        if (data.date) document.getElementById('dp-date').value = data.date;
+                        if (data.lieu) document.getElementById('dp-lieu').value = data.lieu;
+                    }
+                    localStorage.removeItem('jsas_emergency_save');
+                }
+            }
+        }, 3000);
+    }
+};
+
+// Hook dans le système existant
+if (window.dpSessionsManager && window.dpSessionsManager.saveCurrentSession) {
+    const originalSave = window.dpSessionsManager.saveCurrentSession;
+    window.dpSessionsManager.saveCurrentSession = function(...args) {
+        const result = originalSave.apply(this, args);
+        emergencySystem.markNormalSaveComplete();
+        return result;
+    };
+}
+
+// Initialiser
+emergencySystem.init();
+console.log('Système de sauvegarde d\'urgence activé');
+  /////
+  
 });
 
 // ===== EXPORTS GLOBAUX =====
