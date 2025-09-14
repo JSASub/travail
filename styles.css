@@ -1553,3 +1553,379 @@ header div h2 {
   background-color: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
+
+/* Styles pour le système de sauvegarde d'urgence amélioré */
+
+/* Notification de sauvegarde améliorée */
+.save-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+    max-width: 300px;
+}
+
+.save-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.save-notification.error {
+    background: #dc3545;
+}
+
+.save-notification.warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+/* Indicateur de changements non sauvegardés */
+.unsaved-changes-indicator {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    background: #ffc107;
+    color: #212529;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+}
+
+.unsaved-changes-indicator.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Modal de récupération personnalisée */
+.recovery-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.recovery-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.recovery-modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.recovery-modal.show .recovery-modal-content {
+    transform: scale(1);
+}
+
+.recovery-modal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+.recovery-modal-header .icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.recovery-modal-body {
+    margin-bottom: 25px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.recovery-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border-left: 4px solid #007bff;
+}
+
+.recovery-info-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.recovery-info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.recovery-info-value {
+    color: #007bff;
+    font-weight: 500;
+}
+
+.recovery-modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.recovery-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.recovery-btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.recovery-btn-cancel:hover {
+    background: #5a6268;
+}
+
+.recovery-btn-restore {
+    background: #28a745;
+    color: white;
+}
+
+.recovery-btn-restore:hover {
+    background: #218838;
+}
+
+.recovery-btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.recovery-btn-delete:hover {
+    background: #c82333;
+}
+
+/* Indicateur de sauvegarde automatique */
+.auto-save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,123,255,0.1);
+    border: 2px solid #007bff;
+    color: #007bff;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.auto-save-indicator .loading-dots {
+    display: inline-block;
+    animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+/* Toast notifications stack */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    border-left: 4px solid #28a745;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    max-width: 350px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    position: relative;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast.success {
+    border-left-color: #28a745;
+}
+
+.toast.error {
+    border-left-color: #dc3545;
+}
+
+.toast.warning {
+    border-left-color: #ffc107;
+}
+
+.toast.info {
+    border-left-color: #17a2b8;
+}
+
+.toast-header {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toast-body {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.toast-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    color: #666;
+}
+
+/* Amélioration du bouton flottant de sauvegarde */
+.floating-save-btn.has-changes {
+    background: #ffc107;
+    color: #212529;
+    animation: pulse 2s infinite;
+}
+
+.floating-save-btn.saving {
+    background: #6c757d;
+    pointer-events: none;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+/* Indicateur de synchronisation */
+.sync-status {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.95);
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 9998;
+    backdrop-filter: blur(10px);
+}
+
+.sync-status.show {
+    opacity: 1;
+}
+
+.sync-status.synced {
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.sync-status.syncing {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.sync-status.error {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .recovery-modal-content {
+        padding: 20px;
+        margin: 20px;
+    }
+    
+    .save-notification,
+    .toast {
+        right: 10px;
+        max-width: calc(100vw - 20px);
+    }
+    
+    .recovery-modal-footer {
+        flex-direction: column;
+    }
+    
+    .recovery-btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
