@@ -1520,3 +1520,21 @@ if (userInfo) {
 }
 
 console.log('Surveillances désactivées et user-info protégé');
+
+/* ALIGNEMENT PRÉCIS DE USER-INFO AVEC LES BOUTONS */
+span#user-info {
+    color: #666 !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 20px !important;        /* Même hauteur que les boutons */
+    vertical-align: middle !important;
+    display: inline-flex !important;     /* Meilleur alignement */
+    align-items: center !important;      /* Centrage vertical */
+    height: 30px !important;             /* Même hauteur que les boutons */
+}
+
+/* S'assurer que le conteneur parent aligne correctement */
+div[style*="align-items: center"] span#user-info {
+    align-self: center !important;
+}
