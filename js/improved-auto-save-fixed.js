@@ -336,7 +336,7 @@
                     <div class="restore-info">
                         <div class="restore-stats">
                             ${appState.stats.totalPlongeurs || 0} plongeurs, 
-							${appState.stats.totalEnPalanquees || 0} palanquées
+							${appState.palanquees.length} palanquées
                         </div>
                         <div class="restore-dp">
                             DP: ${appState.metadata && appState.metadata.dp ? appState.metadata.dp.selectedText || 'Non sélectionné' : 'Non défini'}
