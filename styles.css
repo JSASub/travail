@@ -1342,11 +1342,11 @@ button:hover {
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
   border: 1px solid #2196f3;
   border-radius: 8px;
-  padding: 6px 10px !important; /* Réduire le padding vertical */
-  margin: 0 !important; /* Supprimer toutes les marges */
+  padding: 6px 10px !important;
+  margin: 0 !important;
   font-size: 14px;
   position: relative;
-  top: -2px; /* Remonter légèrement */
+  top: -2px;
   display: inline-flex;
   align-items: center;
   vertical-align: top;
@@ -1367,6 +1367,27 @@ button:hover {
   font-size: 16px;
   line-height: 1;
   margin: 0;
+}
+
+/* CORRECTION SPÉCIFIQUE POUR span#user-info - STYLES PROPRES */
+span#user-info {
+    color: #666 !important;                    /* Couleur du texte */
+    font-size: 14px !important;                /* Taille de police */
+    margin: 0 !important;                      /* Pas de marges */
+    padding: 0 !important;                     /* Pas de padding */
+    position: relative !important;             /* Position relative */
+    top: 0px !important;                       /* Position normale */
+    vertical-align: middle !important;         /* Alignement vertical centré */
+    line-height: 1.4 !important;              /* Hauteur de ligne normale */
+    transform: none !important;                /* Pas de transformation */
+    display: inline-block !important;          /* Affichage en ligne */
+}
+
+/* Correction du conteneur parent si nécessaire */
+#user-info {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
 }
 
 /* Correction spécifique si l'élément est dans la zone d'authentification */
@@ -1402,41 +1423,14 @@ button:hover {
   .dp-status-icon {
     font-size: 14px;
   }
-}
-
-/* Correction alternative si l'élément a un ID ou classe spécifique */
-[id*="status"][id*="indicator"],
-[class*="user"][class*="status"],
-[class*="connected"][class*="users"] {
-  margin: 0 !important;
-  padding: 6px 10px !important;
-  position: relative !important;
-  top: -2px !important;
-  vertical-align: top !important;
+  
+  span#user-info {
+    font-size: 12px !important;
+  }
 }
 
 /* Si l'élément est dans le header */
 .header-container .dp-status-indicator {
   align-self: flex-start;
   margin-top: 0 !important;
-}
-
-/* CORRECTION SPÉCIFIQUE POUR span#user-info - PROBLÈME RÉSOLU */
-span#user-info {
-    margin-top: 0px !important;
-    margin-bottom: 0px !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
-    position: relative !important;
-    top: 0px !important;                    /* CORRIGÉ : était -8px */
-    vertical-align: top !important;
-    line-height: 1 !important;
-    transform: translateY(0px) !important;  /* CORRIGÉ : était -3px */
-}
-
-/* Correction du conteneur parent si nécessaire */
-#user-info {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
 }
