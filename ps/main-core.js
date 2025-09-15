@@ -7,7 +7,67 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 // Variables globales de session
 let currentSessionKey = null;
 let sessionModified = false;
+//
+// SOLUTION AGRESSIVE POUR LES BOÎTES DE DIALOGUE
+// Ajoutez ceci tout au début de main-core.js
 
+// Intercepter la fonction alert native
+const originalAlert = window.alert;
+window.alert = function(message) {
+    if (typeof message === 'string' && message.includes('0 palanquée')) {
+        const palanqueesCount = document.querySelectorAll('.palanquee').length;
+        let plongeursCount = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        // Corriger le message avant de l'afficher
+        const messageCorrige = message.replace(
+            /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, 
+            `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`
+        );
+        
+        console.log(`Alert corrigée: "${message}" → "${messageCorrige}"`);
+        return originalAlert.call(this, messageCorrige);
+    }
+    return originalAlert.call(this, message);
+};
+
+// Intercepter la fonction confirm native
+const originalConfirm = window.confirm;
+window.confirm = function(message) {
+    if (typeof message === 'string' && message.includes('0 palanquée')) {
+        const palanqueesCount = document.querySelectorAll('.palanquee').length;
+        let plongeursCount = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        const messageCorrige = message.replace(
+            /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, 
+            `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`
+        );
+        
+        console.log(`Confirm corrigée: "${message}" → "${messageCorrige}"`);
+        return originalConfirm.call(this, messageCorrige);
+    }
+    return originalConfirm.call(this, message);
+};
+
+// Fonction pour corriger en temps réel
+function getCurrentPalanqueesStats() {
+    const palanqueesCount = document.querySelectorAll('.palanquee').length;
+    let plongeursCount = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+        plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    return { palanqueesCount, plongeursCount };
+}
+
+// Exposer globalement pour les autres scripts
+window.getCurrentPalanqueesStats = getCurrentPalanqueesStats;
+
+console.log("Interception des boîtes de dialogue activée");
 // Forcer l'initialisation des variables globales
 document.addEventListener('DOMContentLoaded', function() {
   // S'assurer que les variables existent
