@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     deleteBtn.addEventListener('click', deleteDp);
   }
   
-  / Écouteur pour le changement manuel
+  // Écouteur pour le changement manuel
     dpSelect.addEventListener('change', function() {
         updateButtonStates();
     });
@@ -423,6 +423,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateButtonStates();
         }
     }, 500);
+	
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
