@@ -1486,20 +1486,18 @@ span#user-info[style] {
     padding: 0 !important;
 }
 
-/* ALIGNEMENT PRÉCIS DE USER-INFO AVEC LES BOUTONS */
+/* ALIGNEMENT USER-INFO - VERSION PROPRE */
 span#user-info {
     color: #666 !important;
     font-size: 14px !important;
     margin: 0 !important;
     padding: 0 !important;
-    line-height: 20px !important;        /* Même hauteur que les boutons */
+    line-height: 30px !important;
     vertical-align: middle !important;
-    display: inline-flex !important;     /* Meilleur alignement */
-    align-items: center !important;      /* Centrage vertical */
-    height: 30px !important;             /* Même hauteur que les boutons */
+    display: inline-block !important;
+    height: 30px !important;
 }
 
-/* S'assurer que le conteneur parent aligne correctement */
 div[style*="align-items: center"] span#user-info {
     align-self: center !important;
 }
