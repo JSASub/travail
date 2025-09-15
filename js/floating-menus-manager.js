@@ -484,7 +484,7 @@
         
         // Mettre à jour régulièrement
         setInterval(updateFloatingPlongeursList, 3000);
-        setInterval(updateFloatingPlongeursVisibility, 1000);
+        //setInterval(updateFloatingPlongeursVisibility, 1000);
         
         // Observer les changements
         let lastPlongeursLength = window.plongeurs.length;
