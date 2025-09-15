@@ -215,7 +215,7 @@
         
         setTimeout(() => {
             indicator.classList.remove('show');
-        }, 2000);
+        }, 5000);
     }
 
     /**
@@ -566,7 +566,7 @@
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
-            }, 3000);
+            }, 5000);
         };
 
         window.ignoreRestore = function(btn) {
@@ -582,7 +582,7 @@
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, 30000);
+        }, 5000);
     }
 
     /**
@@ -817,13 +817,13 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 3000);
+            setTimeout(initAutoSaveSystem, 5000);
         });
     } else {
         setTimeout(() => {
             disableOldSaveSystems();
             initAutoSaveSystem();
-        }, 500);
+        }, 5000);
     }
 
     // Exposer les fonctions publiques
