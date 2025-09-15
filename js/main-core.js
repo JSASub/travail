@@ -383,6 +383,41 @@ function forceInitializeFloatingMenus() {
     // Commencer les tentatives
     setTimeout(tryInitialize, attempts[0]);
 }
+//
+// Surveillance continue du menu latéral
+function setupMenuSurveillance() {
+    let surveillanceCount = 0;
+    const maxSurveillance = 60; // 60 secondes max
+    
+    const surveillanceInterval = setInterval(() => {
+        surveillanceCount++;
+        
+        const mainApp = document.getElementById('main-app');
+        const floatingMenu = document.getElementById('floating-plongeurs-menu');
+        
+        // Si l'app est visible mais pas le menu, le forcer
+        if (mainApp && mainApp.style.display !== 'none' && 
+            floatingMenu && floatingMenu.style.display === 'none') {
+            
+            console.log('🔧 Correction automatique du menu latéral');
+            floatingMenu.style.display = 'flex';
+            floatingMenu.style.visibility = 'visible';
+            floatingMenu.style.opacity = '1';
+            
+            // Réinitialiser le menu si nécessaire
+            if (typeof window.forceUpdatePlongeursMenu === 'function') {
+                window.forceUpdatePlongeursMenu();
+            }
+        }
+        
+        // Arrêter la surveillance après 60 secondes ou si tout est OK
+        if (surveillanceCount >= maxSurveillance || 
+            (floatingMenu && floatingMenu.style.display === 'flex')) {
+            clearInterval(surveillanceInterval);
+        }
+        
+    }, 1000);
+}
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
@@ -1308,8 +1343,10 @@ function setupEventListeners() {
             await signIn(email, password);
             console.log("✅ Connexion réussie");
             
-            // ✅ AJOUT : Forcer l'initialisation du menu latéral après connexion
+            // Forcer l'initialisation du menu latéral après connexion
             forceInitializeFloatingMenus();
+			// Ajouter la surveillance continue
+			setupMenuSurveillance();
             
           } else {
             throw new Error("Fonction signIn non disponible");
