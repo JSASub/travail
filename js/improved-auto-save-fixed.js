@@ -105,11 +105,11 @@
                     palanquees: palanquees,
                     plongeursOriginaux: safeGetPlongeursOriginaux()
                 },
-				stats: {
-					totalPlongeurs: plongeurs.length,
-					totalEnPalanquees: plongeursInPalanquees,
-					nombrePalanquees: Array.isArray(palanquees) ? palanquees.length : 0
-				}
+                stats: {
+                    totalPlongeurs: plongeurs.length,
+                    totalEnPalanquees: plongeursInPalanquees,
+                    nombrePalanquees: Array.isArray(palanquees) ? palanquees.length : 0
+                }
             };
 
             // Sauvegarder dans localStorage
@@ -117,8 +117,8 @@
             
             console.log('Sauvegarde automatique effectuée:', {
                 plongeurs: appState.stats.totalPlongeurs,
-                enPalanquees: appState.stats.totalEnPalanquees,
-                palanquees: appState.stats.nombrePalanquees,
+                enPalanquées: appState.stats.totalEnPalanquees,
+                palanquées: appState.stats.nombrePalanquees,
                 dp: appState.metadata.dp.selectedText || 'Non sélectionné'
             });
 
@@ -336,7 +336,7 @@
                     <div class="restore-info">
                         <div class="restore-stats">
                             ${appState.stats.totalPlongeurs || 0} plongeurs, 
-							${savedData.palanquees ? savedData.palanquees.length : 0} palanquées
+                            ${appState.stats.nombrePalanquees || 0} palanquées
                         </div>
                         <div class="restore-dp">
                             DP: ${appState.metadata && appState.metadata.dp ? appState.metadata.dp.selectedText || 'Non sélectionné' : 'Non défini'}
