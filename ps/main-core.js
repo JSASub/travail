@@ -1,10 +1,10 @@
-// main-core.js - Fichier principal allégé (remplace main-complete.js)
+// main-core.js - Fichier principal corrigé (sans interférences DOM)
 // PROTECTION ANTI-UNDEFINED
 window.plongeurs = window.plongeurs || [];
 window.palanquees = window.palanquees || [];
 window.plongeursOriginaux = window.plongeursOriginaux || [];
 
-// Ajouter cette variable globale au début du fichier
+// Variables globales de session
 let currentSessionKey = null;
 let sessionModified = false;
 
@@ -97,69 +97,11 @@ async function syncToDatabase() {
       console.log("🔄 Session marquée comme modifiée");
     }
     
-    // Re-rendre l'interface
+    // Re-rendre l'interface SANS manipulation DOM excessive
     if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     if (typeof updateCompteurs === 'function') updateCompteurs();
-    
-    // NOUVELLE APPROCHE : Utiliser la fonction corrigée pour forcer la mise à jour des compteurs
-    setTimeout(() => {
-      if (typeof forceUpdateCompteursFromDOM === 'function') {
-        forceUpdateCompteursFromDOM();
-      }
-    }, 100);
-    
-    // CORRECTION : Forcer la restauration des paramètres dans l'interface
-    setTimeout(() => {
-      console.log("🔄 Restauration forcée des paramètres d'interface...");
-      
-      palanquees.forEach((pal, index) => {
-        if (!pal || !Array.isArray(pal)) return;
-        
-        // Chercher les champs de saisie pour cette palanquée
-        const horaireInput = document.getElementById(`horaire-${index}`) || 
-                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
-        const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
-                               document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. prévue"]`);
-        const dureePrevueInput = document.getElementById(`duree-prevue-${index}`) || 
-                                document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée prévue"]`);
-        const profRealiseeInput = document.getElementById(`profondeur-realisee-${index}`) || 
-                                 document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Prof. réalisée"]`);
-        const dureeRealiseeInput = document.getElementById(`duree-realisee-${index}`) || 
-                                  document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Durée réalisée"]`);
-        const paliersInput = document.getElementById(`paliers-${index}`) || 
-                            document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
-        
-        // Restaurer les valeurs dans les champs
-        if (horaireInput && pal.horaire) {
-          horaireInput.value = pal.horaire;
-          console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
-        }
-        if (profPrevueInput && pal.profondeurPrevue) {
-          profPrevueInput.value = pal.profondeurPrevue;
-          console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
-        }
-        if (dureePrevueInput && pal.dureePrevue) {
-          dureePrevueInput.value = pal.dureePrevue;
-          console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
-        }
-        if (profRealiseeInput && pal.profondeurRealisee) {
-          profRealiseeInput.value = pal.profondeurRealisee;
-          console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
-        }
-        if (dureeRealiseeInput && pal.dureeRealisee) {
-          dureeRealiseeInput.value = pal.dureeRealisee;
-          console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
-        }
-        if (paliersInput && pal.paliers) {
-          paliersInput.value = pal.paliers;
-          console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
-        }
-      });
-      
-      console.log("✅ Restauration des paramètres terminée");
-    }, 200);
     
     // Sauvegarder dans Firebase si connecté (SANS session automatique)
     if (typeof firebaseConnected !== 'undefined' && firebaseConnected && typeof db !== 'undefined' && db) {
@@ -590,14 +532,14 @@ async function loadSession(sessionKey) {
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    // CORRECTION : Restauration forcée des paramètres dans l'interface
+    // CORRECTION DOUCE : Restauration des paramètres SANS manipulation DOM excessive
     setTimeout(() => {
-      console.log("🔄 Restauration forcée des paramètres d'interface...");
+      console.log("🔄 Restauration douce des paramètres d'interface...");
       
       palanquees.forEach((pal, index) => {
         if (!pal || !Array.isArray(pal)) return;
         
-        // Chercher les champs de saisie pour cette palanquée
+        // Chercher les champs de saisie pour cette palanquée SANS forcer les styles
         const horaireInput = document.getElementById(`horaire-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
         const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
@@ -611,34 +553,28 @@ async function loadSession(sessionKey) {
         const paliersInput = document.getElementById(`paliers-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
         
-        // Restaurer les valeurs dans les champs
+        // Restaurer les valeurs dans les champs UNIQUEMENT
         if (horaireInput && pal.horaire) {
           horaireInput.value = pal.horaire;
-          console.log(`✅ Horaire palanquée ${index + 1}: ${pal.horaire}`);
         }
         if (profPrevueInput && pal.profondeurPrevue) {
           profPrevueInput.value = pal.profondeurPrevue;
-          console.log(`✅ Prof. prévue palanquée ${index + 1}: ${pal.profondeurPrevue}`);
         }
         if (dureePrevueInput && pal.dureePrevue) {
           dureePrevueInput.value = pal.dureePrevue;
-          console.log(`✅ Durée prévue palanquée ${index + 1}: ${pal.dureePrevue}`);
         }
         if (profRealiseeInput && pal.profondeurRealisee) {
           profRealiseeInput.value = pal.profondeurRealisee;
-          console.log(`✅ Prof. réalisée palanquée ${index + 1}: ${pal.profondeurRealisee}`);
         }
         if (dureeRealiseeInput && pal.dureeRealisee) {
           dureeRealiseeInput.value = pal.dureeRealisee;
-          console.log(`✅ Durée réalisée palanquée ${index + 1}: ${pal.dureeRealisee}`);
         }
         if (paliersInput && pal.paliers) {
           paliersInput.value = pal.paliers;
-          console.log(`✅ Paliers palanquée ${index + 1}: ${pal.paliers}`);
         }
       });
       
-      console.log("✅ Restauration des paramètres terminée");
+      console.log("✅ Restauration douce terminée");
     }, 300);
     
     // CORRECTION : Initialiser le tracking de session
@@ -1324,9 +1260,6 @@ function setupEventListeners() {
       });
     }
 
-    // REMARQUE: Les event listeners pour les sessions sont gérés dans dp-sessions-manager.js
-    // via setupDPSessionsEventListeners() qui s'auto-initialise
-    
     console.log("✅ Event listeners configurés avec succès");
     
   } catch (error) {
@@ -1335,13 +1268,12 @@ function setupEventListeners() {
   }
 }
 
-// ===== CORRECTION INTELLIGENTE DU COMPTEUR PALANQUÉES =====
-// NOUVELLE APPROCHE: Surveillance intelligente avec intervalle optimisé
-function initCompteurCorrection() {
+// ===== CORRECTION COMPTEUR PALANQUÉES DOUCE (SANS INTERFÉRENCE DOM) =====
+function initCompteurCorrectionDouce() {
   let lastCompteurValue = '';
   let correctionCount = 0;
   
-  function smartCompteurCorrection() {
+  function compteurCorrectionDouce() {
     try {
       const compteur = document.getElementById('compteur-palanquees');
       if (!compteur) return;
@@ -1356,37 +1288,36 @@ function initCompteurCorrection() {
         
         const texteCorrect = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
         
-        // Ne corriger que si nécessaire et différent de la dernière valeur
+        // CORRECTION DOUCE : Ne corriger que si nécessaire ET ne toucher QUE au compteur
         if (compteur.textContent !== texteCorrect && compteur.textContent !== lastCompteurValue) {
           compteur.textContent = texteCorrect;
           lastCompteurValue = texteCorrect;
           correctionCount++;
-          console.log(`🔧 Compteur palanquées corrigé (#${correctionCount}): ${texteCorrect}`);
+          // SUPPRIMÉ : Les logs qui polluaient la console
         }
       }
     } catch (error) {
-      console.error('⚠ Erreur smartCompteurCorrection:', error);
+      console.error('⚠ Erreur compteurCorrectionDouce:', error);
     }
   }
   
-  // Correction initiale
-  smartCompteurCorrection();
+  // Correction initiale UNIQUE
+  compteurCorrectionDouce();
   
-  // Surveillance avec intervalle optimisé
-  const correctionInterval = setInterval(smartCompteurCorrection, 3000);
+  // CORRECTION : Surveillance réduite et plus espacée pour éviter les interférences
+  const correctionInterval = setInterval(compteurCorrectionDouce, 10000); // 10 secondes au lieu de 3
   
-  // Arrêter la surveillance après 2 minutes (économie de ressources)
+  // Arrêter la surveillance plus tôt (1 minute au lieu de 2)
   setTimeout(() => {
     clearInterval(correctionInterval);
-    console.log(`🔧 Surveillance du compteur arrêtée après ${correctionCount} corrections`);
-  }, 120000);
+    console.log(`🔧 Surveillance compteur arrêtée après ${correctionCount} corrections`);
+  }, 60000);
   
-  // Exposer la fonction pour utilisation manuelle
-  window.forceCompteurCorrection = smartCompteurCorrection;
+  // Exposer la fonction pour utilisation manuelle UNIQUEMENT
+  window.forceCompteurCorrection = compteurCorrectionDouce;
 }
 
 // ===== DIAGNOSTIC ET MONITORING =====
-// Fonction de diagnostic pour le support technique
 window.diagnosticJSAS = function() {
   console.log("🔍 === DIAGNOSTIC JSAS ===");
   
@@ -1471,10 +1402,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       initializeDPSessionsManager();
     }
     
-    // 6. Initialiser la correction intelligente du compteur
+    // 6. Initialiser la correction DOUCE du compteur (sans interférence DOM)
     setTimeout(() => {
-      initCompteurCorrection();
-    }, 1000);
+      initCompteurCorrectionDouce();
+    }, 2000); // Démarrage retardé pour éviter les conflits
     
     // 7. Ajouter les gestionnaires d'erreurs globaux
     window.addEventListener('error', (event) => {
@@ -1530,4 +1461,4 @@ window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.2.0 avec correction intelligente du compteur");
+console.log("✅ Main Core sécurisé chargé - Version 3.3.0 SANS interférences DOM sur user-info");
