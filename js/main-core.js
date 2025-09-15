@@ -8,12 +8,6 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 let currentSessionKey = null;
 let sessionModified = false;
 //
-
-
-
-
-
-
 // ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
 // Correction ciblée et performante sans surcharger le système
 
