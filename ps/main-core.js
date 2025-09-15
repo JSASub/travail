@@ -1316,6 +1316,79 @@ function initCompteurCorrectionDouce() {
   // Exposer la fonction pour utilisation manuelle UNIQUEMENT
   window.forceCompteurCorrection = compteurCorrectionDouce;
 }
+//
+// Fonction pour corriger les textes des boîtes de dialogue
+function fixDialogContent() {
+  try {
+    const palanqueesCount = document.querySelectorAll('.palanquee').length;
+    let plongeursCount = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+      plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    
+    // Texte correct à utiliser
+    const texteCorrect = `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`;
+    
+    // Chercher et corriger tous les éléments avec "0 palanquée"
+    const selecteurs = [
+      'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      '.notification', '.modal', '.dialog', '.popup', '.message',
+      '[class*="save"]', '[class*="session"]', '[class*="restore"]'
+    ];
+    
+    selecteurs.forEach(selecteur => {
+      const elements = document.querySelectorAll(selecteur);
+      elements.forEach(element => {
+        if (element.children.length === 0) { // Seulement les feuilles
+          const texte = element.textContent;
+          if (texte && texte.includes('0 palanquée') && texte.length < 500) {
+            // Remplacer "X plongeurs dans 0 palanquées" par le bon texte
+            const nouveauTexte = texte.replace(/\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, texteCorrect);
+            if (nouveauTexte !== texte) {
+              element.textContent = nouveauTexte;
+              console.log(`Boîte de dialogue corrigée: "${texte}" → "${nouveauTexte}"`);
+            }
+          }
+        }
+      });
+    });
+    
+  } catch (error) {
+    console.error('Erreur fixDialogContent:', error);
+  }
+}
+
+// Observer les nouvelles boîtes de dialogue qui apparaissent
+const dialogObserver = new MutationObserver((mutations) => {
+  let needsFix = false;
+  
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) { // Element node
+        const texte = node.textContent;
+        if (texte && (texte.includes('0 palanquée') || texte.includes('sauvegarde') || texte.includes('session'))) {
+          needsFix = true;
+        }
+      }
+    });
+  });
+  
+  if (needsFix) {
+    setTimeout(fixDialogContent, 100);
+  }
+});
+
+// Observer le document entier
+dialogObserver.observe(document.body, {
+  childList: true,
+  subtree: true
+});
+
+// Corriger immédiatement et périodiquement
+fixDialogContent();
+setInterval(fixDialogContent, 3000);
+
+console.log("Correction des boîtes de dialogue activée");
 
 // ===== DIAGNOSTIC ET MONITORING =====
 window.diagnosticJSAS = function() {
