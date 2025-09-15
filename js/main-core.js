@@ -7,114 +7,9 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 // Variables globales de session
 let currentSessionKey = null;
 let sessionModified = false;
-
-// ===== INTERCEPTION ULTRA-AGRESSIVE DE TOUS LES CONTENUS =====
-
-// Fonction pour corriger en temps réel
-function getCurrentPalanqueesStats() {
-    const palanqueesCount = document.querySelectorAll('.palanquee').length;
-    let plongeursCount = 0;
-    document.querySelectorAll('.palanquee').forEach(pal => {
-        plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
-    });
-    return { palanqueesCount, plongeursCount };
-}
-
-// 1. Intercepter innerHTML et textContent
-function patchContentSetters() {
-    // Sauvegarder les méthodes originales
-    const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-    const originalTextContent = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
-    
-    // Intercepter innerHTML
-    Object.defineProperty(Element.prototype, 'innerHTML', {
-        set: function(value) {
-            if (typeof value === 'string' && value.includes('0 palanquée')) {
-                const stats = getCurrentPalanqueesStats();
-                value = value.replace(
-                    /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                    `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-                );
-                console.log('innerHTML corrigé automatiquement');
-            }
-            return originalInnerHTML.set.call(this, value);
-        },
-        get: originalInnerHTML.get
-    });
-    
-    // Intercepter textContent
-    Object.defineProperty(Node.prototype, 'textContent', {
-        set: function(value) {
-            if (typeof value === 'string' && value.includes('0 palanquée')) {
-                const stats = getCurrentPalanqueesStats();
-                value = value.replace(
-                    /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                    `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-                );
-                console.log('textContent corrigé automatiquement');
-            }
-            return originalTextContent.set.call(this, value);
-        },
-        get: originalTextContent.get
-    });
-}
-
-// 2. Intercepter document.createElement pour les modals
-const originalCreateElement = document.createElement;
-document.createElement = function(tagName) {
-    const element = originalCreateElement.call(this, tagName);
-    
-    // Observer l'élément dès sa création
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                const text = element.textContent;
-                if (text && text.includes('0 palanquée')) {
-                    const stats = getCurrentPalanqueesStats();
-                    element.textContent = text.replace(
-                        /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                        `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-                    );
-                }
-            }
-        });
-    });
-    
-    observer.observe(element, {
-        childList: true,
-        subtree: true,
-        characterData: true
-    });
-    
-    return element;
-};
-
-// 3. Fonction de correction immédiate de tous les éléments existants
-function forceFixAllContent() {
-    const stats = getCurrentPalanqueesStats();
-    const allElements = document.querySelectorAll('*');
-    
-    allElements.forEach(element => {
-        // Corriger textContent
-        if (element.textContent && element.textContent.includes('0 palanquée')) {
-            element.textContent = element.textContent.replace(
-                /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-            );
-        }
-        
-        // Corriger innerHTML si pas d'enfants
-        if (element.children.length === 0 && element.innerHTML && element.innerHTML.includes('0 palanquée')) {
-            element.innerHTML = element.innerHTML.replace(
-                /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-            );
-        }
-    });
-}
-
-// 4. Initialiser les interceptions
-patchContentSetters();
+//
+// SOLUTION AGRESSIVE POUR LES BOÎTES DE DIALOGUE
+// Ajoutez ceci tout au début de main-core.js
 
 // Intercepter la fonction alert native
 const originalAlert = window.alert;
@@ -159,14 +54,20 @@ window.confirm = function(message) {
     return originalConfirm.call(this, message);
 };
 
+// Fonction pour corriger en temps réel
+function getCurrentPalanqueesStats() {
+    const palanqueesCount = document.querySelectorAll('.palanquee').length;
+    let plongeursCount = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+        plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    return { palanqueesCount, plongeursCount };
+}
+
 // Exposer globalement pour les autres scripts
 window.getCurrentPalanqueesStats = getCurrentPalanqueesStats;
-window.forceFixAllContent = forceFixAllContent;
 
-console.log("Interception ultra-agressive des boîtes de dialogue activée");
-
-// ===== FIN SECTION INTERCEPTION =====
-
+console.log("Interception des boîtes de dialogue activée");
 // Forcer l'initialisation des variables globales
 document.addEventListener('DOMContentLoaded', function() {
   // S'assurer que les variables existent
@@ -199,38 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
       updateFloatingPlongeursList();
     }
   }
-  
-  // INTERCEPTION SPÉCIFIQUE DES FONCTIONS DE SESSION
-  const sessionFunctions = [
-      'loadSession', 'restoreSession', 'loadSessionData', 
-      'showSessionDialog', 'displaySessionInfo', 'showRestoreDialog'
-  ];
-  
-  sessionFunctions.forEach(funcName => {
-      if (typeof window[funcName] === 'function') {
-          const originalFunc = window[funcName];
-          window[funcName] = function(...args) {
-              // Corriger les arguments qui contiennent du texte
-              const correctedArgs = args.map(arg => {
-                  if (typeof arg === 'string' && arg.includes('0 palanquée')) {
-                      const stats = getCurrentPalanqueesStats();
-                      return arg.replace(
-                          /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi,
-                          `${stats.plongeursCount} plongeurs dans ${stats.palanqueesCount} palanquées`
-                      );
-                  }
-                  return arg;
-              });
-              
-              const result = originalFunc.apply(this, correctedArgs);
-              
-              // Corriger après exécution
-              setTimeout(forceFixAllContent, 50);
-              
-              return result;
-          };
-      }
-  });
 });
 
 function getSelectedDPName() {
@@ -1507,10 +1376,79 @@ function initCompteurCorrectionDouce() {
   // Exposer la fonction pour utilisation manuelle UNIQUEMENT
   window.forceCompteurCorrection = compteurCorrectionDouce;
 }
+//
+// Fonction pour corriger les textes des boîtes de dialogue
+function fixDialogContent() {
+  try {
+    const palanqueesCount = document.querySelectorAll('.palanquee').length;
+    let plongeursCount = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+      plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+    });
+    
+    // Texte correct à utiliser
+    const texteCorrect = `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`;
+    
+    // Chercher et corriger tous les éléments avec "0 palanquée"
+    const selecteurs = [
+      'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      '.notification', '.modal', '.dialog', '.popup', '.message',
+      '[class*="save"]', '[class*="session"]', '[class*="restore"]'
+    ];
+    
+    selecteurs.forEach(selecteur => {
+      const elements = document.querySelectorAll(selecteur);
+      elements.forEach(element => {
+        if (element.children.length === 0) { // Seulement les feuilles
+          const texte = element.textContent;
+          if (texte && texte.includes('0 palanquée') && texte.length < 500) {
+            // Remplacer "X plongeurs dans 0 palanquées" par le bon texte
+            const nouveauTexte = texte.replace(/\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, texteCorrect);
+            if (nouveauTexte !== texte) {
+              element.textContent = nouveauTexte;
+              console.log(`Boîte de dialogue corrigée: "${texte}" → "${nouveauTexte}"`);
+            }
+          }
+        }
+      });
+    });
+    
+  } catch (error) {
+    console.error('Erreur fixDialogContent:', error);
+  }
+}
 
-// ===== CORRECTION EN CONTINU =====
-// 5. Correction en continu
-setInterval(forceFixAllContent, 1000);
+// Observer les nouvelles boîtes de dialogue qui apparaissent
+const dialogObserver = new MutationObserver((mutations) => {
+  let needsFix = false;
+  
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) { // Element node
+        const texte = node.textContent;
+        if (texte && (texte.includes('0 palanquée') || texte.includes('sauvegarde') || texte.includes('session'))) {
+          needsFix = true;
+        }
+      }
+    });
+  });
+  
+  if (needsFix) {
+    setTimeout(fixDialogContent, 100);
+  }
+});
+
+// Observer le document entier
+dialogObserver.observe(document.body, {
+  childList: true,
+  subtree: true
+});
+
+// Corriger immédiatement et périodiquement
+fixDialogContent();
+setInterval(fixDialogContent, 3000);
+
+console.log("Correction des boîtes de dialogue activée");
 
 // ===== DIAGNOSTIC ET MONITORING =====
 window.diagnosticJSAS = function() {
@@ -1656,4 +1594,4 @@ window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 
-console.log("✅ Main Core sécurisé chargé - Version 4.0.0 avec interception ULTRA-AGRESSIVE des boîtes de dialogue");
+console.log("✅ Main Core sécurisé chargé - Version 3.3.0 SANS interférences DOM sur user-info");
