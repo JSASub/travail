@@ -300,44 +300,89 @@ function showAuthError(message) {
 function forceInitializeFloatingMenus() {
     console.log('🔄 Initialisation forcée des menus flottants...');
     
-    // Attendre que l'interface soit prête
-    setTimeout(() => {
+    // Fonction de vérification et d'affichage agressif
+    function forceShowMenu() {
         // Forcer l'affichage de l'application principale
         const mainApp = document.getElementById('main-app');
         if (mainApp) {
             mainApp.style.display = 'block';
         }
         
-        // Appeler la fonction d'initialisation du gestionnaire de menus flottants
-        if (typeof window.initFloatingMenusManager === 'function') {
-            window.initFloatingMenusManager();
-        }
-        
-        // Forcer la mise à jour du menu des plongeurs
-        if (typeof window.forceUpdatePlongeursMenu === 'function') {
-            window.forceUpdatePlongeursMenu();
-        }
-        
         // Forcer l'affichage du menu latéral
         const floatingMenu = document.getElementById('floating-plongeurs-menu');
         if (floatingMenu) {
             floatingMenu.style.display = 'flex';
+            floatingMenu.style.visibility = 'visible';
+            floatingMenu.style.opacity = '1';
             console.log('✅ Menu latéral forcé à s\'afficher');
+            return true; // Menu trouvé et affiché
+        }
+        return false; // Menu pas encore trouvé
+    }
+    
+    // Tentatives d'initialisation à intervalles croissants
+    const attempts = [500, 1000, 1500, 2000, 3000, 4000, 5000];
+    let attemptIndex = 0;
+    
+    function tryInitialize() {
+        console.log(`Tentative ${attemptIndex + 1}/7 d'initialisation du menu...`);
+        
+        // Appeler les fonctions d'initialisation
+        if (typeof window.initFloatingMenusManager === 'function') {
+            window.initFloatingMenusManager();
         }
         
-        // Appeler la fonction d'authentification du menu flottant si elle existe
+        if (typeof window.forceUpdatePlongeursMenu === 'function') {
+            window.forceUpdatePlongeursMenu();
+        }
+        
         if (typeof window.onUserAuthenticated === 'function') {
             window.onUserAuthenticated();
         }
         
-        // Activer les boutons DP s'ils existent
         if (typeof window.enableDPButtons === 'function') {
             window.enableDPButtons();
         }
         
-    }, 1500); // Délai pour laisser l'interface se charger complètement
+        // Forcer l'affichage du menu
+        const menuVisible = forceShowMenu();
+        
+        if (menuVisible) {
+            console.log('✅ Menu latéral initialisé avec succès');
+            return; // Succès, arrêter les tentatives
+        }
+        
+        // Continuer les tentatives si le menu n'est pas encore visible
+        attemptIndex++;
+        if (attemptIndex < attempts.length) {
+            setTimeout(tryInitialize, attempts[attemptIndex]);
+        } else {
+            console.warn('⚠️ Échec d\'initialisation du menu après 7 tentatives');
+            // Dernière tentative désespérée
+            setTimeout(() => {
+                console.log('🔄 Tentative finale d\'affichage du menu...');
+                forceShowMenu();
+                
+                // Surveillance continue jusqu'à ce que le menu soit visible
+                const surveillanceInterval = setInterval(() => {
+                    if (forceShowMenu()) {
+                        clearInterval(surveillanceInterval);
+                        console.log('✅ Menu finalement affiché via surveillance continue');
+                    }
+                }, 1000);
+                
+                // Arrêter la surveillance après 30 secondes
+                setTimeout(() => {
+                    clearInterval(surveillanceInterval);
+                }, 30000);
+                
+            }, 2000);
+        }
+    }
+    
+    // Commencer les tentatives
+    setTimeout(tryInitialize, attempts[0]);
 }
-
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
