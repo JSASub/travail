@@ -566,7 +566,7 @@
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
-            }, 1000);
+            }, 3000);
         };
 
         window.ignoreRestore = function(btn) {
@@ -718,7 +718,7 @@
                 lastPalanqueesCount = currentPalanqueesCount;
                 triggerAutoSave();
             }
-        }, 1000);
+        }, 3000);
 
         console.log('Surveillance des changements activée');
     }
@@ -817,7 +817,7 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 500);
+            setTimeout(initAutoSaveSystem, 3000);
         });
     } else {
         setTimeout(() => {
