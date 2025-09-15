@@ -422,6 +422,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     cancelBtn.addEventListener('click', hideModal);
   }
   
+  const dpSelectObserver = new MutationObserver(() => {
+  if (dpSelect.value) {
+    updateButtonStates();
+  }
+  
   // Fermer modal avec Echap
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideModal();
