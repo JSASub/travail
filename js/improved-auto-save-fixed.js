@@ -11,7 +11,7 @@
         MAX_AGE_HOURS: 24,
         MIN_DATA_THRESHOLD: 2,
         SAVE_DELAY: 2000,
-        SHOW_RESTORE_DELAY: 2000
+        SHOW_RESTORE_DELAY: 3000
     };
 
     // Variables globales du module
