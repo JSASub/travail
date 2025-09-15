@@ -1493,7 +1493,7 @@ span#user-info {
     margin: 0 !important;
     padding: 0 !important;
     line-height: 100px !important;
-    vertical-align: middle !important;
+    vertical-align: bottom !important;
     display: inline-block !important;
     height: 100px !important;
 }
