@@ -1216,6 +1216,38 @@ function setupEventListeners() {
           if (typeof signIn === 'function') {
             await signIn(email, password);
             console.log("✅ Connexion réussie");
+			if (typeof signIn === 'function') {
+  await signIn(email, password);
+  console.log("✅ Connexion réussie");
+  
+  // ✅ AJOUT : Forcer l'initialisation du menu latéral
+  setTimeout(() => {
+    console.log("🔄 Initialisation forcée du menu latéral...");
+    
+    // Forcer l'affichage de l'application principale
+    const mainApp = document.getElementById('main-app');
+    if (mainApp) {
+      mainApp.style.display = 'block';
+    }
+    
+    // Appeler la fonction d'authentification du menu flottant
+    if (typeof window.initFloatingMenusManager === 'function') {
+      window.initFloatingMenusManager();
+    }
+    
+    // Forcer la mise à jour du menu des plongeurs
+    if (typeof window.forceUpdatePlongeursMenu === 'function') {
+      window.forceUpdatePlongeursMenu();
+    }
+    
+    // Forcer l'affichage du menu latéral
+    const floatingMenu = document.getElementById('floating-plongeurs-menu');
+    if (floatingMenu) {
+      floatingMenu.style.display = 'flex';
+      console.log("✅ Menu latéral forcé à s'afficher");
+    }
+    
+  }, 1500); // Délai pour laisser l'interface se charger complètement
           } else {
             throw new Error("Fonction signIn non disponible");
           }
