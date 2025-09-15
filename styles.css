@@ -1434,3 +1434,89 @@ span#user-info {
   align-self: flex-start;
   margin-top: 0 !important;
 }
+
+
+/* Protection maximale avec spécificité élevée */
+html body header div span#user-info,
+html body span#user-info,
+span#user-info {
+    color: #666 !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    translate: none !important;
+    vertical-align: baseline !important;
+    line-height: 1.4 !important;
+    display: inline !important;
+    float: none !important;
+    clear: none !important;
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Protection contre les pseudo-éléments */
+span#user-info::before,
+span#user-info::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* Protection du conteneur parent */
+div[style*="align-items"] span#user-info {
+    align-self: baseline !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Protection contre les classes dynamiques */
+span#user-info[class],
+span#user-info[style] {
+    color: #666 !important;
+    font-size: 14px !important;
+    position: static !important;
+    transform: none !important;
+    top: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+Et dans la console des DevTools, exécutez cette commande pour désactiver temporairement les surveillances :
+javascript// Désactiver tous les setInterval actifs
+for (let i = 1; i < 99999; i++) {
+    clearInterval(i);
+}
+
+// Désactiver tous les setTimeout actifs  
+for (let i = 1; i < 99999; i++) {
+    clearTimeout(i);
+}
+
+// Fixer définitivement user-info
+const userInfo = document.getElementById('user-info');
+if (userInfo) {
+    Object.defineProperty(userInfo, 'style', {
+        get: function() {
+            return {
+                color: '#666',
+                fontSize: '14px',
+                margin: '0',
+                padding: '0',
+                position: 'static',
+                transform: 'none',
+                top: 'auto',
+                verticalAlign: 'baseline',
+                lineHeight: '1.4'
+            };
+        },
+        set: function() {
+            // Ignorer toute tentative de modification
+        }
+    });
+}
+
+console.log('Surveillances désactivées et user-info protégé');
