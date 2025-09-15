@@ -1,4 +1,4 @@
-// ui-interface.js - Interface utilisateur et utilitaires avec système de verrous (VERSION SÉCURISÉE)
+// ui-interface.js - Interface utilisateur nettoyée (SANS interférences DOM)
 
 // ===== COMPTEURS D'AFFICHAGE CORRIGÉS =====
 function updateCompteurs() {
@@ -6,7 +6,7 @@ function updateCompteurs() {
     // Compter les plongeurs de manière sécurisée
     const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
     
-    // NOUVELLE MÉTHODE UNIFIÉE POUR COMPTER LES PALANQUÉES
+    // MÉTHODE UNIFIÉE POUR COMPTER LES PALANQUÉES
     let palanqueesCount = 0;
     let plongeursEnPalanquees = 0;
     
@@ -48,11 +48,8 @@ function updateCompteurs() {
       // Ne mettre à jour que si différent pour éviter les conflits
       if (compteurPalanquees.textContent !== texteCorrect) {
         compteurPalanquees.textContent = texteCorrect;
-        console.log(`✅ Compteur palanquées mis à jour: ${texteCorrect}`);
       }
     }
-    
-    console.log(`Compteurs: ${plongeursCount} plongeurs disponibles, ${palanqueesCount} palanquées, ${plongeursEnPalanquees} plongeurs assignés`);
     
   } catch (error) {
     console.error('Erreur updateCompteurs:', error);
@@ -70,7 +67,7 @@ function updateCompteurs() {
   }
 }
 
-// NOUVELLE FONCTION: Force la mise à jour des compteurs depuis le DOM
+// FONCTION: Force la mise à jour des compteurs depuis le DOM
 function forceUpdateCompteursFromDOM() {
   try {
     const palanqueeElements = document.querySelectorAll('.palanquee');
@@ -95,14 +92,12 @@ function forceUpdateCompteursFromDOM() {
       compteurPalanquees.textContent = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
     }
     
-    console.log(`🔄 Compteurs forcés depuis DOM: ${palanqueesCount} palanquées, ${plongeursEnPalanquees} plongeurs assignés`);
-    
   } catch (error) {
     console.error('Erreur forceUpdateCompteursFromDOM:', error);
   }
 }
 
-// ===== NOUVEAU : GESTION DES VERROUS UI (VERSION SÉCURISÉE) =====
+// ===== GESTION DES VERROUS UI (VERSION SÉCURISÉE) =====
 function updatePalanqueeLockUI() {
   if (!currentUser || typeof palanqueeLocks === 'undefined') {
     return; // Sortir silencieusement si pas prêt
@@ -110,14 +105,14 @@ function updatePalanqueeLockUI() {
   
   try {
     // Créer ou mettre à jour l'indicateur de statut DP
-    let statusIndicator = $("dp-status-indicator");
+    let statusIndicator = document.getElementById("dp-status-indicator");
     
     if (!statusIndicator) {
       statusIndicator = document.createElement("div");
       statusIndicator.id = "dp-status-indicator";
       statusIndicator.className = "dp-status-indicator";
       
-      const metaInfo = $("meta-info");
+      const metaInfo = document.getElementById("meta-info");
       if (metaInfo) {
         metaInfo.insertAdjacentElement('afterend', statusIndicator);
       } else {
@@ -194,7 +189,7 @@ function updatePalanqueeLockUI() {
 // Notifications de verrous (VERSION SÉCURISÉE)
 function showLockNotification(message, type = "info") {
   try {
-    let container = $("lock-notifications");
+    let container = document.getElementById("lock-notifications");
     
     if (!container) {
       container = document.createElement("div");
@@ -347,8 +342,8 @@ function checkAllAlerts() {
 function updateAlertes() {
   try {
     const alertes = checkAllAlerts();
-    const alerteSection = $("alertes-section");
-    const alerteContent = $("alertes-content");
+    const alerteSection = document.getElementById("alertes-section");
+    const alerteContent = document.getElementById("alertes-content");
     
     if (alerteSection && alerteContent) {
       if (alertes.length === 0) {
@@ -447,7 +442,6 @@ function checkAlertForArray(palanquee) {
 }
 
 // ===== FONCTION DE VALIDATION AVANT AJOUT À UNE PALANQUÉE =====
-// Alternative avec validation basique uniquement sur l'effectif maximum
 function validatePalanqueeAdditionBasic(palanqueeIndex, newPlongeur) {
   if (!Array.isArray(palanquees[palanqueeIndex])) return { valid: false, messages: ["Erreur: palanquée invalide"] };
   
@@ -565,10 +559,10 @@ function sortPlongeurs(type) {
 // ===== EXPORT JSON =====
 function exportToJSON() {
   try {
-    const dpNom = $("dp-nom")?.value || "Non défini";
-    const dpDate = $("dp-date")?.value || "Non définie";
-    const dpLieu = $("dp-lieu")?.value || "Non défini";
-    const dpPlongee = $("dp-plongee")?.value || "matin";
+    const dpNom = document.getElementById("dp-nom")?.value || "Non défini";
+    const dpDate = document.getElementById("dp-date")?.value || "Non définie";
+    const dpLieu = document.getElementById("dp-lieu")?.value || "Non défini";
+    const dpPlongee = document.getElementById("dp-plongee")?.value || "matin";
     
     const exportData = {
       meta: {
@@ -617,643 +611,55 @@ function exportToJSON() {
   }
 }
 
-// Exposer la fonction de correction forcée
-window.forceUpdateCompteursFromDOM = forceUpdateCompteursFromDOM;
-
-//////
-// ===== SOLUTION PERMANENTE COMPTEUR PALANQUÉES - VERSION CORRIGÉE =====
-
-// 1. FONCTION DE CORRECTION DIRECTE
-function fixCompteurPalanquees() {
-    try {
-        const compteur = document.getElementById('compteur-palanquees');
-        if (!compteur) {
-            console.warn("Compteur palanquées introuvable");
-            return;
-        }
-        
-        const palanqueeElements = document.querySelectorAll('.palanquee');
-        const palanqueesCount = palanqueeElements.length;
-        
-        if (palanqueesCount > 0) {
-            let plongeursCount = 0;
-            palanqueeElements.forEach(pal => {
-                plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
-            });
-            
-            const texteCorrect = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
-            
-            if (compteur.textContent !== texteCorrect) {
-                compteur.textContent = texteCorrect;
-                console.log("Compteur palanquées corrigé:", texteCorrect);
-            }
-        }
-    } catch (error) {
-        console.error("Erreur fixCompteurPalanquees:", error);
-    }
-}
-
-// 2. OVERRIDE DE LA FONCTION UPDATECOMPTEURS ORIGINALE
-if (typeof updateCompteurs === 'function') {
-    const originalUpdateCompteurs = updateCompteurs;
-    updateCompteurs = function() {
-        try {
-            // Exécuter la fonction originale
-            originalUpdateCompteurs.apply(this, arguments);
-            
-            // Puis forcer la correction
-            setTimeout(() => {
-                fixCompteurPalanquees();
-            }, 50);
-            
-        } catch (error) {
-            console.error("Erreur updateCompteurs override:", error);
-            // Fallback direct
-            fixCompteurPalanquees();
-        }
-    };
-}
-
-// 3. PROTECTION CONTRE LES SETTERS - VERSION SIMPLIFIÉE
-function protectCompteur() {
-    try {
-        const compteur = document.getElementById('compteur-palanquees');
-        if (!compteur) return;
-        
-        // Méthode alternative : intercepter via MutationObserver
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    const text = compteur.textContent;
-                    const palanqueesCount = document.querySelectorAll('.palanquee').length;
-                    
-                    // Si le texte contient "0 palanquées" mais qu'il y en a vraiment plus
-                    if (text && text.includes('0 palanquées') && palanqueesCount > 0) {
-                        console.log("MODIFICATION DÉTECTÉE - CORRECTION EN COURS");
-                        setTimeout(() => {
-                            fixCompteurPalanquees();
-                        }, 10);
-                    }
-                }
-            });
-        });
-        
-        observer.observe(compteur, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
-        
-        console.log("Protection MutationObserver activée pour le compteur");
-        
-    } catch (error) {
-        console.error("Erreur protectCompteur:", error);
-    }
-}
-
-// 4. SURVEILLANCE ET CORRECTION AUTOMATIQUE
-let surveillanceActive = false;
-let surveillanceInterval = null;
-
-function demarrerSurveillance() {
-    if (surveillanceActive) return;
-    surveillanceActive = true;
-    
-    console.log("Démarrage surveillance compteur palanquées");
-    
-    // Correction immédiate
-    setTimeout(() => {
-        fixCompteurPalanquees();
-    }, 100);
-    
-    // Protection
-    setTimeout(() => {
-        protectCompteur();
-    }, 200);
-    
-    // Surveillance continue
-    surveillanceInterval = setInterval(() => {
-        fixCompteurPalanquees();
-    }, 3000);
-    
-    // Auto-stop après 10 minutes
-    setTimeout(() => {
-        if (surveillanceInterval) {
-            clearInterval(surveillanceInterval);
-            surveillanceInterval = null;
-        }
-        surveillanceActive = false;
-        console.log("Surveillance compteur arrêtée");
-    }, 600000);
-}
-
-// 5. FONCTION D'ARRÊT MANUEL
-function arreterSurveillance() {
-    if (surveillanceInterval) {
-        clearInterval(surveillanceInterval);
-        surveillanceInterval = null;
-    }
-    surveillanceActive = false;
-    console.log("Surveillance compteur arrêtée manuellement");
-}
-
-// 6. DÉMARRAGE AUTOMATIQUE SÉCURISÉ
-function demarrerQuandPret() {
-    try {
-        // Attendre que le compteur soit présent
-        const compteur = document.getElementById('compteur-palanquees');
-        if (compteur) {
-            demarrerSurveillance();
-        } else {
-            // Réessayer dans 1 seconde
-            setTimeout(demarrerQuandPret, 1000);
-        }
-    } catch (error) {
-        console.error("Erreur demarrerQuandPret:", error);
-    }
-}
-
-// Démarrer quand le DOM est prêt
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(demarrerQuandPret, 2000);
-    });
-} else {
-    setTimeout(demarrerQuandPret, 2000);
-}
-
-// 7. EXPOSER LES FONCTIONS POUR UTILISATION MANUELLE
-window.fixCompteurPalanquees = fixCompteurPalanquees;
-window.demarrerSurveillance = demarrerSurveillance;
-window.arreterSurveillance = arreterSurveillance;
-window.protectCompteur = protectCompteur;
-
-// 8. HOOK SUR LES FONCTIONS QUI MODIFIENT LES PALANQUÉES
-setTimeout(() => {
-    if (typeof renderPalanquees === 'function') {
-        const originalRenderPalanquees = renderPalanquees;
-        renderPalanquees = function() {
-            const result = originalRenderPalanquees.apply(this, arguments);
-            setTimeout(fixCompteurPalanquees, 100);
-            return result;
-        };
-    }
-
-    if (typeof syncToDatabase === 'function') {
-        const originalSyncToDatabase = syncToDatabase;
-        syncToDatabase = function() {
-            const result = originalSyncToDatabase.apply(this, arguments);
-            setTimeout(fixCompteurPalanquees, 100);
-            return result;
-        };
-    }
-}, 3000);
-
-console.log("✅ Solution permanente compteur palanquées installée (version corrigée)");
-console.log("💡 Commandes disponibles: fixCompteurPalanquees(), demarrerSurveillance(), arreterSurveillance()");
-
-// 9. TEST IMMÉDIAT DANS LA CONSOLE (pour vérifier que ça marche)
-setTimeout(() => {
-    console.log("🧪 Test automatique du compteur...");
-    fixCompteurPalanquees();
-}, 5000);
-
-////
-// SOLUTION SPÉCIFIQUE POUR LES FENÊTRES DE SAUVEGARDE
-// Ajoutez ce code à la fin de ui-interface.js
-
-// ===== CORRECTION DES FENÊTRES DE SAUVEGARDE DYNAMIQUES =====
-
-// 1. FONCTION DE CORRECTION SPÉCIFIQUE AUX FENÊTRES DE SAUVEGARDE
-function corrigerFenetresSauvegarde() {
-    try {
-        const palanqueesCount = document.querySelectorAll('.palanquee').length;
-        let plongeursCount = 0;
-        document.querySelectorAll('.palanquee').forEach(pal => {
-            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
-        });
-        
-        const texteCorrect = `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`;
-        
-        // Chercher spécifiquement les fenêtres/modals qui contiennent "0 palanquée"
-        const selecteursSpecifiques = [
-            '.restore-notification',
-            '.notification',
-            '.modal',
-            '.popup',
-            '.dialog',
-            '[class*="restore"]',
-            '[class*="save"]',
-            '[class*="session"]'
-        ];
-        
-        let correctionCount = 0;
-        
-        selecteursSpecifiques.forEach(selecteur => {
-            const elements = document.querySelectorAll(selecteur);
-            elements.forEach(element => {
-                const texte = element.textContent;
-                if (texte && texte.includes('0 palanquée')) {
-                    // Remplacer toutes les occurrences de "X plongeurs dans 0 palanquées"
-                    const nouveauTexte = texte.replace(/\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, texteCorrect);
-                    
-                    if (nouveauTexte !== texte) {
-                        element.textContent = nouveauTexte;
-                        correctionCount++;
-                        console.log(`Fenêtre de sauvegarde corrigée: ${selecteur}`);
-                    }
-                }
-            });
-        });
-        
-        // Correction plus agressive : chercher TOUS les éléments contenant "0 palanquée"
-        const tousElements = document.querySelectorAll('*');
-        tousElements.forEach(element => {
-            if (element.children.length === 0) { // Seulement les feuilles (pas de sous-éléments)
-                const texte = element.textContent;
-                if (texte && texte.trim().includes('0 palanquée') && texte.length < 200) {
-                    const nouveauTexte = texte.replace(/0\s+palanquées?/gi, `${palanqueesCount} palanquées`);
-                    if (nouveauTexte !== texte) {
-                        element.textContent = nouveauTexte;
-                        correctionCount++;
-                        console.log(`Élément corrigé: "${texte}" → "${nouveauTexte}"`);
-                    }
-                }
-            }
-        });
-        
-        if (correctionCount > 0) {
-            console.log(`Total corrections fenêtres sauvegarde: ${correctionCount}`);
-        }
-        
-    } catch (error) {
-        console.error("Erreur corrigerFenetresSauvegarde:", error);
-    }
-}
-
-// 2. SURVEILLANCE SPÉCIFIQUE DES FENÊTRES QUI APPARAISSENT
-function surveillerNouvellesFenetres() {
-    try {
-        // Observer les changements dans le DOM
-        const observer = new MutationObserver((mutations) => {
-            let fenetreDetectee = false;
-            
-            mutations.forEach((mutation) => {
-                // Vérifier les nouveaux nœuds ajoutés
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // Element node
-                        const texte = node.textContent;
-                        if (texte && (texte.includes('palanquée') || texte.includes('sauvegarde') || texte.includes('restore'))) {
-                            fenetreDetectee = true;
-                        }
-                    }
-                });
-                
-                // Vérifier les modifications de contenu
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    const texte = mutation.target.textContent;
-                    if (texte && texte.includes('0 palanquée')) {
-                        fenetreDetectee = true;
-                    }
-                }
-            });
-            
-            if (fenetreDetectee) {
-                console.log("Nouvelle fenêtre détectée, correction en cours...");
-                setTimeout(corrigerFenetresSauvegarde, 100);
-            }
-        });
-        
-        // Observer le document entier
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
-        
-        console.log("Surveillance des nouvelles fenêtres activée");
-        
-    } catch (error) {
-        console.error("Erreur surveillerNouvellesFenetres:", error);
-    }
-}
-
-// 3. HOOK SUR LES FONCTIONS DE SAUVEGARDE/RESTAURATION
-function intercepterFonctionsSauvegarde() {
-    try {
-        // Intercepter saveSessionData si elle existe
-        if (typeof window.saveSessionData === 'function') {
-            const originalSaveSessionData = window.saveSessionData;
-            window.saveSessionData = function() {
-                const result = originalSaveSessionData.apply(this, arguments);
-                setTimeout(corrigerFenetresSauvegarde, 200);
-                return result;
-            };
-            console.log("saveSessionData interceptée");
-        }
-        
-        // Intercepter loadSession si elle existe
-        if (typeof window.loadSession === 'function') {
-            const originalLoadSession = window.loadSession;
-            window.loadSession = function() {
-                const result = originalLoadSession.apply(this, arguments);
-                setTimeout(corrigerFenetresSauvegarde, 200);
-                return result;
-            };
-            console.log("loadSession interceptée");
-        }
-        
-        // Intercepter toute fonction qui contient "session" dans le nom
-        Object.keys(window).forEach(key => {
-            if (typeof window[key] === 'function' && key.toLowerCase().includes('session')) {
-                const originalFunction = window[key];
-                window[key] = function() {
-                    const result = originalFunction.apply(this, arguments);
-                    setTimeout(corrigerFenetresSauvegarde, 200);
-                    return result;
-                };
-                console.log(`Fonction ${key} interceptée`);
-            }
-        });
-        
-    } catch (error) {
-        console.error("Erreur intercepterFonctionsSauvegarde:", error);
-    }
-}
-
-// 4. SURVEILLANCE AGRESSIVE SPÉCIFIQUE
-function surveillanceAgressive() {
-    // Correction immédiate
-    corrigerFenetresSauvegarde();
-    
-    // Correction répétée toutes les 2 secondes
-    setInterval(corrigerFenetresSauvegarde, 2000);
-    
-    // Surveillance des nouvelles fenêtres
-    surveillerNouvellesFenetres();
-    
-    // Interception des fonctions
-    setTimeout(intercepterFonctionsSauvegarde, 1000);
-    
-    console.log("Surveillance agressive des fenêtres de sauvegarde activée");
-}
-
-// 5. DÉMARRAGE AUTOMATIQUE
-setTimeout(() => {
-    surveillanceAgressive();
-}, 2000);
-
-// 6. EXPOSER LES FONCTIONS
-window.corrigerFenetresSauvegarde = corrigerFenetresSauvegarde;
-window.surveillanceAgressive = surveillanceAgressive;
-
-console.log("✅ Correction spécifique des fenêtres de sauvegarde installée");
-console.log("💡 Commande: corrigerFenetresSauvegarde()");
-
-// 7. CORRECTION IMMÉDIATE POUR TEST
-setTimeout(() => {
-    console.log("Test correction immédiate...");
-    corrigerFenetresSauvegarde();
-}, 3000);
-
-////
-// AJOUTEZ CE CODE À LA FIN DE VOTRE ui-interface.js
-// ===== CORRECTION DES BOUTONS DP INACTIFS APRÈS CHARGEMENT SESSION =====
-
-// 1. FONCTION POUR RÉACTIVER LES BOUTONS DP
-function reactiverBoutonsDP() {
-    try {
-        // Liste de tous les sélecteurs possibles pour les boutons DP
-        const selecteursBoutons = [
-            '#edit-dp-btn',
-            '#delete-dp-btn',
-            '#dp-edit-btn',
-            '#dp-delete-btn',
-            '.dp-btn-edit',
-            '.dp-btn-delete',
-            'button[onclick*="editDP"]',
-            'button[onclick*="deleteDP"]'
-        ];
-        
-        let boutonsReactives = 0;
-        
-        selecteursBoutons.forEach(selecteur => {
-            const boutons = document.querySelectorAll(selecteur);
-            boutons.forEach(bouton => {
-                if (bouton) {
-                    // Réactiver le bouton
-                    bouton.disabled = false;
-                    bouton.style.opacity = '1';
-                    bouton.style.pointerEvents = 'auto';
-                    bouton.style.cursor = 'pointer';
-                    
-                    // Supprimer les classes de désactivation
-                    bouton.classList.remove('disabled', 'dp-btn-disabled');
-                    
-                    // Ajouter les classes d'activation
-                    bouton.classList.add('active');
-                    
-                    boutonsReactives++;
-                    console.log(`Bouton DP réactivé: ${selecteur}`);
-                }
-            });
-        });
-        
-        if (boutonsReactives > 0) {
-            console.log(`✅ ${boutonsReactives} boutons DP réactivés`);
-        }
-        
-        // Vérifier qu'un DP est sélectionné pour activer les boutons
-        const dpSelect = document.getElementById('dp-select');
-        if (dpSelect && dpSelect.value && dpSelect.value !== '') {
-            enableDPButtons();
-        }
-        
-    } catch (error) {
-        console.error('Erreur reactiverBoutonsDP:', error);
-    }
-}
-
-// 2. FONCTION POUR ACTIVER LES BOUTONS DP
+// ===== FONCTIONS SIMPLES POUR BOUTONS DP =====
 function enableDPButtons() {
-    try {
-        const editBtn = document.getElementById('edit-dp-btn') || document.getElementById('dp-edit-btn');
-        const deleteBtn = document.getElementById('delete-dp-btn') || document.getElementById('dp-delete-btn');
-        
-        if (editBtn) {
-            editBtn.disabled = false;
-            editBtn.style.opacity = '1';
-            editBtn.style.cursor = 'pointer';
-            editBtn.classList.remove('disabled');
-        }
-        
-        if (deleteBtn) {
-            deleteBtn.disabled = false;
-            deleteBtn.style.opacity = '1';
-            deleteBtn.style.cursor = 'pointer';
-            deleteBtn.classList.remove('disabled');
-        }
-        
-        console.log('Boutons DP activés manuellement');
-        
-    } catch (error) {
-        console.error('Erreur enableDPButtons:', error);
-    }
-}
-
-// 3. HOOK SUR LES FONCTIONS DE CHARGEMENT DE SESSION
-function hookLoadSession() {
-    try {
-        // Intercepter loadSession si elle existe
-        if (typeof window.loadSession === 'function') {
-            const originalLoadSession = window.loadSession;
-            window.loadSession = function() {
-                console.log('🔄 Chargement de session détecté...');
-                
-                const result = originalLoadSession.apply(this, arguments);
-                
-                // Réactiver les boutons après le chargement
-                setTimeout(() => {
-                    reactiverBoutonsDP();
-                }, 500);
-                
-                return result;
-            };
-            console.log('✅ loadSession interceptée pour réactivation des boutons DP');
-        }
-        
-        // Intercepter toute fonction de chargement
-        const fonctionsChargement = ['loadFromFirebase', 'restoreSession', 'loadSessionData'];
-        fonctionsChargement.forEach(nomFonction => {
-            if (typeof window[nomFonction] === 'function') {
-                const originalFunction = window[nomFonction];
-                window[nomFonction] = function() {
-                    const result = originalFunction.apply(this, arguments);
-                    setTimeout(reactiverBoutonsDP, 300);
-                    return result;
-                };
-                console.log(`✅ ${nomFonction} interceptée`);
-            }
-        });
-        
-    } catch (error) {
-        console.error('Erreur hookLoadSession:', error);
-    }
-}
-
-// 4. SURVEILLANCE DES CHANGEMENTS DU SELECT DP
-function surveillerSelectDP() {
-    try {
-        const dpSelect = document.getElementById('dp-select');
-        if (dpSelect) {
-            dpSelect.addEventListener('change', function() {
-                setTimeout(() => {
-                    if (this.value && this.value !== '' && this.value !== '-- Choisir un DP --') {
-                        reactiverBoutonsDP();
-                        console.log('DP sélectionné, boutons réactivés');
-                    }
-                }, 100);
-            });
-            console.log('✅ Surveillance du select DP activée');
-        }
-    } catch (error) {
-        console.error('Erreur surveillerSelectDP:', error);
-    }
-}
-
-// 5. SURVEILLANCE DES MUTATIONS DOM
-function surveillerMutationsDOM() {
-    try {
-        const observer = new MutationObserver((mutations) => {
-            let needReactivation = false;
-            
-            mutations.forEach((mutation) => {
-                // Vérifier si des boutons DP ont été modifiés
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.id && (node.id.includes('dp-') || node.id.includes('edit') || node.id.includes('delete'))) {
-                            needReactivation = true;
-                        }
-                        
-                        // Vérifier les enfants
-                        const dpButtons = node.querySelectorAll ? node.querySelectorAll('[id*="dp-"], [class*="dp-btn"]') : [];
-                        if (dpButtons.length > 0) {
-                            needReactivation = true;
-                        }
-                    }
-                });
-                
-                // Vérifier les changements d'attributs
-                if (mutation.type === 'attributes' && mutation.target.id && 
-                    (mutation.target.id.includes('dp-') || mutation.target.classList.contains('dp-btn'))) {
-                    needReactivation = true;
-                }
-            });
-            
-            if (needReactivation) {
-                setTimeout(reactiverBoutonsDP, 200);
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['disabled', 'class', 'style']
-        });
-        
-        console.log('✅ Surveillance des mutations DOM pour boutons DP activée');
-        
-    } catch (error) {
-        console.error('Erreur surveillerMutationsDOM:', error);
-    }
-}
-
-// 6. CORRECTION PÉRIODIQUE
-function correctionPeriodique() {
-    // Vérifier et corriger toutes les 5 secondes
-    setInterval(() => {
-        const dpSelect = document.getElementById('dp-select');
-        if (dpSelect && dpSelect.value && dpSelect.value !== '' && dpSelect.value !== '-- Choisir un DP --') {
-            reactiverBoutonsDP();
-        }
-    }, 5000);
+  try {
+    const editBtn = document.getElementById('edit-dp-btn') || document.getElementById('dp-edit-btn');
+    const deleteBtn = document.getElementById('delete-dp-btn') || document.getElementById('dp-delete-btn');
     
-    console.log('✅ Correction périodique des boutons DP activée');
+    if (editBtn) {
+      editBtn.disabled = false;
+      editBtn.style.opacity = '1';
+      editBtn.style.cursor = 'pointer';
+      editBtn.classList.remove('disabled');
+    }
+    
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.style.opacity = '1';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.classList.remove('disabled');
+    }
+    
+  } catch (error) {
+    console.error('Erreur enableDPButtons:', error);
+  }
 }
 
-// 7. INITIALISATION COMPLÈTE
-function initialiserCorrectionsDP() {
-    console.log('🚀 Initialisation des corrections boutons DP...');
-    
-    // Correction immédiate
-    setTimeout(reactiverBoutonsDP, 1000);
-    
-    // Hooks et surveillances
-    setTimeout(hookLoadSession, 1500);
-    setTimeout(surveillerSelectDP, 2000);
-    setTimeout(surveillerMutationsDOM, 2500);
-    setTimeout(correctionPeriodique, 3000);
-    
-    console.log('✅ Corrections boutons DP initialisées');
+// ===== SURVEILLANCE DISCRÈTE (UNE SEULE FOIS) =====
+function initInterfaceCleanup() {
+  // Écouter les changements du select DP pour activer les boutons
+  const dpSelect = document.getElementById('dp-select');
+  if (dpSelect) {
+    dpSelect.addEventListener('change', function() {
+      if (this.value && this.value !== '' && this.value !== '-- Choisir un DP --') {
+        enableDPButtons();
+      }
+    });
+  }
+  
+  console.log("✅ Interface nettoyée initialisée");
 }
 
-// 8. DÉMARRAGE AUTOMATIQUE
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialiserCorrectionsDP);
-} else {
-    initialiserCorrectionsDP();
-}
-
-// 9. EXPOSER LES FONCTIONS POUR UTILISATION MANUELLE
-window.reactiverBoutonsDP = reactiverBoutonsDP;
+// Exposer les fonctions nécessaires
+window.forceUpdateCompteursFromDOM = forceUpdateCompteursFromDOM;
 window.enableDPButtons = enableDPButtons;
 
-console.log('✅ Correction des boutons DP inactifs installée');
-console.log('💡 Commandes: reactiverBoutonsDP(), enableDPButtons()');
+// Initialisation lors du chargement
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initInterfaceCleanup);
+} else {
+  initInterfaceCleanup();
+}
 
-// 10. TEST IMMÉDIAT
-setTimeout(() => {
-    console.log('🧪 Test automatique des boutons DP...');
-    reactiverBoutonsDP();
-}, 4000);
+console.log("✅ Interface utilisateur nettoyée chargée - Version 2.0 SANS surveillances excessives");
