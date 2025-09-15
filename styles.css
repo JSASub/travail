@@ -1492,10 +1492,10 @@ span#user-info {
     font-size: 14px !important;
     margin: 0 !important;
     padding: 0 !important;
-    line-height: 100px !important;
+    line-height: 40px !important;
     vertical-align: bottom !important;
     display: inline-block !important;
-    height: 100px !important;
+    height: 40px !important;
 }
 
 div[style*="align-items: center"] span#user-info {
