@@ -27,8 +27,48 @@
     }
 
     function safeGetPalanquees() {
-        return (window.palanquees && Array.isArray(window.palanquees)) ? window.palanquees : [];
+    // D'abord essayer la variable globale
+    if (window.palanquees && Array.isArray(window.palanquees)) {
+        return window.palanquees;
     }
+    
+    // Si pas de variable globale, extraire du DOM
+    const palanqueesDOM = document.querySelectorAll('.palanquee');
+    if (palanqueesDOM.length > 0) {
+        const palanqueesArray = [];
+        
+        palanqueesDOM.forEach((palanqueeEl, index) => {
+            const plongeurs = [];
+            
+            // Extraire les plongeurs de cette palanquée
+            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+            plongeursEls.forEach(plongeurEl => {
+                const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent || '';
+                const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent || '';
+                const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value || '';
+                
+                if (nom) {
+                    plongeurs.push({ nom, niveau, pre });
+                }
+            });
+            
+            // Ajouter les paramètres de la palanquée
+            plongeurs.horaire = palanqueeEl.querySelector('.palanquee-horaire')?.value || '';
+            plongeurs.profondeurPrevue = palanqueeEl.querySelector('.palanquee-prof-prevue')?.value || '';
+            plongeurs.dureePrevue = palanqueeEl.querySelector('.palanquee-duree-prevue')?.value || '';
+            plongeurs.profondeurRealisee = palanqueeEl.querySelector('.palanquee-prof-realisee')?.value || '';
+            plongeurs.dureeRealisee = palanqueeEl.querySelector('.palanquee-duree-realisee')?.value || '';
+            plongeurs.paliers = palanqueeEl.querySelector('.palanquee-paliers')?.value || '';
+            
+            palanqueesArray.push(plongeurs);
+        });
+        
+        console.log(`📊 ${palanqueesArray.length} palanquées extraites du DOM`);
+        return palanqueesArray;
+    }
+    
+    return [];
+}
 
     function safeGetPlongeursOriginaux() {
         return (window.plongeursOriginaux && Array.isArray(window.plongeursOriginaux)) ? window.plongeursOriginaux : [];
