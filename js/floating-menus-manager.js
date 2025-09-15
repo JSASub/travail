@@ -344,20 +344,19 @@
     /**
      * Gérer la visibilité du menu des plongeurs
      */
-    function updateFloatingPlongeursVisibility() {
-        const menu = document.getElementById('floating-plongeurs-menu');
-        const mainApp = document.getElementById('main-app');
-        
-        if (!menu) return;
-        
-        // Afficher le menu si l'application principale est visible
-        if (mainApp && mainApp.style.display !== 'none') {
-            menu.style.display = 'flex';
-        } else {
-            menu.style.display = 'none';
-        }
-    }
-
+	function updateFloatingPlongeursVisibility() {
+		const menu = document.getElementById('floating-plongeurs-menu');
+		const mainApp = document.getElementById('main-app');
+    
+		if (!menu) return;
+    
+		// Afficher le menu si l'application principale est visible
+		if (mainApp && mainApp.style.display !== 'none') {
+			menu.style.display = 'flex';
+			console.log('Menu latéral maintenu visible');
+		}
+		// ✅ SUPPRIMÉ le else qui cachait le menu
+	}
     /**
      * Synchronisation automatique du menu des plongeurs
      */
