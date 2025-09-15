@@ -108,7 +108,7 @@
 				stats: {
 					totalPlongeurs: plongeurs.length,
 					totalEnPalanquees: plongeursInPalanquees,
-					///nombrePalanquees: Array.isArray(palanquees) ? palanquees.length : 0
+					nombrePalanquees: Array.isArray(palanquees) ? palanquees.length : 0
 				}
             };
 

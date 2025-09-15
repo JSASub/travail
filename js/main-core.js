@@ -8,6 +8,106 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 let currentSessionKey = null;
 let sessionModified = false;
 //
+
+
+
+
+
+//////////////////////////////
+// CODE DE DEBUG À AJOUTER TEMPORAIREMENT dans main-core.js
+
+// 1. Debug au chargement de la page
+console.log('=== DEBUG INITIAL ===');
+console.log('window.palanquees:', window.palanquees);
+console.log('Type:', typeof window.palanquees);
+console.log('Length:', window.palanquees ? window.palanquees.length : 'undefined');
+
+// 2. Debug toutes les 3 secondes pour voir l'évolution
+setInterval(function() {
+    console.log('=== DEBUG CONTINU ===');
+    console.log('window.palanquees:', window.palanquees);
+    console.log('Length:', window.palanquees ? window.palanquees.length : 'undefined');
+    
+    // Vérifier s'il y a des palanquées dans le DOM
+    const palanqueesDOM = document.querySelectorAll('#palanqueesContainer .palanquee, .palanquee-container, [class*="palanquee"]');
+    console.log('Palanquées dans le DOM:', palanqueesDOM.length);
+    
+    // Vérifier d'autres variables possibles
+    console.log('Autres variables globales:', {
+        listePalanquees: window.listePalanquees,
+        palanqueesList: window.palanqueesList,
+        groupes: window.groupes,
+        équipes: window.équipes
+    });
+}, 3000);
+
+// 3. Intercepter toutes les modifications de window.palanquees
+if (window.palanquees) {
+    let originalPush = window.palanquees.push;
+    window.palanquees.push = function(...args) {
+        console.log('🔥 PALANQUEE AJOUTÉE:', args);
+        return originalPush.apply(this, args);
+    };
+    
+    let originalSplice = window.palanquees.splice;
+    window.palanquees.splice = function(...args) {
+        console.log('🔥 PALANQUEE MODIFIÉE:', args);
+        return originalSplice.apply(this, args);
+    };
+}
+
+// 4. Observer les changements dans le container des palanquées
+const palanqueesContainer = document.getElementById('palanqueesContainer');
+if (palanqueesContainer) {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length > 0) {
+                console.log('🔥 ÉLÉMENT AJOUTÉ dans palanqueesContainer:', mutation.addedNodes);
+                console.log('window.palanquees après ajout:', window.palanquees);
+            }
+        });
+    });
+    
+    observer.observe(palanqueesContainer, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// 5. Chercher où les palanquées sont réellement stockées
+function findPalanqueesData() {
+    console.log('=== RECHERCHE DES DONNÉES PALANQUÉES ===');
+    
+    // Chercher dans toutes les variables globales
+    for (let prop in window) {
+        if (typeof window[prop] === 'object' && window[prop] && Array.isArray(window[prop])) {
+            if (window[prop].length > 0) {
+                console.log(`Variable ${prop}:`, window[prop]);
+            }
+        }
+    }
+    
+    // Chercher dans localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        if (value && (value.includes('palanquee') || value.includes('plongeur'))) {
+            console.log(`localStorage ${key}:`, value.substring(0, 200) + '...');
+        }
+    }
+}
+
+// Exécuter la recherche toutes les 5 secondes
+setInterval(findPalanqueesData, 5000);
+
+console.log('🔍 DEBUG DES PALANQUÉES ACTIVÉ - Regardez la console !');
+//////////////////////////////
+
+
+
+
+
+
 // ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
 // Correction ciblée et performante sans surcharger le système
 
