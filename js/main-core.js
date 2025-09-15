@@ -15,103 +15,18 @@ let sessionModified = false;
 
 //////////////////////////////
 // CODE DE DEBUG À AJOUTER TEMPORAIREMENT dans main-core.js
-// ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
-// Correction ciblée et performante sans surcharger le système
-
-// 1. Correction uniquement des boîtes de dialogue
-const originalAlert = window.alert;
-window.alert = function(message) {
-    if (typeof message === 'string' && message.includes('palanquée')) {
-        const correctedNumber = getCorrectedPalanqueeCount();
-        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+// === DEBUG PONCTUEL (pas en boucle) ===
+setTimeout(function() {
+    console.log('=== ANALYSE DES DONNÉES SAUVÉES ===');
+    const saved = localStorage.getItem('jsas_auto_save');
+    if (saved) {
+        const data = JSON.parse(saved);
+        console.log('Données complètes:', data);
+        console.log('Stats sauvées:', data.stats);
+        console.log('Palanquées sauvées:', data.data.palanquees);
+        console.log('window.palanquees actuel:', window.palanquees);
     }
-    return originalAlert.call(this, message);
-};
-
-const originalConfirm = window.confirm;
-window.confirm = function(message) {
-    if (typeof message === 'string' && message.includes('palanquée')) {
-        const correctedNumber = getCorrectedPalanqueeCount();
-        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
-    }
-    return originalConfirm.call(this, message);
-};
-
-// 2. Fonction de correction des textes
-function correctPalanqueeTexts(element) {
-    if (!element || !element.querySelectorAll) return;
-    
-    const correctedNumber = getCorrectedPalanqueeCount();
-    const elements = element.querySelectorAll('*');
-    
-    elements.forEach(el => {
-        // Corriger le textContent
-        if (el.textContent && el.textContent.includes('palanquée')) {
-            el.textContent = el.textContent.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
-        }
-        
-        // Corriger les attributs title, aria-label, etc.
-        ['title', 'aria-label', 'alt'].forEach(attr => {
-            if (el.hasAttribute(attr) && el.getAttribute(attr).includes('palanquée')) {
-                const value = el.getAttribute(attr);
-                el.setAttribute(attr, value.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`));
-            }
-        });
-    });
-}
-
-// 3. Observer uniquement les nouveaux éléments modaux/dialog
-const modalObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // Element node
-                // Vérifier si c'est un élément modal ou dialog
-                if (node.classList && (
-                    node.classList.contains('modal') || 
-                    node.classList.contains('dialog') ||
-                    node.classList.contains('alert') ||
-                    node.tagName === 'DIALOG'
-                )) {
-                    correctPalanqueeTexts(node);
-                }
-                
-                // Vérifier les enfants pour les modals
-                const modals = node.querySelectorAll('.modal, .dialog, .alert, dialog');
-                modals.forEach(correctPalanqueeTexts);
-            }
-        });
-    });
-});
-
-// Démarrer l'observation seulement du body pour les nouveaux éléments
-modalObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-
-// 4. Correction ponctuelle après les actions critiques
-function correctAfterAction() {
-    setTimeout(() => {
-        // Corriger uniquement les éléments visibles potentiellement problématiques
-        const visibleElements = document.querySelectorAll('.modal:not([style*="display: none"]), .dialog:not([style*="display: none"]), .alert:not([style*="display: none"])');
-        visibleElements.forEach(correctPalanqueeTexts);
-    }, 100);
-}
-
-// 4. Hook sur les fonctions critiques seulement
-const criticalFunctions = ['validateSession', 'confirmEndSession', 'showSessionSummary'];
-criticalFunctions.forEach(funcName => {
-    if (window[funcName]) {
-        const original = window[funcName];
-        window[funcName] = function(...args) {
-            const result = original.apply(this, args);
-            correctAfterAction();
-            return result;
-        };
-    }
-});
-
-console.log('✅ Correction optimisée des palanquées activée');
+}, 2000);
 //////////////////////////////
 
 
