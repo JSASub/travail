@@ -26,59 +26,59 @@
         return (window.plongeurs && Array.isArray(window.plongeurs)) ? window.plongeurs : [];
     }
 
-    function safeGetPalanquees() {
-        // D'abord essayer la variable globale
-        if (window.palanquees && Array.isArray(window.palanquees)) {
-            // Filtrer les palanquées qui contiennent vraiment des plongeurs
-            const palanqueesAvecPlongeurs = window.palanquees.filter(pal => {
-                if (!Array.isArray(pal)) return false;
-                return pal.length > 0 && pal.some(plongeur => plongeur && plongeur.nom && plongeur.nom.trim());
-            });
-            console.log(`📊 ${palanqueesAvecPlongeurs.length} palanquées valides (sur ${window.palanquees.length} total)`);
-            return palanqueesAvecPlongeurs;
-        }
-        
-        // Si pas de variable globale, extraire du DOM
-        const palanqueesDOM = document.querySelectorAll('.palanquee');
-        if (palanqueesDOM.length > 0) {
-            const palanqueesArray = [];
-            
-            palanqueesDOM.forEach((palanqueeEl, index) => {
-                const plongeurs = [];
-                
-                // Extraire les plongeurs de cette palanquée
-                const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-                plongeursEls.forEach(plongeurEl => {
-                    const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent || '';
-                    const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent || '';
-                    const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value || '';
-                    
-                    if (nom && nom.trim()) { // ✅ Ne compter que les plongeurs avec un nom valide
-                        plongeurs.push({ nom: nom.trim(), niveau, pre });
-                    }
-                });
-                
-                // ✅ Ne ajouter la palanquée que si elle contient des plongeurs
-                if (plongeurs.length > 0) {
-                    // Ajouter les paramètres de la palanquée
-                    plongeurs.horaire = palanqueeEl.querySelector('.palanquee-horaire')?.value || '';
-                    plongeurs.profondeurPrevue = palanqueeEl.querySelector('.palanquee-prof-prevue')?.value || '';
-                    plongeurs.dureePrevue = palanqueeEl.querySelector('.palanquee-duree-prevue')?.value || '';
-                    plongeurs.profondeurRealisee = palanqueeEl.querySelector('.palanquee-prof-realisee')?.value || '';
-                    plongeurs.dureeRealisee = palanqueeEl.querySelector('.palanquee-duree-realisee')?.value || '';
-                    plongeurs.paliers = palanqueeEl.querySelector('.palanquee-paliers')?.value || '';
-                    
-                    palanqueesArray.push(plongeurs);
-                }
-            });
-            
-            console.log(`📊 ${palanqueesArray.length} palanquées valides extraites du DOM (sur ${palanqueesDOM.length} éléments DOM)`);
-            return palanqueesArray;
-        }
-        
+  function safeGetPalanquees() {
+    console.log('🔍 Comptage des palanquées...');
+    
+    // FORCER le comptage depuis le DOM uniquement - ignorer window.palanquees
+    const palanqueesDOM = document.querySelectorAll('.palanquee');
+    console.log(`📊 ${palanqueesDOM.length} éléments .palanquee trouvés dans le DOM`);
+    
+    if (palanqueesDOM.length === 0) {
+        console.log('❌ Aucune palanquée trouvée');
         return [];
     }
-
+    
+    const palanqueesArray = [];
+    
+    palanqueesDOM.forEach((palanqueeEl, index) => {
+        const plongeurs = [];
+        
+        // Extraire les plongeurs de cette palanquée
+        const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+        console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs trouvés`);
+        
+        plongeursEls.forEach(plongeurEl => {
+            const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent || '';
+            const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent || '';
+            const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value || '';
+            
+            if (nom && nom.trim()) {
+                plongeurs.push({ 
+                    nom: nom.trim(), 
+                    niveau: niveau.trim(), 
+                    pre: pre.trim() 
+                });
+                console.log(`    - ${nom.trim()}`);
+            }
+        });
+        
+        // Toujours ajouter la palanquée, même si elle est vide (pour correspondre à l'interface)
+        if (plongeursEls.length > 0) {
+            // Ajouter les paramètres de la palanquée
+            plongeurs.horaire = palanqueeEl.querySelector('.palanquee-horaire')?.value || '';
+            plongeurs.profondeurPrevue = palanqueeEl.querySelector('.palanquee-prof-prevue')?.value || '';
+            plongeurs.dureePrevue = palanqueeEl.querySelector('.palanquee-duree-prevue')?.value || '';
+            plongeurs.profondeurRealisee = palanqueeEl.querySelector('.palanquee-prof-realisee')?.value || '';
+            plongeurs.dureeRealisee = palanqueeEl.querySelector('.palanquee-duree-realisee')?.value || '';
+            plongeurs.paliers = palanqueeEl.querySelector('.palanquee-paliers')?.value || '';
+            
+            palanqueesArray.push(plongeurs);
+        }
+    });
+    
+    console.log(`✅ Résultat final: ${palanqueesArray.length} palanquées valides`);
+    return palanqueesArray;
+}
     function safeGetPlongeursOriginaux() {
         return (window.plongeursOriginaux && Array.isArray(window.plongeursOriginaux)) ? window.plongeursOriginaux : [];
     }
