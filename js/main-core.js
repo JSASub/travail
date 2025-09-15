@@ -1,4 +1,4 @@
-// main-core.js - Fichier principal corrigé (sans interférences DOM)
+// main-core.js - Fichier principal corrigé avec initialisation menu latéral
 // PROTECTION ANTI-UNDEFINED
 window.plongeurs = window.plongeurs || [];
 window.palanquees = window.palanquees || [];
@@ -7,10 +7,8 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 // Variables globales de session
 let currentSessionKey = null;
 let sessionModified = false;
-//
-// SOLUTION AGRESSIVE POUR LES BOÎTES DE DIALOGUE
-// Ajoutez ceci tout au début de main-core.js
 
+// SOLUTION AGRESSIVE POUR LES BOÎTES DE DIALOGUE
 // Intercepter la fonction alert native
 const originalAlert = window.alert;
 window.alert = function(message) {
@@ -68,6 +66,7 @@ function getCurrentPalanqueesStats() {
 window.getCurrentPalanqueesStats = getCurrentPalanqueesStats;
 
 console.log("Interception des boîtes de dialogue activée");
+
 // Forcer l'initialisation des variables globales
 document.addEventListener('DOMContentLoaded', function() {
   // S'assurer que les variables existent
@@ -154,7 +153,7 @@ async function syncToDatabase() {
     // CORRECTION : Marquer que la session a été modifiée
     if (currentSessionKey) {
       sessionModified = true;
-      console.log("🔄 Session marquée comme modifiée");
+      console.log("📄 Session marquée comme modifiée");
     }
     
     // Re-rendre l'interface SANS manipulation DOM excessive
@@ -297,6 +296,48 @@ function showAuthError(message) {
   }
 }
 
+// ===== FONCTION POUR INITIALISER LE MENU LATÉRAL =====
+function forceInitializeFloatingMenus() {
+    console.log('🔄 Initialisation forcée des menus flottants...');
+    
+    // Attendre que l'interface soit prête
+    setTimeout(() => {
+        // Forcer l'affichage de l'application principale
+        const mainApp = document.getElementById('main-app');
+        if (mainApp) {
+            mainApp.style.display = 'block';
+        }
+        
+        // Appeler la fonction d'initialisation du gestionnaire de menus flottants
+        if (typeof window.initFloatingMenusManager === 'function') {
+            window.initFloatingMenusManager();
+        }
+        
+        // Forcer la mise à jour du menu des plongeurs
+        if (typeof window.forceUpdatePlongeursMenu === 'function') {
+            window.forceUpdatePlongeursMenu();
+        }
+        
+        // Forcer l'affichage du menu latéral
+        const floatingMenu = document.getElementById('floating-plongeurs-menu');
+        if (floatingMenu) {
+            floatingMenu.style.display = 'flex';
+            console.log('✅ Menu latéral forcé à s\'afficher');
+        }
+        
+        // Appeler la fonction d'authentification du menu flottant si elle existe
+        if (typeof window.onUserAuthenticated === 'function') {
+            window.onUserAuthenticated();
+        }
+        
+        // Activer les boutons DP s'ils existent
+        if (typeof window.enableDPButtons === 'function') {
+            window.enableDPButtons();
+        }
+        
+    }, 1500); // Délai pour laisser l'interface se charger complètement
+}
+
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
@@ -355,7 +396,7 @@ async function saveSessionData() {
     // Session modifiée : créer une nouvelle clé avec timestamp
     const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '');
     sessionKey = `${baseKey}_modif_${timestamp}`;
-    console.log(`🔄 Session modifiée, nouvelle clé: ${sessionKey}`);
+    console.log(`📄 Session modifiée, nouvelle clé: ${sessionKey}`);
   } else {
     sessionKey = baseKey;
   }
@@ -574,6 +615,11 @@ async function loadSession(sessionKey) {
         if (dp) {
           dpSelect.value = dp.id;
           console.log("✅ DP sélectionné:", dp.nom);
+          
+          // AJOUT : Activer les boutons DP après sélection
+          if (typeof window.enableDPButtons === 'function') {
+            window.enableDPButtons();
+          }
         }
       }
       
@@ -594,7 +640,7 @@ async function loadSession(sessionKey) {
     
     // CORRECTION DOUCE : Restauration des paramètres SANS manipulation DOM excessive
     setTimeout(() => {
-      console.log("🔄 Restauration douce des paramètres d'interface...");
+      console.log("📄 Restauration douce des paramètres d'interface...");
       
       palanquees.forEach((pal, index) => {
         if (!pal || !Array.isArray(pal)) return;
@@ -659,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (dpSelect) {
     dpSelect.addEventListener('change', function() {
       const dpNom = getSelectedDPName();
-      console.log("🔄 DP changé:", dpNom);
+      console.log("📄 DP changé:", dpNom);
       
       // Afficher visuellement le DP sélectionné
       const dpStatus = document.querySelector('.dp-status-indicator');
@@ -850,7 +896,7 @@ async function testFirebaseConnectionSafe() {
 // ===== INITIALISATION SÉCURISÉE DES DONNÉES =====
 async function initializeAppData() {
   try {
-    console.log("🔄 Initialisation sécurisée des données de l'application...");
+    console.log("📄 Initialisation sécurisée des données de l'application...");
     
     // Vérifier que les variables globales sont initialisées
     if (typeof plongeurs === 'undefined') {
@@ -1216,6 +1262,10 @@ function setupEventListeners() {
           if (typeof signIn === 'function') {
             await signIn(email, password);
             console.log("✅ Connexion réussie");
+            
+            // ✅ AJOUT : Forcer l'initialisation du menu latéral après connexion
+            forceInitializeFloatingMenus();
+            
           } else {
             throw new Error("Fonction signIn non disponible");
           }
@@ -1376,7 +1426,7 @@ function initCompteurCorrectionDouce() {
   // Exposer la fonction pour utilisation manuelle UNIQUEMENT
   window.forceCompteurCorrection = compteurCorrectionDouce;
 }
-//
+
 // Fonction pour corriger les textes des boîtes de dialogue
 function fixDialogContent() {
   try {
@@ -1593,5 +1643,6 @@ window.loadFromFirebase = loadFromFirebase;
 window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
+window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.3.0 SANS interférences DOM sur user-info");
+console.log("✅ Main Core sécurisé chargé - Version 3.4.0 AVEC initialisation menu latéral");
