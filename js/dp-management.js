@@ -62,7 +62,7 @@ function getFirebaseReference() {
 
 // ===== SAUVEGARDE DANS FIREBASE =====
 async function saveDpToFirebase() {
-  console.log('🔄 Tentative de sauvegarde Firebase...');
+  console.log('💾 Tentative de sauvegarde Firebase...');
   
   const dbRef = getFirebaseReference();
   
@@ -252,8 +252,21 @@ function updateButtonStates() {
   
   const hasSelection = select && select.value;
   
-  if (editBtn) editBtn.disabled = !hasSelection;
-  if (deleteBtn) deleteBtn.disabled = !hasSelection;
+  if (editBtn) {
+    editBtn.disabled = !hasSelection;
+    console.log('🔄 Bouton Modifier:', hasSelection ? 'activé' : 'désactivé');
+  }
+  
+  if (deleteBtn) {
+    deleteBtn.disabled = !hasSelection;
+    console.log('🔄 Bouton Supprimer:', hasSelection ? 'activé' : 'désactivé');
+  }
+}
+
+// ===== FONCTION POUR ACTIVER LES BOUTONS (APPELÉE DEPUIS L'EXTÉRIEUR) =====
+function enableDPButtons() {
+  console.log('🔧 Activation forcée des boutons DP...');
+  updateButtonStates();
 }
 
 // ===== VALIDATION EMAIL =====
@@ -370,7 +383,7 @@ async function deleteDp() {
 
 // ===== ÉVÉNEMENTS =====
 document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🔄 Initialisation du gestionnaire DP...');
+  console.log('📄 Initialisation du gestionnaire DP...');
   
   // Attendre un peu que Firebase soit complètement chargé
   setTimeout(async () => {
@@ -389,8 +402,25 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Gestionnaires d'événements
   const dpSelect = document.getElementById('dp-select');
+  const editBtn = document.getElementById('edit-dp-btn');
+  const deleteBtn = document.getElementById('delete-dp-btn');
+  
   if (dpSelect) {
-    dpSelect.addEventListener('change', updateButtonStates);
+    // Écouteur pour les changements manuels du select
+    dpSelect.addEventListener('change', function() {
+      console.log('📋 Sélection DP changée manuellement:', dpSelect.value);
+      updateButtonStates();
+    });
+    
+    // Vérification périodique pour les changements programmatiques
+    setInterval(() => {
+      if (dpSelect && dpSelect.value && editBtn && deleteBtn) {
+        if (editBtn.disabled || deleteBtn.disabled) {
+          console.log('🔄 Détection changement programmatique, activation des boutons...');
+          updateButtonStates();
+        }
+      }
+    }, 500);
   }
   
   const addBtn = document.getElementById('add-dp-btn');
@@ -398,7 +428,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     addBtn.addEventListener('click', () => showModal());
   }
   
-  const editBtn = document.getElementById('edit-dp-btn');
   if (editBtn) {
     editBtn.addEventListener('click', () => {
       const selectedId = dpSelect.value;
@@ -407,23 +436,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
   
-  const deleteBtn = document.getElementById('delete-dp-btn');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', deleteDp);
   }
   
-  // Écouteur pour le changement manuel
-    dpSelect.addEventListener('change', function() {
-        updateButtonStates();
-    });
-    
-    // Vérification périodique pour les changements programmatiques
-    setInterval(() => {
-        if (dpSelect.value && (modifyBtn.disabled || deleteBtn.disabled)) {
-            updateButtonStates();
-        }
-    }, 500);
-	
   const saveBtn = document.getElementById('save-dp-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveDp);
@@ -453,3 +469,4 @@ window.getDpList = () => DP_LIST;
 window.getDpById = (id) => DP_LIST.find(dp => dp.id === id);
 window.getDpByName = (nom) => DP_LIST.find(dp => dp.nom === nom);
 window.refreshDpList = updateDpSelect;
+window.enableDPButtons = enableDPButtons; // ✅ NOUVELLE FONCTION EXPOSÉE
