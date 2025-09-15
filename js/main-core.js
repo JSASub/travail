@@ -8,80 +8,99 @@ window.plongeursOriginaux = window.plongeursOriginaux || [];
 let currentSessionKey = null;
 let sessionModified = false;
 //
-// ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
-// Correction ciblée et performante sans surcharger le système
+// SOLUTION AGRESSIVE POUR LES BOÎTES DE DIALOGUE
+// Ajoutez ceci tout au début de main-core.js
 
-// 1. Correction uniquement des boîtes de dialogue
+// Intercepter la fonction alert native
 const originalAlert = window.alert;
 window.alert = function(message) {
-    if (typeof message === 'string' && message.includes('palanquée')) {
-        const correctedNumber = getCorrectedPalanqueeCount();
-        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+    if (typeof message === 'string' && message.includes('0 palanquée')) {
+        const palanqueesCount = document.querySelectorAll('.palanquee').length;
+        let plongeursCount = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        // Corriger le message avant de l'afficher
+        const messageCorrige = message.replace(
+            /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, 
+            `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`
+        );
+        
+        console.log(`Alert corrigée: "${message}" → "${messageCorrige}"`);
+        return originalAlert.call(this, messageCorrige);
     }
     return originalAlert.call(this, message);
 };
 
+// Intercepter la fonction confirm native
 const originalConfirm = window.confirm;
 window.confirm = function(message) {
-    if (typeof message === 'string' && message.includes('palanquée')) {
-        const correctedNumber = getCorrectedPalanqueeCount();
-        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+    if (typeof message === 'string' && message.includes('0 palanquée')) {
+        const palanqueesCount = document.querySelectorAll('.palanquee').length;
+        let plongeursCount = 0;
+        document.querySelectorAll('.palanquee').forEach(pal => {
+            plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
+        });
+        
+        const messageCorrige = message.replace(
+            /\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, 
+            `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`
+        );
+        
+        console.log(`Confirm corrigée: "${message}" → "${messageCorrige}"`);
+        return originalConfirm.call(this, messageCorrige);
     }
     return originalConfirm.call(this, message);
 };
 
-// 2. Observer uniquement les nouveaux éléments modaux/dialog
-const modalObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // Element node
-                // Vérifier si c'est un élément modal ou dialog
-                if (node.classList && (
-                    node.classList.contains('modal') || 
-                    node.classList.contains('dialog') ||
-                    node.classList.contains('alert') ||
-                    node.tagName === 'DIALOG'
-                )) {
-                    correctPalanqueeTexts(node);
-                }
-                
-                // Vérifier les enfants pour les modals
-                const modals = node.querySelectorAll('.modal, .dialog, .alert, dialog');
-                modals.forEach(correctPalanqueeTexts);
-            }
-        });
+// Fonction pour corriger en temps réel
+function getCurrentPalanqueesStats() {
+    const palanqueesCount = document.querySelectorAll('.palanquee').length;
+    let plongeursCount = 0;
+    document.querySelectorAll('.palanquee').forEach(pal => {
+        plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
     });
-});
-
-// Démarrer l'observation seulement du body pour les nouveaux éléments
-modalObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-
-// 3. Correction ponctuelle après les actions critiques
-function correctAfterAction() {
-    setTimeout(() => {
-        // Corriger uniquement les éléments visibles potentiellement problématiques
-        const visibleElements = document.querySelectorAll('.modal:not([style*="display: none"]), .dialog:not([style*="display: none"]), .alert:not([style*="display: none"])');
-        visibleElements.forEach(correctPalanqueeTexts);
-    }, 100);
+    return { palanqueesCount, plongeursCount };
 }
 
-// 4. Hook sur les fonctions critiques seulement
-const criticalFunctions = ['validateSession', 'confirmEndSession', 'showSessionSummary'];
-criticalFunctions.forEach(funcName => {
-    if (window[funcName]) {
-        const original = window[funcName];
-        window[funcName] = function(...args) {
-            const result = original.apply(this, args);
-            correctAfterAction();
-            return result;
-        };
-    }
-});
+// Exposer globalement pour les autres scripts
+window.getCurrentPalanqueesStats = getCurrentPalanqueesStats;
 
-console.log('✅ Correction optimisée des palanquées activée');
+console.log("Interception des boîtes de dialogue activée");
+// Forcer l'initialisation des variables globales
+document.addEventListener('DOMContentLoaded', function() {
+  // S'assurer que les variables existent
+  if (typeof window.plongeurs === 'undefined') {
+    window.plongeurs = [];
+  }
+  
+  // Si la liste DOM a des éléments mais pas la variable globale, reconstruire
+  const listDOM = document.getElementById('listePlongeurs');
+  if (listDOM && listDOM.children.length > 0 && window.plongeurs.length === 0) {
+    console.log('Reconstruction des données plongeurs depuis le DOM...');
+    
+    Array.from(listDOM.children).forEach(li => {
+      const text = li.textContent || li.innerText;
+      const parts = text.split(' - ');
+      
+      if (parts.length >= 2) {
+        window.plongeurs.push({
+          nom: parts[0].trim(),
+          niveau: parts[1].trim(),
+          pre: parts[2] ? parts[2].replace('[', '').replace(']', '').trim() : ''
+        });
+      }
+    });
+    
+    console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+    
+    // Forcer la mise à jour du menu
+    if (typeof updateFloatingPlongeursList === 'function') {
+      updateFloatingPlongeursList();
+    }
+  }
+});
 
 function getSelectedDPName() {
   const dpSelect = document.getElementById('dp-select');
