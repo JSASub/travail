@@ -70,7 +70,7 @@ function updateOnlineUsersIndicator() {
     indicator.id = 'online-users-indicator';
     indicator.style.cssText = `
       position: fixed;
-      top: 57px;
+      top: 10px;
       left: 10px;
       background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
       border: 1px solid #2196f3;
