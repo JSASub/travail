@@ -440,6 +440,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 });
+dpSelectObserver.observe(dpSelect, {
+  attributes: true,
+  attributeFilter: ['value']
+});
 
 // ===== FONCTIONS EXPOSÉES GLOBALEMENT =====
 window.getDpList = () => DP_LIST;
