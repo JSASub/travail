@@ -1485,41 +1485,6 @@ span#user-info[style] {
     margin: 0 !important;
     padding: 0 !important;
 }
-Et dans la console des DevTools, exécutez cette commande pour désactiver temporairement les surveillances :
-javascript// Désactiver tous les setInterval actifs
-for (let i = 1; i < 99999; i++) {
-    clearInterval(i);
-}
-
-// Désactiver tous les setTimeout actifs  
-for (let i = 1; i < 99999; i++) {
-    clearTimeout(i);
-}
-
-// Fixer définitivement user-info
-const userInfo = document.getElementById('user-info');
-if (userInfo) {
-    Object.defineProperty(userInfo, 'style', {
-        get: function() {
-            return {
-                color: '#666',
-                fontSize: '14px',
-                margin: '0',
-                padding: '0',
-                position: 'static',
-                transform: 'none',
-                top: '10px',
-                verticalAlign: 'baseline',
-                lineHeight: '1.4'
-            };
-        },
-        set: function() {
-            // Ignorer toute tentative de modification
-        }
-    });
-}
-
-console.log('Surveillances désactivées et user-info protégé');
 
 /* ALIGNEMENT PRÉCIS DE USER-INFO AVEC LES BOUTONS */
 span#user-info {
