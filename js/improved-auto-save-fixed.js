@@ -27,48 +27,57 @@
     }
 
     function safeGetPalanquees() {
-    // D'abord essayer la variable globale
-    if (window.palanquees && Array.isArray(window.palanquees)) {
-        return window.palanquees;
-    }
-    
-    // Si pas de variable globale, extraire du DOM
-    const palanqueesDOM = document.querySelectorAll('.palanquee');
-    if (palanqueesDOM.length > 0) {
-        const palanqueesArray = [];
+        // D'abord essayer la variable globale
+        if (window.palanquees && Array.isArray(window.palanquees)) {
+            // Filtrer les palanquées qui contiennent vraiment des plongeurs
+            const palanqueesAvecPlongeurs = window.palanquees.filter(pal => {
+                if (!Array.isArray(pal)) return false;
+                return pal.length > 0 && pal.some(plongeur => plongeur && plongeur.nom && plongeur.nom.trim());
+            });
+            console.log(`📊 ${palanqueesAvecPlongeurs.length} palanquées valides (sur ${window.palanquees.length} total)`);
+            return palanqueesAvecPlongeurs;
+        }
         
-        palanqueesDOM.forEach((palanqueeEl, index) => {
-            const plongeurs = [];
+        // Si pas de variable globale, extraire du DOM
+        const palanqueesDOM = document.querySelectorAll('.palanquee');
+        if (palanqueesDOM.length > 0) {
+            const palanqueesArray = [];
             
-            // Extraire les plongeurs de cette palanquée
-            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-            plongeursEls.forEach(plongeurEl => {
-                const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent || '';
-                const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent || '';
-                const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value || '';
+            palanqueesDOM.forEach((palanqueeEl, index) => {
+                const plongeurs = [];
                 
-                if (nom) {
-                    plongeurs.push({ nom, niveau, pre });
+                // Extraire les plongeurs de cette palanquée
+                const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+                plongeursEls.forEach(plongeurEl => {
+                    const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent || '';
+                    const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent || '';
+                    const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value || '';
+                    
+                    if (nom && nom.trim()) { // ✅ Ne compter que les plongeurs avec un nom valide
+                        plongeurs.push({ nom: nom.trim(), niveau, pre });
+                    }
+                });
+                
+                // ✅ Ne ajouter la palanquée que si elle contient des plongeurs
+                if (plongeurs.length > 0) {
+                    // Ajouter les paramètres de la palanquée
+                    plongeurs.horaire = palanqueeEl.querySelector('.palanquee-horaire')?.value || '';
+                    plongeurs.profondeurPrevue = palanqueeEl.querySelector('.palanquee-prof-prevue')?.value || '';
+                    plongeurs.dureePrevue = palanqueeEl.querySelector('.palanquee-duree-prevue')?.value || '';
+                    plongeurs.profondeurRealisee = palanqueeEl.querySelector('.palanquee-prof-realisee')?.value || '';
+                    plongeurs.dureeRealisee = palanqueeEl.querySelector('.palanquee-duree-realisee')?.value || '';
+                    plongeurs.paliers = palanqueeEl.querySelector('.palanquee-paliers')?.value || '';
+                    
+                    palanqueesArray.push(plongeurs);
                 }
             });
             
-            // Ajouter les paramètres de la palanquée
-            plongeurs.horaire = palanqueeEl.querySelector('.palanquee-horaire')?.value || '';
-            plongeurs.profondeurPrevue = palanqueeEl.querySelector('.palanquee-prof-prevue')?.value || '';
-            plongeurs.dureePrevue = palanqueeEl.querySelector('.palanquee-duree-prevue')?.value || '';
-            plongeurs.profondeurRealisee = palanqueeEl.querySelector('.palanquee-prof-realisee')?.value || '';
-            plongeurs.dureeRealisee = palanqueeEl.querySelector('.palanquee-duree-realisee')?.value || '';
-            plongeurs.paliers = palanqueeEl.querySelector('.palanquee-paliers')?.value || '';
-            
-            palanqueesArray.push(plongeurs);
-        });
+            console.log(`📊 ${palanqueesArray.length} palanquées valides extraites du DOM (sur ${palanqueesDOM.length} éléments DOM)`);
+            return palanqueesArray;
+        }
         
-        console.log(`📊 ${palanqueesArray.length} palanquées extraites du DOM`);
-        return palanqueesArray;
+        return [];
     }
-    
-    return [];
-}
 
     function safeGetPlongeursOriginaux() {
         return (window.plongeursOriginaux && Array.isArray(window.plongeursOriginaux)) ? window.plongeursOriginaux : [];
@@ -84,12 +93,27 @@
         for (let i = 0; i < palanquees.length; i++) {
             const pal = palanquees[i];
             if (Array.isArray(pal)) {
-                total += pal.length;
+                // ✅ Ne compter que les plongeurs avec un nom valide
+                const plongeursValides = pal.filter(p => p && p.nom && p.nom.trim());
+                total += plongeursValides.length;
             } else if (pal && typeof pal.length === 'number' && pal.length >= 0) {
                 total += pal.length;
             }
         }
         return total;
+    }
+
+    /**
+     * Compter le nombre réel de palanquées avec plongeurs
+     */
+    function countValidPalanquees(palanquees) {
+        if (!Array.isArray(palanquees)) return 0;
+        
+        return palanquees.filter(pal => {
+            if (!Array.isArray(pal)) return false;
+            // Une palanquée est valide si elle contient au moins un plongeur avec un nom
+            return pal.some(plongeur => plongeur && plongeur.nom && plongeur.nom.trim());
+        }).length;
     }
 
     /**
@@ -126,6 +150,9 @@
                 return;
             }
 
+            // ✅ Compter correctement les palanquées valides
+            const nombrePalanqueesValides = countValidPalanquees(palanquees);
+
             // Capturer l'état complet de manière sécurisée
             const appState = {
                 timestamp: Date.now(),
@@ -148,7 +175,7 @@
                 stats: {
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
-                    nombrePalanquees: Array.isArray(palanquees) ? palanquees.length : 0
+                    nombrePalanquees: nombrePalanqueesValides // ✅ Utiliser le compte corrigé
                 }
             };
 
@@ -362,6 +389,9 @@
         if (hasShownRestorePrompt) return;
         hasShownRestorePrompt = true;
 
+        // ✅ Utiliser le compte corrigé de palanquées
+        const nombrePalanqueesValides = appState.stats?.nombrePalanquees || 0;
+
         // Créer la notification
         const notification = document.createElement('div');
         notification.className = 'restore-notification';
@@ -376,7 +406,7 @@
                     <div class="restore-info">
                         <div class="restore-stats">
                             ${appState.stats.totalPlongeurs || 0} plongeurs,
-							${appState.stats?.nombrePalanquees || 0} palanquées
+                            ${nombrePalanqueesValides} palanquée${nombrePalanqueesValides > 1 ? 's' : ''}
                         </div>
                         <div class="restore-dp">
                             DP: ${appState.metadata && appState.metadata.dp ? appState.metadata.dp.selectedText || 'Non sélectionné' : 'Non défini'}
@@ -559,12 +589,14 @@
      * Messages de feedback
      */
     function showRestoreSuccessMessage(appState) {
+        const nombrePalanqueesValides = appState.stats?.nombrePalanquees || 0;
+        
         const message = document.createElement('div');
         message.className = 'restore-success-message';
         message.innerHTML = `
             <span>Session restaurée avec succès!</span>
             <span style="font-size: 12px; opacity: 0.8; margin-left: 10px;">
-                ${appState.stats && appState.stats.totalPlongeurs ? appState.stats.totalPlongeurs : 0} plongeurs, ${appState.stats && appState.stats.nombrePalanquees ? appState.stats.nombrePalanquees : 0} palanquées
+                ${appState.stats && appState.stats.totalPlongeurs ? appState.stats.totalPlongeurs : 0} plongeurs, ${nombrePalanqueesValides} palanquée${nombrePalanqueesValides > 1 ? 's' : ''}
             </span>
         `;
         message.style.cssText = `
