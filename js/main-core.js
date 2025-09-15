@@ -15,92 +15,103 @@ let sessionModified = false;
 
 //////////////////////////////
 // CODE DE DEBUG À AJOUTER TEMPORAIREMENT dans main-core.js
+// ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
+// Correction ciblée et performante sans surcharger le système
 
-// 1. Debug au chargement de la page
-console.log('=== DEBUG INITIAL ===');
-console.log('window.palanquees:', window.palanquees);
-console.log('Type:', typeof window.palanquees);
-console.log('Length:', window.palanquees ? window.palanquees.length : 'undefined');
+// 1. Correction uniquement des boîtes de dialogue
+const originalAlert = window.alert;
+window.alert = function(message) {
+    if (typeof message === 'string' && message.includes('palanquée')) {
+        const correctedNumber = getCorrectedPalanqueeCount();
+        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+    }
+    return originalAlert.call(this, message);
+};
 
-// 2. Debug toutes les 3 secondes pour voir l'évolution
-setInterval(function() {
-    console.log('=== DEBUG CONTINU ===');
-    console.log('window.palanquees:', window.palanquees);
-    console.log('Length:', window.palanquees ? window.palanquees.length : 'undefined');
+const originalConfirm = window.confirm;
+window.confirm = function(message) {
+    if (typeof message === 'string' && message.includes('palanquée')) {
+        const correctedNumber = getCorrectedPalanqueeCount();
+        message = message.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+    }
+    return originalConfirm.call(this, message);
+};
+
+// 2. Fonction de correction des textes
+function correctPalanqueeTexts(element) {
+    if (!element || !element.querySelectorAll) return;
     
-    // Vérifier s'il y a des palanquées dans le DOM
-    const palanqueesDOM = document.querySelectorAll('#palanqueesContainer .palanquee, .palanquee-container, [class*="palanquee"]');
-    console.log('Palanquées dans le DOM:', palanqueesDOM.length);
+    const correctedNumber = getCorrectedPalanqueeCount();
+    const elements = element.querySelectorAll('*');
     
-    // Vérifier d'autres variables possibles
-    console.log('Autres variables globales:', {
-        listePalanquees: window.listePalanquees,
-        palanqueesList: window.palanqueesList,
-        groupes: window.groupes,
-        équipes: window.équipes
-    });
-}, 3000);
-
-// 3. Intercepter toutes les modifications de window.palanquees
-if (window.palanquees) {
-    let originalPush = window.palanquees.push;
-    window.palanquees.push = function(...args) {
-        console.log('🔥 PALANQUEE AJOUTÉE:', args);
-        return originalPush.apply(this, args);
-    };
-    
-    let originalSplice = window.palanquees.splice;
-    window.palanquees.splice = function(...args) {
-        console.log('🔥 PALANQUEE MODIFIÉE:', args);
-        return originalSplice.apply(this, args);
-    };
-}
-
-// 4. Observer les changements dans le container des palanquées
-const palanqueesContainer = document.getElementById('palanqueesContainer');
-if (palanqueesContainer) {
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.addedNodes.length > 0) {
-                console.log('🔥 ÉLÉMENT AJOUTÉ dans palanqueesContainer:', mutation.addedNodes);
-                console.log('window.palanquees après ajout:', window.palanquees);
+    elements.forEach(el => {
+        // Corriger le textContent
+        if (el.textContent && el.textContent.includes('palanquée')) {
+            el.textContent = el.textContent.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`);
+        }
+        
+        // Corriger les attributs title, aria-label, etc.
+        ['title', 'aria-label', 'alt'].forEach(attr => {
+            if (el.hasAttribute(attr) && el.getAttribute(attr).includes('palanquée')) {
+                const value = el.getAttribute(attr);
+                el.setAttribute(attr, value.replace(/\d+\s*palanquées?/g, `${correctedNumber} palanquée${correctedNumber > 1 ? 's' : ''}`));
             }
         });
     });
-    
-    observer.observe(palanqueesContainer, {
-        childList: true,
-        subtree: true
-    });
 }
 
-// 5. Chercher où les palanquées sont réellement stockées
-function findPalanqueesData() {
-    console.log('=== RECHERCHE DES DONNÉES PALANQUÉES ===');
-    
-    // Chercher dans toutes les variables globales
-    for (let prop in window) {
-        if (typeof window[prop] === 'object' && window[prop] && Array.isArray(window[prop])) {
-            if (window[prop].length > 0) {
-                console.log(`Variable ${prop}:`, window[prop]);
+// 3. Observer uniquement les nouveaux éléments modaux/dialog
+const modalObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        mutation.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) { // Element node
+                // Vérifier si c'est un élément modal ou dialog
+                if (node.classList && (
+                    node.classList.contains('modal') || 
+                    node.classList.contains('dialog') ||
+                    node.classList.contains('alert') ||
+                    node.tagName === 'DIALOG'
+                )) {
+                    correctPalanqueeTexts(node);
+                }
+                
+                // Vérifier les enfants pour les modals
+                const modals = node.querySelectorAll('.modal, .dialog, .alert, dialog');
+                modals.forEach(correctPalanqueeTexts);
             }
-        }
-    }
-    
-    // Chercher dans localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const value = localStorage.getItem(key);
-        if (value && (value.includes('palanquee') || value.includes('plongeur'))) {
-            console.log(`localStorage ${key}:`, value.substring(0, 200) + '...');
-        }
-    }
+        });
+    });
+});
+
+// Démarrer l'observation seulement du body pour les nouveaux éléments
+modalObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+// 4. Correction ponctuelle après les actions critiques
+function correctAfterAction() {
+    setTimeout(() => {
+        // Corriger uniquement les éléments visibles potentiellement problématiques
+        const visibleElements = document.querySelectorAll('.modal:not([style*="display: none"]), .dialog:not([style*="display: none"]), .alert:not([style*="display: none"])');
+        visibleElements.forEach(correctPalanqueeTexts);
+    }, 100);
 }
 
-// Exécuter la recherche toutes les 5 secondes
-setInterval(findPalanqueesData, 5000);
+// 4. Hook sur les fonctions critiques seulement
+const criticalFunctions = ['validateSession', 'confirmEndSession', 'showSessionSummary'];
+criticalFunctions.forEach(funcName => {
+    if (window[funcName]) {
+        const original = window[funcName];
+        window[funcName] = function(...args) {
+            const result = original.apply(this, args);
+            correctAfterAction();
+            return result;
+        };
+    }
+});
 
-console.log('🔍 DEBUG DES PALANQUÉES ACTIVÉ - Regardez la console !');
+console.log('✅ Correction optimisée des palanquées activée');
 //////////////////////////////
 
 
