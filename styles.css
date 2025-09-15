@@ -1504,11 +1504,11 @@ if (userInfo) {
             return {
                 color: '#666',
                 fontSize: '14px',
-                margin: '10',
+                margin: '0',
                 padding: '0',
                 position: 'static',
                 transform: 'none',
-                top: 'auto',
+                top: '10px',
                 verticalAlign: 'baseline',
                 lineHeight: '1.4'
             };
