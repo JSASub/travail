@@ -13,26 +13,6 @@ let sessionModified = false;
 
 
 
-//////////////////////////////
-// CODE DE DEBUG À AJOUTER TEMPORAIREMENT dans main-core.js
-// === DEBUG PONCTUEL (pas en boucle) ===
-setTimeout(function() {
-    console.log('=== ANALYSE DES DONNÉES SAUVÉES ===');
-    const saved = localStorage.getItem('jsas_auto_save');
-    if (saved) {
-        const data = JSON.parse(saved);
-        console.log('Données complètes:', data);
-        console.log('Stats sauvées:', data.stats);
-        console.log('Palanquées sauvées:', data.data.palanquees);
-        console.log('window.palanquees actuel:', window.palanquees);
-    }
-}, 2000);
-//////////////////////////////
-
-
-
-
-
 
 // ==================== CORRECTION OPTIMISÉE DES PALANQUÉES ====================
 // Correction ciblée et performante sans surcharger le système
