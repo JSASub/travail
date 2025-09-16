@@ -747,7 +747,24 @@ async function loadSession(sessionKey) {
     console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
     
     return true;
+   //
+setTimeout(() => {
+    console.log("🔄 Rendu forcé après nettoyage...");
     
+    if (typeof renderPalanquees === 'function') renderPalanquees();
+    if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof updateAlertes === 'function') updateAlertes();
+    
+    // FORCER la mise à jour des compteurs après chargement
+    setTimeout(() => {
+        if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+            console.log('🔢 Compteurs forcés après chargement session');
+        }
+    }, 300);
+    
+}, 200);
+//   
   } catch (error) {
     console.error("⚠ Erreur:", error);
     alert(`Erreur lors du chargement:\n${error.message}`);
