@@ -615,6 +615,7 @@ for (let i = 0; i < pal.length; i++) {
 }
 
 // Fonction pour charger une session MODIFIÉE AVEC TRACKING
+// Fonction pour charger une session CORRIGÉE ET PROPRE
 async function loadSession(sessionKey) {
   console.log("🔥 Chargement session:", sessionKey);
   
@@ -673,7 +674,7 @@ async function loadSession(sessionKey) {
           dpSelect.value = dp.id;
           console.log("✅ DP sélectionné:", dp.nom);
           
-          // AJOUT : Activer les boutons DP après sélection
+          // Activer les boutons DP après sélection
           if (typeof window.enableDPButtons === 'function') {
             window.enableDPButtons();
           }
@@ -690,19 +691,19 @@ async function loadSession(sessionKey) {
       if (dpPlongee) dpPlongee.value = sessionData.meta.plongee || "matin";
     }
     
-    // Rafraîchir l'affichage
+    // Premier rendu de base
     if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
     if (typeof updateAlertes === 'function') updateAlertes();
     
-    // CORRECTION DOUCE : Restauration des paramètres SANS manipulation DOM excessive
+    // Restauration des paramètres des palanquées avec délai
     setTimeout(() => {
-      console.log("📄 Restauration douce des paramètres d'interface...");
+      console.log("📄 Restauration des paramètres d'interface...");
       
       palanquees.forEach((pal, index) => {
         if (!pal || !Array.isArray(pal)) return;
         
-        // Chercher les champs de saisie pour cette palanquée SANS forcer les styles
+        // Chercher les champs de saisie pour cette palanquée
         const horaireInput = document.getElementById(`horaire-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
         const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
@@ -716,7 +717,7 @@ async function loadSession(sessionKey) {
         const paliersInput = document.getElementById(`paliers-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
         
-        // Restaurer les valeurs dans les champs UNIQUEMENT
+        // Restaurer les valeurs dans les champs
         if (horaireInput && pal.horaire) {
           horaireInput.value = pal.horaire;
         }
@@ -737,34 +738,36 @@ async function loadSession(sessionKey) {
         }
       });
       
-      console.log("✅ Restauration douce terminée");
+      console.log("✅ Restauration des paramètres terminée");
     }, 300);
     
-    // CORRECTION : Initialiser le tracking de session
+    // Rendu final et mise à jour des compteurs
+    setTimeout(() => {
+      console.log("🔄 Rendu final et mise à jour des compteurs...");
+      
+      // Re-rendu pour s'assurer que tout est à jour
+      if (typeof renderPalanquees === 'function') renderPalanquees();
+      if (typeof renderPlongeurs === 'function') renderPlongeurs();
+      if (typeof updateAlertes === 'function') updateAlertes();
+      
+      // Mise à jour forcée des compteurs
+      setTimeout(() => {
+        if (typeof updateCompteurs === 'function') {
+          updateCompteurs();
+          console.log('🔢 Compteurs mis à jour après chargement session');
+        }
+      }, 100);
+      
+    }, 500);
+    
+    // Initialiser le tracking de session
     currentSessionKey = sessionKey;
     sessionModified = false;
     
     console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
     
     return true;
-   //
-setTimeout(() => {
-    console.log("🔄 Rendu forcé après nettoyage...");
     
-    if (typeof renderPalanquees === 'function') renderPalanquees();
-    if (typeof renderPlongeurs === 'function') renderPlongeurs();
-    if (typeof updateAlertes === 'function') updateAlertes();
-    
-    // FORCER la mise à jour des compteurs après chargement
-    setTimeout(() => {
-        if (typeof updateCompteurs === 'function') {
-            updateCompteurs();
-            console.log('🔢 Compteurs forcés après chargement session');
-        }
-    }, 300);
-    
-}, 200);
-//   
   } catch (error) {
     console.error("⚠ Erreur:", error);
     alert(`Erreur lors du chargement:\n${error.message}`);
