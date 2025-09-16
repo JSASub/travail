@@ -300,6 +300,22 @@ function showAuthError(message) {
 function forceInitializeFloatingMenus() {
     console.log('🔄 Initialisation forcée des menus flottants...');
     
+    // Fonction pour synchroniser les largeurs
+    function syncMenuWidth() {
+        const saveBtn = document.getElementById('floating-save-btn');
+        const menu = document.getElementById('floating-plongeurs-menu');
+        
+        if (saveBtn && menu) {
+            const btnWidth = saveBtn.getBoundingClientRect().width;
+            if (btnWidth > 0) {
+                menu.style.width = btnWidth + 'px';
+                menu.style.minWidth = btnWidth + 'px';
+                menu.style.maxWidth = btnWidth + 'px';
+                console.log('Menu synchronisé avec bouton Save:', btnWidth + 'px');
+            }
+        }
+    }
+    
     setTimeout(() => {
         // Forcer l'affichage de l'application principale
         const mainApp = document.getElementById('main-app');
@@ -307,16 +323,13 @@ function forceInitializeFloatingMenus() {
             mainApp.style.display = 'block';
         }
         
-        // Forcer l'affichage et les dimensions du menu latéral
+        // Forcer l'affichage du menu latéral
         const floatingMenu = document.getElementById('floating-plongeurs-menu');
         if (floatingMenu) {
             floatingMenu.style.display = 'flex';
             floatingMenu.style.visibility = 'visible';
             floatingMenu.style.opacity = '1';
-            floatingMenu.style.width = '250px';        // ✅ CORRECTION
-            floatingMenu.style.minWidth = '250px';     // ✅ CORRECTION  
-            floatingMenu.style.maxWidth = '300px';     // ✅ CORRECTION
-            console.log('✅ Menu latéral forcé avec largeur correcte');
+            console.log('Menu latéral forcé à s\'afficher');
         }
         
         // Appeler les fonctions d'initialisation
@@ -332,15 +345,18 @@ function forceInitializeFloatingMenus() {
             window.enableDPButtons();
         }
         
-        // Surveillance pour maintenir les dimensions
+        // Synchroniser les largeurs après l'initialisation
+        setTimeout(syncMenuWidth, 500);
+        setTimeout(syncMenuWidth, 1500); // Double vérification
+        
+        // Surveillance pour maintenir la synchronisation
         setInterval(() => {
             const menu = document.getElementById('floating-plongeurs-menu');
             if (menu && (menu.style.width === '0px' || menu.style.width === '')) {
-                menu.style.width = '250px';
-                menu.style.minWidth = '250px';
-                console.log('🔧 Largeur du menu corrigée automatiquement');
+                syncMenuWidth();
+                console.log('Largeur du menu resynchronisée');
             }
-        }, 2000);
+        }, 3000);
         
     }, 1500);
 }
