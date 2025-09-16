@@ -360,7 +360,7 @@ function forceInitializeFloatingMenus() {
         
     }, 1500);
 }
-//
+
 // Surveillance continue du menu latéral
 function setupMenuSurveillance() {
     let surveillanceCount = 0;
@@ -395,6 +395,7 @@ function setupMenuSurveillance() {
         
     }, 1000);
 }
+
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
 async function saveSessionData() {
   console.log("💾 Sauvegarde session avec protection...");
@@ -614,7 +615,6 @@ for (let i = 0; i < pal.length; i++) {
   }
 }
 
-// Fonction pour charger une session MODIFIÉE AVEC TRACKING
 // Fonction pour charger une session CORRIGÉE ET PROPRE
 async function loadSession(sessionKey) {
   console.log("🔥 Chargement session:", sessionKey);
@@ -765,6 +765,7 @@ async function loadSession(sessionKey) {
     sessionModified = false;
     
     console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
+    
     // Forcer la mise à jour du compteur
 	const forceCompteurUpdate = () => {
 		const compteur = document.getElementById('compteur-plongeurs');
@@ -792,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (dpSelect) {
     dpSelect.addEventListener('change', function() {
       const dpNom = getSelectedDPName();
-      console.log("📄 DP changé:", dpNom);
+      console.log("🔄 DP changé:", dpNom);
       
       // Afficher visuellement le DP sélectionné
       const dpStatus = document.querySelector('.dp-status-indicator');
@@ -983,7 +984,7 @@ async function testFirebaseConnectionSafe() {
 // ===== INITIALISATION SÉCURISÉE DES DONNÉES =====
 async function initializeAppData() {
   try {
-    console.log("📄 Initialisation sécurisée des données de l'application...");
+    console.log("🔄 Initialisation sécurisée des données de l'application...");
     
     // Vérifier que les variables globales sont initialisées
     if (typeof plongeurs === 'undefined') {
@@ -1032,6 +1033,15 @@ async function initializeAppData() {
       if (typeof renderPlongeurs === 'function') renderPlongeurs();
       if (typeof updateAlertes === 'function') updateAlertes();
       if (typeof updateCompteurs === 'function') updateCompteurs();
+      
+      // CORRECTION : Forcer la mise à jour des compteurs au démarrage
+      setTimeout(() => {
+        if (typeof updateCompteurs === 'function') {
+          updateCompteurs();
+          console.log('🔢 Compteurs initialisés au démarrage');
+        }
+      }, 500);
+      
     } catch (renderError) {
       console.error("⚠ Erreur rendu initial:", renderError);
     }
@@ -1734,4 +1744,4 @@ window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.4.0 AVEC initialisation menu latéral");
+console.log("✅ Main Core sécurisé chargé - Version 3.4.0 AVEC initialisation menu latéral et compteurs corrigés");
