@@ -765,7 +765,17 @@ async function loadSession(sessionKey) {
     sessionModified = false;
     
     console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
-    
+    // Forcer la mise à jour du compteur
+	const forceCompteurUpdate = () => {
+		const compteur = document.getElementById('compteur-plongeurs');
+		if (compteur && plongeurs) {
+			compteur.textContent = '(' + plongeurs.length + ')';
+		}
+	};
+
+	setTimeout(forceCompteurUpdate, 300);
+	setTimeout(forceCompteurUpdate, 800);
+
     return true;
     
   } catch (error) {
