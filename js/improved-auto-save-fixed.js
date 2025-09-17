@@ -303,6 +303,15 @@
      */
     function saveApplicationState() {
         try {
+            // DIAGNOSTIC AVANT SAUVEGARDE
+            console.log('=== DIAGNOSTIC AVANT SAUVEGARDE ===');
+            const diagnostic = diagnosticComptage();
+            
+            if (diagnostic.ecart > 5) {
+                console.warn(`ATTENTION: Ecart de comptage important detecte (${diagnostic.ecart} plongeurs)`);
+                console.log('Details de l\'ecart:', diagnostic.details);
+            }
+            
             // Récupérer les données de manière sécurisée
             const plongeurs = safeGetPlongeurs();
             const palanquees = safeGetPalanquees();
@@ -310,9 +319,9 @@
             const dpDate = document.getElementById('dp-date');
             const dpLieu = document.getElementById('dp-lieu');
             
-            // Compter de manière simple et sécurisée
+            // Utiliser les comptes vérifiés du diagnostic
             const plongeursInPalanquees = countPlongeursInPalanquees(palanquees);
-            const totalReel = plongeurs.length + plongeursInPalanquees;
+            const totalReel = diagnostic.totalReel;
             
             console.log(`Sauvegarde avec: ${plongeurs.length} en liste + ${plongeursInPalanquees} en palanquees = ${totalReel} total`);
             
@@ -343,7 +352,7 @@
             // Capturer l'état complet de manière sécurisée
             const appState = {
                 timestamp: Date.now(),
-                version: '1.2', // Version corrigée
+                version: '1.1', // Version mise à jour
                 metadata: {
                     dp: {
                         selectedId: dpSelect ? dpSelect.value || '' : '',
@@ -363,14 +372,15 @@
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
                     nombrePalanquees: nombrePalanqueesValides,
-                    totalGeneral: totalReel // Total simple et vérifié
+                    totalGeneral: totalReel, // Utiliser le total RÉEL vérifié
+                    diagnostic: diagnostic // Inclure le diagnostic pour debug
                 }
             };
 
             // Sauvegarder dans localStorage
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(appState));
             
-            console.log('Sauvegarde automatique effectuee (corrigee):', {
+            console.log('Sauvegarde automatique effectuee (verifie):', {
                 plongeursEnListe: appState.stats.totalPlongeurs,
                 plongeursEnPalanquees: appState.stats.totalEnPalanquees,
                 totalGeneral: appState.stats.totalGeneral,
@@ -1118,8 +1128,7 @@
     /**
      * Fonction de diagnostic exposée globalement
      */
-    window.ultraPreciseCount = ultraPreciseCount;
-    window.diagnosticComptage = ultraPreciseCount; // Alias pour compatibilité
+    window.diagnosticComptage = diagnosticComptage;
 
     /**
      * Exposer la fonction de reconstruction pour usage externe
