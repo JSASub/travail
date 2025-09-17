@@ -203,7 +203,7 @@ async function syncToDatabase() {
     // CORRECTION : Marquer que la session a été modifiée
     if (currentSessionKey) {
       sessionModified = true;
-      console.log("📄 Session marquée comme modifiée");
+      console.log("🔄 Session marquée comme modifiée");
     }
     
     // Re-rendre l'interface SANS manipulation DOM excessive
@@ -609,7 +609,7 @@ async function saveSessionData() {
     // Session modifiée : créer une nouvelle clé avec timestamp
     const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '');
     sessionKey = `${baseKey}_modif_${timestamp}`;
-    console.log(`📄 Session modifiée, nouvelle clé: ${sessionKey}`);
+    console.log(`🔄 Session modifiée, nouvelle clé: ${sessionKey}`);
   } else {
     sessionKey = baseKey;
   }
@@ -731,48 +731,28 @@ for (let i = 0; i < pal.length; i++) {
     currentSessionKey = sessionKey;
     sessionModified = false;
     
-    // Affichage de confirmation modifiée avec statistiques détaillées
-const dpMessage = document.getElementById("dp-message");
-if (dpMessage) {
-  const isNewSession = sessionKey.includes('_modif_');
-  
-  // Calculer les statistiques détaillées
-  const plongeursEnAttente = plongeurs?.length || 0;
-  const plongeursDansPalanquees = palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0);
-  const nombrePalanquees = palanqueesData.length;
-  const totalGeneral = plongeursEnAttente + plongeursDansPalanquees;
-  
-  dpMessage.innerHTML = `
-    <div style="
-      background: #28a745;
-      color: white;
-      padding: 12px;
-      border-radius: 5px;
-      margin: 10px 0;
-    ">
-      ✅ <strong>${isNewSession ? 'NOUVELLE SESSION CRÉÉE!' : 'SESSION SAUVEGARDÉE!'}</strong><br>
-      ${isNewSession ? '🆕 Session originale préservée<br>' : ''}
-      <br>
-      📋 DP: ${dpNom}<br>
-      📅 Date: ${dpDate} (${dpPlongee})<br>
-      📍 Lieu: ${dpLieu}<br>
-      <br>
-      <strong>📊 STATISTIQUES DE SAUVEGARDE :</strong><br>
-      👥 <strong>${totalGeneral} plongeurs TOTAL</strong><br>
-      └─ ${plongeursEnAttente} en liste d'attente<br>
-      └─ ${plongeursDansPalanquees} assignés en palanquées<br>
-      <br>
-      🏠 <strong>${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''} sauvegardée${nombrePalanquees > 1 ? 's' : ''}</strong><br>
-      ${nombrePalanquees > 0 ? `└─ avec ${plongeursDansPalanquees} plongeur${plongeursDansPalanquees > 1 ? 's' : ''} assigné${plongeursDansPalanquees > 1 ? 's' : ''}<br>` : ''}
-      <br>
-      🔑 Session: ${sessionKey}
-    </div>
-  `;
+    // Message de confirmation simplifié
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      const isNewSession = sessionKey.includes('_modif_');
+      const plongeursEnAttente = plongeurs?.length || 0;
+      const plongeursDansPalanquees = palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0);
+      const nombrePalanquees = palanqueesData.length;
+      const totalGeneral = plongeursEnAttente + plongeursDansPalanquees;
+      
+      dpMessage.innerHTML = `
+        <div style="background: #28a745; color: white; padding: 12px; border-radius: 5px; margin: 10px 0;">
+          ✅ <strong>${isNewSession ? 'NOUVELLE SESSION CRÉÉE!' : 'SESSION SAUVEGARDÉE!'}</strong><br>
+          📊 ${totalGeneral} plongeurs total (${plongeursEnAttente} en attente, ${plongeursDansPalanquees} assignés)<br>
+          🏠 ${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''}<br>
+          🔑 Clé: ${sessionKey}
+        </div>
+      `;
       dpMessage.style.display = 'block';
       
       setTimeout(() => {
         dpMessage.style.display = 'none';
-      }, 10000);
+      }, 8000);
     }
     
     return true;
@@ -867,7 +847,7 @@ async function loadSession(sessionKey) {
     
     // Restauration des paramètres des palanquées avec délai
     setTimeout(() => {
-      console.log("📄 Restauration des paramètres d'interface...");
+      console.log("🔄 Restauration des paramètres d'interface...");
       
       palanquees.forEach((pal, index) => {
         if (!pal || !Array.isArray(pal)) return;
@@ -1660,128 +1640,6 @@ function setupEventListeners() {
   }
 }
 
-// ===== CORRECTION COMPTEUR PALANQUÉES DOUCE (SANS INTERFÉRENCE DOM) =====
-function initCompteurCorrectionDouce() {
-  let lastCompteurValue = '';
-  let correctionCount = 0;
-  
-  function compteurCorrectionDouce() {
-    try {
-      const compteur = document.getElementById('compteur-palanquees');
-      if (!compteur) return;
-      
-      const palanqueesCount = document.querySelectorAll('.palanquee').length;
-      
-      if (palanqueesCount > 0) {
-        let plongeursCount = 0;
-        document.querySelectorAll('.palanquee').forEach(pal => {
-          plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
-        });
-        
-        const texteCorrect = `(${plongeursCount} plongeurs dans ${palanqueesCount} palanquées)`;
-        
-        // CORRECTION DOUCE : Ne corriger que si nécessaire ET ne toucher QUE au compteur
-        if (compteur.textContent !== texteCorrect && compteur.textContent !== lastCompteurValue) {
-          compteur.textContent = texteCorrect;
-          lastCompteurValue = texteCorrect;
-          correctionCount++;
-          // SUPPRIMÉ : Les logs qui polluaient la console
-        }
-      }
-    } catch (error) {
-      console.error('⚠ Erreur compteurCorrectionDouce:', error);
-    }
-  }
-  
-  // Correction initiale UNIQUE
-  compteurCorrectionDouce();
-  
-  // CORRECTION : Surveillance réduite et plus espacée pour éviter les interférences
-  const correctionInterval = setInterval(compteurCorrectionDouce, 10000); // 10 secondes au lieu de 3
-  
-  // Arrêter la surveillance plus tôt (1 minute au lieu de 2)
-  setTimeout(() => {
-    clearInterval(correctionInterval);
-    console.log(`🔧 Surveillance compteur arrêtée après ${correctionCount} corrections`);
-  }, 60000);
-  
-  // Exposer la fonction pour utilisation manuelle UNIQUEMENT
-  window.forceCompteurCorrection = compteurCorrectionDouce;
-}
-
-// Fonction pour corriger les textes des boîtes de dialogue
-function fixDialogContent() {
-  try {
-    const palanqueesCount = document.querySelectorAll('.palanquee').length;
-    let plongeursCount = 0;
-    document.querySelectorAll('.palanquee').forEach(pal => {
-      plongeursCount += pal.querySelectorAll('.palanquee-plongeur-item').length;
-    });
-    
-    // Texte correct à utiliser
-    const texteCorrect = `${plongeursCount} plongeurs dans ${palanqueesCount} palanquées`;
-    
-    // Chercher et corriger tous les éléments avec "0 palanquée"
-    const selecteurs = [
-      'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      '.notification', '.modal', '.dialog', '.popup', '.message',
-      '[class*="save"]', '[class*="session"]', '[class*="restore"]'
-    ];
-    
-    selecteurs.forEach(selecteur => {
-      const elements = document.querySelectorAll(selecteur);
-      elements.forEach(element => {
-        if (element.children.length === 0) { // Seulement les feuilles
-          const texte = element.textContent;
-          if (texte && texte.includes('0 palanquée') && texte.length < 500) {
-            // Remplacer "X plongeurs dans 0 palanquées" par le bon texte
-            const nouveauTexte = texte.replace(/\d+\s*plongeurs?\s+dans\s+0\s+palanquées?/gi, texteCorrect);
-            if (nouveauTexte !== texte) {
-              element.textContent = nouveauTexte;
-              console.log(`Boîte de dialogue corrigée: "${texte}" → "${nouveauTexte}"`);
-            }
-          }
-        }
-      });
-    });
-    
-  } catch (error) {
-    console.error('Erreur fixDialogContent:', error);
-  }
-}
-
-// Observer les nouvelles boîtes de dialogue qui apparaissent
-const dialogObserver = new MutationObserver((mutations) => {
-  let needsFix = false;
-  
-  mutations.forEach((mutation) => {
-    mutation.addedNodes.forEach((node) => {
-      if (node.nodeType === 1) { // Element node
-        const texte = node.textContent;
-        if (texte && (texte.includes('0 palanquée') || texte.includes('sauvegarde') || texte.includes('session'))) {
-          needsFix = true;
-        }
-      }
-    });
-  });
-  
-  if (needsFix) {
-    setTimeout(fixDialogContent, 100);
-  }
-});
-
-// Observer le document entier
-dialogObserver.observe(document.body, {
-  childList: true,
-  subtree: true
-});
-
-// Corriger immédiatement et périodiquement
-fixDialogContent();
-setInterval(fixDialogContent, 3000);
-
-console.log("Correction des boîtes de dialogue activée");
-
 // ===== DIAGNOSTIC ET MONITORING =====
 window.diagnosticJSAS = function() {
   console.log("🔍 === DIAGNOSTIC JSAS ===");
@@ -1867,12 +1725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       initializeDPSessionsManager();
     }
     
-    // 6. Initialiser la correction DOUCE du compteur (sans interférence DOM)
-    setTimeout(() => {
-      initCompteurCorrectionDouce();
-    }, 2000); // Démarrage retardé pour éviter les conflits
-    
-    // 7. Ajouter les gestionnaires d'erreurs globaux
+    // 6. Ajouter les gestionnaires d'erreurs globaux
     window.addEventListener('error', (event) => {
       console.error("⚠ Erreur JavaScript globale:", event.error);
       handleError(event.error, "Erreur JavaScript globale");
@@ -1929,4 +1782,4 @@ window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
 window.setupCompteurSurveillance = setupCompteurSurveillance;
 window.setupPostRefusalSurveillance = setupPostRefusalSurveillance;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.6.0 AVEC surveillance post-refus restauration");
+console.log("✅ Main Core sécurisé chargé - Version 3.7.0 - Message de sauvegarde simplifié");

@@ -1,6 +1,6 @@
 // ps/improved-auto-save-fixed.js
 // Système de sauvegarde automatique corrigé pour JSAS
-// Version sans erreurs de type - DÉLAIS RÉDUITS
+// Version avec statistiques détaillées dans la boîte de dialogue
 
 (function() {
     'use strict';
@@ -27,46 +27,46 @@
     }
 
     function safeGetPalanquees() {
-    console.log('🔍 Comptage direct des palanquées depuis le DOM...');
-    
-    // Compter uniquement les palanquées DOM avec des plongeurs réels
-    const palanqueesDOM = document.querySelectorAll('.palanquee');
-    console.log(`🔍 ${palanqueesDOM.length} éléments .palanquee trouvés dans le DOM`);
-    
-    if (palanqueesDOM.length === 0) {
-        return [];
-    }
-    
-    const palanqueesValides = [];
-    
-    palanqueesDOM.forEach((palanqueeEl, index) => {
-        // Vérifier s'il y a des plongeurs dans cette palanquée
-        const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-        console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs`);
+        console.log('🔍 Comptage direct des palanquées depuis le DOM...');
         
-        // Ne compter que les palanquées qui ont vraiment des plongeurs
-        if (plongeursEls.length > 0) {
-            const plongeurs = [];
-            
-            plongeursEls.forEach(plongeurEl => {
-                const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value?.trim() || '';
-                
-                if (nom) {
-                    plongeurs.push({ nom, niveau, pre });
-                }
-            });
-            
-            if (plongeurs.length > 0) {
-                palanqueesValides.push(plongeurs);
-            }
+        // Compter uniquement les palanquées DOM avec des plongeurs réels
+        const palanqueesDOM = document.querySelectorAll('.palanquee');
+        console.log(`🔍 ${palanqueesDOM.length} éléments .palanquee trouvés dans le DOM`);
+        
+        if (palanqueesDOM.length === 0) {
+            return [];
         }
-    });
-    
-    console.log(`✅ ${palanqueesValides.length} palanquées VALIDES avec plongeurs`);
-    return palanqueesValides;
-	}
+        
+        const palanqueesValides = [];
+        
+        palanqueesDOM.forEach((palanqueeEl, index) => {
+            // Vérifier s'il y a des plongeurs dans cette palanquée
+            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+            console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs`);
+            
+            // Ne compter que les palanquées qui ont vraiment des plongeurs
+            if (plongeursEls.length > 0) {
+                const plongeurs = [];
+                
+                plongeursEls.forEach(plongeurEl => {
+                    const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                    const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                    const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value?.trim() || '';
+                    
+                    if (nom) {
+                        plongeurs.push({ nom, niveau, pre });
+                    }
+                });
+                
+                if (plongeurs.length > 0) {
+                    palanqueesValides.push(plongeurs);
+                }
+            }
+        });
+        
+        console.log(`✅ ${palanqueesValides.length} palanquées VALIDES avec plongeurs`);
+        return palanqueesValides;
+    }
 
     function safeGetPlongeursOriginaux() {
         return (window.plongeursOriginaux && Array.isArray(window.plongeursOriginaux)) ? window.plongeursOriginaux : [];
@@ -96,20 +96,20 @@
      * Compter le nombre réel de palanquées avec plongeurs
      */
     function countValidPalanquees(palanquees) {
-    // Force le recomptage depuis le DOM pour être sûr
-    const palanqueesDOM = document.querySelectorAll('.palanquee');
-    let count = 0;
-    
-    palanqueesDOM.forEach(palanqueeEl => {
-        const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-        if (plongeursEls.length > 0) {
-            count++;
-        }
-    });
-    
-    console.log(`📊 Recomptage final: ${count} palanquées valides`);
-    return count;
-	}
+        // Force le recomptage depuis le DOM pour être sûr
+        const palanqueesDOM = document.querySelectorAll('.palanquee');
+        let count = 0;
+        
+        palanqueesDOM.forEach(palanqueeEl => {
+            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
+            if (plongeursEls.length > 0) {
+                count++;
+            }
+        });
+        
+        console.log(`📊 Recomptage final: ${count} palanquées valides`);
+        return count;
+    }
 
     /**
      * Fonction pour reconstruire les données depuis le DOM
@@ -219,7 +219,8 @@
                 stats: {
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
-                    nombrePalanquees: nombrePalanqueesValides // Utiliser le compte corrigé
+                    nombrePalanquees: nombrePalanqueesValides, // Utiliser le compte corrigé
+                    totalGeneral: plongeurs.length + plongeursInPalanquees // NOUVEAU: Total général
                 }
             };
 
@@ -227,9 +228,10 @@
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(appState));
             
             console.log('Sauvegarde automatique effectuée:', {
-                plongeurs: appState.stats.totalPlongeurs,
-                enPalanquées: appState.stats.totalEnPalanquees,
-                palanquées: appState.stats.nombrePalanquees,
+                plongeursEnListe: appState.stats.totalPlongeurs,
+                plongeursEnPalanquees: appState.stats.totalEnPalanquees,
+                totalGeneral: appState.stats.totalGeneral,
+                palanquees: appState.stats.nombrePalanquees,
                 dp: appState.metadata.dp.selectedText || 'Non sélectionné'
             });
 
@@ -283,8 +285,8 @@
             }
 
             // Vérifier qu'il y a des données significatives
-            const totalData = (appState.stats && appState.stats.totalPlongeurs ? appState.stats.totalPlongeurs : 0) + 
-                             (appState.stats && appState.stats.totalEnPalanquees ? appState.stats.totalEnPalanquees : 0);
+            const totalData = (appState.stats && appState.stats.totalGeneral ? appState.stats.totalGeneral : 
+                              (appState.stats.totalPlongeurs || 0) + (appState.stats.totalEnPalanquees || 0));
             
             if (totalData < CONFIG.MIN_DATA_THRESHOLD) {
                 console.log('Pas assez de données significatives dans la sauvegarde');
@@ -428,13 +430,17 @@
 
     /**
      * Afficher une notification élégante de proposition de restauration
+     * MODIFIÉE AVEC STATISTIQUES DÉTAILLÉES
      */
     function showRestorePrompt(appState) {
         if (hasShownRestorePrompt) return;
         hasShownRestorePrompt = true;
 
-        // Utiliser le compte corrigé de palanquées
-        const nombrePalanqueesValides = appState.stats?.nombrePalanquees || 0;
+        // Calculer les statistiques détaillées
+        const plongeursEnListe = appState.stats?.totalPlongeurs || 0;
+        const plongeursEnPalanquees = appState.stats?.totalEnPalanquees || 0;
+        const nombrePalanquees = appState.stats?.nombrePalanquees || 0;
+        const totalGeneral = appState.stats?.totalGeneral || (plongeursEnListe + plongeursEnPalanquees);
 
         // Créer la notification
         const notification = document.createElement('div');
@@ -448,18 +454,23 @@
                 </div>
                 <div class="restore-body">
                     <div class="restore-info">
-                        <div class="restore-stats">
-                            ${appState.stats.totalPlongeurs || 0} plongeurs,
-                            ${nombrePalanqueesValides} palanquée${nombrePalanqueesValides > 1 ? 's' : ''}
+                        <div class="restore-stats-header">
+                            <strong>📊 ${totalGeneral} plongeur${totalGeneral > 1 ? 's' : ''} TOTAL</strong>
                         </div>
+                        <div class="restore-stats-detail">
+                            📝 ${plongeursEnListe} en liste d'attente<br>
+                            🏠 ${plongeursEnPalanquees} assigné${plongeursEnPalanquees > 1 ? 's' : ''} en ${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''}
+                        </div>
+                        <div class="restore-separator"></div>
                         <div class="restore-dp">
-                            DP: ${appState.metadata && appState.metadata.dp ? appState.metadata.dp.selectedText || 'Non sélectionné' : 'Non défini'}
+                            <strong>🎯 DP:</strong> ${appState.metadata && appState.metadata.dp ? appState.metadata.dp.selectedText || 'Non sélectionné' : 'Non défini'}
                         </div>
                         <div class="restore-date">
-                            ${appState.metadata && appState.metadata.date ? new Date(appState.metadata.date).toLocaleDateString('fr-FR') : 'Date non définie'}
+                            <strong>📅 Date:</strong> ${appState.metadata && appState.metadata.date ? new Date(appState.metadata.date).toLocaleDateString('fr-FR') : 'Non définie'}
                         </div>
+                        ${appState.metadata && appState.metadata.lieu ? `<div class="restore-lieu"><strong>📍 Lieu:</strong> ${appState.metadata.lieu}</div>` : ''}
                         <div class="restore-age">
-                            Il y a ${formatTimeDifference(Date.now() - appState.timestamp)}
+                            ⏰ Sauvegardée il y a ${formatTimeDifference(Date.now() - appState.timestamp)}
                         </div>
                     </div>
                 </div>
@@ -474,7 +485,7 @@
             </div>
         `;
 
-        // Ajouter les styles si nécessaires
+        // Ajouter les styles améliorés si nécessaires
         if (!document.getElementById('restore-notification-styles')) {
             const styles = document.createElement('style');
             styles.id = 'restore-notification-styles';
@@ -483,13 +494,13 @@
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    max-width: 400px;
+                    max-width: 420px;
                     background: white;
                     border-radius: 12px;
                     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
                     z-index: 10000;
                     border: 2px solid #007bff;
-                    animation: slideInRight 0.3s ease; /* Réduit de 0.5s à 0.3s */
+                    animation: slideInRight 0.3s ease;
                 }
                 .restore-notification-content {
                     padding: 0;
@@ -534,26 +545,55 @@
                 .restore-info {
                     background: #f8f9fa;
                     border-radius: 8px;
-                    padding: 15px;
+                    padding: 16px;
                     font-size: 14px;
                     line-height: 1.6;
                 }
-                .restore-stats {
+                .restore-stats-header {
                     color: #28a745;
-                    font-weight: 500;
+                    font-size: 15px;
+                    font-weight: 600;
                     margin-bottom: 8px;
+                    text-align: center;
+                    background: #e8f5e8;
+                    padding: 8px;
+                    border-radius: 6px;
+                }
+                .restore-stats-detail {
+                    color: #495057;
+                    font-size: 13px;
+                    margin-bottom: 12px;
+                    padding-left: 8px;
+                    border-left: 3px solid #28a745;
+                    background: #f1f8f1;
+                    padding: 8px 8px 8px 12px;
+                    border-radius: 0 4px 4px 0;
+                }
+                .restore-separator {
+                    height: 1px;
+                    background: #dee2e6;
+                    margin: 12px 0;
+                }
+                .restore-dp, .restore-date, .restore-lieu {
+                    color: #495057;
+                    margin-bottom: 6px;
+                    font-size: 13px;
                 }
                 .restore-dp {
                     color: #007bff;
-                    margin-bottom: 8px;
                 }
                 .restore-date {
                     color: #6f42c1;
-                    margin-bottom: 8px;
+                }
+                .restore-lieu {
+                    color: #fd7e14;
                 }
                 .restore-age {
                     color: #6c757d;
-                    font-size: 13px;
+                    font-size: 12px;
+                    font-style: italic;
+                    margin-top: 8px;
+                    text-align: center;
                 }
                 .restore-footer {
                     padding: 15px 20px;
@@ -565,7 +605,7 @@
                     border-radius: 0 0 10px 10px;
                 }
                 .restore-btn {
-                    padding: 8px 16px;
+                    padding: 10px 18px;
                     border: none;
                     border-radius: 6px;
                     font-weight: 500;
@@ -610,7 +650,7 @@
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
-            }, 500); // Réduit de 1000 à 500ms
+            }, 500);
         };
 
         // CORRECTION : Fonction ignoreRestore avec synchronisation DOM
@@ -664,27 +704,35 @@
 
         document.body.appendChild(notification);
 
-        // Auto-fermeture après 20 secondes (réduit de 30)
+        // Auto-fermeture après 25 secondes
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, 20000); // Réduit de 30000 à 20000ms
+        }, 25000);
     }
 
     /**
-     * Messages de feedback
+     * Messages de feedback améliorés
      */
     function showRestoreSuccessMessage(appState) {
-        const nombrePalanqueesValides = appState.stats?.nombrePalanquees || 0;
+        const plongeursEnListe = appState.stats?.totalPlongeurs || 0;
+        const plongeursEnPalanquees = appState.stats?.totalEnPalanquees || 0;
+        const nombrePalanquees = appState.stats?.nombrePalanquees || 0;
+        const totalGeneral = appState.stats?.totalGeneral || (plongeursEnListe + plongeursEnPalanquees);
         
         const message = document.createElement('div');
         message.className = 'restore-success-message';
         message.innerHTML = `
-            <span>Session restaurée avec succès!</span>
-            <span style="font-size: 12px; opacity: 0.8; margin-left: 10px;">
-                ${appState.stats && appState.stats.totalPlongeurs ? appState.stats.totalPlongeurs : 0} plongeurs, ${nombrePalanqueesValides} palanquée${nombrePalanqueesValides > 1 ? 's' : ''}
-            </span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 18px;">✅</span>
+                <div>
+                    <div style="font-weight: 600;">Session restaurée avec succès!</div>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">
+                        📊 ${totalGeneral} plongeur${totalGeneral > 1 ? 's' : ''} total • 🏠 ${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''}
+                    </div>
+                </div>
+            </div>
         `;
         message.style.cssText = `
             position: fixed;
@@ -692,42 +740,52 @@
             right: 20px;
             background: #28a745;
             color: white;
-            padding: 12px 20px;
+            padding: 16px 20px;
             border-radius: 8px;
             z-index: 10001;
             font-weight: 500;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             animation: slideInRight 0.2s ease;
+            max-width: 380px;
         `;
         
         document.body.appendChild(message);
         
         setTimeout(() => {
             message.remove();
-        }, 3000); // Réduit de 5000 à 3000ms
+        }, 4000);
     }
 
     function showRestoreErrorMessage(error) {
         const message = document.createElement('div');
-        message.textContent = `Erreur de restauration: ${error.message}`;
+        message.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 18px;">⚠️</span>
+                <div>
+                    <div style="font-weight: 600;">Erreur de restauration</div>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">${error.message}</div>
+                </div>
+            </div>
+        `;
         message.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
             background: #dc3545;
             color: white;
-            padding: 12px 20px;
+            padding: 16px 20px;
             border-radius: 8px;
             z-index: 10001;
             font-weight: 500;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 380px;
         `;
         
         document.body.appendChild(message);
         
         setTimeout(() => {
             message.remove();
-        }, 3000); // Réduit de 5000 à 3000ms
+        }, 5000);
     }
 
     /**
@@ -805,7 +863,7 @@
                 lastPalanqueesCount = currentPalanqueesCount;
                 triggerAutoSave();
             }
-        }, 800); // Réduit de 1000 à 800ms
+        }, 800);
 
         console.log('Surveillance des changements activée');
     }
@@ -909,13 +967,13 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 200); // Réduit de 500 à 200ms
+            setTimeout(initAutoSaveSystem, 200);
         });
     } else {
         setTimeout(() => {
             disableOldSaveSystems();
             initAutoSaveSystem();
-        }, 200); // Réduit de 500 à 200ms
+        }, 200);
     }
 
     // Exposer les fonctions publiques
