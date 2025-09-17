@@ -10,8 +10,8 @@
         STORAGE_KEY: 'jsas_auto_save',
         MAX_AGE_HOURS: 24,
         MIN_DATA_THRESHOLD: 2,
-        SAVE_DELAY: 1000,          // ✅ Réduit de 2000 à 1000ms
-        SHOW_RESTORE_DELAY: 200    // ✅ Réduit de 500 à 200ms
+        SAVE_DELAY: 1000,          // Réduit de 2000 à 1000ms
+        SHOW_RESTORE_DELAY: 200    // Réduit de 500 à 200ms
     };
 
     // Variables globales du module
@@ -82,7 +82,7 @@
         for (let i = 0; i < palanquees.length; i++) {
             const pal = palanquees[i];
             if (Array.isArray(pal)) {
-                // ✅ Ne compter que les plongeurs avec un nom valide
+                // Ne compter que les plongeurs avec un nom valide
                 const plongeursValides = pal.filter(p => p && p.nom && p.nom.trim());
                 total += plongeursValides.length;
             } else if (pal && typeof pal.length === 'number' && pal.length >= 0) {
@@ -110,6 +110,55 @@
     console.log(`📊 Recomptage final: ${count} palanquées valides`);
     return count;
 	}
+
+    /**
+     * Fonction pour reconstruire les données depuis le DOM
+     */
+    function reconstructDataFromDOM() {
+        const listDOM = document.getElementById('listePlongeurs');
+        
+        if (!listDOM) return false;
+        
+        const domCount = listDOM.children.length;
+        const memoryCount = window.plongeurs ? window.plongeurs.length : 0;
+        
+        console.log(`Reconstruction DOM: ${domCount} dans DOM, ${memoryCount} en mémoire`);
+        
+        if (domCount > 0 && memoryCount === 0) {
+            console.log('Reconstruction des données plongeurs depuis le DOM...');
+            
+            window.plongeurs = [];
+            
+            Array.from(listDOM.children).forEach(li => {
+                const text = li.textContent || li.innerText;
+                const parts = text.split(' - ');
+                
+                if (parts.length >= 2) {
+                    window.plongeurs.push({
+                        nom: parts[0].trim(),
+                        niveau: parts[1].trim(),
+                        pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                    });
+                }
+            });
+            
+            window.plongeursOriginaux = [...window.plongeurs];
+            
+            console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+            
+            // Forcer la mise à jour des compteurs après reconstruction
+            setTimeout(() => {
+                if (typeof updateCompteurs === 'function') {
+                    updateCompteurs();
+                    console.log('Compteurs mis à jour après reconstruction DOM');
+                }
+            }, 300);
+            
+            return true;
+        }
+        
+        return false;
+    }
 
     /**
      * Sauvegarder l'état complet de l'application
@@ -145,7 +194,7 @@
                 return;
             }
 
-            // ✅ Compter correctement les palanquées valides
+            // Compter correctement les palanquées valides
             const nombrePalanqueesValides = countValidPalanquees(palanquees);
 
             // Capturer l'état complet de manière sécurisée
@@ -170,7 +219,7 @@
                 stats: {
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
-                    nombrePalanquees: nombrePalanqueesValides // ✅ Utiliser le compte corrigé
+                    nombrePalanquees: nombrePalanqueesValides // Utiliser le compte corrigé
                 }
             };
 
@@ -210,7 +259,7 @@
         
         setTimeout(() => {
             indicator.classList.remove('show');
-        }, 1500); // ✅ Réduit de 2000 à 1500ms
+        }, 1500); // Réduit de 2000 à 1500ms
     }
 
     /**
@@ -345,7 +394,7 @@
                 if (dpSelect && dpSelect.options.length > 1) {
                     resolve();
                 } else {
-                    setTimeout(checkDP, 50); // ✅ Réduit de 100 à 50ms
+                    setTimeout(checkDP, 50); // Réduit de 100 à 50ms
                 }
             };
             checkDP();
@@ -384,7 +433,7 @@
         if (hasShownRestorePrompt) return;
         hasShownRestorePrompt = true;
 
-        // ✅ Utiliser le compte corrigé de palanquées
+        // Utiliser le compte corrigé de palanquées
         const nombrePalanqueesValides = appState.stats?.nombrePalanquees || 0;
 
         // Créer la notification
@@ -440,7 +489,7 @@
                     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
                     z-index: 10000;
                     border: 2px solid #007bff;
-                    animation: slideInRight 0.3s ease; /* ✅ Réduit de 0.5s à 0.3s */
+                    animation: slideInRight 0.3s ease; /* Réduit de 0.5s à 0.3s */
                 }
                 .restore-notification-content {
                     padding: 0;
@@ -561,13 +610,56 @@
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
-            }, 500); // ✅ Réduit de 1000 à 500ms
+            }, 500); // Réduit de 1000 à 500ms
         };
 
+        // CORRECTION : Fonction ignoreRestore avec synchronisation DOM
         window.ignoreRestore = function(btn) {
             localStorage.removeItem(CONFIG.STORAGE_KEY);
             const notification = btn.closest('.restore-notification');
             if (notification) notification.remove();
+            
+            // NOUVEAU : Synchroniser les données DOM vers les variables globales après refus
+            setTimeout(() => {
+                console.log('Synchronisation DOM après refus de restauration...');
+                
+                // Reconstruire window.plongeurs depuis la liste DOM
+                const listDOM = document.getElementById('listePlongeurs');
+                if (listDOM && listDOM.children.length > 0) {
+                    window.plongeurs = window.plongeurs || [];
+                    
+                    if (window.plongeurs.length === 0) {
+                        console.log('Reconstruction des plongeurs depuis le DOM...');
+                        
+                        Array.from(listDOM.children).forEach(li => {
+                            const text = li.textContent || li.innerText;
+                            const parts = text.split(' - ');
+                            
+                            if (parts.length >= 2) {
+                                window.plongeurs.push({
+                                    nom: parts[0].trim(),
+                                    niveau: parts[1].trim(),
+                                    pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                                });
+                            }
+                        });
+                        
+                        window.plongeursOriginaux = [...window.plongeurs];
+                        console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+                    }
+                }
+                
+                // Forcer la mise à jour des compteurs
+                if (typeof updateCompteurs === 'function') {
+                    updateCompteurs();
+                    console.log('Compteurs mis à jour après refus restauration');
+                }
+                
+                // Mettre à jour le menu flottant si disponible
+                if (typeof updateFloatingPlongeursList === 'function') {
+                    updateFloatingPlongeursList();
+                }
+            }, 500);
         };
 
         document.body.appendChild(notification);
@@ -577,7 +669,7 @@
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, 20000); // ✅ Réduit de 30000 à 20000ms
+        }, 20000); // Réduit de 30000 à 20000ms
     }
 
     /**
@@ -612,7 +704,7 @@
         
         setTimeout(() => {
             message.remove();
-        }, 3000); // ✅ Réduit de 5000 à 3000ms
+        }, 3000); // Réduit de 5000 à 3000ms
     }
 
     function showRestoreErrorMessage(error) {
@@ -635,7 +727,7 @@
         
         setTimeout(() => {
             message.remove();
-        }, 3000); // ✅ Réduit de 5000 à 3000ms
+        }, 3000); // Réduit de 5000 à 3000ms
     }
 
     /**
@@ -713,7 +805,7 @@
                 lastPalanqueesCount = currentPalanqueesCount;
                 triggerAutoSave();
             }
-        }, 800); // ✅ Réduit de 1000 à 800ms
+        }, 800); // Réduit de 1000 à 800ms
 
         console.log('Surveillance des changements activée');
     }
@@ -808,17 +900,22 @@
         console.log('Debug sauvegarde automatique:', saved ? JSON.parse(saved) : 'Aucune sauvegarde');
     };
 
+    /**
+     * Exposer la fonction de reconstruction pour usage externe
+     */
+    window.reconstructDataFromDOM = reconstructDataFromDOM;
+
     // Auto-initialisation avec délai réduit
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 200); // ✅ Réduit de 500 à 200ms
+            setTimeout(initAutoSaveSystem, 200); // Réduit de 500 à 200ms
         });
     } else {
         setTimeout(() => {
             disableOldSaveSystems();
             initAutoSaveSystem();
-        }, 200); // ✅ Réduit de 500 à 200ms
+        }, 200); // Réduit de 500 à 200ms
     }
 
     // Exposer les fonctions publiques

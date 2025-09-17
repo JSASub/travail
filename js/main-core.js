@@ -67,6 +67,56 @@ window.getCurrentPalanqueesStats = getCurrentPalanqueesStats;
 
 console.log("Interception des boîtes de dialogue activée");
 
+// Fonction pour reconstruire les données depuis le DOM
+function reconstructDataFromDOM() {
+    const listDOM = document.getElementById('listePlongeurs');
+    
+    if (!listDOM) return false;
+    
+    const domCount = listDOM.children.length;
+    const memoryCount = window.plongeurs ? window.plongeurs.length : 0;
+    
+    console.log(`Reconstruction DOM: ${domCount} dans DOM, ${memoryCount} en mémoire`);
+    
+    if (domCount > 0 && memoryCount === 0) {
+        console.log('Reconstruction des données plongeurs depuis le DOM...');
+        
+        window.plongeurs = [];
+        
+        Array.from(listDOM.children).forEach(li => {
+            const text = li.textContent || li.innerText;
+            const parts = text.split(' - ');
+            
+            if (parts.length >= 2) {
+                window.plongeurs.push({
+                    nom: parts[0].trim(),
+                    niveau: parts[1].trim(),
+                    pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                });
+            }
+        });
+        
+        window.plongeursOriginaux = [...window.plongeurs];
+        
+        console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+        
+        // Forcer la mise à jour des compteurs après reconstruction
+        setTimeout(() => {
+            if (typeof updateCompteurs === 'function') {
+                updateCompteurs();
+                console.log('Compteurs mis à jour après reconstruction DOM');
+            }
+        }, 300);
+        
+        return true;
+    }
+    
+    return false;
+}
+
+// Exposer globalement
+window.reconstructDataFromDOM = reconstructDataFromDOM;
+
 // Forcer l'initialisation des variables globales
 document.addEventListener('DOMContentLoaded', function() {
   // S'assurer que les variables existent
@@ -436,6 +486,69 @@ function setupCompteurSurveillance() {
       console.log('Surveillance compteurs arrêtée');
     }
   }, 3000);
+}
+
+// ===== SURVEILLANCE POST-REFUS DE RESTAURATION =====
+function setupPostRefusalSurveillance() {
+    // Surveiller pendant 10 secondes après un F5 si il y a désynchronisation
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const checkInterval = setInterval(() => {
+        attempts++;
+        
+        const listCount = document.querySelectorAll('#listePlongeurs li').length;
+        const memoryCount = window.plongeurs ? window.plongeurs.length : 0;
+        const compteurText = document.getElementById('compteur-plongeurs')?.textContent;
+        
+        // Détecter une désynchronisation
+        if (listCount > 0 && memoryCount === 0) {
+            console.log('Désynchronisation détectée, reconstruction depuis DOM...');
+            
+            window.plongeurs = [];
+            const listDOM = document.getElementById('listePlongeurs');
+            
+            Array.from(listDOM.children).forEach(li => {
+                const text = li.textContent || li.innerText;
+                const parts = text.split(' - ');
+                
+                if (parts.length >= 2) {
+                    window.plongeurs.push({
+                        nom: parts[0].trim(),
+                        niveau: parts[1].trim(),
+                        pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                    });
+                }
+            });
+            
+            window.plongeursOriginaux = [...window.plongeurs];
+            
+            if (typeof updateCompteurs === 'function') {
+                updateCompteurs();
+            }
+            
+            if (typeof updateFloatingPlongeursList === 'function') {
+                updateFloatingPlongeursList();
+            }
+            
+            clearInterval(checkInterval);
+            console.log('Synchronisation terminée:', window.plongeurs.length, 'plongeurs');
+            return;
+        }
+        
+        // Si le compteur affiche (0) mais qu'il y a des plongeurs, corriger
+        if (compteurText === '(0)' && listCount > 0) {
+            console.log('Correction compteur post-refus détectée');
+            if (typeof updateCompteurs === 'function') {
+                updateCompteurs();
+            }
+        }
+        
+        if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            console.log('Surveillance post-refus terminée');
+        }
+    }, 1000);
 }
 
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
@@ -1432,6 +1545,9 @@ function setupEventListeners() {
             // Surveillance des compteurs
             setupCompteurSurveillance();
             
+            // Surveillance post-refus de restauration
+            setupPostRefusalSurveillance();
+            
           } else {
             throw new Error("Fonction signIn non disponible");
           }
@@ -1811,5 +1927,6 @@ window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
 window.setupCompteurSurveillance = setupCompteurSurveillance;
+window.setupPostRefusalSurveillance = setupPostRefusalSurveillance;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.5.0 AVEC corrections complètes compteurs démarrage");
+console.log("✅ Main Core sécurisé chargé - Version 3.6.0 AVEC surveillance post-refus restauration");
