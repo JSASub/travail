@@ -1128,7 +1128,8 @@
     /**
      * Fonction de diagnostic exposée globalement
      */
-    window.diagnosticComptage = diagnosticComptage;
+    window.ultraPreciseCount = ultraPreciseCount;
+    window.diagnosticComptage = ultraPreciseCount; // Alias pour compatibilité
 
     /**
      * Exposer la fonction de reconstruction pour usage externe
