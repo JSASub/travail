@@ -23,38 +23,93 @@
      * Vérifications sécurisées pour les variables globales
      */
     function safeGetPlongeurs() {
-        return (window.plongeurs && Array.isArray(window.plongeurs)) ? window.plongeurs : [];
+        console.log('🔍 Comptage PRÉCIS des plongeurs en liste depuis le DOM...');
+        
+        // Compter seulement les plongeurs VISIBLES dans la liste principale
+        const listePlongeurs = document.getElementById('listePlongeurs');
+        if (!listePlongeurs) {
+            console.log('❌ Liste plongeurs introuvable');
+            return [];
+        }
+        
+        const plongeursElements = listePlongeurs.querySelectorAll('li:not([style*="display: none"])');
+        console.log(`🔍 ${plongeursElements.length} éléments li VISIBLES dans la liste`);
+        
+        const plongeursValides = [];
+        
+        plongeursElements.forEach((li, index) => {
+            // Vérifier que l'élément est vraiment visible
+            const style = window.getComputedStyle(li);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+                return;
+            }
+            
+            const text = li.textContent?.trim() || '';
+            if (text.length > 0) {
+                const parts = text.split(' - ');
+                if (parts.length >= 2) {
+                    plongeursValides.push({
+                        nom: parts[0].trim(),
+                        niveau: parts[1].trim(),
+                        pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                    });
+                }
+            }
+        });
+        
+        console.log(`✅ ${plongeursValides.length} plongeurs VALIDES en liste`);
+        
+        // Fallback vers les variables globales si disponibles et cohérentes
+        if (plongeursValides.length === 0 && window.plongeurs && Array.isArray(window.plongeurs)) {
+            console.log(`🔄 Fallback vers window.plongeurs: ${window.plongeurs.length} plongeurs`);
+            return window.plongeurs.filter(p => p && p.nom && p.nom.trim());
+        }
+        
+        return plongeursValides;
     }
 
     function safeGetPalanquees() {
-        console.log('🔍 Comptage direct des palanquées depuis le DOM...');
+        console.log('🔍 Comptage PRÉCIS des palanquées depuis le DOM...');
         
-        // Compter uniquement les palanquées DOM avec des plongeurs réels
-        const palanqueesDOM = document.querySelectorAll('.palanquee');
-        console.log(`🔍 ${palanqueesDOM.length} éléments .palanquee trouvés dans le DOM`);
+        // Compter uniquement les palanquées DOM VISIBLES avec des plongeurs réels
+        const palanqueesDOM = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+        console.log(`🔍 ${palanqueesDOM.length} éléments .palanquee VISIBLES trouvés`);
         
         if (palanqueesDOM.length === 0) {
             return [];
         }
         
         const palanqueesValides = [];
+        let totalPlongeursComptes = 0;
         
         palanqueesDOM.forEach((palanqueeEl, index) => {
-            // Vérifier s'il y a des plongeurs dans cette palanquée
-            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-            console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs`);
+            // Vérifier que l'élément est vraiment visible
+            const style = window.getComputedStyle(palanqueeEl);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+                return;
+            }
             
-            // Ne compter que les palanquées qui ont vraiment des plongeurs
+            // Chercher les plongeurs VISIBLES seulement
+            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+            console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs visibles`);
+            
             if (plongeursEls.length > 0) {
                 const plongeurs = [];
                 
                 plongeursEls.forEach(plongeurEl => {
+                    // Vérifier aussi que le plongeur est visible
+                    const plongeurStyle = window.getComputedStyle(plongeurEl);
+                    if (plongeurStyle.display === 'none' || plongeurStyle.visibility === 'hidden') {
+                        return;
+                    }
+                    
                     const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent?.trim() || '';
                     const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
                     const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value?.trim() || '';
                     
-                    if (nom) {
+                    if (nom && nom.length > 0) {
                         plongeurs.push({ nom, niveau, pre });
+                        totalPlongeursComptes++;
                     }
                 });
                 
@@ -64,7 +119,7 @@
             }
         });
         
-        console.log(`✅ ${palanqueesValides.length} palanquées VALIDES avec plongeurs`);
+        console.log(`✅ ${palanqueesValides.length} palanquées VALIDES avec ${totalPlongeursComptes} plongeurs TOTAL`);
         return palanqueesValides;
     }
 
@@ -161,16 +216,114 @@
     }
 
     /**
-     * Sauvegarder l'état complet de l'application
+     * Fonction de diagnostic pour identifier les écarts de comptage
+     */
+    function diagnosticComptage() {
+        console.log('🔧 === DIAGNOSTIC COMPTAGE DÉTAILLÉ ===');
+        
+        // 1. Compter les plongeurs en liste
+        const listePlongeurs = document.getElementById('listePlongeurs');
+        const plongeursListe = listePlongeurs ? listePlongeurs.querySelectorAll('li') : [];
+        const plongeursListeVisibles = listePlongeurs ? listePlongeurs.querySelectorAll('li:not([style*="display: none"])') : [];
+        
+        console.log(`📝 LISTE PRINCIPALE:`);
+        console.log(`  - Total éléments <li>: ${plongeursListe.length}`);
+        console.log(`  - Éléments visibles: ${plongeursListeVisibles.length}`);
+        console.log(`  - window.plongeurs: ${window.plongeurs ? window.plongeurs.length : 'undefined'}`);
+        
+        // 2. Compter les palanquées et plongeurs
+        const palanqueesDOM = document.querySelectorAll('.palanquee');
+        const palanqueesVisibles = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+        
+        console.log(`🏠 PALANQUÉES:`);
+        console.log(`  - Total éléments .palanquee: ${palanqueesDOM.length}`);
+        console.log(`  - Palanquées visibles: ${palanqueesVisibles.length}`);
+        
+        let totalPlongeursEnPalanquees = 0;
+        let totalPlongeursVisiblesEnPalanquees = 0;
+        
+        palanqueesDOM.forEach((pal, index) => {
+            const plongeursTous = pal.querySelectorAll('.palanquee-plongeur-item');
+            const plongeursVisibles = pal.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+            
+            totalPlongeursEnPalanquees += plongeursTous.length;
+            totalPlongeursVisiblesEnPalanquees += plongeursVisibles.length;
+            
+            if (plongeursTous.length > 0) {
+                console.log(`    Palanquée ${index + 1}: ${plongeursTous.length} total, ${plongeursVisibles.length} visibles`);
+            }
+        });
+        
+        console.log(`  - Total plongeurs en palanquées: ${totalPlongeursEnPalanquees}`);
+        console.log(`  - Total plongeurs visibles en palanquées: ${totalPlongeursVisiblesEnPalanquees}`);
+        console.log(`  - window.palanquees: ${window.palanquees ? window.palanquees.length : 'undefined'}`);
+        
+        // 3. Comparer avec les fonctions de sauvegarde
+        const safeListeCount = safeGetPlongeurs().length;
+        const safePalanqueesData = safeGetPalanquees();
+        const safePalanqueesCount = countPlongeursInPalanquees(safePalanqueesData);
+        
+        console.log(`🔍 FONCTIONS SAFE:`);
+        console.log(`  - safeGetPlongeurs(): ${safeListeCount}`);
+        console.log(`  - safeGetPalanquees() plongeurs: ${safePalanqueesCount}`);
+        console.log(`  - TOTAL CALCULÉ: ${safeListeCount + safePalanqueesCount}`);
+        
+        // 4. Résumé final
+        const totalReel = plongeursListeVisibles.length + totalPlongeursVisiblesEnPalanquees;
+        const totalCalcule = safeListeCount + safePalanqueesCount;
+        
+        console.log(`📊 RÉSUMÉ:`);
+        console.log(`  - Total RÉEL (visible): ${totalReel}`);
+        console.log(`  - Total CALCULÉ (safe): ${totalCalcule}`);
+        console.log(`  - ÉCART: ${Math.abs(totalReel - totalCalcule)}`);
+        
+        if (totalReel !== totalCalcule) {
+            console.warn(`⚠️ INCOHÉRENCE DÉTECTÉE! Écart de ${Math.abs(totalReel - totalCalcule)} plongeurs`);
+        } else {
+            console.log(`✅ Comptage cohérent`);
+        }
+        
+        console.log('=== FIN DIAGNOSTIC ===');
+        
+        return {
+            totalReel,
+            totalCalcule,
+            ecart: Math.abs(totalReel - totalCalcule),
+            details: {
+                listeReel: plongeursListeVisibles.length,
+                listeCalcule: safeListeCount,
+                palanqueesReel: totalPlongeursVisiblesEnPalanquees,
+                palanqueesCalcule: safePalanqueesCount
+            }
+        };
+    }
+
+    /**
+     * Sauvegarder l'état complet de l'application AVEC VÉRIFICATION
      */
     function saveApplicationState() {
         try {
+            // DIAGNOSTIC AVANT SAUVEGARDE
+            console.log('=== DIAGNOSTIC AVANT SAUVEGARDE ===');
+            const diagnostic = diagnosticComptage();
+            
+            if (diagnostic.ecart > 5) {
+                console.warn(`ATTENTION: Ecart de comptage important detecte (${diagnostic.ecart} plongeurs)`);
+                console.log('Details de l\'ecart:', diagnostic.details);
+            }
+            
             // Récupérer les données de manière sécurisée
             const plongeurs = safeGetPlongeurs();
             const palanquees = safeGetPalanquees();
             const dpSelect = document.getElementById('dp-select');
             const dpDate = document.getElementById('dp-date');
             const dpLieu = document.getElementById('dp-lieu');
+            
+            // Utiliser les comptes vérifiés du diagnostic
+            const plongeursInPalanquees = countPlongeursInPalanquees(palanquees);
+            const totalReel = diagnostic.totalReel;
+            
+            console.log(`Sauvegarde avec: ${plongeurs.length} en liste + ${plongeursInPalanquees} en palanquees = ${totalReel} total`);
             
             // Compter les données significatives de manière sécurisée
             let dataCount = 0;
@@ -179,7 +332,6 @@
                 dataCount += plongeurs.length;
             }
             
-            const plongeursInPalanquees = countPlongeursInPalanquees(palanquees);
             if (plongeursInPalanquees > 0) {
                 dataCount += plongeursInPalanquees;
             }
@@ -188,9 +340,9 @@
             if (dpDate && dpDate.value) dataCount++;
             if (dpLieu && dpLieu.value && dpLieu.value.trim()) dataCount++;
 
-            // Ne sauvegarder que s'il y a suffisamment de données
-            if (dataCount < CONFIG.MIN_DATA_THRESHOLD) {
-                console.log('Pas assez de données pour la sauvegarde automatique');
+            // Ne sauvegarder que s'il y a suffisamment de données RÉELLES
+            if (totalReel < CONFIG.MIN_DATA_THRESHOLD) {
+                console.log(`Pas assez de donnees reelles pour la sauvegarde automatique (${totalReel} < ${CONFIG.MIN_DATA_THRESHOLD})`);
                 return;
             }
 
@@ -200,7 +352,7 @@
             // Capturer l'état complet de manière sécurisée
             const appState = {
                 timestamp: Date.now(),
-                version: '1.0',
+                version: '1.1', // Version mise à jour
                 metadata: {
                     dp: {
                         selectedId: dpSelect ? dpSelect.value || '' : '',
@@ -219,20 +371,21 @@
                 stats: {
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
-                    nombrePalanquees: nombrePalanqueesValides, // Utiliser le compte corrigé
-                    totalGeneral: plongeurs.length + plongeursInPalanquees // NOUVEAU: Total général
+                    nombrePalanquees: nombrePalanqueesValides,
+                    totalGeneral: totalReel, // Utiliser le total RÉEL vérifié
+                    diagnostic: diagnostic // Inclure le diagnostic pour debug
                 }
             };
 
             // Sauvegarder dans localStorage
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(appState));
             
-            console.log('Sauvegarde automatique effectuée:', {
+            console.log('Sauvegarde automatique effectuee (verifie):', {
                 plongeursEnListe: appState.stats.totalPlongeurs,
                 plongeursEnPalanquees: appState.stats.totalEnPalanquees,
                 totalGeneral: appState.stats.totalGeneral,
                 palanquees: appState.stats.nombrePalanquees,
-                dp: appState.metadata.dp.selectedText || 'Non sélectionné'
+                dp: appState.metadata.dp.selectedText || 'Non selectionne'
             });
 
             // Afficher brièvement un indicateur de sauvegarde
@@ -951,12 +1104,31 @@
     };
 
     /**
-     * Fonction de debug
+     * Fonction de debug améliorée
      */
     window.debugAutoSave = function() {
         const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-        console.log('Debug sauvegarde automatique:', saved ? JSON.parse(saved) : 'Aucune sauvegarde');
+        console.log('=== DEBUG SAUVEGARDE AUTOMATIQUE ===');
+        
+        if (saved) {
+            const data = JSON.parse(saved);
+            console.log('Donnees sauvegardees:', data);
+            
+            if (data.stats && data.stats.diagnostic) {
+                console.log('Diagnostic inclus:', data.stats.diagnostic);
+            }
+        } else {
+            console.log('Aucune sauvegarde trouvee');
+        }
+        
+        // Diagnostic en temps réel
+        return diagnosticComptage();
     };
+
+    /**
+     * Fonction de diagnostic exposée globalement
+     */
+    window.diagnosticComptage = diagnosticComptage;
 
     /**
      * Exposer la fonction de reconstruction pour usage externe
