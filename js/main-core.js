@@ -268,6 +268,14 @@ async function loadFromFirebase() {
     if (typeof updateAlertes === 'function') updateAlertes();
     if (typeof updateCompteurs === 'function') updateCompteurs();
     
+    // CORRECTION : Forcer encore une fois après un délai
+    setTimeout(() => {
+      if (typeof updateCompteurs === 'function') {
+        updateCompteurs();
+        console.log('Compteurs forcés après loadFromFirebase');
+      }
+    }, 300);
+    
   } catch (error) {
     console.error("⚠ Erreur chargement Firebase:", error);
     handleError(error, "Chargement Firebase");
@@ -345,6 +353,14 @@ function forceInitializeFloatingMenus() {
             window.enableDPButtons();
         }
         
+        // CORRECTION : Mise à jour des compteurs après initialisation menu
+        setTimeout(() => {
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+            console.log('Compteurs mis à jour après initialisation menu');
+          }
+        }, 1000);
+        
         // Synchroniser les largeurs après l'initialisation
         setTimeout(syncMenuWidth, 500);
         setTimeout(syncMenuWidth, 1500); // Double vérification
@@ -394,6 +410,32 @@ function setupMenuSurveillance() {
         }
         
     }, 1000);
+}
+
+// ===== SURVEILLANCE TEMPORAIRE DES COMPTEURS AU DÉMARRAGE =====
+function setupCompteurSurveillance() {
+  let tentatives = 0;
+  const maxTentatives = 10;
+  
+  const surveillanceInterval = setInterval(() => {
+    tentatives++;
+    
+    const compteur = document.getElementById('compteur-plongeurs');
+    const listePlongeurs = document.querySelectorAll('#listePlongeurs li').length;
+    
+    if (compteur && compteur.textContent === '(0)' && listePlongeurs > 0) {
+      console.log(`Correction compteur détectée: ${listePlongeurs} plongeurs`);
+      if (typeof updateCompteurs === 'function') {
+        updateCompteurs();
+      }
+    }
+    
+    // Arrêter après 10 tentatives ou 30 secondes
+    if (tentatives >= maxTentatives) {
+      clearInterval(surveillanceInterval);
+      console.log('Surveillance compteurs arrêtée');
+    }
+  }, 3000);
 }
 
 // ===== FONCTION SAVESESSIONDATA MODIFIÉE AVEC PROTECTION =====
@@ -1376,8 +1418,19 @@ function setupEventListeners() {
             
             // Forcer l'initialisation du menu latéral après connexion
             forceInitializeFloatingMenus();
-			// Ajouter la surveillance continue
-			setupMenuSurveillance();
+            // Ajouter la surveillance continue
+            setupMenuSurveillance();
+            
+            // CORRECTION : Forcer la mise à jour des compteurs après connexion
+            setTimeout(() => {
+              if (typeof updateCompteurs === 'function') {
+                updateCompteurs();
+                console.log('Compteurs forcés après connexion réussie');
+              }
+            }, 2000);
+            
+            // Surveillance des compteurs
+            setupCompteurSurveillance();
             
           } else {
             throw new Error("Fonction signIn non disponible");
@@ -1757,5 +1810,6 @@ window.saveSessionData = saveSessionData;
 window.loadSession = loadSession;
 window.testDPSelection = testDPSelection;
 window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
+window.setupCompteurSurveillance = setupCompteurSurveillance;
 
-console.log("✅ Main Core sécurisé chargé - Version 3.4.0 AVEC initialisation menu latéral et compteurs corrigés");
+console.log("✅ Main Core sécurisé chargé - Version 3.5.0 AVEC corrections complètes compteurs démarrage");
