@@ -576,29 +576,43 @@ for (let i = 0; i < pal.length; i++) {
     currentSessionKey = sessionKey;
     sessionModified = false;
     
-    // Affichage de confirmation modifiée
-    const dpMessage = document.getElementById("dp-message");
-    if (dpMessage) {
-      const isNewSession = sessionKey.includes('_modif_');
-      dpMessage.innerHTML = `
-        <div style="
-          background: #28a745;
-          color: white;
-          padding: 12px;
-          border-radius: 5px;
-          margin: 10px 0;
-        ">
-          ✅ <strong>${isNewSession ? 'NOUVELLE SESSION CRÉÉE!' : 'SESSION SAUVEGARDÉE!'}</strong><br>
-          ${isNewSession ? '🆕 Session originale préservée<br>' : ''}
-          📋 DP: ${dpNom}<br>
-          📅 Date: ${dpDate} (${dpPlongee})<br>
-          📍 Lieu: ${dpLieu}<br>
-          👥 ${sessionData.stats.totalPlongeurs} plongeurs total<br>
-          🏠 ${sessionData.stats.nombrePalanquees} palanquées<br>
-          ⏳ ${sessionData.stats.plongeursNonAssignes} en attente<br>
-          🔑 Session: ${sessionKey}
-        </div>
-      `;
+    // Affichage de confirmation modifiée avec statistiques détaillées
+const dpMessage = document.getElementById("dp-message");
+if (dpMessage) {
+  const isNewSession = sessionKey.includes('_modif_');
+  
+  // Calculer les statistiques détaillées
+  const plongeursEnAttente = plongeurs?.length || 0;
+  const plongeursDansPalanquees = palanqueesData.reduce((total, pal) => total + pal.plongeurs.length, 0);
+  const nombrePalanquees = palanqueesData.length;
+  const totalGeneral = plongeursEnAttente + plongeursDansPalanquees;
+  
+  dpMessage.innerHTML = `
+    <div style="
+      background: #28a745;
+      color: white;
+      padding: 12px;
+      border-radius: 5px;
+      margin: 10px 0;
+    ">
+      ✅ <strong>${isNewSession ? 'NOUVELLE SESSION CRÉÉE!' : 'SESSION SAUVEGARDÉE!'}</strong><br>
+      ${isNewSession ? '🆕 Session originale préservée<br>' : ''}
+      <br>
+      📋 DP: ${dpNom}<br>
+      📅 Date: ${dpDate} (${dpPlongee})<br>
+      📍 Lieu: ${dpLieu}<br>
+      <br>
+      <strong>📊 STATISTIQUES DE SAUVEGARDE :</strong><br>
+      👥 <strong>${totalGeneral} plongeurs TOTAL</strong><br>
+      └─ ${plongeursEnAttente} en liste d'attente<br>
+      └─ ${plongeursDansPalanquees} assignés en palanquées<br>
+      <br>
+      🏠 <strong>${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''} sauvegardée${nombrePalanquees > 1 ? 's' : ''}</strong><br>
+      ${nombrePalanquees > 0 ? `└─ avec ${plongeursDansPalanquees} plongeur${plongeursDansPalanquees > 1 ? 's' : ''} assigné${plongeursDansPalanquees > 1 ? 's' : ''}<br>` : ''}
+      <br>
+      🔑 Session: ${sessionKey}
+    </div>
+  `;
       dpMessage.style.display = 'block';
       
       setTimeout(() => {
