@@ -11,7 +11,7 @@
         MAX_AGE_HOURS: 24,
         MIN_DATA_THRESHOLD: 2,
         SAVE_DELAY: 1000,          // Réduit de 2000 à 1000ms
-        SHOW_RESTORE_DELAY: 4000    // 
+        SHOW_RESTORE_DELAY: 200    // Réduit de 500 à 200ms
     };
 
     // Variables globales du module
@@ -1139,7 +1139,7 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 3000);
+            setTimeout(initAutoSaveSystem, 200);
         });
     } else {
         setTimeout(() => {
