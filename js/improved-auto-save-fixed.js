@@ -22,7 +22,52 @@
     /**
      * Vérifications sécurisées pour les variables globales
      */
-    
+    function safeGetPlongeurs() {
+        console.log('🔍 Comptage PRÉCIS des plongeurs en liste depuis le DOM...');
+        
+        // Compter seulement les plongeurs VISIBLES dans la liste principale
+        const listePlongeurs = document.getElementById('listePlongeurs');
+        if (!listePlongeurs) {
+            console.log('❌ Liste plongeurs introuvable');
+            return [];
+        }
+        
+        const plongeursElements = listePlongeurs.querySelectorAll('li:not([style*="display: none"])');
+        console.log(`🔍 ${plongeursElements.length} éléments li VISIBLES dans la liste`);
+        
+        const plongeursValides = [];
+        
+        plongeursElements.forEach((li, index) => {
+            // Vérifier que l'élément est vraiment visible
+            const style = window.getComputedStyle(li);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+                return;
+            }
+            
+            const text = li.textContent?.trim() || '';
+            if (text.length > 0) {
+                const parts = text.split(' - ');
+                if (parts.length >= 2) {
+                    plongeursValides.push({
+                        nom: parts[0].trim(),
+                        niveau: parts[1].trim(),
+                        pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+                    });
+                }
+            }
+        });
+        
+        console.log(`✅ ${plongeursValides.length} plongeurs VALIDES en liste`);
+        
+        // Fallback vers les variables globales si disponibles et cohérentes
+        if (plongeursValides.length === 0 && window.plongeurs && Array.isArray(window.plongeurs)) {
+            console.log(`🔄 Fallback vers window.plongeurs: ${window.plongeurs.length} plongeurs`);
+            return window.plongeurs.filter(p => p && p.nom && p.nom.trim());
+        }
+        
+        return plongeursValides;
+    }
+
     function safeGetPalanquees() {
         console.log('🔍 Comptage PRÉCIS des palanquées depuis le DOM...');
         
@@ -754,24 +799,7 @@
         window.acceptRestore = function(btn) {
             btn.disabled = true;
             btn.textContent = 'Restauration...';
-            //
-			// Restaurer les variables globales
-window.plongeurs = appState.data.plongeurs;
-window.palanquees = appState.data.palanquees;
-window.plongeursOriginaux = appState.data.plongeursOriginaux;
-
-// Vider le DOM et forcer le re-rendu
-document.getElementById('listePlongeurs').innerHTML = '';
-document.getElementById('palanqueesContainer').innerHTML = '';
-
-// Re-rendre avec les données restaurées
-renderPlongeurs();
-renderPalanquees();
-updateCompteurs();
-
-// Nettoyer la sauvegarde
-localStorage.removeItem('jsas_auto_save');
-			//
+            restoreApplicationState(appState);
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
