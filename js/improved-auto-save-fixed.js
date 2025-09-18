@@ -796,54 +796,7 @@
         }
 
         // Fonctions pour les boutons
-        ////window.acceptRestore = function(btn) {
-			window.acceptRestore = function(btn) {
-    btn.disabled = true;
-    btn.textContent = 'Restauration...';
-    
-    // Récupérer les données sauvegardées
-    const saved = localStorage.getItem('jsas_auto_save');
-    if (saved) {
-        const appState = JSON.parse(saved);
-        
-        console.log('AVANT restauration:', window.plongeurs?.length || 0, 'plongeurs');
-        
-        // Restaurer les variables
-        if (appState.data) {
-            window.plongeurs = appState.data.plongeurs || [];
-            window.palanquees = appState.data.palanquees || [];
-            window.plongeursOriginaux = appState.data.plongeursOriginaux || [];
-        }
-        
-        console.log('APRÈS restauration variables:', window.plongeurs.length, 'plongeurs');
-        
-        // FORCER la mise à jour complète du DOM
-        setTimeout(() => {
-            // Vider les conteneurs
-            const listePlongeurs = document.getElementById('listePlongeurs');
-            if (listePlongeurs) listePlongeurs.innerHTML = '';
-            
-            const palanqueesContainer = document.getElementById('palanqueesContainer');
-            if (palanqueesContainer) palanqueesContainer.innerHTML = '';
-            
-            // Re-rendre tout
-            if (typeof renderPlongeurs === 'function') renderPlongeurs();
-            if (typeof renderPalanquees === 'function') renderPalanquees();
-            if (typeof updateCompteurs === 'function') updateCompteurs();
-            
-            console.log('DOM mis à jour - Final:', window.plongeurs.length, 'plongeurs');
-        }, 100);
-        
-        // Nettoyer
-        localStorage.removeItem('jsas_auto_save');
-    }
-    
-    setTimeout(() => {
-        const notification = btn.closest('.restore-notification');
-        if (notification) notification.remove();
-    }, 500);
-};
-		////
+        window.acceptRestore = function(btn) {
             btn.disabled = true;
             btn.textContent = 'Restauration...';
             restoreApplicationState(appState);
