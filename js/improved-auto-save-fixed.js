@@ -281,43 +281,23 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     // Surveillance continue des variables globales pour détecter les chargements
     function setupGlobalWatcher() {
-        let lastPlongeursLength = 0;
-        let lastPalanqueesLength = 0;
-        let hasTriggeredInitialSave = false;
-        
-        const checkGlobalChanges = () => {
-            const currentPlongeursLength = window.plongeurs ? window.plongeurs.length : 0;
-            const currentPalanqueesLength = window.palanquees ? window.palanquees.length : 0;
-            
-            // Détecter changement significatif (chargement de session)
-            const significantChange = (
-                Math.abs(currentPlongeursLength - lastPlongeursLength) > 5 ||
-                Math.abs(currentPalanqueesLength - lastPalanqueesLength) > 1
-            );
-            
-            if (significantChange && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
-                console.log('📥 Chargement de session détecté, sauvegarde automatique...');
-                setTimeout(saveData, 1000);
-                hasTriggeredInitialSave = true;
-            }
-            
-            // Sauvegarde initiale forcée une seule fois si des données sont présentes
-            if (!hasTriggeredInitialSave && (currentPlongeursLength > 2 || currentPalanqueesLength > 0)) {
-                console.log('💾 Sauvegarde initiale forcée');
-                setTimeout(saveData, 500);
-                hasTriggeredInitialSave = true;
-            }
-            
-            lastPlongeursLength = currentPlongeursLength;
-            lastPalanqueesLength = currentPalanqueesLength;
-        };
-        
-        // Vérifier toutes les 2 secondes
-        setInterval(checkGlobalChanges, 2000);
-        
-        // Vérification initiale après délai
-        setTimeout(checkGlobalChanges, 3000);
-    }
+    let saveCount = 0;
+    
+    const forceSaveIfNeeded = () => {
+        const data = captureRealData();
+        if (data.totalGeneral > 10 && saveCount < 3) {
+            console.log('Force sauvegarde:', data.totalGeneral, 'plongeurs');
+            saveData();
+            saveCount++;
+        }
+    };
+    
+    // Vérification plus fréquente et plus simple
+    setInterval(forceSaveIfNeeded, 1000);  // Chaque seconde
+    setTimeout(forceSaveIfNeeded, 2000);   // Après 2s
+    setTimeout(forceSaveIfNeeded, 5000);   // Après 5s
+    setTimeout(forceSaveIfNeeded, 10000);  // Après 10s
+}
     
     // Initialisation
     function init() {
