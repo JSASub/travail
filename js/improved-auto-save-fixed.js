@@ -22,49 +22,62 @@
     /**
      * Vérifications sécurisées pour les variables globales
      */
-    function safeGetPlongeurs() {
-    console.log('Recherche plongeurs...');
     
-    // Utiliser directement window.plongeurs s'il existe et n'est pas vide
-    if (window.plongeurs && Array.isArray(window.plongeurs) && window.plongeurs.length > 0) {
-        console.log(`Utilisation window.plongeurs: ${window.plongeurs.length} plongeurs`);
-        return window.plongeurs;
-    }
-    
-    // Fallback DOM
-    const listePlongeurs = document.getElementById('listePlongeurs');
-    if (listePlongeurs && listePlongeurs.children.length > 0) {
-        const plongeurs = [];
-        Array.from(listePlongeurs.children).forEach(li => {
-            const text = li.textContent.trim();
-            const parts = text.split(' - ');
-            if (parts.length >= 2) {
-                plongeurs.push({
-                    nom: parts[0].trim(),
-                    niveau: parts[1].trim(),
-                    pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
+    function safeGetPalanquees() {
+        console.log('🔍 Comptage PRÉCIS des palanquées depuis le DOM...');
+        
+        // Compter uniquement les palanquées DOM VISIBLES avec des plongeurs réels
+        const palanqueesDOM = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+        console.log(`🔍 ${palanqueesDOM.length} éléments .palanquee VISIBLES trouvés`);
+        
+        if (palanqueesDOM.length === 0) {
+            return [];
+        }
+        
+        const palanqueesValides = [];
+        let totalPlongeursComptes = 0;
+        
+        palanqueesDOM.forEach((palanqueeEl, index) => {
+            // Vérifier que l'élément est vraiment visible
+            const style = window.getComputedStyle(palanqueeEl);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+                return;
+            }
+            
+            // Chercher les plongeurs VISIBLES seulement
+            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+            console.log(`  Palanquée ${index + 1}: ${plongeursEls.length} plongeurs visibles`);
+            
+            if (plongeursEls.length > 0) {
+                const plongeurs = [];
+                
+                plongeursEls.forEach(plongeurEl => {
+                    // Vérifier aussi que le plongeur est visible
+                    const plongeurStyle = window.getComputedStyle(plongeurEl);
+                    if (plongeurStyle.display === 'none' || plongeurStyle.visibility === 'hidden') {
+                        return;
+                    }
+                    
+                    const nom = plongeurEl.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                    const niveau = plongeurEl.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                    const pre = plongeurEl.querySelector('.plongeur-prerogatives-editable')?.value?.trim() || '';
+                    
+                    if (nom && nom.length > 0) {
+                        plongeurs.push({ nom, niveau, pre });
+                        totalPlongeursComptes++;
+                    }
                 });
+                
+                if (plongeurs.length > 0) {
+                    palanqueesValides.push(plongeurs);
+                }
             }
         });
-        console.log(`DOM: ${plongeurs.length} plongeurs trouvés`);
-        return plongeurs;
+        
+        console.log(`✅ ${palanqueesValides.length} palanquées VALIDES avec ${totalPlongeursComptes} plongeurs TOTAL`);
+        return palanqueesValides;
     }
-    
-    console.log('Aucun plongeur trouvé');
-    return [];
-}
-	function safeGetPalanquees() {
-		console.log('Recherche palanquées...');
-    
-    // Utiliser window.palanquees directement
-    if (window.palanquees && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
-        console.log(`Utilisation window.palanquees: ${window.palanquees.length} palanquées`);
-        return window.palanquees;
-    }
-    
-    console.log('Aucune palanquée trouvée');
-    return [];
-}
+
     function safeGetPlongeursOriginaux() {
         return (window.plongeursOriginaux && Array.isArray(window.plongeursOriginaux)) ? window.plongeursOriginaux : [];
     }
