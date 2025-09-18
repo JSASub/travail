@@ -79,7 +79,27 @@ console.log('✅ Système de sauvegarde automatique chargé');
         
         return data;
     }
+    //
+	// Forcer sauvegarde lors du changement de session
+let lastSessionKey = '';
+function detectSessionChange() {
+    const dpSelect = document.getElementById('dp-select');
+    const dpDate = document.getElementById('dp-date');
     
+    if (dpSelect && dpDate) {
+        const currentKey = `${dpDate.value}_${dpSelect.value}`;
+        if (currentKey !== lastSessionKey && currentKey.length > 5) {
+            console.log('Changement de session détecté:', currentKey);
+            setTimeout(() => {
+                console.log('Sauvegarde forcée après changement de session');
+                saveData();
+            }, 1000);
+            lastSessionKey = currentKey;
+        }
+    }
+}
+
+	//
     // Sauvegarder les données
     function saveData() {
         try {
@@ -297,7 +317,8 @@ console.log('✅ Système de sauvegarde automatique chargé');
     setTimeout(forceSaveIfNeeded, 2000);   // Après 2s
     setTimeout(forceSaveIfNeeded, 5000);   // Après 5s
     setTimeout(forceSaveIfNeeded, 10000);  // Après 10s
-}
+	setInterval(detectSessionChange, 1000);
+	}
     
     // Initialisation
     function init() {
