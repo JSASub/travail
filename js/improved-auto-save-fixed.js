@@ -279,6 +279,46 @@ console.log('✅ Système de sauvegarde automatique chargé');
         if (document.hidden) saveData();
     });
     
+    // Surveillance continue des variables globales pour détecter les chargements
+    function setupGlobalWatcher() {
+        let lastPlongeursLength = 0;
+        let lastPalanqueesLength = 0;
+        let hasTriggeredInitialSave = false;
+        
+        const checkGlobalChanges = () => {
+            const currentPlongeursLength = window.plongeurs ? window.plongeurs.length : 0;
+            const currentPalanqueesLength = window.palanquees ? window.palanquees.length : 0;
+            
+            // Détecter changement significatif (chargement de session)
+            const significantChange = (
+                Math.abs(currentPlongeursLength - lastPlongeursLength) > 5 ||
+                Math.abs(currentPalanqueesLength - lastPalanqueesLength) > 1
+            );
+            
+            if (significantChange && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
+                console.log('📥 Chargement de session détecté, sauvegarde automatique...');
+                setTimeout(saveData, 1000);
+                hasTriggeredInitialSave = true;
+            }
+            
+            // Sauvegarde initiale forcée une seule fois si des données sont présentes
+            if (!hasTriggeredInitialSave && (currentPlongeursLength > 2 || currentPalanqueesLength > 0)) {
+                console.log('💾 Sauvegarde initiale forcée');
+                setTimeout(saveData, 500);
+                hasTriggeredInitialSave = true;
+            }
+            
+            lastPlongeursLength = currentPlongeursLength;
+            lastPalanqueesLength = currentPalanqueesLength;
+        };
+        
+        // Vérifier toutes les 2 secondes
+        setInterval(checkGlobalChanges, 2000);
+        
+        // Vérification initiale après délai
+        setTimeout(checkGlobalChanges, 3000);
+    }
+    
     // Initialisation
     function init() {
         console.log('🚀 Initialisation sauvegarde automatique simple...');
@@ -292,11 +332,18 @@ console.log('✅ Système de sauvegarde automatique chargé');
         });
         
         setupWatchers();
+        setupGlobalWatcher();
+        
+        // Écouter l'événement de restauration de session si disponible
+        window.addEventListener('sessionRestored', () => {
+            console.log('🔄 Session restaurée détectée, sauvegarde...');
+            setTimeout(saveData, 800);
+        });
         
         // Vérifier restauration après délai court
         setTimeout(checkRestore, 500);
         
-        console.log('✅ Sauvegarde automatique active');
+        console.log('✅ Sauvegarde automatique active avec surveillance globale');
     }
     
     // Fonctions publiques
