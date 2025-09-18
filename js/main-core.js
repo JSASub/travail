@@ -241,6 +241,7 @@ async function syncToDatabase() {
 }
 
 // ===== CHARGEMENT DEPUIS FIREBASE =====
+// ===== CHARGEMENT DEPUIS FIREBASE CORRIGÉ =====
 async function loadFromFirebase() {
   try {
     console.log("🔥 Chargement des données depuis Firebase...");
@@ -250,64 +251,157 @@ async function loadFromFirebase() {
       return;
     }
     
-    // Charger les plongeurs
-    const plongeursSnapshot = await db.ref('plongeurs').once('value');
-    if (plongeursSnapshot.exists()) {
-      plongeurs = plongeursSnapshot.val() || [];
-      console.log("✅ Plongeurs chargés:", plongeurs.length);
+    // 🔧 NOUVEAU : Détecter s'il faut charger une session ou les données DP de base
+    let shouldLoadSession = false;
+    let sessionToLoad = null;
+    
+    // Vérifier s'il y a une session active dans l'interface
+    const dpSelect = document.getElementById('dp-select');
+    const dpDate = document.getElementById('dp-date');
+    const dpPlongee = document.getElementById('dp-plongee');
+    
+    if (dpSelect && dpSelect.value && dpDate && dpDate.value) {
+      // Construire la clé de session potentielle
+      const dpNom = getSelectedDPName();
+      if (dpNom) {
+        const baseKey = `${dpDate.value}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee ? dpPlongee.value : 'matin'}`;
+        
+        // Vérifier si cette session existe dans Firebase
+        const sessionExists = await db.ref(`sessions/${baseKey}`).once('value');
+        if (sessionExists.exists()) {
+          shouldLoadSession = true;
+          sessionToLoad = baseKey;
+          console.log("🎯 Session active détectée:", sessionToLoad);
+        }
+      }
     }
     
-    // Charger les palanquées avec correction automatique
-    const palanqueesSnapshot = await db.ref('palanquees').once('value');
-    if (palanqueesSnapshot.exists()) {
-      const rawPalanquees = palanqueesSnapshot.val() || [];
+    // 🎯 CHARGEMENT CONDITIONNEL
+    if (shouldLoadSession && sessionToLoad) {
+      // Charger depuis la session active
+      console.log("📁 Chargement depuis la session:", sessionToLoad);
       
-      palanquees = rawPalanquees.map((pal, index) => {
-        if (Array.isArray(pal)) {
-          // S'assurer que toutes les propriétés existent
-          if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
-          if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
-          if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
-          if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
-          if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
-          if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
-          return pal;
-        } else if (pal && typeof pal === 'object') {
-          console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
-          
-          const nouveauTableau = [];
-          Object.keys(pal).forEach(key => {
-            if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
-              nouveauTableau.push(pal[key]);
+      const sessionSnapshot = await db.ref(`sessions/${sessionToLoad}`).once('value');
+      if (sessionSnapshot.exists()) {
+        const sessionData = sessionSnapshot.val();
+        
+        // Charger les plongeurs de la session
+        plongeurs = sessionData.plongeurs || [];
+        console.log("✅ Plongeurs de session chargés:", plongeurs.length);
+        
+        // Charger les palanquées de la session avec reconstruction
+        palanquees = [];
+        if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+          sessionData.palanquees.forEach((palData) => {
+            const palanqueeArray = [];
+            
+            if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
+              palData.plongeurs.forEach(p => {
+                palanqueeArray.push(p);
+              });
             }
+            
+            // Restaurer les paramètres
+            if (palData.parametres) {
+              palanqueeArray.horaire = palData.parametres.horaire || "";
+              palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
+              palanqueeArray.dureePrevue = palData.parametres.dureePrevue || "";
+              palanqueeArray.profondeurRealisee = palData.parametres.profondeurRealisee || "";
+              palanqueeArray.dureeRealisee = palData.parametres.dureeRealisee || "";
+              palanqueeArray.paliers = palData.parametres.paliers || "";
+            } else {
+              // Valeurs par défaut
+              palanqueeArray.horaire = "";
+              palanqueeArray.profondeurPrevue = "";
+              palanqueeArray.dureePrevue = "";
+              palanqueeArray.profondeurRealisee = "";
+              palanqueeArray.dureeRealisee = "";
+              palanqueeArray.paliers = "";
+            }
+            
+            palanquees.push(palanqueeArray);
           });
-          
-          // Ajouter les propriétés spéciales
-          nouveauTableau.horaire = pal.horaire || '';
-          nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
-          nouveauTableau.dureePrevue = pal.dureePrevue || '';
-          nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
-          nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
-          nouveauTableau.paliers = pal.paliers || '';
-          
-          console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
-          return nouveauTableau;
         }
         
-        // Palanquée vide par défaut
-        const nouveauTableau = [];
-        nouveauTableau.horaire = '';
-        nouveauTableau.profondeurPrevue = '';
-        nouveauTableau.dureePrevue = '';
-        nouveauTableau.profondeurRealisee = '';
-        nouveauTableau.dureeRealisee = '';
-        nouveauTableau.paliers = '';
-        return nouveauTableau;
-      });
+        console.log("✅ Palanquées de session chargées:", palanquees.length);
+        
+        // Marquer que c'est une session active
+        currentSessionKey = sessionToLoad;
+        sessionModified = false;
+        
+      } else {
+        console.warn("⚠️ Session introuvable, chargement des données DP de base");
+        shouldLoadSession = false;
+      }
+    }
+    
+    if (!shouldLoadSession) {
+      // Chargement normal depuis les données DP de base
+      console.log("📁 Chargement des données DP de base");
       
-      console.log("✅ Palanquées chargées:", palanquees.length);
-    } else {
-      palanquees = [];
+      // Charger les plongeurs DP
+      const plongeursSnapshot = await db.ref('plongeurs').once('value');
+      if (plongeursSnapshot.exists()) {
+        plongeurs = plongeursSnapshot.val() || [];
+        console.log("✅ Plongeurs DP chargés:", plongeurs.length);
+      }
+      
+      // Charger les palanquées DP avec correction automatique
+      const palanqueesSnapshot = await db.ref('palanquees').once('value');
+      if (palanqueesSnapshot.exists()) {
+        const rawPalanquees = palanqueesSnapshot.val() || [];
+        
+        palanquees = rawPalanquees.map((pal, index) => {
+          if (Array.isArray(pal)) {
+            // S'assurer que toutes les propriétés existent
+            if (!pal.hasOwnProperty('horaire')) pal.horaire = '';
+            if (!pal.hasOwnProperty('profondeurPrevue')) pal.profondeurPrevue = '';
+            if (!pal.hasOwnProperty('dureePrevue')) pal.dureePrevue = '';
+            if (!pal.hasOwnProperty('profondeurRealisee')) pal.profondeurRealisee = '';
+            if (!pal.hasOwnProperty('dureeRealisee')) pal.dureeRealisee = '';
+            if (!pal.hasOwnProperty('paliers')) pal.paliers = '';
+            return pal;
+          } else if (pal && typeof pal === 'object') {
+            console.log(`🔧 Correction palanquée ${index + 1}: conversion objet vers tableau`);
+            
+            const nouveauTableau = [];
+            Object.keys(pal).forEach(key => {
+              if (!isNaN(key) && pal[key] && typeof pal[key] === 'object' && pal[key].nom) {
+                nouveauTableau.push(pal[key]);
+              }
+            });
+            
+            // Ajouter les propriétés spéciales
+            nouveauTableau.horaire = pal.horaire || '';
+            nouveauTableau.profondeurPrevue = pal.profondeurPrevue || '';
+            nouveauTableau.dureePrevue = pal.dureePrevue || '';
+            nouveauTableau.profondeurRealisee = pal.profondeurRealisee || '';
+            nouveauTableau.dureeRealisee = pal.dureeRealisee || '';
+            nouveauTableau.paliers = pal.paliers || '';
+            
+            console.log(`✅ Palanquée ${index + 1} corrigée: ${nouveauTableau.length} plongeurs`);
+            return nouveauTableau;
+          }
+          
+          // Palanquée vide par défaut
+          const nouveauTableau = [];
+          nouveauTableau.horaire = '';
+          nouveauTableau.profondeurPrevue = '';
+          nouveauTableau.dureePrevue = '';
+          nouveauTableau.profondeurRealisee = '';
+          nouveauTableau.dureeRealisee = '';
+          nouveauTableau.paliers = '';
+          return nouveauTableau;
+        });
+        
+        console.log("✅ Palanquées DP chargées:", palanquees.length);
+      } else {
+        palanquees = [];
+      }
+      
+      // Reset du tracking de session
+      currentSessionKey = null;
+      sessionModified = false;
     }
     
     plongeursOriginaux = [...plongeurs];
@@ -326,12 +420,19 @@ async function loadFromFirebase() {
       }
     }, 300);
     
+    // 📊 RÉSUMÉ FINAL
+    console.log(`🎯 CHARGEMENT TERMINÉ: ${shouldLoadSession ? 'SESSION' : 'DP_BASE'}`);
+    console.log(`   - ${plongeurs.length} plongeurs en liste`);
+    console.log(`   - ${palanquees.length} palanquées`);
+    if (shouldLoadSession) {
+      console.log(`   - Session: ${sessionToLoad}`);
+    }
+    
   } catch (error) {
-    console.error("⚠ Erreur chargement Firebase:", error);
+    console.error("⚠️ Erreur chargement Firebase:", error);
     handleError(error, "Chargement Firebase");
   }
 }
-
 // Synchro avant sauvegarde
 function syncPrerogativesFromInterface() {
   // Trouve tous les inputs de prérogatives et les synchronise
