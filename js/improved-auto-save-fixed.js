@@ -1,23 +1,112 @@
 // ps/improved-auto-save-fixed.js
 // Système de sauvegarde automatique corrigé pour JSAS
-// Version avec statistiques détaillées dans la boîte de dialogue
+// Version avec gestion du timing Firebase et stabilisation DOM
 
 (function() {
     'use strict';
 
-    // Configuration - DÉLAIS RÉDUITS POUR AFFICHAGE RAPIDE
+    // Configuration avec délais adaptés pour Firebase
     const CONFIG = {
         STORAGE_KEY: 'jsas_auto_save',
         MAX_AGE_HOURS: 24,
         MIN_DATA_THRESHOLD: 2,
-        SAVE_DELAY: 1000,          // Réduit de 2000 à 1000ms
-        SHOW_RESTORE_DELAY: 200    // Réduit de 500 à 200ms
+        SAVE_DELAY: 2000,                    // Augmenté pour laisser le temps à Firebase
+        SHOW_RESTORE_DELAY: 300,
+        FIREBASE_LOADING_GRACE_PERIOD: 5000, // 5 secondes de grâce après chargement Firebase
+        STABILITY_CHECK_INTERVAL: 500,       // Vérifier la stabilité toutes les 500ms
+        MIN_STABILITY_DURATION: 2000         // Attendre 2s de stabilité avant sauvegarde
     };
 
     // Variables globales du module
     let autoSaveTimeout = null;
     let hasShownRestorePrompt = false;
     let isRestoringData = false;
+    let firebaseLoadingDetected = false;
+    let lastStableState = null;
+    let stabilityTimer = null;
+    let lastDataSnapshot = null;
+
+    /**
+     * NOUVEAU : Détecter si Firebase est en train de charger
+     */
+    function detectFirebaseLoading() {
+        // Observer les logs Firebase dans la console
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            const message = args[0];
+            if (typeof message === 'string' && 
+                (message.includes('Chargement des données depuis Firebase') ||
+                 message.includes('loadFromFirebase') ||
+                 message.includes('Plongeurs chargés:') ||
+                 message.includes('Palanquées chargées:'))) {
+                
+                console.log('🔍 Chargement Firebase détecté, pause auto-save');
+                firebaseLoadingDetected = true;
+                
+                // Arrêter la sauvegarde automatique pendant le chargement
+                if (autoSaveTimeout) {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = null;
+                }
+                
+                // Réactiver après la période de grâce
+                setTimeout(() => {
+                    firebaseLoadingDetected = false;
+                    console.log('✅ Période de grâce Firebase terminée');
+                }, CONFIG.FIREBASE_LOADING_GRACE_PERIOD);
+            }
+            
+            return originalConsoleLog.apply(console, args);
+        };
+    }
+
+    /**
+     * NOUVEAU : Vérifier si l'état de l'application est stable
+     */
+    function checkApplicationStability() {
+        const currentSnapshot = {
+            plongeursVisible: document.querySelectorAll('#listePlongeurs li:not([style*="display: none"])').length,
+            palanqueesVisible: document.querySelectorAll('.palanquee:not([style*="display: none"])').length,
+            plongeursEnPalanquees: (() => {
+                let total = 0;
+                document.querySelectorAll('.palanquee:not([style*="display: none"])').forEach(pal => {
+                    total += pal.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])').length;
+                });
+                return total;
+            })(),
+            windowPlongeursLength: window.plongeurs ? window.plongeurs.length : 0,
+            timestamp: Date.now()
+        };
+
+        // Comparer avec l'état précédent
+        if (lastDataSnapshot) {
+            const isStable = (
+                currentSnapshot.plongeursVisible === lastDataSnapshot.plongeursVisible &&
+                currentSnapshot.palanqueesVisible === lastDataSnapshot.palanqueesVisible &&
+                currentSnapshot.plongeursEnPalanquees === lastDataSnapshot.plongeursEnPalanquees &&
+                currentSnapshot.windowPlongeursLength === lastDataSnapshot.windowPlongeursLength
+            );
+
+            if (isStable) {
+                if (!lastStableState) {
+                    lastStableState = Date.now();
+                    console.log('🔒 État stable détecté, démarrage du compteur...');
+                } else if (Date.now() - lastStableState >= CONFIG.MIN_STABILITY_DURATION) {
+                    // État stable depuis assez longtemps
+                    return true;
+                }
+            } else {
+                // État instable
+                if (lastStableState) {
+                    console.log('🔄 Instabilité détectée, reset du compteur');
+                }
+                lastStableState = null;
+            }
+        }
+
+        lastDataSnapshot = currentSnapshot;
+        return false;
+    }
 
     /**
      * Vérifications sécurisées pour les variables globales
@@ -128,190 +217,30 @@
     }
 
     /**
-     * Compter les plongeurs dans les palanquées de manière sécurisée
-     */
-    function countPlongeursInPalanquees(palanquees) {
-        if (!Array.isArray(palanquees)) return 0;
-        
-        let total = 0;
-        for (let i = 0; i < palanquees.length; i++) {
-            const pal = palanquees[i];
-            if (Array.isArray(pal)) {
-                // Ne compter que les plongeurs avec un nom valide
-                const plongeursValides = pal.filter(p => p && p.nom && p.nom.trim());
-                total += plongeursValides.length;
-            } else if (pal && typeof pal.length === 'number' && pal.length >= 0) {
-                total += pal.length;
-            }
-        }
-        return total;
-    }
-
-    /**
-     * Compter le nombre réel de palanquées avec plongeurs
-     */
-    function countValidPalanquees(palanquees) {
-        // Force le recomptage depuis le DOM pour être sûr
-        const palanqueesDOM = document.querySelectorAll('.palanquee');
-        let count = 0;
-        
-        palanqueesDOM.forEach(palanqueeEl => {
-            const plongeursEls = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
-            if (plongeursEls.length > 0) {
-                count++;
-            }
-        });
-        
-        console.log(`📊 Recomptage final: ${count} palanquées valides`);
-        return count;
-    }
-
-    /**
-     * Fonction pour reconstruire les données depuis le DOM
-     */
-    function reconstructDataFromDOM() {
-        const listDOM = document.getElementById('listePlongeurs');
-        
-        if (!listDOM) return false;
-        
-        const domCount = listDOM.children.length;
-        const memoryCount = window.plongeurs ? window.plongeurs.length : 0;
-        
-        console.log(`Reconstruction DOM: ${domCount} dans DOM, ${memoryCount} en mémoire`);
-        
-        if (domCount > 0 && memoryCount === 0) {
-            console.log('Reconstruction des données plongeurs depuis le DOM...');
-            
-            window.plongeurs = [];
-            
-            Array.from(listDOM.children).forEach(li => {
-                const text = li.textContent || li.innerText;
-                const parts = text.split(' - ');
-                
-                if (parts.length >= 2) {
-                    window.plongeurs.push({
-                        nom: parts[0].trim(),
-                        niveau: parts[1].trim(),
-                        pre: parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : ''
-                    });
-                }
-            });
-            
-            window.plongeursOriginaux = [...window.plongeurs];
-            
-            console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
-            
-            // Forcer la mise à jour des compteurs après reconstruction
-            setTimeout(() => {
-                if (typeof updateCompteurs === 'function') {
-                    updateCompteurs();
-                    console.log('Compteurs mis à jour après reconstruction DOM');
-                }
-            }, 300);
-            
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
-     * Fonction de diagnostic pour identifier les écarts de comptage
-     */
-    function diagnosticComptage() {
-        console.log('🔧 === DIAGNOSTIC COMPTAGE DÉTAILLÉ ===');
-        
-        // 1. Compter les plongeurs en liste
-        const listePlongeurs = document.getElementById('listePlongeurs');
-        const plongeursListe = listePlongeurs ? listePlongeurs.querySelectorAll('li') : [];
-        const plongeursListeVisibles = listePlongeurs ? listePlongeurs.querySelectorAll('li:not([style*="display: none"])') : [];
-        
-        console.log(`📝 LISTE PRINCIPALE:`);
-        console.log(`  - Total éléments <li>: ${plongeursListe.length}`);
-        console.log(`  - Éléments visibles: ${plongeursListeVisibles.length}`);
-        console.log(`  - window.plongeurs: ${window.plongeurs ? window.plongeurs.length : 'undefined'}`);
-        
-        // 2. Compter les palanquées et plongeurs
-        const palanqueesDOM = document.querySelectorAll('.palanquee');
-        const palanqueesVisibles = document.querySelectorAll('.palanquee:not([style*="display: none"])');
-        
-        console.log(`🏠 PALANQUÉES:`);
-        console.log(`  - Total éléments .palanquee: ${palanqueesDOM.length}`);
-        console.log(`  - Palanquées visibles: ${palanqueesVisibles.length}`);
-        
-        let totalPlongeursEnPalanquees = 0;
-        let totalPlongeursVisiblesEnPalanquees = 0;
-        
-        palanqueesDOM.forEach((pal, index) => {
-            const plongeursTous = pal.querySelectorAll('.palanquee-plongeur-item');
-            const plongeursVisibles = pal.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-            
-            totalPlongeursEnPalanquees += plongeursTous.length;
-            totalPlongeursVisiblesEnPalanquees += plongeursVisibles.length;
-            
-            if (plongeursTous.length > 0) {
-                console.log(`    Palanquée ${index + 1}: ${plongeursTous.length} total, ${plongeursVisibles.length} visibles`);
-            }
-        });
-        
-        console.log(`  - Total plongeurs en palanquées: ${totalPlongeursEnPalanquees}`);
-        console.log(`  - Total plongeurs visibles en palanquées: ${totalPlongeursVisiblesEnPalanquees}`);
-        console.log(`  - window.palanquees: ${window.palanquees ? window.palanquees.length : 'undefined'}`);
-        
-        // 3. Comparer avec les fonctions de sauvegarde
-        const safeListeCount = safeGetPlongeurs().length;
-        const safePalanqueesData = safeGetPalanquees();
-        const safePalanqueesCount = countPlongeursInPalanquees(safePalanqueesData);
-        
-        console.log(`🔍 FONCTIONS SAFE:`);
-        console.log(`  - safeGetPlongeurs(): ${safeListeCount}`);
-        console.log(`  - safeGetPalanquees() plongeurs: ${safePalanqueesCount}`);
-        console.log(`  - TOTAL CALCULÉ: ${safeListeCount + safePalanqueesCount}`);
-        
-        // 4. Résumé final
-        const totalReel = plongeursListeVisibles.length + totalPlongeursVisiblesEnPalanquees;
-        const totalCalcule = safeListeCount + safePalanqueesCount;
-        
-        console.log(`📊 RÉSUMÉ:`);
-        console.log(`  - Total RÉEL (visible): ${totalReel}`);
-        console.log(`  - Total CALCULÉ (safe): ${totalCalcule}`);
-        console.log(`  - ÉCART: ${Math.abs(totalReel - totalCalcule)}`);
-        
-        if (totalReel !== totalCalcule) {
-            console.warn(`⚠️ INCOHÉRENCE DÉTECTÉE! Écart de ${Math.abs(totalReel - totalCalcule)} plongeurs`);
-        } else {
-            console.log(`✅ Comptage cohérent`);
-        }
-        
-        console.log('=== FIN DIAGNOSTIC ===');
-        
-        return {
-            totalReel,
-            totalCalcule,
-            ecart: Math.abs(totalReel - totalCalcule),
-            details: {
-                listeReel: plongeursListeVisibles.length,
-                listeCalcule: safeListeCount,
-                palanqueesReel: totalPlongeursVisiblesEnPalanquees,
-                palanqueesCalcule: safePalanqueesCount
-            }
-        };
-    }
-
-    /**
-     * Sauvegarder l'état complet de l'application AVEC VÉRIFICATION
+     * NOUVEAU : Sauvegarder l'état complet de l'application AVEC STABILITÉ
      */
     function saveApplicationState() {
         try {
-            // DIAGNOSTIC AVANT SAUVEGARDE
-            console.log('=== DIAGNOSTIC AVANT SAUVEGARDE ===');
-            const diagnostic = diagnosticComptage();
-            
-            if (diagnostic.ecart > 5) {
-                console.warn(`ATTENTION: Ecart de comptage important detecte (${diagnostic.ecart} plongeurs)`);
-                console.log('Details de l\'ecart:', diagnostic.details);
+            // 🚫 Ne pas sauvegarder si Firebase est en cours de chargement
+            if (firebaseLoadingDetected) {
+                console.log('⏸️ Sauvegarde bloquée: Firebase en cours de chargement');
+                return;
             }
-            
+
+            // 🚫 Ne pas sauvegarder si l'état n'est pas stable
+            if (!checkApplicationStability()) {
+                console.log('⏸️ Sauvegarde bloquée: État instable');
+                // Reprogrammer une vérification
+                setTimeout(() => {
+                    if (!firebaseLoadingDetected) {
+                        triggerAutoSave();
+                    }
+                }, CONFIG.STABILITY_CHECK_INTERVAL);
+                return;
+            }
+
+            console.log('💾 Sauvegarde avec état stable confirmé');
+
             // Récupérer les données de manière sécurisée
             const plongeurs = safeGetPlongeurs();
             const palanquees = safeGetPalanquees();
@@ -319,40 +248,28 @@
             const dpDate = document.getElementById('dp-date');
             const dpLieu = document.getElementById('dp-lieu');
             
-            // Utiliser les comptes vérifiés du diagnostic
-            const plongeursInPalanquees = countPlongeursInPalanquees(palanquees);
-            const totalReel = diagnostic.totalReel;
+            // Calculer les totaux
+            const plongeursInPalanquees = palanquees.reduce((total, pal) => total + (Array.isArray(pal) ? pal.length : 0), 0);
+            const totalReel = plongeurs.length + plongeursInPalanquees;
             
-            console.log(`Sauvegarde avec: ${plongeurs.length} en liste + ${plongeursInPalanquees} en palanquees = ${totalReel} total`);
+            console.log(`💾 Sauvegarde STABILISÉE: ${plongeurs.length} + ${plongeursInPalanquees} = ${totalReel} total`);
             
-            // Compter les données significatives de manière sécurisée
-            let dataCount = 0;
-            
-            if (plongeurs.length > 0) {
-                dataCount += plongeurs.length;
+            // Ne sauvegarder que s'il y a suffisamment de données RÉELLES
+            if (totalReel < CONFIG.MIN_DATA_THRESHOLD) {
+                console.log(`⏸️ Pas assez de données réelles pour la sauvegarde (${totalReel} < ${CONFIG.MIN_DATA_THRESHOLD})`);
+                return;
             }
-            
-            if (plongeursInPalanquees > 0) {
-                dataCount += plongeursInPalanquees;
-            }
-            
+
+            // Compter les données significatives
+            let dataCount = totalReel;
             if (dpSelect && dpSelect.value) dataCount++;
             if (dpDate && dpDate.value) dataCount++;
             if (dpLieu && dpLieu.value && dpLieu.value.trim()) dataCount++;
 
-            // Ne sauvegarder que s'il y a suffisamment de données RÉELLES
-            if (totalReel < CONFIG.MIN_DATA_THRESHOLD) {
-                console.log(`Pas assez de donnees reelles pour la sauvegarde automatique (${totalReel} < ${CONFIG.MIN_DATA_THRESHOLD})`);
-                return;
-            }
-
-            // Compter correctement les palanquées valides
-            const nombrePalanqueesValides = countValidPalanquees(palanquees);
-
-            // Capturer l'état complet de manière sécurisée
+            // Capturer l'état complet
             const appState = {
                 timestamp: Date.now(),
-                version: '1.1', // Version mise à jour
+                version: '1.2', // Version avec gestion stabilité
                 metadata: {
                     dp: {
                         selectedId: dpSelect ? dpSelect.value || '' : '',
@@ -371,28 +288,33 @@
                 stats: {
                     totalPlongeurs: plongeurs.length,
                     totalEnPalanquees: plongeursInPalanquees,
-                    nombrePalanquees: nombrePalanqueesValides,
-                    totalGeneral: totalReel, // Utiliser le total RÉEL vérifié
-                    diagnostic: diagnostic // Inclure le diagnostic pour debug
+                    nombrePalanquees: palanquees.length,
+                    totalGeneral: totalReel,
+                    stabilityCheck: {
+                        timestamp: Date.now(),
+                        stableSince: lastStableState,
+                        stabilityDuration: lastStableState ? Date.now() - lastStableState : 0
+                    }
                 }
             };
 
             // Sauvegarder dans localStorage
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(appState));
             
-            console.log('Sauvegarde automatique effectuee (verifie):', {
+            console.log('✅ Sauvegarde automatique STABLE effectuée:', {
                 plongeursEnListe: appState.stats.totalPlongeurs,
                 plongeursEnPalanquees: appState.stats.totalEnPalanquees,
                 totalGeneral: appState.stats.totalGeneral,
                 palanquees: appState.stats.nombrePalanquees,
-                dp: appState.metadata.dp.selectedText || 'Non selectionne'
+                stabilityDuration: Math.round(appState.stats.stabilityCheck.stabilityDuration / 1000) + 's',
+                dp: appState.metadata.dp.selectedText || 'Non selectionné'
             });
 
             // Afficher brièvement un indicateur de sauvegarde
             showSaveIndicator();
 
         } catch (error) {
-            console.error('Erreur lors de la sauvegarde automatique:', error);
+            console.error('❌ Erreur lors de la sauvegarde automatique:', error);
         }
     }
 
@@ -414,7 +336,7 @@
         
         setTimeout(() => {
             indicator.classList.remove('show');
-        }, 1500); // Réduit de 2000 à 1500ms
+        }, 1500);
     }
 
     /**
@@ -432,7 +354,7 @@
             const maxAge = CONFIG.MAX_AGE_HOURS * 60 * 60 * 1000;
             
             if (age > maxAge) {
-                console.log('Données de sauvegarde expirées, suppression');
+                console.log('⏰ Données de sauvegarde expirées, suppression');
                 localStorage.removeItem(CONFIG.STORAGE_KEY);
                 return null;
             }
@@ -442,14 +364,25 @@
                               (appState.stats.totalPlongeurs || 0) + (appState.stats.totalEnPalanquees || 0));
             
             if (totalData < CONFIG.MIN_DATA_THRESHOLD) {
-                console.log('Pas assez de données significatives dans la sauvegarde');
+                console.log('⏸️ Pas assez de données significatives dans la sauvegarde');
                 return null;
+            }
+
+            // 🔍 NOUVEAU : Vérifier la stabilité de la sauvegarde
+            if (appState.stats && appState.stats.stabilityCheck) {
+                const stabilityDuration = appState.stats.stabilityCheck.stabilityDuration || 0;
+                if (stabilityDuration < CONFIG.MIN_STABILITY_DURATION) {
+                    console.log(`⚠️ Sauvegarde instable détectée (stable pendant ${Math.round(stabilityDuration/1000)}s seulement), suppression`);
+                    localStorage.removeItem(CONFIG.STORAGE_KEY);
+                    return null;
+                }
+                console.log(`✅ Sauvegarde stable confirmée (stable pendant ${Math.round(stabilityDuration/1000)}s)`);
             }
 
             return appState;
             
         } catch (error) {
-            console.error('Erreur lors de la lecture de la sauvegarde:', error);
+            console.error('❌ Erreur lors de la lecture de la sauvegarde:', error);
             localStorage.removeItem(CONFIG.STORAGE_KEY);
             return null;
         }
@@ -463,7 +396,7 @@
         isRestoringData = true;
 
         try {
-            console.log('Restauration de l\'état de l\'application...');
+            console.log('🔄 Restauration de l\'état de l\'application...');
 
             // 1. Restaurer les données globales de manière sécurisée
             if (appState.data && Array.isArray(appState.data.plongeurs)) {
@@ -500,13 +433,11 @@
                 
                 const dpSelect = document.getElementById('dp-select');
                 if (dpSelect) {
-                    // Chercher par ID d'abord
                     const optionById = dpSelect.querySelector(`option[value="${appState.metadata.dp.selectedId}"]`);
                     if (optionById) {
                         dpSelect.value = appState.metadata.dp.selectedId;
-                        console.log('DP restauré par ID:', appState.metadata.dp.selectedText);
+                        console.log('✅ DP restauré par ID:', appState.metadata.dp.selectedText);
                     } else {
-                        // Chercher par texte si l'ID n'existe plus
                         const options = Array.from(dpSelect.options);
                         const optionByText = options.find(opt => 
                             opt.text.includes(appState.metadata.dp.selectedText) ||
@@ -514,9 +445,9 @@
                         );
                         if (optionByText) {
                             dpSelect.value = optionByText.value;
-                            console.log('DP restauré par texte:', optionByText.text);
+                            console.log('✅ DP restauré par texte:', optionByText.text);
                         } else {
-                            console.warn('DP non trouvé:', appState.metadata.dp.selectedText);
+                            console.warn('⚠️ DP non trouvé:', appState.metadata.dp.selectedText);
                         }
                     }
                 }
@@ -528,11 +459,11 @@
             // 5. Supprimer la sauvegarde après restauration réussie
             localStorage.removeItem(CONFIG.STORAGE_KEY);
             
-            console.log('Restauration terminée avec succès');
+            console.log('✅ Restauration terminée avec succès');
             showRestoreSuccessMessage(appState);
 
         } catch (error) {
-            console.error('Erreur lors de la restauration:', error);
+            console.error('❌ Erreur lors de la restauration:', error);
             showRestoreErrorMessage(error);
         } finally {
             isRestoringData = false;
@@ -549,7 +480,7 @@
                 if (dpSelect && dpSelect.options.length > 1) {
                     resolve();
                 } else {
-                    setTimeout(checkDP, 50); // Réduit de 100 à 50ms
+                    setTimeout(checkDP, 50);
                 }
             };
             checkDP();
@@ -577,13 +508,12 @@
                 window.updateFloatingPlongeursList();
             }
         } catch (error) {
-            console.error('Erreur lors du rafraîchissement:', error);
+            console.error('❌ Erreur lors du rafraîchissement:', error);
         }
     }
 
     /**
      * Afficher une notification élégante de proposition de restauration
-     * MODIFIÉE AVEC STATISTIQUES DÉTAILLÉES
      */
     function showRestorePrompt(appState) {
         if (hasShownRestorePrompt) return;
@@ -594,6 +524,11 @@
         const plongeursEnPalanquees = appState.stats?.totalEnPalanquees || 0;
         const nombrePalanquees = appState.stats?.nombrePalanquees || 0;
         const totalGeneral = appState.stats?.totalGeneral || (plongeursEnListe + plongeursEnPalanquees);
+        
+        // Informations de stabilité
+        const stabilityInfo = appState.stats?.stabilityCheck ? 
+            `Stabilité: ${Math.round(appState.stats.stabilityCheck.stabilityDuration / 1000)}s` : 
+            'Stabilité: non vérifiée';
 
         // Créer la notification
         const notification = document.createElement('div');
@@ -611,7 +546,7 @@
                             <strong>📊 ${totalGeneral} plongeur${totalGeneral > 1 ? 's' : ''} TOTAL</strong>
                         </div>
                         <div class="restore-stats-detail">
-                            📝 ${plongeursEnListe} en liste d'attente<br>
+                            🔍 ${plongeursEnListe} en liste d'attente<br>
                             🏠 ${plongeursEnPalanquees} assigné${plongeursEnPalanquees > 1 ? 's' : ''} en ${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''}
                         </div>
                         <div class="restore-separator"></div>
@@ -623,7 +558,8 @@
                         </div>
                         ${appState.metadata && appState.metadata.lieu ? `<div class="restore-lieu"><strong>📍 Lieu:</strong> ${appState.metadata.lieu}</div>` : ''}
                         <div class="restore-age">
-                            ⏰ Sauvegardée il y a ${formatTimeDifference(Date.now() - appState.timestamp)}
+                            ⏰ Sauvegardée il y a ${formatTimeDifference(Date.now() - appState.timestamp)}<br>
+                            <small style="color: #28a745;">🔒 ${stabilityInfo}</small>
                         </div>
                     </div>
                 </div>
@@ -638,7 +574,7 @@
             </div>
         `;
 
-        // Ajouter les styles améliorés si nécessaires
+        // Ajouter les styles si nécessaires
         if (!document.getElementById('restore-notification-styles')) {
             const styles = document.createElement('style');
             styles.id = 'restore-notification-styles';
@@ -806,23 +742,22 @@
             }, 500);
         };
 
-        // CORRECTION : Fonction ignoreRestore avec synchronisation DOM
+        // Fonction ignoreRestore avec synchronisation DOM
         window.ignoreRestore = function(btn) {
             localStorage.removeItem(CONFIG.STORAGE_KEY);
             const notification = btn.closest('.restore-notification');
             if (notification) notification.remove();
             
-            // NOUVEAU : Synchroniser les données DOM vers les variables globales après refus
+            // Synchroniser les données DOM vers les variables globales après refus
             setTimeout(() => {
-                console.log('Synchronisation DOM après refus de restauration...');
+                console.log('🔄 Synchronisation DOM après refus de restauration...');
                 
-                // Reconstruire window.plongeurs depuis la liste DOM
                 const listDOM = document.getElementById('listePlongeurs');
                 if (listDOM && listDOM.children.length > 0) {
                     window.plongeurs = window.plongeurs || [];
                     
                     if (window.plongeurs.length === 0) {
-                        console.log('Reconstruction des plongeurs depuis le DOM...');
+                        console.log('🔄 Reconstruction des plongeurs depuis le DOM...');
                         
                         Array.from(listDOM.children).forEach(li => {
                             const text = li.textContent || li.innerText;
@@ -838,17 +773,15 @@
                         });
                         
                         window.plongeursOriginaux = [...window.plongeurs];
-                        console.log('Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
+                        console.log('✅ Reconstruction terminée:', window.plongeurs.length, 'plongeurs');
                     }
                 }
                 
-                // Forcer la mise à jour des compteurs
                 if (typeof updateCompteurs === 'function') {
                     updateCompteurs();
-                    console.log('Compteurs mis à jour après refus restauration');
+                    console.log('📊 Compteurs mis à jour après refus restauration');
                 }
                 
-                // Mettre à jour le menu flottant si disponible
                 if (typeof updateFloatingPlongeursList === 'function') {
                     updateFloatingPlongeursList();
                 }
@@ -857,12 +790,12 @@
 
         document.body.appendChild(notification);
 
-        // Auto-fermeture après 25 secondes
+        // Auto-fermeture après 30 secondes
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, 25000);
+        }, 30000);
     }
 
     /**
@@ -956,17 +889,20 @@
     }
 
     /**
-     * Déclencher une sauvegarde automatique avec délai
+     * NOUVEAU : Déclencher une sauvegarde automatique avec gestion de stabilité
      */
     function triggerAutoSave() {
-        if (isRestoringData) return;
+        if (isRestoringData || firebaseLoadingDetected) {
+            console.log('⏸️ Sauvegarde bloquée: restauration en cours ou Firebase loading');
+            return;
+        }
         
         // Annuler la sauvegarde précédente si elle est en attente
         if (autoSaveTimeout) {
             clearTimeout(autoSaveTimeout);
         }
 
-        // Programmer une nouvelle sauvegarde
+        // Programmer une nouvelle sauvegarde avec délai
         autoSaveTimeout = setTimeout(() => {
             saveApplicationState();
             autoSaveTimeout = null;
@@ -977,17 +913,28 @@
      * Surveiller les changements dans l'application
      */
     function setupChangeListeners() {
+        // Détecter le chargement Firebase
+        detectFirebaseLoading();
+        
         // Observer les changements dans les listes DOM
         const plongeursList = document.getElementById('listePlongeurs');
         const palanqueesContainer = document.getElementById('palanqueesContainer');
         
         if (plongeursList) {
-            const observer = new MutationObserver(triggerAutoSave);
+            const observer = new MutationObserver(() => {
+                if (!firebaseLoadingDetected) {
+                    triggerAutoSave();
+                }
+            });
             observer.observe(plongeursList, { childList: true, subtree: true });
         }
         
         if (palanqueesContainer) {
-            const observer = new MutationObserver(triggerAutoSave);
+            const observer = new MutationObserver(() => {
+                if (!firebaseLoadingDetected) {
+                    triggerAutoSave();
+                }
+            });
             observer.observe(palanqueesContainer, { childList: true, subtree: true });
         }
 
@@ -996,16 +943,26 @@
         fieldsToWatch.forEach(fieldId => {
             const field = document.getElementById(fieldId);
             if (field) {
-                field.addEventListener('change', triggerAutoSave);
-                field.addEventListener('input', triggerAutoSave);
+                field.addEventListener('change', () => {
+                    if (!firebaseLoadingDetected) {
+                        triggerAutoSave();
+                    }
+                });
+                field.addEventListener('input', () => {
+                    if (!firebaseLoadingDetected) {
+                        triggerAutoSave();
+                    }
+                });
             }
         });
 
-        // Observer les changements dans les variables globales de manière sécurisée
+        // Observer les changements dans les variables globales avec vérification de stabilité
         let lastPlongeursCount = safeGetPlongeurs().length;
         let lastPalanqueesCount = safeGetPalanquees().length;
         
         setInterval(() => {
+            if (firebaseLoadingDetected) return;
+            
             const currentPlongeursCount = safeGetPlongeurs().length;
             const currentPalanqueesCount = safeGetPalanquees().length;
             
@@ -1014,11 +971,15 @@
                 
                 lastPlongeursCount = currentPlongeursCount;
                 lastPalanqueesCount = currentPalanqueesCount;
+                
+                // Reset la stabilité lors d'un changement
+                lastStableState = null;
+                
                 triggerAutoSave();
             }
-        }, 800);
+        }, 1000);
 
-        console.log('Surveillance des changements activée');
+        console.log('👁️ Surveillance des changements activée avec gestion Firebase/stabilité');
     }
 
     /**
@@ -1026,12 +987,14 @@
      */
     function setupBeforeUnloadSave() {
         window.addEventListener('beforeunload', (e) => {
-            saveApplicationState();
+            if (!firebaseLoadingDetected) {
+                saveApplicationState();
+            }
         });
 
         // Sauvegarder également lors de la perte de focus
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
+            if (document.hidden && !firebaseLoadingDetected) {
                 saveApplicationState();
             }
         });
@@ -1041,7 +1004,6 @@
      * Désactiver les anciens systèmes de sauvegarde
      */
     function disableOldSaveSystems() {
-        // Supprimer les anciennes sauvegardes d'urgence
         const oldKeys = [
             'jsas_emergency_save',
             'jsas_last_session', 
@@ -1053,20 +1015,19 @@
         
         oldKeys.forEach(key => {
             if (localStorage.getItem(key)) {
-                console.log('Suppression ancienne sauvegarde:', key);
+                console.log('🗑️ Suppression ancienne sauvegarde:', key);
                 localStorage.removeItem(key);
             }
         });
 
-        // Désactiver les fonctions globales d'urgence si elles existent
         if (window.emergencySave) {
-            window.emergencySave = () => console.log('Ancien système désactivé');
+            window.emergencySave = () => console.log('🚫 Ancien système désactivé');
         }
         if (window.checkEmergencyRestore) {
-            window.checkEmergencyRestore = () => console.log('Ancien système désactivé');
+            window.checkEmergencyRestore = () => console.log('🚫 Ancien système désactivé');
         }
         if (window.loadEmergencyBackup) {
-            window.loadEmergencyBackup = () => console.log('Ancien système désactivé');
+            window.loadEmergencyBackup = () => console.log('🚫 Ancien système désactivé');
         }
     }
 
@@ -1074,25 +1035,24 @@
      * Initialisation principale
      */
     function initAutoSaveSystem() {
-        console.log('Initialisation du système de sauvegarde automatique...');
+        console.log('🚀 Initialisation du système de sauvegarde automatique avec gestion stabilité...');
         
-        // Désactiver l'ancien système en premier
         disableOldSaveSystems();
-        
-        // Configurer les listeners
         setupChangeListeners();
         setupBeforeUnloadSave();
         
-        // Vérifier s'il y a des données à restaurer (après un délai réduit)
+        // Vérifier s'il y a des données à restaurer (avec délai pour laisser Firebase se charger)
         setTimeout(() => {
-            const savedData = checkForSavedData();
-            if (savedData && !isRestoringData) {
-                console.log('Données de sauvegarde trouvées');
-                showRestorePrompt(savedData);
+            if (!firebaseLoadingDetected) {
+                const savedData = checkForSavedData();
+                if (savedData && !isRestoringData) {
+                    console.log('💾 Données de sauvegarde STABLES trouvées');
+                    showRestorePrompt(savedData);
+                }
             }
         }, CONFIG.SHOW_RESTORE_DELAY);
         
-        console.log('Système de sauvegarde automatique initialisé');
+        console.log('✅ Système de sauvegarde automatique avec stabilité initialisé');
     }
 
     /**
@@ -1100,11 +1060,11 @@
      */
     window.clearAutoSave = function() {
         localStorage.removeItem(CONFIG.STORAGE_KEY);
-        console.log('Sauvegarde automatique effacée');
+        console.log('🗑️ Sauvegarde automatique effacée');
     };
 
     /**
-     * Fonction de debug améliorée
+     * Fonction de debug améliorée avec infos stabilité
      */
     window.debugAutoSave = function() {
         const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
@@ -1112,47 +1072,53 @@
         
         if (saved) {
             const data = JSON.parse(saved);
-            console.log('Donnees sauvegardees:', data);
+            console.log('💾 Données sauvegardées:', data);
             
-            if (data.stats && data.stats.diagnostic) {
-                console.log('Diagnostic inclus:', data.stats.diagnostic);
+            if (data.stats && data.stats.stabilityCheck) {
+                console.log('🔒 Info stabilité:', {
+                    stableSince: new Date(data.stats.stabilityCheck.stableSince),
+                    stabilityDuration: Math.round(data.stats.stabilityCheck.stabilityDuration / 1000) + 's'
+                });
             }
         } else {
-            console.log('Aucune sauvegarde trouvee');
+            console.log('❌ Aucune sauvegarde trouvée');
         }
         
-        // Diagnostic en temps réel
-        return diagnosticComptage();
+        console.log('🔄 État actuel:', {
+            firebaseLoadingDetected,
+            lastStableState: lastStableState ? new Date(lastStableState) : null,
+            stabilityDuration: lastStableState ? Math.round((Date.now() - lastStableState) / 1000) + 's' : 'N/A'
+        });
+        
+        return checkApplicationStability();
     };
 
-    /**
-     * Fonction de diagnostic exposée globalement
-     */
-    window.diagnosticComptage = diagnosticComptage;
-
-    /**
-     * Exposer la fonction de reconstruction pour usage externe
-     */
-    window.reconstructDataFromDOM = reconstructDataFromDOM;
-
-    // Auto-initialisation avec délai réduit
+    // Auto-initialisation
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             disableOldSaveSystems();
-            setTimeout(initAutoSaveSystem, 200);
+            setTimeout(initAutoSaveSystem, 500);
         });
     } else {
         setTimeout(() => {
             disableOldSaveSystems();
             initAutoSaveSystem();
-        }, 200);
+        }, 500);
     }
 
     // Exposer les fonctions publiques
     window.ImprovedAutoSave = {
         save: saveApplicationState,
         check: checkForSavedData,
-        clear: () => localStorage.removeItem(CONFIG.STORAGE_KEY)
+        clear: () => localStorage.removeItem(CONFIG.STORAGE_KEY),
+        disable: () => {
+            firebaseLoadingDetected = true;
+            console.log('⏸️ Auto-save manuellement désactivé');
+        },
+        enable: () => {
+            firebaseLoadingDetected = false;
+            console.log('▶️ Auto-save manuellement réactivé');
+        }
     };
 
 })();
