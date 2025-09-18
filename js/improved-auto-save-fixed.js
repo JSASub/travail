@@ -754,7 +754,24 @@
         window.acceptRestore = function(btn) {
             btn.disabled = true;
             btn.textContent = 'Restauration...';
-            restoreApplicationState(appState);
+            //
+			// Restaurer les variables globales
+window.plongeurs = appState.data.plongeurs;
+window.palanquees = appState.data.palanquees;
+window.plongeursOriginaux = appState.data.plongeursOriginaux;
+
+// Vider le DOM et forcer le re-rendu
+document.getElementById('listePlongeurs').innerHTML = '';
+document.getElementById('palanqueesContainer').innerHTML = '';
+
+// Re-rendre avec les données restaurées
+renderPlongeurs();
+renderPalanquees();
+updateCompteurs();
+
+// Nettoyer la sauvegarde
+localStorage.removeItem('jsas_auto_save');
+			//
             setTimeout(() => {
                 const notification = btn.closest('.restore-notification');
                 if (notification) notification.remove();
