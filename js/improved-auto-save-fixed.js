@@ -79,27 +79,7 @@ console.log('✅ Système de sauvegarde automatique chargé');
         
         return data;
     }
-    //
-	// Forcer sauvegarde lors du changement de session
-let lastSessionKey = '';
-function detectSessionChange() {
-    const dpSelect = document.getElementById('dp-select');
-    const dpDate = document.getElementById('dp-date');
     
-    if (dpSelect && dpDate) {
-        const currentKey = `${dpDate.value}_${dpSelect.value}`;
-        if (currentKey !== lastSessionKey && currentKey.length > 5) {
-            console.log('Changement de session détecté:', currentKey);
-            setTimeout(() => {
-                console.log('Sauvegarde forcée après changement de session');
-                saveData();
-            }, 1000);
-            lastSessionKey = currentKey;
-        }
-    }
-}
-
-	//
     // Sauvegarder les données
     function saveData() {
         try {
@@ -299,26 +279,74 @@ function detectSessionChange() {
         if (document.hidden) saveData();
     });
     
+    // Détecter les changements de session pour forcer la sauvegarde
+    let lastSessionKey = '';
+    function detectSessionChange() {
+        const dpSelect = document.getElementById('dp-select');
+        const dpDate = document.getElementById('dp-date');
+        
+        if (dpSelect && dpDate) {
+            const currentKey = `${dpDate.value}_${dpSelect.value}`;
+            if (currentKey !== lastSessionKey && currentKey.length > 5) {
+                console.log('Changement de session détecté:', currentKey);
+                setTimeout(() => {
+                    const data = captureRealData();
+                    if (data.totalGeneral > 0) {
+                        console.log('Sauvegarde forcée après changement de session:', data.totalGeneral, 'plongeurs');
+                        saveData();
+                    }
+                }, 1500);
+                lastSessionKey = currentKey;
+            }
+        }
+    }
+    
     // Surveillance continue des variables globales pour détecter les chargements
     function setupGlobalWatcher() {
-    let saveCount = 0;
-    
-    const forceSaveIfNeeded = () => {
-        const data = captureRealData();
-        if (data.totalGeneral > 3 && saveCount < 3) {
-            console.log('Force sauvegarde:', data.totalGeneral, 'plongeurs');
-            saveData();
-            saveCount++;
-        }
-    };
-    
-    // Vérification plus fréquente et plus simple
-    setInterval(detectSessionChange, 1000);
-	setInterval(forceSaveIfNeeded, 1000);  // Chaque seconde
-    setTimeout(forceSaveIfNeeded, 2000);   // Après 2s
-    setTimeout(forceSaveIfNeeded, 5000);   // Après 5s
-    setTimeout(forceSaveIfNeeded, 10000);  // Après 10s
-	}
+        let lastPlongeursLength = 0;
+        let lastPalanqueesLength = 0;
+        let saveCount = 0;
+        
+        const checkGlobalChanges = () => {
+            const currentPlongeursLength = window.plongeurs ? window.plongeurs.length : 0;
+            const currentPalanqueesLength = window.palanquees ? window.palanquees.length : 0;
+            
+            // Détecter changement significatif (chargement de session)
+            const significantChange = (
+                Math.abs(currentPlongeursLength - lastPlongeursLength) > 2 ||
+                Math.abs(currentPalanqueesLength - lastPalanqueesLength) > 0
+            );
+            
+            if (significantChange && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
+                console.log('Chargement de session détecté, sauvegarde automatique...');
+                setTimeout(saveData, 1000);
+            }
+            
+            // Sauvegarde forcée périodique si des données sont présentes (max 3 fois)
+            if (saveCount < 3 && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
+                const data = captureRealData();
+                if (data.totalGeneral > 0) {
+                    console.log('Force sauvegarde périodique:', data.totalGeneral, 'plongeurs');
+                    saveData();
+                    saveCount++;
+                }
+            }
+            
+            lastPlongeursLength = currentPlongeursLength;
+            lastPalanqueesLength = currentPalanqueesLength;
+        };
+        
+        // Surveillance des changements de session
+        setInterval(detectSessionChange, 1000);
+        
+        // Vérifier toutes les 2 secondes
+        setInterval(checkGlobalChanges, 2000);
+        
+        // Vérifications initiales échelonnées
+        setTimeout(checkGlobalChanges, 2000);
+        setTimeout(checkGlobalChanges, 5000);
+        setTimeout(checkGlobalChanges, 8000);
+    }
     
     // Initialisation
     function init() {
