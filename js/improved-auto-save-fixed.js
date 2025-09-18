@@ -313,11 +313,11 @@ function detectSessionChange() {
     };
     
     // Vérification plus fréquente et plus simple
-    setInterval(forceSaveIfNeeded, 1000);  // Chaque seconde
+    setInterval(detectSessionChange, 1000);
+	setInterval(forceSaveIfNeeded, 1000);  // Chaque seconde
     setTimeout(forceSaveIfNeeded, 2000);   // Après 2s
     setTimeout(forceSaveIfNeeded, 5000);   // Après 5s
     setTimeout(forceSaveIfNeeded, 10000);  // Après 10s
-	setInterval(detectSessionChange, 1000);
 	}
     
     // Initialisation
