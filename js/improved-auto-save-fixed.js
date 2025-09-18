@@ -285,7 +285,7 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     const forceSaveIfNeeded = () => {
         const data = captureRealData();
-        if (data.totalGeneral > 3 && saveCount < 2) {
+        if (data.totalGeneral > 3 && saveCount < 3) {
             console.log('Force sauvegarde:', data.totalGeneral, 'plongeurs');
             saveData();
             saveCount++;
