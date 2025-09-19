@@ -82,7 +82,12 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     // Sauvegarder les données
     function saveData() {
-        try {
+    try {
+        // PROTECTION : Ne pas sauvegarder pendant les chargements
+        if (window.loadingInProgress === true) {
+            console.log('🚫 Sauvegarde bloquée : chargement en cours');
+            return;
+        }
             const data = captureRealData();
             
             // Seulement si il y a des données significatives
