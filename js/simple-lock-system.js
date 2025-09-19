@@ -335,6 +335,8 @@ function interceptPalanqueeEdit(palanqueeIndex, callback) {
   });
 }
 
+// ===== SECTION COMMENTÉE POUR ÉVITER L'INTERFÉRENCE AVEC LA SAUVEGARDE =====
+/*
 // Modifier la fonction syncToDatabase existante pour libérer les verrous
 const originalSyncToDatabase = window.syncToDatabase;
 if (originalSyncToDatabase) {
@@ -351,6 +353,8 @@ if (originalSyncToDatabase) {
     }
   };
 }
+*/
+// ===== FIN SECTION COMMENTÉE =====
 
 // Auto-initialisation sécurisée
 function tryInitLockSystem() {
@@ -379,4 +383,4 @@ window.cleanupLockSystem = function() {
   SimpleLockSystem.fullCleanup();
 };
 
-console.log("🔒 Système de verrous simplifié chargé (version avec nettoyage)");
+console.log("🔒 Système de verrous simplifié chargé (version SANS interférence sauvegarde)");
