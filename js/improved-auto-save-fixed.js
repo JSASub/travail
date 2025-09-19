@@ -9,18 +9,31 @@ console.log('✅ Système de sauvegarde automatique chargé');
     let hasShownRestore = false;
     
     // Fonction pour capturer les données réelles depuis le DOM
-    function captureRealData() {
-        const data = {
-            timestamp: Date.now(),
-            plongeursEnListe: 0,
-            plongeursEnPalanquees: 0,
-            nombrePalanquees: 0,
-            plongeurs: [],
-            palanquees: [],
-            metadata: {}
-        };
-        
-        // Capturer plongeurs en liste
+    // Fonction captureRealData() corrigée - PRIORITÉ AUX VARIABLES GLOBALES
+function captureRealData() {
+    const data = {
+        timestamp: Date.now(),
+        plongeursEnListe: 0,
+        plongeursEnPalanquees: 0,
+        nombrePalanquees: 0,
+        plongeurs: [],
+        palanquees: [],
+        metadata: {}
+    };
+    
+    // ===== CORRECTION PRINCIPALE : PRIORITÉ AUX VARIABLES GLOBALES =====
+    
+    // Capturer plongeurs depuis les variables globales EN PREMIER
+    if (window.plongeurs && Array.isArray(window.plongeurs) && window.plongeurs.length > 0) {
+        data.plongeurs = window.plongeurs.map(p => ({
+            nom: p.nom || '',
+            niveau: p.niveau || '',
+            pre: p.pre || ''
+        }));
+        data.plongeursEnListe = data.plongeurs.length;
+        console.log('Plongeurs collectés depuis variables globales:', data.plongeursEnListe);
+    } else {
+        // Fallback DOM seulement si variables globales vides
         const listePlongeurs = document.getElementById('listePlongeurs');
         if (listePlongeurs) {
             const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
@@ -35,15 +48,33 @@ console.log('✅ Système de sauvegarde automatique chargé');
                     data.plongeurs.push({ nom, niveau, pre });
                 }
             });
+            console.log('Plongeurs collectés depuis DOM (fallback):', data.plongeursEnListe);
         }
+    }
+    
+    // Capturer palanquées depuis les variables globales EN PREMIER
+    if (window.palanquees && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
+        data.nombrePalanquees = window.palanquees.length;
         
-        // Capturer palanquées
+        window.palanquees.forEach((pal, index) => {
+            if (Array.isArray(pal)) {
+                const palanquee = pal.map(p => ({
+                    nom: p.nom || '',
+                    niveau: p.niveau || '',
+                    pre: p.pre || ''
+                }));
+                data.palanquees.push(palanquee);
+                data.plongeursEnPalanquees += palanquee.length;
+            }
+        });
+        console.log('Palanquées collectées depuis variables globales:', data.nombrePalanquees, 'palanquées,', data.plongeursEnPalanquees, 'plongeurs');
+    } else {
+        // Fallback DOM seulement si variables globales vides
         const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
         data.nombrePalanquees = palanqueeElements.length;
         
         palanqueeElements.forEach((palEl, index) => {
             const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-            data.plongeursEnPalanquees += plongeursItems.length;
             
             const palanquee = [];
             plongeursItems.forEach(item => {
@@ -59,10 +90,14 @@ console.log('✅ Système de sauvegarde automatique chargé');
             
             if (palanquee.length > 0) {
                 data.palanquees.push(palanquee);
+                data.plongeursEnPalanquees += palanquee.length;
             }
         });
-        
-        // Capturer métadonnées
+        console.log('Palanquées collectées depuis DOM (fallback):', data.nombrePalanquees, 'palanquées,', data.plongeursEnPalanquees, 'plongeurs');
+    }
+    
+    // Capturer métadonnées
+    try {
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
         const dpLieu = document.getElementById('dp-lieu');
@@ -74,12 +109,22 @@ console.log('✅ Système de sauvegarde automatique chargé');
             lieu: dpLieu ? dpLieu.value.trim() : '',
             plongee: dpPlongee ? dpPlongee.value : 'matin'
         };
-        
-        data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
-        
-        return data;
+    } catch (e) {
+        console.error('Erreur collecte métadonnées:', e);
+        data.metadata = {};
     }
-    //
+    
+    data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
+    
+    console.log('=== RÉSULTAT FINAL CAPTURE ===');
+    console.log('Plongeurs en liste:', data.plongeursEnListe);
+    console.log('Plongeurs en palanquées:', data.plongeursEnPalanquees);
+    console.log('Nombre palanquées:', data.nombrePalanquees);
+    console.log('TOTAL GÉNÉRAL:', data.totalGeneral);
+    
+    return data;
+}
+	//
 	// Forcer sauvegarde lors du changement de session
 let lastSessionKey = '';
 function detectSessionChange() {
