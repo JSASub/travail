@@ -9,144 +9,77 @@ console.log('✅ Système de sauvegarde automatique chargé');
     let hasShownRestore = false;
     
     // Fonction pour capturer les données réelles depuis le DOM
-    // Fonction captureRealData() corrigée - PRIORITÉ AUX VARIABLES GLOBALES
-	// Fonction captureRealData() FINALE avec debugging
-	// DÉBUT de captureRealData() avec fix d'urgence
-function captureRealData() {
-    console.log("📸 DÉBUT CAPTURE - Diagnostic variables globales");
-    
-    // FIX D'URGENCE : Initialiser les variables si elles n'existent pas
-    if (typeof window.plongeurs === 'undefined') {
-        console.warn("⚠️ window.plongeurs n'existe pas, initialisation...");
-        window.plongeurs = [];
-    }
-    if (typeof window.palanquees === 'undefined') {
-        console.warn("⚠️ window.palanquees n'existe pas, initialisation...");
-        window.palanquees = [];
-    }
-    
-    // DIAGNOSTIC COMPLET
-    console.log("Variables après initialisation:");
-    console.log("- window.plongeurs:", Array.isArray(window.plongeurs) ? window.plongeurs.length : typeof window.plongeurs);
-    console.log("- window.palanquees:", Array.isArray(window.palanquees) ? window.palanquees.length : typeof window.palanquees);
-    
-    const data = {
-        timestamp: Date.now(),
-        plongeursEnListe: 0,
-        plongeursEnPalanquees: 0,
-        nombrePalanquees: 0,
-        plongeurs: [],
-        palanquees: [],
-        metadata: {}
-    };
-    
-    // STRATÉGIE : TOUJOURS lire depuis le DOM pour être sûr des données visibles
-    console.log("📋 Lecture depuis DOM (méthode fiable):");
-    
-    // Capturer plongeurs depuis le DOM
-    const listePlongeurs = document.getElementById('listePlongeurs');
-    if (listePlongeurs) {
-        const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
-        data.plongeursEnListe = items.length;
-        console.log("Plongeurs trouvés dans DOM:", data.plongeursEnListe);
+    function captureRealData() {
+        const data = {
+            timestamp: Date.now(),
+            plongeursEnListe: 0,
+            plongeursEnPalanquees: 0,
+            nombrePalanquees: 0,
+            plongeurs: [],
+            palanquees: [],
+            metadata: {}
+        };
         
-        items.forEach((item, index) => {
-            const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-            const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-            const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
+        // Capturer plongeurs en liste
+        const listePlongeurs = document.getElementById('listePlongeurs');
+        if (listePlongeurs) {
+            const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
+            data.plongeursEnListe = items.length;
             
-            if (nom) {
-                data.plongeurs.push({ nom, niveau, pre });
-                console.log(`  ${index + 1}. ${nom} (${niveau})`);
-            }
-        });
-    }
-    
-    // Capturer palanquées depuis le DOM
-    const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
-    data.nombrePalanquees = palanqueeElements.length;
-    console.log("Palanquées trouvées dans DOM:", data.nombrePalanquees);
-    
-    palanqueeElements.forEach((palEl, palIndex) => {
-        const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-        console.log(`  Palanquée ${palIndex + 1}: ${plongeursItems.length} plongeurs`);
-        
-        const palanquee = [];
-        plongeursItems.forEach((item, itemIndex) => {
-            const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-            const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-            const preInput = item.querySelector('.plongeur-prerogatives-editable');
-            const pre = preInput ? preInput.value.trim() : '';
-            
-            if (nom) {
-                palanquee.push({ nom, niveau, pre });
-                console.log(`    ${itemIndex + 1}. ${nom} (${niveau})`);
-            }
-        });
-        
-        if (palanquee.length > 0) {
-            data.palanquees.push(palanquee);
-            data.plongeursEnPalanquees += palanquee.length;
+            items.forEach(item => {
+                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
+                
+                if (nom) {
+                    data.plongeurs.push({ nom, niveau, pre });
+                }
+            });
         }
-    });
-    
-    // Métadonnées
-    try {
+        
+        // Capturer palanquées
+        const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+        data.nombrePalanquees = palanqueeElements.length;
+        
+        palanqueeElements.forEach((palEl, index) => {
+            const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+            data.plongeursEnPalanquees += plongeursItems.length;
+            
+            const palanquee = [];
+            plongeursItems.forEach(item => {
+                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                const preInput = item.querySelector('.plongeur-prerogatives-editable');
+                const pre = preInput ? preInput.value.trim() : '';
+                
+                if (nom) {
+                    palanquee.push({ nom, niveau, pre });
+                }
+            });
+            
+            if (palanquee.length > 0) {
+                data.palanquees.push(palanquee);
+            }
+        });
+        
+        // Capturer métadonnées
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
         const dpLieu = document.getElementById('dp-lieu');
         const dpPlongee = document.getElementById('dp-plongee');
         
         data.metadata = {
-            dp: dpSelect?.selectedOptions[0]?.text || '',
-            date: dpDate?.value || '',
-            lieu: dpLieu?.value?.trim() || '',
-            plongee: dpPlongee?.value || 'matin'
+            dp: dpSelect && dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '',
+            date: dpDate ? dpDate.value : '',
+            lieu: dpLieu ? dpLieu.value.trim() : '',
+            plongee: dpPlongee ? dpPlongee.value : 'matin'
         };
         
-        console.log("Métadonnées capturées:", data.metadata);
-    } catch (e) {
-        console.warn('⚠️ Erreur métadonnées:', e);
-        data.metadata = {};
+        data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
+        
+        return data;
     }
     
-    data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
-    
-    // SYNCHRONISER les variables globales avec les données DOM capturées
-    console.log("🔄 Synchronisation variables globales avec DOM:");
-    window.plongeurs = [...data.plongeurs];
-    window.palanquees = data.palanquees.map(pal => [...pal]);
-    console.log("Variables synchronisées - plongeurs:", window.plongeurs.length, "palanquées:", window.palanquees.length);
-    
-    console.log("📊 === RÉSULTAT FINAL ===");
-    console.log("📋 Plongeurs en liste:", data.plongeursEnListe);
-    console.log("🏊 Plongeurs en palanquées:", data.plongeursEnPalanquees);
-    console.log("🎯 Nombre palanquées:", data.nombrePalanquees);
-    console.log("🔢 TOTAL:", data.totalGeneral);
-    
-    return data;
-}
-	//
-	// Forcer sauvegarde lors du changement de session
-let lastSessionKey = '';
-function detectSessionChange() {
-    const dpSelect = document.getElementById('dp-select');
-    const dpDate = document.getElementById('dp-date');
-    
-    if (dpSelect && dpDate) {
-        const currentKey = `${dpDate.value}_${dpSelect.value}`;
-        if (currentKey !== lastSessionKey && currentKey.length > 5) {
-            console.log('Changement de session détecté:', currentKey);
-            setTimeout(() => {
-                console.log('Sauvegarde forcée après changement de session');
-                saveData();
-            }, 1000);
-            lastSessionKey = currentKey;
-        }
-    }
-}
-
-	//
     // Sauvegarder les données
     function saveData() {
         try {
@@ -346,26 +279,74 @@ function detectSessionChange() {
         if (document.hidden) saveData();
     });
     
+    // Détecter les changements de session pour forcer la sauvegarde
+    let lastSessionKey = '';
+    function detectSessionChange() {
+        const dpSelect = document.getElementById('dp-select');
+        const dpDate = document.getElementById('dp-date');
+        
+        if (dpSelect && dpDate) {
+            const currentKey = `${dpDate.value}_${dpSelect.value}`;
+            if (currentKey !== lastSessionKey && currentKey.length > 5) {
+                console.log('Changement de session détecté:', currentKey);
+                setTimeout(() => {
+                    const data = captureRealData();
+                    if (data.totalGeneral > 0) {
+                        console.log('Sauvegarde forcée après changement de session:', data.totalGeneral, 'plongeurs');
+                        saveData();
+                    }
+                }, 1500);
+                lastSessionKey = currentKey;
+            }
+        }
+    }
+    
     // Surveillance continue des variables globales pour détecter les chargements
     function setupGlobalWatcher() {
-    let saveCount = 0;
-    
-    const forceSaveIfNeeded = () => {
-        const data = captureRealData();
-        if (data.totalGeneral > 3 && saveCount < 3) {
-            console.log('Force sauvegarde:', data.totalGeneral, 'plongeurs');
-            saveData();
-            saveCount++;
-        }
-    };
-    
-    // Vérification plus fréquente et plus simple
-    setInterval(detectSessionChange, 1000);
-	setInterval(forceSaveIfNeeded, 1000);  // Chaque seconde
-    setTimeout(forceSaveIfNeeded, 2000);   // Après 2s
-    setTimeout(forceSaveIfNeeded, 5000);   // Après 5s
-    setTimeout(forceSaveIfNeeded, 10000);  // Après 10s
-	}
+        let lastPlongeursLength = 0;
+        let lastPalanqueesLength = 0;
+        let saveCount = 0;
+        
+        const checkGlobalChanges = () => {
+            const currentPlongeursLength = window.plongeurs ? window.plongeurs.length : 0;
+            const currentPalanqueesLength = window.palanquees ? window.palanquees.length : 0;
+            
+            // Détecter changement significatif (chargement de session)
+            const significantChange = (
+                Math.abs(currentPlongeursLength - lastPlongeursLength) > 2 ||
+                Math.abs(currentPalanqueesLength - lastPalanqueesLength) > 0
+            );
+            
+            if (significantChange && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
+                console.log('Chargement de session détecté, sauvegarde automatique...');
+                setTimeout(saveData, 1000);
+            }
+            
+            // Sauvegarde forcée périodique si des données sont présentes (max 3 fois)
+            if (saveCount < 3 && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
+                const data = captureRealData();
+                if (data.totalGeneral > 0) {
+                    console.log('Force sauvegarde périodique:', data.totalGeneral, 'plongeurs');
+                    saveData();
+                    saveCount++;
+                }
+            }
+            
+            lastPlongeursLength = currentPlongeursLength;
+            lastPalanqueesLength = currentPalanqueesLength;
+        };
+        
+        // Surveillance des changements de session
+        setInterval(detectSessionChange, 1000);
+        
+        // Vérifier toutes les 2 secondes
+        setInterval(checkGlobalChanges, 2000);
+        
+        // Vérifications initiales échelonnées
+        setTimeout(checkGlobalChanges, 2000);
+        setTimeout(checkGlobalChanges, 5000);
+        setTimeout(checkGlobalChanges, 8000);
+    }
     
     // Initialisation
     function init() {
