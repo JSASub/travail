@@ -199,23 +199,7 @@ console.log('✅ Système de sauvegarde automatique chargé');
     }
     
     // Restaurer les données
-	function restoreData(data) {
-    console.log("=== RESTAURATION FORCÉE ===");
-    console.log("Données à restaurer:", data);
-    
-    // Restauration brutale
-    window.plongeurs = data.plongeurs || [];
-    window.palanquees = data.palanquees || [];
-    
-    console.log("Après restauration:");
-    console.log("plongeurs:", window.plongeurs.length);
-    console.log("palanquées:", window.palanquees.length);
-    
-    // Pas de rendu automatique - on teste juste les variables
-    localStorage.removeItem(STORAGE_KEY);
-    
-    alert(`RESTAURATION TERMINÉE\nVariables: ${window.plongeurs.length} plongeurs, ${window.palanquees.length} palanquées\nMaintenant actualisez la page (F5) pour voir si les fonctions de rendu marchent`);
-}
+	
 	// Surveillance des changements
     function setupWatchers() {
         // Observer DOM
