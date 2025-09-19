@@ -80,6 +80,34 @@ console.log('✅ Système de sauvegarde automatique chargé');
         return data;
     }
     
+	///////
+	// Fonction de vérification des données avant sauvegarde
+function verifyDataBeforeSave() {
+    const dpSelect = document.getElementById('dp-select');
+    const dpDate = document.getElementById('dp-date');
+    
+    if (!dpSelect || !dpDate) return null;
+    
+    const currentDP = dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '';
+    const currentDate = dpDate.value;
+    const currentKey = `${currentDate}_${currentDP}`;
+    
+    console.log('Vérification session courante:', currentKey);
+    
+    // Vérifier que les données correspondent vraiment à l'interface affichée
+    const plongeursCount = window.plongeurs ? window.plongeurs.length : 0;
+    const palanqueesCount = window.palanquees ? window.palanquees.length : 0;
+    
+    console.log('Données à sauvegarder:', plongeursCount, 'plongeurs,', palanqueesCount, 'palanquées');
+    
+    return {
+        sessionKey: currentKey,
+        isValid: currentDP.length > 3 && currentDate.length > 0,
+        plongeursCount,
+        palanqueesCount
+    };
+}
+	///////
     // Sauvegarder les données
     function saveData() {
         try {
