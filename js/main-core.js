@@ -177,11 +177,15 @@ function getSelectedDPName() {
   return "";
 }
 
-// Mode production - logs réduits
+// Mode production - logs réduits CORRIGÉ
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   const originalConsoleLog = console.log;
   console.log = function() {
-    if (arguments[0] && (arguments[0].includes('✅') || arguments[0].includes('⚠'))) {
+    // CORRECTION: vérifier que c'est une chaîne avant d'appeler includes
+    if (arguments[0] && typeof arguments[0] === 'string' && (arguments[0].includes('✅') || arguments[0].includes('⚠'))) {
+      originalConsoleLog.apply(console, arguments);
+    } else if (arguments[0] && typeof arguments[0] !== 'string') {
+      // Pour les objets/non-chaînes, les afficher normalement
       originalConsoleLog.apply(console, arguments);
     }
   }
