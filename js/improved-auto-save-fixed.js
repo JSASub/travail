@@ -11,8 +11,24 @@ console.log('✅ Système de sauvegarde automatique chargé');
     // Fonction pour capturer les données réelles depuis le DOM
     // Fonction captureRealData() corrigée - PRIORITÉ AUX VARIABLES GLOBALES
 	// Fonction captureRealData() FINALE avec debugging
+	// DÉBUT de captureRealData() avec fix d'urgence
 function captureRealData() {
-    console.log("📸 === DÉBUT CAPTURE DES DONNÉES ===");
+    console.log("📸 DÉBUT CAPTURE - Diagnostic variables globales");
+    
+    // FIX D'URGENCE : Initialiser les variables si elles n'existent pas
+    if (typeof window.plongeurs === 'undefined') {
+        console.warn("⚠️ window.plongeurs n'existe pas, initialisation...");
+        window.plongeurs = [];
+    }
+    if (typeof window.palanquees === 'undefined') {
+        console.warn("⚠️ window.palanquees n'existe pas, initialisation...");
+        window.palanquees = [];
+    }
+    
+    // DIAGNOSTIC COMPLET
+    console.log("Variables après initialisation:");
+    console.log("- window.plongeurs:", Array.isArray(window.plongeurs) ? window.plongeurs.length : typeof window.plongeurs);
+    console.log("- window.palanquees:", Array.isArray(window.palanquees) ? window.palanquees.length : typeof window.palanquees);
     
     const data = {
         timestamp: Date.now(),
@@ -24,83 +40,57 @@ function captureRealData() {
         metadata: {}
     };
     
-    // ===== DEBUGGING : ÉTAT DES VARIABLES GLOBALES =====
-    console.log("🔍 Variables globales avant capture:");
-    console.log("- window.plongeurs:", window.plongeurs ? window.plongeurs.length : 'undefined');
-    console.log("- window.palanquees:", window.palanquees ? window.palanquees.length : 'undefined');
+    // STRATÉGIE : TOUJOURS lire depuis le DOM pour être sûr des données visibles
+    console.log("📋 Lecture depuis DOM (méthode fiable):");
     
-    // ===== CAPTURE PLONGEURS AVEC PRIORITÉ VARIABLES GLOBALES =====
-    if (window.plongeurs && Array.isArray(window.plongeurs) && window.plongeurs.length > 0) {
-        console.log("✅ Utilisation des variables globales pour plongeurs");
-        data.plongeurs = window.plongeurs.map(p => ({
-            nom: p.nom || '',
-            niveau: p.niveau || '',
-            pre: p.pre || ''
-        }));
-        data.plongeursEnListe = data.plongeurs.length;
-    } else {
-        console.log("🔄 Fallback DOM pour plongeurs (variables vides)");
-        const listePlongeurs = document.getElementById('listePlongeurs');
-        if (listePlongeurs) {
-            const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
-            data.plongeursEnListe = items.length;
+    // Capturer plongeurs depuis le DOM
+    const listePlongeurs = document.getElementById('listePlongeurs');
+    if (listePlongeurs) {
+        const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
+        data.plongeursEnListe = items.length;
+        console.log("Plongeurs trouvés dans DOM:", data.plongeursEnListe);
+        
+        items.forEach((item, index) => {
+            const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+            const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+            const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
             
-            items.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
-                
-                if (nom) {
-                    data.plongeurs.push({ nom, niveau, pre });
-                }
-            });
+            if (nom) {
+                data.plongeurs.push({ nom, niveau, pre });
+                console.log(`  ${index + 1}. ${nom} (${niveau})`);
+            }
+        });
+    }
+    
+    // Capturer palanquées depuis le DOM
+    const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+    data.nombrePalanquees = palanqueeElements.length;
+    console.log("Palanquées trouvées dans DOM:", data.nombrePalanquees);
+    
+    palanqueeElements.forEach((palEl, palIndex) => {
+        const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+        console.log(`  Palanquée ${palIndex + 1}: ${plongeursItems.length} plongeurs`);
+        
+        const palanquee = [];
+        plongeursItems.forEach((item, itemIndex) => {
+            const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+            const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+            const preInput = item.querySelector('.plongeur-prerogatives-editable');
+            const pre = preInput ? preInput.value.trim() : '';
+            
+            if (nom) {
+                palanquee.push({ nom, niveau, pre });
+                console.log(`    ${itemIndex + 1}. ${nom} (${niveau})`);
+            }
+        });
+        
+        if (palanquee.length > 0) {
+            data.palanquees.push(palanquee);
+            data.plongeursEnPalanquees += palanquee.length;
         }
-    }
+    });
     
-    // ===== CAPTURE PALANQUÉES AVEC PRIORITÉ VARIABLES GLOBALES =====
-    if (window.palanquees && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
-        console.log("✅ Utilisation des variables globales pour palanquées");
-        data.nombrePalanquees = window.palanquees.length;
-        
-        window.palanquees.forEach((pal, index) => {
-            if (Array.isArray(pal)) {
-                const palanquee = pal.map(p => ({
-                    nom: p.nom || '',
-                    niveau: p.niveau || '',
-                    pre: p.pre || ''
-                }));
-                data.palanquees.push(palanquee);
-                data.plongeursEnPalanquees += palanquee.length;
-            }
-        });
-    } else {
-        console.log("🔄 Fallback DOM pour palanquées (variables vides)");
-        const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
-        data.nombrePalanquees = palanqueeElements.length;
-        
-        palanqueeElements.forEach((palEl, index) => {
-            const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-            
-            const palanquee = [];
-            plongeursItems.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const preInput = item.querySelector('.plongeur-prerogatives-editable');
-                const pre = preInput ? preInput.value.trim() : '';
-                
-                if (nom) {
-                    palanquee.push({ nom, niveau, pre });
-                }
-            });
-            
-            if (palanquee.length > 0) {
-                data.palanquees.push(palanquee);
-                data.plongeursEnPalanquees += palanquee.length;
-            }
-        });
-    }
-    
-    // ===== CAPTURE MÉTADONNÉES =====
+    // Métadonnées
     try {
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
@@ -108,25 +98,31 @@ function captureRealData() {
         const dpPlongee = document.getElementById('dp-plongee');
         
         data.metadata = {
-            dp: dpSelect && dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '',
-            date: dpDate ? dpDate.value : '',
-            lieu: dpLieu ? dpLieu.value.trim() : '',
-            plongee: dpPlongee ? dpPlongee.value : 'matin'
+            dp: dpSelect?.selectedOptions[0]?.text || '',
+            date: dpDate?.value || '',
+            lieu: dpLieu?.value?.trim() || '',
+            plongee: dpPlongee?.value || 'matin'
         };
+        
+        console.log("Métadonnées capturées:", data.metadata);
     } catch (e) {
-        console.warn('⚠️ Erreur métadonnées:', e.message);
+        console.warn('⚠️ Erreur métadonnées:', e);
         data.metadata = {};
     }
     
     data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
     
-    // ===== RÉSULTAT FINAL =====
-    console.log("📊 === RÉSULTAT CAPTURE ===");
+    // SYNCHRONISER les variables globales avec les données DOM capturées
+    console.log("🔄 Synchronisation variables globales avec DOM:");
+    window.plongeurs = [...data.plongeurs];
+    window.palanquees = data.palanquees.map(pal => [...pal]);
+    console.log("Variables synchronisées - plongeurs:", window.plongeurs.length, "palanquées:", window.palanquees.length);
+    
+    console.log("📊 === RÉSULTAT FINAL ===");
     console.log("📋 Plongeurs en liste:", data.plongeursEnListe);
     console.log("🏊 Plongeurs en palanquées:", data.plongeursEnPalanquees);
     console.log("🎯 Nombre palanquées:", data.nombrePalanquees);
-    console.log("🔢 TOTAL GÉNÉRAL:", data.totalGeneral);
-    console.log("📸 === FIN CAPTURE ===");
+    console.log("🔢 TOTAL:", data.totalGeneral);
     
     return data;
 }
