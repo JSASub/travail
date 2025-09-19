@@ -752,6 +752,7 @@ for (let i = 0; i < pal.length; i++) {
 }
 
 // Fonction pour charger une session CORRIGÉE ET PROPRE
+// Fonction loadSession CORRIGÉE avec nettoyage forcé des variables globales
 async function loadSession(sessionKey) {
   console.log("🔥 Chargement session:", sessionKey);
   
@@ -769,22 +770,49 @@ async function loadSession(sessionKey) {
     
     const sessionData = snapshot.val();
     
+    // ===== NETTOYAGE FORCÉ DES VARIABLES GLOBALES =====
+    console.log("🧹 Nettoyage forcé des variables globales...");
+    window.plongeurs = [];
+    window.palanquees = [];
+    window.plongeursOriginaux = [];
+    
+    // Attendre un cycle pour s'assurer que les variables sont vidées
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // ===== RESTAURATION PROPRE =====
+    console.log("📥 Restauration des données de la session...");
+    
     // Restaurer les plongeurs
-    plongeurs = sessionData.plongeurs || [];
+    if (sessionData.plongeurs && Array.isArray(sessionData.plongeurs)) {
+      window.plongeurs = sessionData.plongeurs.map(p => ({
+        nom: p.nom || '',
+        niveau: p.niveau || '',
+        pre: p.pre || ''
+      }));
+      console.log("✅ Plongeurs restaurés:", window.plongeurs.length);
+    } else {
+      window.plongeurs = [];
+      console.log("ℹ️ Aucun plongeur à restaurer");
+    }
     
     // Restaurer les palanquées
-    palanquees = [];
-    
     if (sessionData.palanquees && Array.isArray(sessionData.palanquees)) {
+      window.palanquees = [];
+      
       sessionData.palanquees.forEach((palData) => {
         const palanqueeArray = [];
         
         if (palData.plongeurs && Array.isArray(palData.plongeurs)) {
           palData.plongeurs.forEach(p => {
-            palanqueeArray.push(p);
+            palanqueeArray.push({
+              nom: p.nom || '',
+              niveau: p.niveau || '',
+              pre: p.pre || ''
+            });
           });
         }
         
+        // Restaurer les paramètres de palanquée
         if (palData.parametres) {
           palanqueeArray.horaire = palData.parametres.horaire || "";
           palanqueeArray.profondeurPrevue = palData.parametres.profondeurPrevue || "";
@@ -794,52 +822,74 @@ async function loadSession(sessionKey) {
           palanqueeArray.paliers = palData.parametres.paliers || "";
         }
         
-        palanquees.push(palanqueeArray);
+        window.palanquees.push(palanqueeArray);
       });
+      
+      console.log("✅ Palanquées restaurées:", window.palanquees.length);
+    } else {
+      window.palanquees = [];
+      console.log("ℹ️ Aucune palanquée à restaurer");
     }
     
-    plongeursOriginaux = [...plongeurs];
+    // Mettre à jour plongeursOriginaux
+    window.plongeursOriginaux = [...window.plongeurs];
     
-    // Restaurer les infos DP
+    // ===== VÉRIFICATION POST-RESTAURATION =====
+    const totalPlongeurs = window.plongeurs.length;
+    let totalEnPalanquees = 0;
+    window.palanquees.forEach(pal => {
+      if (Array.isArray(pal)) {
+        totalEnPalanquees += pal.length;
+      }
+    });
+    
+    console.log("🔍 Vérification post-restauration:");
+    console.log("- Plongeurs en liste:", totalPlongeurs);
+    console.log("- Plongeurs en palanquées:", totalEnPalanquees);
+    console.log("- Total général:", totalPlongeurs + totalEnPalanquees);
+    console.log("- Nombre de palanquées:", window.palanquees.length);
+    
+    // ===== RESTAURATION DES MÉTADONNÉES =====
     if (sessionData.meta) {
-      // Trouver et sélectionner le DP dans la liste
+      // DP
       const dpSelect = document.getElementById("dp-select");
-      if (dpSelect && DP_LIST) {
+      if (dpSelect && DP_LIST && sessionData.meta.dp) {
         const dp = DP_LIST.find(d => d.nom === sessionData.meta.dp);
         if (dp) {
           dpSelect.value = dp.id;
           console.log("✅ DP sélectionné:", dp.nom);
           
-          // Activer les boutons DP après sélection
           if (typeof window.enableDPButtons === 'function') {
             window.enableDPButtons();
           }
         }
       }
       
-      // Restaurer les autres champs
+      // Autres champs
       const dpDate = document.getElementById("dp-date");
       const dpLieu = document.getElementById("dp-lieu");
       const dpPlongee = document.getElementById("dp-plongee");
       
-      if (dpDate) dpDate.value = sessionData.meta.date || "";
-      if (dpLieu) dpLieu.value = sessionData.meta.lieu || "";
-      if (dpPlongee) dpPlongee.value = sessionData.meta.plongee || "matin";
+      if (dpDate && sessionData.meta.date) dpDate.value = sessionData.meta.date;
+      if (dpLieu && sessionData.meta.lieu) dpLieu.value = sessionData.meta.lieu;
+      if (dpPlongee && sessionData.meta.plongee) dpPlongee.value = sessionData.meta.plongee;
     }
     
-    // Premier rendu de base
-    if (typeof renderPalanquees === 'function') renderPalanquees();
+    // ===== RENDU IMMÉDIAT =====
+    console.log("🎨 Premier rendu...");
     if (typeof renderPlongeurs === 'function') renderPlongeurs();
+    if (typeof renderPalanquees === 'function') renderPalanquees();
     if (typeof updateAlertes === 'function') updateAlertes();
+    if (typeof updateCompteurs === 'function') updateCompteurs();
     
-    // Restauration des paramètres des palanquées avec délai
+    // ===== RENDU DIFFÉRÉ AVEC PARAMÈTRES =====
     setTimeout(() => {
       console.log("🔄 Restauration des paramètres d'interface...");
       
-      palanquees.forEach((pal, index) => {
-        if (!pal || !Array.isArray(pal)) return;
+      window.palanquees.forEach((pal, index) => {
+        if (!Array.isArray(pal)) return;
         
-        // Chercher les champs de saisie pour cette palanquée
+        // Chercher et remplir les champs de paramètres
         const horaireInput = document.getElementById(`horaire-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Horaire"]`);
         const profPrevueInput = document.getElementById(`profondeur-prevue-${index}`) || 
@@ -853,46 +903,44 @@ async function loadSession(sessionKey) {
         const paliersInput = document.getElementById(`paliers-${index}`) || 
                             document.querySelector(`[data-palanquee="${index}"] input[placeholder*="Paliers"]`);
         
-        // Restaurer les valeurs dans les champs
-        if (horaireInput && pal.horaire) {
-          horaireInput.value = pal.horaire;
-        }
-        if (profPrevueInput && pal.profondeurPrevue) {
-          profPrevueInput.value = pal.profondeurPrevue;
-        }
-        if (dureePrevueInput && pal.dureePrevue) {
-          dureePrevueInput.value = pal.dureePrevue;
-        }
-        if (profRealiseeInput && pal.profondeurRealisee) {
-          profRealiseeInput.value = pal.profondeurRealisee;
-        }
-        if (dureeRealiseeInput && pal.dureeRealisee) {
-          dureeRealiseeInput.value = pal.dureeRealisee;
-        }
-        if (paliersInput && pal.paliers) {
-          paliersInput.value = pal.paliers;
-        }
+        if (horaireInput && pal.horaire) horaireInput.value = pal.horaire;
+        if (profPrevueInput && pal.profondeurPrevue) profPrevueInput.value = pal.profondeurPrevue;
+        if (dureePrevueInput && pal.dureePrevue) dureePrevueInput.value = pal.dureePrevue;
+        if (profRealiseeInput && pal.profondeurRealisee) profRealiseeInput.value = pal.profondeurRealisee;
+        if (dureeRealiseeInput && pal.dureeRealisee) dureeRealiseeInput.value = pal.dureeRealisee;
+        if (paliersInput && pal.paliers) paliersInput.value = pal.paliers;
       });
       
-      console.log("✅ Restauration des paramètres terminée");
+      console.log("✅ Paramètres d'interface restaurés");
     }, 300);
     
-    // Rendu final et mise à jour des compteurs
+    // ===== RENDU FINAL ET VÉRIFICATION =====
     setTimeout(() => {
-      console.log("🔄 Rendu final et mise à jour des compteurs...");
+      console.log("🎯 Rendu final et vérification...");
       
-      // Re-rendu pour s'assurer que tout est à jour
-      if (typeof renderPalanquees === 'function') renderPalanquees();
+      // Re-rendu complet
       if (typeof renderPlongeurs === 'function') renderPlongeurs();
+      if (typeof renderPalanquees === 'function') renderPalanquees();
       if (typeof updateAlertes === 'function') updateAlertes();
       
       // Mise à jour forcée des compteurs
       setTimeout(() => {
         if (typeof updateCompteurs === 'function') {
           updateCompteurs();
-          console.log('🔢 Compteurs mis à jour après chargement session');
+          console.log('📊 Compteurs mis à jour après chargement session');
         }
       }, 100);
+      
+      // Vérification finale des variables globales
+      console.log("🔍 VÉRIFICATION FINALE:");
+      console.log("window.plongeurs.length:", window.plongeurs.length);
+      console.log("window.palanquees.length:", window.palanquees.length);
+      
+      let totalCheck = window.plongeurs.length;
+      window.palanquees.forEach(pal => {
+        if (Array.isArray(pal)) totalCheck += pal.length;
+      });
+      console.log("TOTAL CALCULÉ:", totalCheck);
       
     }, 500);
     
@@ -900,19 +948,13 @@ async function loadSession(sessionKey) {
     currentSessionKey = sessionKey;
     sessionModified = false;
     
-    console.log("✅ Session chargée - tracking initialisé -", sessionData.meta?.dp);
+    console.log("✅ Session chargée complètement -", sessionData.meta?.dp);
     
-    // Forcer la mise à jour du compteur
-	const forceCompteurUpdate = () => {
-		const compteur = document.getElementById('compteur-plongeurs');
-		if (compteur && plongeurs) {
-			compteur.textContent = '(' + plongeurs.length + ')';
-		}
-	};
-
-	setTimeout(forceCompteurUpdate, 300);
-	setTimeout(forceCompteurUpdate, 800);
-
+    // Événement personnalisé pour notifier le système de sauvegarde
+    window.dispatchEvent(new CustomEvent('sessionRestored', {
+      detail: { sessionKey, totalPlongeurs: totalPlongeurs + totalEnPalanquees }
+    }));
+    
     return true;
     
   } catch (error) {
@@ -921,7 +963,6 @@ async function loadSession(sessionKey) {
     return false;
   }
 }
-
 // Écouter les changements de sélection du DP
 document.addEventListener('DOMContentLoaded', function() {
   const dpSelect = document.getElementById('dp-select');

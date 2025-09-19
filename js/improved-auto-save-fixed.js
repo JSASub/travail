@@ -10,7 +10,10 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     // Fonction pour capturer les données réelles depuis le DOM
     // Fonction captureRealData() corrigée - PRIORITÉ AUX VARIABLES GLOBALES
+	// Fonction captureRealData() FINALE avec debugging
 function captureRealData() {
+    console.log("📸 === DÉBUT CAPTURE DES DONNÉES ===");
+    
     const data = {
         timestamp: Date.now(),
         plongeursEnListe: 0,
@@ -21,19 +24,22 @@ function captureRealData() {
         metadata: {}
     };
     
-    // ===== CORRECTION PRINCIPALE : PRIORITÉ AUX VARIABLES GLOBALES =====
+    // ===== DEBUGGING : ÉTAT DES VARIABLES GLOBALES =====
+    console.log("🔍 Variables globales avant capture:");
+    console.log("- window.plongeurs:", window.plongeurs ? window.plongeurs.length : 'undefined');
+    console.log("- window.palanquees:", window.palanquees ? window.palanquees.length : 'undefined');
     
-    // Capturer plongeurs depuis les variables globales EN PREMIER
+    // ===== CAPTURE PLONGEURS AVEC PRIORITÉ VARIABLES GLOBALES =====
     if (window.plongeurs && Array.isArray(window.plongeurs) && window.plongeurs.length > 0) {
+        console.log("✅ Utilisation des variables globales pour plongeurs");
         data.plongeurs = window.plongeurs.map(p => ({
             nom: p.nom || '',
             niveau: p.niveau || '',
             pre: p.pre || ''
         }));
         data.plongeursEnListe = data.plongeurs.length;
-        console.log('Plongeurs collectés depuis variables globales:', data.plongeursEnListe);
     } else {
-        // Fallback DOM seulement si variables globales vides
+        console.log("🔄 Fallback DOM pour plongeurs (variables vides)");
         const listePlongeurs = document.getElementById('listePlongeurs');
         if (listePlongeurs) {
             const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
@@ -48,12 +54,12 @@ function captureRealData() {
                     data.plongeurs.push({ nom, niveau, pre });
                 }
             });
-            console.log('Plongeurs collectés depuis DOM (fallback):', data.plongeursEnListe);
         }
     }
     
-    // Capturer palanquées depuis les variables globales EN PREMIER
+    // ===== CAPTURE PALANQUÉES AVEC PRIORITÉ VARIABLES GLOBALES =====
     if (window.palanquees && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
+        console.log("✅ Utilisation des variables globales pour palanquées");
         data.nombrePalanquees = window.palanquees.length;
         
         window.palanquees.forEach((pal, index) => {
@@ -67,9 +73,8 @@ function captureRealData() {
                 data.plongeursEnPalanquees += palanquee.length;
             }
         });
-        console.log('Palanquées collectées depuis variables globales:', data.nombrePalanquees, 'palanquées,', data.plongeursEnPalanquees, 'plongeurs');
     } else {
-        // Fallback DOM seulement si variables globales vides
+        console.log("🔄 Fallback DOM pour palanquées (variables vides)");
         const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
         data.nombrePalanquees = palanqueeElements.length;
         
@@ -93,10 +98,9 @@ function captureRealData() {
                 data.plongeursEnPalanquees += palanquee.length;
             }
         });
-        console.log('Palanquées collectées depuis DOM (fallback):', data.nombrePalanquees, 'palanquées,', data.plongeursEnPalanquees, 'plongeurs');
     }
     
-    // Capturer métadonnées
+    // ===== CAPTURE MÉTADONNÉES =====
     try {
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
@@ -110,17 +114,19 @@ function captureRealData() {
             plongee: dpPlongee ? dpPlongee.value : 'matin'
         };
     } catch (e) {
-        console.error('Erreur collecte métadonnées:', e);
+        console.warn('⚠️ Erreur métadonnées:', e.message);
         data.metadata = {};
     }
     
     data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
     
-    console.log('=== RÉSULTAT FINAL CAPTURE ===');
-    console.log('Plongeurs en liste:', data.plongeursEnListe);
-    console.log('Plongeurs en palanquées:', data.plongeursEnPalanquees);
-    console.log('Nombre palanquées:', data.nombrePalanquees);
-    console.log('TOTAL GÉNÉRAL:', data.totalGeneral);
+    // ===== RÉSULTAT FINAL =====
+    console.log("📊 === RÉSULTAT CAPTURE ===");
+    console.log("📋 Plongeurs en liste:", data.plongeursEnListe);
+    console.log("🏊 Plongeurs en palanquées:", data.plongeursEnPalanquees);
+    console.log("🎯 Nombre palanquées:", data.nombrePalanquees);
+    console.log("🔢 TOTAL GÉNÉRAL:", data.totalGeneral);
+    console.log("📸 === FIN CAPTURE ===");
     
     return data;
 }
