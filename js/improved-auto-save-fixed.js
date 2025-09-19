@@ -1,424 +1,543 @@
-// improved-auto-save-fixed.js - Version simple et robuste
-console.log('✅ Système de sauvegarde automatique chargé');
+/**
+ * Système de sauvegarde automatique amélioré et corrigé
+ * Corrige les problèmes de capture incomplète des données
+ */
 
-(function() {
-    'use strict';
+class ImprovedAutoSave {
+    constructor() {
+        this.saveKey = 'jsas_auto_save';
+        this.lastSaveKey = 'jsas_last_save_time';
+        this.saveInterval = 30000; // 30 secondes
+        this.intervalId = null;
+        this.lastSaveHash = '';
+        this.isEnabled = true;
+        this.debugMode = false;
+        
+        this.init();
+    }
     
-    const STORAGE_KEY = 'jsas_simple_save';
-    let saveTimer = null;
-    let hasShownRestore = false;
+    init() {
+        this.log('Initialisation du système de sauvegarde automatique');
+        this.startAutoSave();
+        this.setupRestorePrompt();
+        this.setupManualControls();
+    }
     
-    // Fonction pour capturer les données réelles depuis le DOM
-    function captureRealData() {
+    log(message, data = null) {
+        if (this.debugMode) {
+            console.log('[AutoSave]', message, data || '');
+        }
+    }
+    
+    /**
+     * CORRECTION PRINCIPALE: Collecte complète et sécurisée des données
+     */
+    collectAllData() {
+        this.log('Collecte des données...');
+        
         const data = {
             timestamp: Date.now(),
-            plongeursEnListe: 0,
-            plongeursEnPalanquees: 0,
-            nombrePalanquees: 0,
+            version: '2.0.0',
             plongeurs: [],
             palanquees: [],
-            metadata: {}
+            metadata: {},
+            stats: {}
         };
         
-        // Capturer plongeurs en liste
-        const listePlongeurs = document.getElementById('listePlongeurs');
-        if (listePlongeurs) {
-            const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
-            data.plongeursEnListe = items.length;
-            
-            items.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
-                
-                if (nom) {
-                    data.plongeurs.push({ nom, niveau, pre });
-                }
-            });
+        // CORRECTION 1: Collecte sécurisée des plongeurs
+        try {
+            // Essayer plusieurs sources pour les plongeurs
+            if (window.plongeurs && Array.isArray(window.plongeurs)) {
+                data.plongeurs = [...window.plongeurs];
+                this.log('Plongeurs collectés depuis window.plongeurs', data.plongeurs.length);
+            } else {
+                // Fallback: lire depuis le DOM
+                const plongeurRows = document.querySelectorAll('#plongeur-list tr:not(.header-row)');
+                data.plongeurs = Array.from(plongeurRows).map(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 8) {
+                        return {
+                            numero: cells[0]?.textContent?.trim() || '',
+                            nom: cells[1]?.textContent?.trim() || '',
+                            prenom: cells[2]?.textContent?.trim() || '',
+                            niveau: cells[3]?.textContent?.trim() || '',
+                            club: cells[4]?.textContent?.trim() || '',
+                            bapteme: cells[5]?.textContent?.trim() || '',
+                            nitrox: cells[6]?.textContent?.trim() || '',
+                            recycleur: cells[7]?.textContent?.trim() || '',
+                            remarques: cells[8]?.textContent?.trim() || ''
+                        };
+                    }
+                }).filter(p => p && (p.nom || p.prenom));
+                this.log('Plongeurs collectés depuis DOM', data.plongeurs.length);
+            }
+        } catch (e) {
+            this.log('Erreur collecte plongeurs:', e.message);
+            data.plongeurs = [];
         }
         
-        // Capturer palanquées
-        const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
-        data.nombrePalanquees = palanqueeElements.length;
-        
-        palanqueeElements.forEach((palEl, index) => {
-            const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-            data.plongeursEnPalanquees += plongeursItems.length;
-            
-            const palanquee = [];
-            plongeursItems.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const preInput = item.querySelector('.plongeur-prerogatives-editable');
-                const pre = preInput ? preInput.value.trim() : '';
-                
-                if (nom) {
-                    palanquee.push({ nom, niveau, pre });
-                }
-            });
-            
-            if (palanquee.length > 0) {
-                data.palanquees.push(palanquee);
+        // CORRECTION 2: Collecte sécurisée des palanquées
+        try {
+            if (window.palanquees && Array.isArray(window.palanquees)) {
+                data.palanquees = this.deepClonePalanquees(window.palanquees);
+                this.log('Palanquées collectées depuis window.palanquees', data.palanquees.length);
+            } else {
+                // Fallback: lire depuis le DOM
+                data.palanquees = this.collectPalanqueesFromDOM();
+                this.log('Palanquées collectées depuis DOM', data.palanquees.length);
             }
+        } catch (e) {
+            this.log('Erreur collecte palanquées:', e.message);
+            data.palanquees = [];
+        }
+        
+        // CORRECTION 3: Métadonnées complètes
+        try {
+            const dpSelect = document.getElementById('dp-select');
+            const dpDate = document.getElementById('dp-date');
+            const dpLieu = document.getElementById('dp-lieu');
+            
+            data.metadata = {
+                dp: dpSelect?.selectedOptions?.[0]?.text || dpSelect?.value || '',
+                date: dpDate?.value || '',
+                lieu: dpLieu?.value || '',
+                url: window.location.href,
+                userAgent: navigator.userAgent.substring(0, 100)
+            };
+        } catch (e) {
+            this.log('Erreur collecte métadonnées:', e.message);
+            data.metadata = {};
+        }
+        
+        // CORRECTION 4: Statistiques précises
+        this.calculateStats(data);
+        
+        this.log('Données collectées:', {
+            plongeurs: data.plongeurs.length,
+            palanquees: data.palanquees.length,
+            totalStats: data.stats
         });
-        
-        // Capturer métadonnées
-        const dpSelect = document.getElementById('dp-select');
-        const dpDate = document.getElementById('dp-date');
-        const dpLieu = document.getElementById('dp-lieu');
-        const dpPlongee = document.getElementById('dp-plongee');
-        
-        data.metadata = {
-            dp: dpSelect && dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '',
-            date: dpDate ? dpDate.value : '',
-            lieu: dpLieu ? dpLieu.value.trim() : '',
-            plongee: dpPlongee ? dpPlongee.value : 'matin'
-        };
-        
-        data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
         
         return data;
     }
     
-	///////
-	// Fonction de vérification des données avant sauvegarde
-function verifyDataBeforeSave() {
-    const dpSelect = document.getElementById('dp-select');
-    const dpDate = document.getElementById('dp-date');
-    
-    if (!dpSelect || !dpDate) return null;
-    
-    const currentDP = dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '';
-    const currentDate = dpDate.value;
-    const currentKey = `${currentDate}_${currentDP}`;
-    
-    console.log('Vérification session courante:', currentKey);
-    
-    // Vérifier que les données correspondent vraiment à l'interface affichée
-    const plongeursCount = window.plongeurs ? window.plongeurs.length : 0;
-    const palanqueesCount = window.palanquees ? window.palanquees.length : 0;
-    
-    console.log('Données à sauvegarder:', plongeursCount, 'plongeurs,', palanqueesCount, 'palanquées');
-    
-    return {
-        sessionKey: currentKey,
-        isValid: currentDP.length > 3 && currentDate.length > 0,
-        plongeursCount,
-        palanqueesCount
-    };
-}
-	///////
-    // Sauvegarder les données
-    function saveData() {
-        try {
-            const data = captureRealData();
-            
-            // Seulement si il y a des données significatives
-            if (data.totalGeneral >= 2) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                console.log(`💾 Sauvegarde: ${data.totalGeneral} plongeurs total (${data.plongeursEnListe} en liste + ${data.plongeursEnPalanquees} en palanquées)`);
-                showSaveIndicator();
+    /**
+     * Clonage profond des palanquées pour éviter les références
+     */
+    deepClonePalanquees(palanquees) {
+        return palanquees.map(palanquee => {
+            if (Array.isArray(palanquee)) {
+                return palanquee.map(plongeur => ({...plongeur}));
             }
-        } catch (error) {
-            console.error('Erreur sauvegarde:', error);
-        }
+            return {...palanquee};
+        });
     }
     
-    // Indicateur de sauvegarde
-    function showSaveIndicator() {
-        let indicator = document.getElementById('simple-save-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'simple-save-indicator';
-            indicator.innerHTML = '✓ Sauvé';
-            indicator.style.cssText = `
-                position: fixed; top: 10px; right: 10px; background: #28a745;
-                color: white; padding: 6px 12px; border-radius: 4px;
-                font-size: 12px; z-index: 10000; opacity: 0; transition: opacity 0.3s;
-            `;
-            document.body.appendChild(indicator);
-        }
+    /**
+     * Collecte des palanquées depuis le DOM
+     */
+    collectPalanqueesFromDOM() {
+        const palanquees = [];
+        const palanqueeContainers = document.querySelectorAll('.palanquee-container');
         
-        indicator.style.opacity = '1';
-        setTimeout(() => indicator.style.opacity = '0', 1500);
-    }
-    
-    // Déclencheur de sauvegarde avec délai
-    function triggerSave() {
-        if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(saveData, 1000);
-    }
-    
-    // Vérifier sauvegarde existante
-    function checkRestore() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (!saved || hasShownRestore) return;
+        palanqueeContainers.forEach((container, index) => {
+            const plongeurs = [];
+            const plongeurCards = container.querySelectorAll('.plongeur-card');
             
-            const data = JSON.parse(saved);
-            const age = Date.now() - data.timestamp;
+            plongeurCards.forEach(card => {
+                const nom = card.querySelector('.plongeur-nom')?.textContent?.trim();
+                const niveau = card.querySelector('.plongeur-niveau')?.textContent?.trim();
+                const numero = card.dataset.numero || '';
+                
+                if (nom) {
+                    plongeurs.push({
+                        numero: numero,
+                        nom: nom,
+                        niveau: niveau || '',
+                        // Récupérer d'autres propriétés si disponibles
+                        prenom: card.dataset.prenom || '',
+                        club: card.dataset.club || '',
+                        bapteme: card.dataset.bapteme || '',
+                        nitrox: card.dataset.nitrox || '',
+                        recycleur: card.dataset.recycleur || ''
+                    });
+                }
+            });
             
-            // Vérifier âge (24h max) et données significatives
-            if (age > 24 * 60 * 60 * 1000 || data.totalGeneral < 2) {
-                localStorage.removeItem(STORAGE_KEY);
-                return;
+            if (plongeurs.length > 0) {
+                palanquees.push(plongeurs);
             }
-            
-            hasShownRestore = true;
-            showRestoreDialog(data);
-            
-        } catch (error) {
-            console.error('Erreur vérification restore:', error);
-            localStorage.removeItem(STORAGE_KEY);
-        }
+        });
+        
+        return palanquees;
     }
     
-    // Dialog de restauration
-    function showRestoreDialog(data) {
-        const dialog = document.createElement('div');
-        dialog.innerHTML = `
-            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 20000; display: flex; align-items: center; justify-content: center;">
-                <div style="background: white; border-radius: 8px; padding: 24px; max-width: 480px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
-                    <h3 style="margin: 0 0 16px 0; color: #333;">🔄 Session précédente trouvée</h3>
-                    <div style="margin: 16px 0; padding: 16px; background: #f8f9fa; border-radius: 6px; font-size: 14px;">
-                        <div style="font-weight: 600; color: #28a745; text-align: center; margin-bottom: 12px; background: #e8f5e8; padding: 8px; border-radius: 4px;">
-                            📊 ${data.totalGeneral} plongeurs TOTAL
-                        </div>
-                        <div style="color: #666; border-left: 3px solid #28a745; padding-left: 12px; background: #f1f8f1; padding: 8px 12px; border-radius: 0 4px 4px 0;">
-                            📋 ${data.plongeursEnListe} en liste d'attente<br>
-                            🏊 ${data.plongeursEnPalanquees} assignés dans ${data.nombrePalanquees} palanquée(s)
-                        </div>
-                        ${data.metadata.dp ? `
-                        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #dee2e6;">
-                            <strong>👨‍💼 DP:</strong> ${data.metadata.dp}<br>
-                            ${data.metadata.date ? `<strong>📅 Date:</strong> ${new Date(data.metadata.date).toLocaleDateString('fr-FR')}<br>` : ''}
-                            ${data.metadata.lieu ? `<strong>📍 Lieu:</strong> ${data.metadata.lieu}` : ''}
-                        </div>
-                        ` : ''}
-                        <div style="text-align: center; margin-top: 8px; font-size: 12px; color: #666;">
-                            ⏰ Sauvée il y a ${Math.floor((Date.now() - data.timestamp) / 60000)} minutes
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-                        <button onclick="ignoreRestore(this)" style="padding: 10px 20px; border: 1px solid #ddd; background: white; color: #333; border-radius: 4px; cursor: pointer;">Ignorer</button>
-                        <button onclick="acceptRestore(this)" style="padding: 10px 20px; border: none; background: #28a745; color: white; border-radius: 4px; cursor: pointer;">Restaurer</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Fonctions des boutons
-        window.acceptRestore = function(btn) {
-            restoreData(data);
-            document.body.removeChild(dialog);
+    /**
+     * Calcul des statistiques précises
+     */
+    calculateStats(data) {
+        data.stats = {
+            plongeursEnListe: data.plongeurs.length,
+            plongeursEnPalanquees: 0,
+            nombrePalanquees: data.palanquees.length,
+            totalGeneral: 0
         };
         
-        window.ignoreRestore = function(btn) {
-            localStorage.removeItem(STORAGE_KEY);
-            document.body.removeChild(dialog);
-        };
+        // Compter les plongeurs en palanquées
+        if (Array.isArray(data.palanquees)) {
+            data.palanquees.forEach(palanquee => {
+                if (Array.isArray(palanquee)) {
+                    data.stats.plongeursEnPalanquees += palanquee.length;
+                }
+            });
+        }
         
-        document.body.appendChild(dialog);
+        data.stats.totalGeneral = data.stats.plongeursEnListe + data.stats.plongeursEnPalanquees;
     }
     
-    // Restaurer les données
-    function restoreData(data) {
+    /**
+     * Génère un hash des données pour détecter les changements
+     */
+    generateDataHash(data) {
+        const hashData = {
+            plongeurs: data.plongeurs.length,
+            palanquees: data.palanquees.length,
+            dp: data.metadata.dp,
+            date: data.metadata.date,
+            lieu: data.metadata.lieu
+        };
+        return JSON.stringify(hashData);
+    }
+    
+    /**
+     * Sauvegarde les données
+     */
+    saveData() {
+        if (!this.isEnabled) return;
+        
         try {
-            console.log('🔄 Restauration en cours...');
+            const data = this.collectAllData();
+            const currentHash = this.generateDataHash(data);
             
-            // Restaurer variables globales
-            if (data.plongeurs) window.plongeurs = data.plongeurs;
-            if (data.palanquees) window.palanquees = data.palanquees;
-            if (data.plongeurs) window.plongeursOriginaux = [...data.plongeurs];
+            // Ne sauvegarder que si les données ont changé
+            if (currentHash === this.lastSaveHash) {
+                this.log('Aucun changement détecté, sauvegarde ignorée');
+                return false;
+            }
             
-            // Restaurer métadonnées
+            // Sauvegarder les données
+            localStorage.setItem(this.saveKey, JSON.stringify(data));
+            localStorage.setItem(this.lastSaveKey, data.timestamp.toString());
+            
+            this.lastSaveHash = currentHash;
+            this.log('Sauvegarde réussie', data.stats);
+            
+            // Afficher notification discrète
+            this.showSaveNotification(`Sauvegarde: ${data.stats.totalGeneral} plongeurs`);
+            
+            return true;
+        } catch (error) {
+            console.error('[AutoSave] Erreur de sauvegarde:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Démarre la sauvegarde automatique
+     */
+    startAutoSave() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+        
+        this.intervalId = setInterval(() => {
+            this.saveData();
+        }, this.saveInterval);
+        
+        this.log('Sauvegarde automatique démarrée');
+    }
+    
+    /**
+     * Arrête la sauvegarde automatique
+     */
+    stopAutoSave() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+        this.log('Sauvegarde automatique arrêtée');
+    }
+    
+    /**
+     * Vérifie s'il y a une sauvegarde à restaurer
+     */
+    checkForRestore() {
+        try {
+            const savedData = localStorage.getItem(this.saveKey);
+            const lastSaveTime = localStorage.getItem(this.lastSaveKey);
+            
+            if (!savedData || !lastSaveTime) return null;
+            
+            const data = JSON.parse(savedData);
+            const saveTime = parseInt(lastSaveTime);
+            const now = Date.now();
+            const ageMinutes = Math.floor((now - saveTime) / (1000 * 60));
+            
+            // Ne proposer la restauration que si la sauvegarde est récente (< 2h)
+            if (ageMinutes > 120) {
+                this.log('Sauvegarde trop ancienne, ignorée');
+                return null;
+            }
+            
+            return {
+                data: data,
+                age: ageMinutes,
+                timestamp: saveTime
+            };
+        } catch (error) {
+            console.error('[AutoSave] Erreur vérification restauration:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Configure l'invite de restauration
+     */
+    setupRestorePrompt() {
+        // Attendre que le DOM soit prêt
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => this.showRestorePrompt(), 1000);
+            });
+        } else {
+            setTimeout(() => this.showRestorePrompt(), 1000);
+        }
+    }
+    
+    /**
+     * Affiche l'invite de restauration si nécessaire
+     */
+    showRestorePrompt() {
+        const restore = this.checkForRestore();
+        if (!restore) return;
+        
+        const currentData = this.collectAllData();
+        
+        // Ne pas proposer la restauration si les données actuelles sont équivalentes
+        if (currentData.stats.totalGeneral >= restore.data.stats.totalGeneral) {
+            this.log('Données actuelles plus complètes, pas de restauration');
+            return;
+        }
+        
+        const message = `Sauvegarde automatique trouvée (${restore.age} min):
+${restore.data.stats.totalGeneral} plongeurs total
+- ${restore.data.stats.plongeursEnListe} en liste
+- ${restore.data.stats.plongeursEnPalanquees} en palanquées
+- ${restore.data.stats.nombrePalanquees} palanquées
+
+Données actuelles: ${currentData.stats.totalGeneral} plongeurs
+
+Restaurer la sauvegarde ?`;
+        
+        if (confirm(message)) {
+            this.restoreData(restore.data);
+        } else {
+            // Effacer la sauvegarde si refusée
+            this.clearSave();
+        }
+    }
+    
+    /**
+     * Restaure les données
+     */
+    restoreData(data) {
+        try {
+            this.log('Début de la restauration...', data.stats);
+            
+            // Restaurer les variables globales
+            if (data.plongeurs) {
+                window.plongeurs = [...data.plongeurs];
+                this.log('Plongeurs restaurés:', window.plongeurs.length);
+            }
+            
+            if (data.palanquees) {
+                window.palanquees = this.deepClonePalanquees(data.palanquees);
+                this.log('Palanquées restaurées:', window.palanquees.length);
+            }
+            
+            // Restaurer les métadonnées
             if (data.metadata) {
                 const dpSelect = document.getElementById('dp-select');
                 const dpDate = document.getElementById('dp-date');
                 const dpLieu = document.getElementById('dp-lieu');
-                const dpPlongee = document.getElementById('dp-plongee');
                 
-                if (dpSelect && data.metadata.dp) {
-                    const options = Array.from(dpSelect.options);
-                    const option = options.find(opt => opt.text.includes(data.metadata.dp));
-                    if (option) dpSelect.value = option.value;
-                }
                 if (dpDate && data.metadata.date) dpDate.value = data.metadata.date;
                 if (dpLieu && data.metadata.lieu) dpLieu.value = data.metadata.lieu;
-                if (dpPlongee && data.metadata.plongee) dpPlongee.value = data.metadata.plongee;
-            }
-            
-            // Re-rendu
-            setTimeout(() => {
-                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
-                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
-                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
-                if (typeof window.updateAlertes === 'function') window.updateAlertes();
-            }, 100);
-            
-            // Supprimer sauvegarde après restauration
-            localStorage.removeItem(STORAGE_KEY);
-            
-            // Message de succès
-            const success = document.createElement('div');
-            success.innerHTML = `✅ Session restaurée: ${data.totalGeneral} plongeurs (${data.nombrePalanquees} palanquées)`;
-            success.style.cssText = `
-                position: fixed; top: 20px; right: 20px; background: #28a745; color: white;
-                padding: 12px 20px; border-radius: 4px; z-index: 10001; font-weight: 500;
-            `;
-            document.body.appendChild(success);
-            setTimeout(() => success.remove(), 4000);
-            
-            console.log('✅ Restauration terminée');
-            
-        } catch (error) {
-            console.error('❌ Erreur restauration:', error);
-            alert('Erreur lors de la restauration: ' + error.message);
-        }
-    }
-    
-    // Surveillance des changements
-    function setupWatchers() {
-        // Observer DOM
-        ['listePlongeurs', 'palanqueesContainer'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                new MutationObserver(triggerSave).observe(element, {
-                    childList: true, subtree: true, attributes: true
-                });
-            }
-        });
-        
-        // Observer champs
-        ['dp-select', 'dp-date', 'dp-lieu', 'dp-plongee'].forEach(id => {
-            const field = document.getElementById(id);
-            if (field) {
-                field.addEventListener('change', triggerSave);
-                field.addEventListener('input', triggerSave);
-            }
-        });
-        
-        console.log('👀 Surveillance activée');
-    }
-    
-    // Sauvegarde avant fermeture
-    window.addEventListener('beforeunload', saveData);
-    window.addEventListener('visibilitychange', () => {
-        if (document.hidden) saveData();
-    });
-    
-    // Détecter les changements de session pour forcer la sauvegarde
-    let lastSessionKey = '';
-    function detectSessionChange() {
-        const dpSelect = document.getElementById('dp-select');
-        const dpDate = document.getElementById('dp-date');
-        
-        if (dpSelect && dpDate) {
-            const currentKey = `${dpDate.value}_${dpSelect.value}`;
-            if (currentKey !== lastSessionKey && currentKey.length > 5) {
-                console.log('Changement de session détecté:', currentKey);
-                setTimeout(() => {
-                    const data = captureRealData();
-                    if (data.totalGeneral > 0) {
-                        console.log('Sauvegarde forcée après changement de session:', data.totalGeneral, 'plongeurs');
-                        saveData();
+                
+                // Pour le DP, essayer de trouver l'option correspondante
+                if (dpSelect && data.metadata.dp) {
+                    for (let option of dpSelect.options) {
+                        if (option.text === data.metadata.dp || option.value === data.metadata.dp) {
+                            option.selected = true;
+                            break;
+                        }
                     }
-                }, 1500);
-                lastSessionKey = currentKey;
-            }
-        }
-    }
-    
-    // Surveillance continue des variables globales pour détecter les chargements
-    function setupGlobalWatcher() {
-        let lastPlongeursLength = 0;
-        let lastPalanqueesLength = 0;
-        let saveCount = 0;
-        
-        const checkGlobalChanges = () => {
-            const currentPlongeursLength = window.plongeurs ? window.plongeurs.length : 0;
-            const currentPalanqueesLength = window.palanquees ? window.palanquees.length : 0;
-            
-            // Détecter changement significatif (chargement de session)
-            const significantChange = (
-                Math.abs(currentPlongeursLength - lastPlongeursLength) > 2 ||
-                Math.abs(currentPalanqueesLength - lastPalanqueesLength) > 0
-            );
-            
-            if (significantChange && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
-                console.log('Chargement de session détecté, sauvegarde automatique...');
-                setTimeout(saveData, 1000);
-            }
-            
-            // Sauvegarde forcée périodique si des données sont présentes (max 3 fois)
-            if (saveCount < 3 && (currentPlongeursLength > 0 || currentPalanqueesLength > 0)) {
-                const data = captureRealData();
-                if (data.totalGeneral > 0) {
-                    console.log('Force sauvegarde périodique:', data.totalGeneral, 'plongeurs');
-                    saveData();
-                    saveCount++;
                 }
             }
             
-            lastPlongeursLength = currentPlongeursLength;
-            lastPalanqueesLength = currentPalanqueesLength;
-        };
-        
-        // Surveillance des changements de session
-        setInterval(detectSessionChange, 1000);
-        
-        // Vérifier toutes les 2 secondes
-        setInterval(checkGlobalChanges, 2000);
-        
-        // Vérifications initiales échelonnées
-        setTimeout(checkGlobalChanges, 2000);
-        setTimeout(checkGlobalChanges, 5000);
-        setTimeout(checkGlobalChanges, 8000);
-    }
-    
-    // Initialisation
-    function init() {
-        console.log('🚀 Initialisation sauvegarde automatique simple...');
-        
-        // Nettoyer anciennes sauvegardes
-        ['jsas_auto_save', 'jsas_emergency_save', 'jsas_last_session'].forEach(key => {
-            if (localStorage.getItem(key)) {
-                localStorage.removeItem(key);
-                console.log(`🧹 Supprimé: ${key}`);
-            }
-        });
-        
-        setupWatchers();
-        setupGlobalWatcher();
-        
-        // Écouter l'événement de restauration de session si disponible
-        window.addEventListener('sessionRestored', () => {
-            console.log('🔄 Session restaurée détectée, sauvegarde...');
-            setTimeout(saveData, 800);
-        });
-        
-        // Vérifier restauration après délai court
-        setTimeout(checkRestore, 500);
-        
-        console.log('✅ Sauvegarde automatique active avec surveillance globale');
-    }
-    
-    // Fonctions publiques
-    window.ImprovedAutoSave = {
-        save: saveData,
-        clear: () => localStorage.removeItem(STORAGE_KEY),
-        debug: () => {
-            const data = captureRealData();
-            console.log('📊 État actuel:', data);
-            return data;
+            // Déclencher la reconstruction de l'interface
+            this.triggerInterfaceUpdate();
+            
+            // Effacer la sauvegarde après restauration réussie
+            this.clearSave();
+            
+            alert(`Restauration réussie!\n${data.stats.totalGeneral} plongeurs restaurés`);
+            this.log('Restauration terminée avec succès');
+            
+        } catch (error) {
+            console.error('[AutoSave] Erreur de restauration:', error);
+            alert('Erreur lors de la restauration des données');
         }
-    };
-    
-    // Auto-init
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(init, 200));
-    } else {
-        setTimeout(init, 200);
     }
     
-})();
+    /**
+     * Déclenche la mise à jour de l'interface
+     */
+    triggerInterfaceUpdate() {
+        // Déclencher les événements de mise à jour si les fonctions existent
+        if (typeof updatePlongeurList === 'function') {
+            updatePlongeurList();
+        }
+        
+        if (typeof updatePalanquees === 'function') {
+            updatePalanquees();
+        }
+        
+        if (typeof refreshInterface === 'function') {
+            refreshInterface();
+        }
+        
+        // Déclencher des événements personnalisés
+        window.dispatchEvent(new CustomEvent('dataRestored', {
+            detail: { source: 'autoSave' }
+        }));
+    }
+    
+    /**
+     * Efface la sauvegarde
+     */
+    clearSave() {
+        localStorage.removeItem(this.saveKey);
+        localStorage.removeItem(this.lastSaveKey);
+        this.lastSaveHash = '';
+        this.log('Sauvegarde effacée');
+    }
+    
+    /**
+     * Configure les contrôles manuels
+     */
+    setupManualControls() {
+        // Ajouter des contrôles dans l'interface si possible
+        const controlsContainer = document.getElementById('controls') || document.body;
+        
+        const autoSaveStatus = document.createElement('div');
+        autoSaveStatus.id = 'autosave-status';
+        autoSaveStatus.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            z-index: 1000;
+            opacity: 0.7;
+        `;
+        autoSaveStatus.innerHTML = `
+            <div>AutoSave: <span id="autosave-toggle">ON</span></div>
+            <div><button onclick="autoSave.saveData()" style="font-size:10px;">Sauvegarder</button></div>
+            <div><button onclick="autoSave.clearSave()" style="font-size:10px;">Effacer</button></div>
+        `;
+        
+        document.body.appendChild(autoSaveStatus);
+        
+        // Toggle pour activer/désactiver
+        document.getElementById('autosave-toggle').onclick = () => {
+            this.isEnabled = !this.isEnabled;
+            document.getElementById('autosave-toggle').textContent = this.isEnabled ? 'ON' : 'OFF';
+            document.getElementById('autosave-toggle').style.color = this.isEnabled ? 'green' : 'red';
+            
+            if (this.isEnabled) {
+                this.startAutoSave();
+            } else {
+                this.stopAutoSave();
+            }
+        };
+    }
+    
+    /**
+     * Affiche une notification de sauvegarde
+     */
+    showSaveNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Animation d'apparition
+        setTimeout(() => notification.style.opacity = '1', 10);
+        
+        // Suppression automatique
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => document.body.removeChild(notification), 300);
+        }, 2000);
+    }
+    
+    /**
+     * Active le mode debug
+     */
+    enableDebug() {
+        this.debugMode = true;
+        console.log('[AutoSave] Mode debug activé');
+    }
+    
+    /**
+     * Obtient les statistiques actuelles
+     */
+    getStats() {
+        const data = this.collectAllData();
+        return {
+            enabled: this.isEnabled,
+            interval: this.saveInterval,
+            lastSave: localStorage.getItem(this.lastSaveKey),
+            currentData: data.stats,
+            hasBackup: !!localStorage.getItem(this.saveKey)
+        };
+    }
+}
+
+// Initialiser le système de sauvegarde automatique
+window.autoSave = new ImprovedAutoSave();
+
+// Exposer des fonctions utiles globalement
+window.saveNow = () => window.autoSave.saveData();
+window.clearAutoSave = () => window.autoSave.clearSave();
+window.autoSaveStats = () => console.table(window.autoSave.getStats());
+window.enableAutoSaveDebug = () => window.autoSave.enableDebug();
+
+console.log('[AutoSave] Système de sauvegarde automatique initialisé et corrigé');
