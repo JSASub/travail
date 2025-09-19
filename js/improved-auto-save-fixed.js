@@ -1,6 +1,5 @@
 console.log('DEBUT FICHIER - EXECUTION OK');
-// improved-auto-save-fixed.js - Version ultra-simplifiée qui fonctionne
-// improved-auto-save-fixed.js - Version ultra-simplifiée qui fonctionne
+// improved-auto-save-fixed.js - Version ultra-simplifiée qui fonctionne// improved-auto-save-fixed.js - Version ultra-simplifiée qui fonctionne
 console.log('✅ Système de sauvegarde ultra-simple chargé');
 
 const STORAGE_KEY = 'jsas_ultra_simple';
