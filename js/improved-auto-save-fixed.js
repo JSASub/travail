@@ -194,97 +194,61 @@ console.log('✅ Système de sauvegarde automatique chargé');
     }
     
     // Restaurer les données
-	function restoreData(data) {
-    try {
-        console.log('=== DÉBUT RESTAURATION ===');
-        console.log('Données à restaurer:', data.totalGeneral, 'plongeurs');
-        
-        // BLOQUER les autres systèmes pendant la restauration
-        window.restorationInProgress = true;
-        
-        // Vider complètement les variables avant restauration
-        window.plongeurs = [];
-        window.palanquees = [];
-        window.plongeursOriginaux = [];
-        
-        // Restaurer avec clonage profond
-        if (data.plongeurs && Array.isArray(data.plongeurs)) {
-            window.plongeurs = data.plongeurs.map(p => ({...p}));
-            window.plongeursOriginaux = data.plongeurs.map(p => ({...p}));
-            console.log('Plongeurs restaurés:', window.plongeurs.length);
-        }
-        
-        if (data.palanquees && Array.isArray(data.palanquees)) {
-            window.palanquees = data.palanquees.map(pal => 
-                Array.isArray(pal) ? pal.map(p => ({...p})) : []
-            );
-            console.log('Palanquées restaurées:', window.palanquees.length);
-        }
-        
-        // Restaurer métadonnées
-        if (data.metadata) {
-            const dpSelect = document.getElementById('dp-select');
-            const dpDate = document.getElementById('dp-date');
-            const dpLieu = document.getElementById('dp-lieu');
-            const dpPlongee = document.getElementById('dp-plongee');
+    function restoreData(data) {
+        try {
+            console.log('🔄 Restauration en cours...');
             
-            if (dpDate && data.metadata.date) dpDate.value = data.metadata.date;
-            if (dpLieu && data.metadata.lieu) dpLieu.value = data.metadata.lieu;
-            if (dpPlongee && data.metadata.plongee) dpPlongee.value = data.metadata.plongee;
+            // Restaurer variables globales
+            if (data.plongeurs) window.plongeurs = data.plongeurs;
+            if (data.palanquees) window.palanquees = data.palanquees;
+            if (data.plongeurs) window.plongeursOriginaux = [...data.plongeurs];
             
-            if (dpSelect && data.metadata.dp) {
-                const options = Array.from(dpSelect.options);
-                const option = options.find(opt => opt.text.includes(data.metadata.dp));
-                if (option) dpSelect.value = option.value;
-            }
-        }
-        
-        // Forcer le rendu immédiat et synchrone
-        if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
-        if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
-        if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
-        if (typeof window.updateAlertes === 'function') window.updateAlertes();
-        
-        // Vérification post-restauration
-        setTimeout(() => {
-            const totalCheck = window.plongeurs.length;
-            let palanqueesCheck = 0;
-            window.palanquees.forEach(pal => {
-                if (Array.isArray(pal)) palanqueesCheck += pal.length;
-            });
-            
-            console.log('VÉRIFICATION POST-RESTAURATION:');
-            console.log('- Attendu:', data.totalGeneral);
-            console.log('- Obtenu:', totalCheck + palanqueesCheck);
-            
-            if (totalCheck + palanqueesCheck !== data.totalGeneral) {
-                console.error('ÉCHEC RESTAURATION - Données perdues');
-                alert(`Échec de la restauration!\nAttendu: ${data.totalGeneral}\nObtenu: ${totalCheck + palanqueesCheck}`);
-            } else {
-                console.log('✅ Restauration vérifiée et réussie');
+            // Restaurer métadonnées
+            if (data.metadata) {
+                const dpSelect = document.getElementById('dp-select');
+                const dpDate = document.getElementById('dp-date');
+                const dpLieu = document.getElementById('dp-lieu');
+                const dpPlongee = document.getElementById('dp-plongee');
+                
+                if (dpSelect && data.metadata.dp) {
+                    const options = Array.from(dpSelect.options);
+                    const option = options.find(opt => opt.text.includes(data.metadata.dp));
+                    if (option) dpSelect.value = option.value;
+                }
+                if (dpDate && data.metadata.date) dpDate.value = data.metadata.date;
+                if (dpLieu && data.metadata.lieu) dpLieu.value = data.metadata.lieu;
+                if (dpPlongee && data.metadata.plongee) dpPlongee.value = data.metadata.plongee;
             }
             
-            // Débloquer les autres systèmes
-            window.restorationInProgress = false;
-        }, 200);
-        
-        localStorage.removeItem(STORAGE_KEY);
-        
-        const success = document.createElement('div');
-        success.innerHTML = `✅ Session restaurée: ${data.totalGeneral} plongeurs`;
-        success.style.cssText = `
-            position: fixed; top: 20px; right: 20px; background: #28a745; color: white;
-            padding: 12px 20px; border-radius: 4px; z-index: 10001; font-weight: 500;
-        `;
-        document.body.appendChild(success);
-        setTimeout(() => success.remove(), 4000);
-        
-    } catch (error) {
-        console.error('❌ Erreur restauration:', error);
-        window.restorationInProgress = false;
-        alert('Erreur lors de la restauration: ' + error.message);
+            // Re-rendu
+            setTimeout(() => {
+                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
+                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
+                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
+                if (typeof window.updateAlertes === 'function') window.updateAlertes();
+            }, 100);
+            
+            // Supprimer sauvegarde après restauration
+            localStorage.removeItem(STORAGE_KEY);
+            
+            // Message de succès
+            const success = document.createElement('div');
+            success.innerHTML = `✅ Session restaurée: ${data.totalGeneral} plongeurs (${data.nombrePalanquees} palanquées)`;
+            success.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: #28a745; color: white;
+                padding: 12px 20px; border-radius: 4px; z-index: 10001; font-weight: 500;
+            `;
+            document.body.appendChild(success);
+            setTimeout(() => success.remove(), 4000);
+            
+            console.log('✅ Restauration terminée');
+            
+        } catch (error) {
+            console.error('❌ Erreur restauration:', error);
+            alert('Erreur lors de la restauration: ' + error.message);
+        }
     }
-}
+    
     // Surveillance des changements
     function setupWatchers() {
         // Observer DOM
