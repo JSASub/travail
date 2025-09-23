@@ -228,9 +228,11 @@ console.log('✅ Système de sauvegarde automatique chargé');
                 if (typeof window.updateAlertes === 'function') window.updateAlertes();
             }, 100);
             
-            // Supprimer sauvegarde après restauration
-            localStorage.removeItem(STORAGE_KEY);
-            
+            // Forcer une sauvegarde juste après restauration pour garantir que la session affichée soit sauvegardée
+            setTimeout(() => {
+                saveData();
+            }, 1200);
+
             // Message de succès
             const success = document.createElement('div');
             success.innerHTML = `✅ Session restaurée: ${data.totalGeneral} plongeurs (${data.nombrePalanquees} palanquées)`;
@@ -240,9 +242,9 @@ console.log('✅ Système de sauvegarde automatique chargé');
             `;
             document.body.appendChild(success);
             setTimeout(() => success.remove(), 4000);
-            
+
             console.log('✅ Restauration terminée');
-            
+
         } catch (error) {
             console.error('❌ Erreur restauration:', error);
             alert('Erreur lors de la restauration: ' + error.message);
