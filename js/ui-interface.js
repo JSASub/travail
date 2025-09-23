@@ -3,8 +3,15 @@
 // ===== COMPTEURS D'AFFICHAGE CORRIGÉS =====
 function updateCompteurs() {
   try {
-    // Compter les plongeurs de manière sécurisée
-    const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
+    // Compter les plongeurs non assignés directement dans le DOM
+    let plongeursCount = 0;
+    const listePlongeurs = document.getElementById('listePlongeurs');
+    if (listePlongeurs) {
+      plongeursCount = Array.from(listePlongeurs.children)
+        .filter(li => li.classList.contains('plongeur-item')).length;
+    } else {
+      plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
+    }
     
     // MÉTHODE UNIFIÉE POUR COMPTER LES PALANQUÉES
     let palanqueesCount = 0;
