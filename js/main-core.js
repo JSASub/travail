@@ -1275,6 +1275,12 @@ async function handleDrop(e) {
           if (typeof renderPlongeurs === 'function') {
             renderPlongeurs();
           }
+          if (typeof renderPalanquees === 'function') {
+            renderPalanquees();
+          }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+          }
         }
       }
     } else {
@@ -1315,6 +1321,12 @@ async function handleDrop(e) {
           if (typeof renderPlongeurs === 'function') {
             renderPlongeurs();
           }
+          if (typeof renderPalanquees === 'function') {
+            renderPalanquees();
+          }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+          }
         }
         
       } else if (data.type === "fromPalanquee") {
@@ -1327,6 +1339,12 @@ async function handleDrop(e) {
           }
           if (typeof renderPlongeurs === 'function') {
             renderPlongeurs();
+          }
+          if (typeof renderPalanquees === 'function') {
+            renderPalanquees();
+          }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
           }
         }
       }
