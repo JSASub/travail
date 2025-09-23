@@ -733,9 +733,10 @@ async function loadSession(sessionKey) {
       if (dpPlongee) dpPlongee.value = sessionData.meta.plongee || "matin";
     }
     
-    if (typeof renderPalanquees === 'function') renderPalanquees();
-    if (typeof renderPlongeurs === 'function') renderPlongeurs();
-    if (typeof updateAlertes === 'function') updateAlertes();
+  if (typeof renderPalanquees === 'function') renderPalanquees();
+  if (typeof renderPlongeurs === 'function') renderPlongeurs();
+  if (typeof updateAlertes === 'function') updateAlertes();
+  if (typeof updateCompteurs === 'function') updateCompteurs();
     
     setTimeout(() => {
       console.log("Restauration des paramètres d'interface...");
@@ -785,13 +786,10 @@ async function loadSession(sessionKey) {
       if (typeof renderPalanquees === 'function') renderPalanquees();
       if (typeof renderPlongeurs === 'function') renderPlongeurs();
       if (typeof updateAlertes === 'function') updateAlertes();
-      
-      setTimeout(() => {
-        if (typeof updateCompteurs === 'function') {
-          updateCompteurs();
-          console.log('Compteurs mis à jour après chargement session');
-        }
-      }, 100);
+      if (typeof updateCompteurs === 'function') {
+        updateCompteurs();
+        console.log('Compteurs mis à jour après chargement session');
+      }
       
       // NOUVELLE INTÉGRATION : Notifier le système de sauvegarde automatique
       window.dispatchEvent(new CustomEvent('sessionLoaded', { 
