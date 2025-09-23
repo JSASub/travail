@@ -141,18 +141,9 @@ async function loadDpFromFirebase() {
 
 // ===== CHARGEMENT DEPUIS LOCALSTORAGE =====
 function loadDpFromLocalStorage() {
-  try {
-    const stored = localStorage.getItem('dp_list');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        DP_LIST = parsed;
-        console.log('📱 Liste DP chargée depuis localStorage');
-      }
-    }
-  } catch (error) {
-    console.error('❌ Erreur localStorage:', error);
-  }
+  // Restauration automatique depuis localStorage désactivée pour éviter toute interférence
+  // (fonction neutralisée)
+  return;
 }
 
 // ===== NOTIFICATION SYSTÈME =====
