@@ -1272,6 +1272,9 @@ async function handleDrop(e) {
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+          }
         }
       }
     } else {
@@ -1309,6 +1312,9 @@ async function handleDrop(e) {
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+          }
         }
         
       } else if (data.type === "fromPalanquee") {
@@ -1318,6 +1324,9 @@ async function handleDrop(e) {
           
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
+          }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
           }
         }
       }
