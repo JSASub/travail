@@ -3,22 +3,27 @@
 // ===== COMPTEURS D'AFFICHAGE CORRIGÉS =====
 function updateCompteurs() {
   try {
-    // Compter les plongeurs non assignés
+    // Compter les plongeurs de manière sécurisée
     const plongeursCount = Array.isArray(window.plongeurs) ? window.plongeurs.length : 0;
-
-    // Compter palanquées et plongeurs en palanquées
+    
+    // MÉTHODE UNIFIÉE POUR COMPTER LES PALANQUÉES
     let palanqueesCount = 0;
     let plongeursEnPalanquees = 0;
+    
+    // Méthode 1: Depuis le DOM (plus fiable pour l'affichage)
     const palanqueeElements = document.querySelectorAll('.palanquee');
     palanqueesCount = palanqueeElements.length;
+    
+    // Compter les plongeurs dans le DOM
     palanqueeElements.forEach(palanqueeEl => {
       const plongeurItems = palanqueeEl.querySelectorAll('.palanquee-plongeur-item');
       plongeursEnPalanquees += plongeurItems.length;
     });
-
-    // Fallback si DOM vide
+    
+    // Fallback: vérifier avec la variable globale si DOM vide
     if (palanqueesCount === 0 && Array.isArray(window.palanquees) && window.palanquees.length > 0) {
       palanqueesCount = window.palanquees.length;
+      
       for (let i = 0; i < window.palanquees.length; i++) {
         const pal = window.palanquees[i];
         if (Array.isArray(pal)) {
@@ -28,23 +33,19 @@ function updateCompteurs() {
         }
       }
     }
-
-    // Mettre à jour le compteur des non assignés
+    
+    // Mettre à jour les compteurs dans l'interface
     const compteurPlongeurs = document.getElementById('compteur-plongeurs');
     if (compteurPlongeurs) {
       compteurPlongeurs.textContent = `(${plongeursCount})`;
     }
-
-    // Mettre à jour le compteur total
-    const compteurTotal = document.getElementById('compteur-total-plongeurs');
-    if (compteurTotal) {
-      compteurTotal.textContent = plongeursCount + plongeursEnPalanquees;
-    }
-
-    // Mettre à jour le compteur palanquées
+    
     const compteurPalanquees = document.getElementById('compteur-palanquees');
     if (compteurPalanquees) {
+      // CORRECTION: S'assurer que le texte est correct
       const texteCorrect = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
+      
+      // Ne mettre à jour que si différent pour éviter les conflits
       if (compteurPalanquees.textContent !== texteCorrect) {
         compteurPalanquees.textContent = texteCorrect;
       }
