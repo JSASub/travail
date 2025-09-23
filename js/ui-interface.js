@@ -39,16 +39,21 @@ function updateCompteurs() {
     if (compteurPlongeurs) {
       compteurPlongeurs.textContent = `(${plongeursCount})`;
     }
-    
+
     const compteurPalanquees = document.getElementById('compteur-palanquees');
     if (compteurPalanquees) {
       // CORRECTION: S'assurer que le texte est correct
       const texteCorrect = `(${plongeursEnPalanquees} plongeurs dans ${palanqueesCount} palanquées)`;
-      
       // Ne mettre à jour que si différent pour éviter les conflits
       if (compteurPalanquees.textContent !== texteCorrect) {
         compteurPalanquees.textContent = texteCorrect;
       }
+    }
+
+    // Mettre à jour le compteur total de plongeurs
+    const compteurTotal = document.getElementById('compteur-total-plongeurs');
+    if (compteurTotal) {
+      compteurTotal.textContent = plongeursCount + plongeursEnPalanquees;
     }
     
   } catch (error) {
