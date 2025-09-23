@@ -16,111 +16,7 @@
                 window.palanquees = [];
             }
             
-            // Créer une palanquée temporaire vide
-            const tempPalanquee = [];
-            tempPalanquee.horaire = '';
-            tempPalanquee.profondeurPrevue = '';
-            tempPalanquee.dureePrevue = '';
-            tempPalanquee.profondeurRealisee = '';
-            tempPalanquee.dureeRealisee = '';
-            tempPalanquee.paliers = '';
-            
-            // Ajouter la palanquée temporaire
-            window.palanquees.push(tempPalanquee);
-            console.log('➕ Palanquée temporaire créée');
-            
-            // Déclencher la synchronisation (qui va sauvegarder)
-            if (typeof window.syncToDatabase === 'function') {
-                window.syncToDatabase();
-                console.log('🔄 syncToDatabase() appelée');
-            }
-            
-            // Supprimer la palanquée temporaire après un court délai
-            setTimeout(() => {
-                try {
-                    // Vérifier que c'est bien la dernière (temporaire)
-                    if (window.palanquees.length > 0) {
-                        const lastIndex = window.palanquees.length - 1;
-                        const lastPalanquee = window.palanquees[lastIndex];
-                        
-                        // Vérifier que c'est bien vide (temporaire)
-                        if (Array.isArray(lastPalanquee) && lastPalanquee.length === 0) {
-                            window.palanquees.splice(lastIndex, 1);
-                            console.log('➖ Palanquée temporaire supprimée');
-                            
-                            // Re-synchroniser après suppression
-                            if (typeof window.syncToDatabase === 'function') {
-                                window.syncToDatabase();
-                                console.log('🔄 syncToDatabase() finale');
-                            }
-                            
-                            // Indicateur de succès
-                            showTrickIndicator();
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Erreur suppression palanquée temporaire:', error);
-                }
-            }, 2000); // 2 secondes pour laisser le temps à la sauvegarde
-            
-        } catch (error) {
-            console.error('❌ Erreur astuce palanquée:', error);
-        }
-    }
-    
-    // Indicateur visuel
-    function showTrickIndicator() {
-        let indicator = document.getElementById('trick-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'trick-indicator';
-            indicator.innerHTML = '🎯 Sauvegarde déclenchée (astuce palanquée)';
-            indicator.style.cssText = `
-                position: fixed; top: 60px; right: 10px; 
-                background: #6f42c1; color: white; 
-                padding: 8px 12px; border-radius: 4px;
-                font-size: 12px; z-index: 10001; 
-                opacity: 0; transition: opacity 0.3s;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            `;
-            document.body.appendChild(indicator);
-        }
-        
-        indicator.style.opacity = '1';
-        setTimeout(() => indicator.style.opacity = '0', 3000);
-    }
-    
-    // Intercepter la fonction loadSession pour déclencher l'astuce
-    if (typeof window.loadSession === 'function') {
-        const originalLoadSession = window.loadSession;
-        
-        window.loadSession = async function(sessionKey) {
-            console.log('🎯 Interception loadSession pour astuce palanquée:', sessionKey);
-            
-            try {
-                // Appeler la fonction originale
-                const result = await originalLoadSession.call(this, sessionKey);
-                
-                // Si le chargement a réussi, déclencher l'astuce
-                if (result === true) {
-                    console.log('✅ Session chargée, déclenchement astuce palanquée...');
-                    
-                    // Attendre que le rendu soit terminé, puis déclencher l'astuce
-                    setTimeout(triggerSaveViaTemporaryPalanquee, 1500);
-                }
-                
-                return result;
-                
-            } catch (error) {
-                console.error('❌ Erreur dans loadSession intercepté:', error);
-                throw error;
-            }
-        };
-        
-        console.log('✅ Fonction loadSession interceptée pour astuce palanquée');
-    }
-    
-    // Écouter l'événement sessionLoaded si émis
+            // Astuce palanquée automatique supprimée : ce fichier ne fait plus rien
     window.addEventListener('sessionLoaded', function(e) {
         console.log('🎯 Événement sessionLoaded détecté, déclenchement astuce palanquée...');
         setTimeout(triggerSaveViaTemporaryPalanquee, 1000);
@@ -171,3 +67,4 @@
     console.log('🔧 Utilisez testPalanqueeAstuce() pour tester manuellement');
     
 })();
+    })();
