@@ -1272,8 +1272,8 @@ async function handleDrop(e) {
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
-          if (typeof updateCompteurs === 'function') {
-            updateCompteurs();
+          if (typeof renderPlongeurs === 'function') {
+            renderPlongeurs();
           }
         }
       }
@@ -1312,8 +1312,8 @@ async function handleDrop(e) {
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
-          if (typeof updateCompteurs === 'function') {
-            updateCompteurs();
+          if (typeof renderPlongeurs === 'function') {
+            renderPlongeurs();
           }
         }
         
@@ -1325,8 +1325,8 @@ async function handleDrop(e) {
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
           }
-          if (typeof updateCompteurs === 'function') {
-            updateCompteurs();
+          if (typeof renderPlongeurs === 'function') {
+            renderPlongeurs();
           }
         }
       }
