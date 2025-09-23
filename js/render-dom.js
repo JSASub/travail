@@ -284,6 +284,9 @@ function returnPlongeurToMainList(palanqueeIndex, plongeurIndex) {
     plongeurs.push(plongeur);
     plongeursOriginaux.push(plongeur);
     syncToDatabase();
+    if (typeof renderPlongeurs === 'function') {
+      renderPlongeurs();
+    }
   }
 }
 
