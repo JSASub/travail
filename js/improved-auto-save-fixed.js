@@ -10,73 +10,48 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     // Fonction pour capturer les données réelles depuis le DOM
     function captureRealData() {
+        // Nouvelle version : capture uniquement depuis les variables globales
         const data = {
             timestamp: Date.now(),
-            plongeursEnListe: 0,
+            plongeursEnListe: Array.isArray(window.plongeurs) ? window.plongeurs.length : 0,
             plongeursEnPalanquees: 0,
-            nombrePalanquees: 0,
-            plongeurs: [],
+            nombrePalanquees: Array.isArray(window.palanquees) ? window.palanquees.length : 0,
+            plongeurs: Array.isArray(window.plongeurs) ? window.plongeurs.map(p => ({
+                nom: p.nom || '',
+                niveau: p.niveau || '',
+                pre: p.pre || ''
+            })) : [],
             palanquees: [],
             metadata: {}
         };
-        
-        // Capturer plongeurs en liste
-        const listePlongeurs = document.getElementById('listePlongeurs');
-        if (listePlongeurs) {
-            const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
-            data.plongeursEnListe = items.length;
-            
-            items.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
-                
-                if (nom) {
-                    data.plongeurs.push({ nom, niveau, pre });
+
+        if (Array.isArray(window.palanquees)) {
+            window.palanquees.forEach(pal => {
+                if (Array.isArray(pal)) {
+                    data.plongeursEnPalanquees += pal.length;
+                    // On copie les plongeurs de chaque palanquée
+                    data.palanquees.push(pal.map(p => ({
+                        nom: p.nom || '',
+                        niveau: p.niveau || '',
+                        pre: p.pre || ''
+                    })));
                 }
             });
         }
-        
-        // Capturer palanquées
-        const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
-        data.nombrePalanquees = palanqueeElements.length;
-        
-        palanqueeElements.forEach((palEl, index) => {
-            const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
-            data.plongeursEnPalanquees += plongeursItems.length;
-            
-            const palanquee = [];
-            plongeursItems.forEach(item => {
-                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
-                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
-                const preInput = item.querySelector('.plongeur-prerogatives-editable');
-                const pre = preInput ? preInput.value.trim() : '';
-                
-                if (nom) {
-                    palanquee.push({ nom, niveau, pre });
-                }
-            });
-            
-            if (palanquee.length > 0) {
-                data.palanquees.push(palanquee);
-            }
-        });
-        
-        // Capturer métadonnées
+
+        // Métadonnées
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
         const dpLieu = document.getElementById('dp-lieu');
         const dpPlongee = document.getElementById('dp-plongee');
-        
         data.metadata = {
             dp: dpSelect && dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '',
             date: dpDate ? dpDate.value : '',
             lieu: dpLieu ? dpLieu.value.trim() : '',
             plongee: dpPlongee ? dpPlongee.value : 'matin'
         };
-        
+
         data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
-        
         return data;
     }
     
