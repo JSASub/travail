@@ -1,5 +1,4 @@
 // ===== dp-save-improved.js - VERSION CORRIGÉE =====
-// ATTENTION : toute restauration automatique depuis localStorage est désactivée pour éviter les interférences avec le système de sauvegarde automatique principal.
 // Correction complète pour utiliser le dropdown DP au lieu d'un champ inexistant
 
 // FONCTION POUR RÉCUPÉRER LE NOM DU DP SÉLECTIONNÉ

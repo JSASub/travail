@@ -10,48 +10,73 @@ console.log('✅ Système de sauvegarde automatique chargé');
     
     // Fonction pour capturer les données réelles depuis le DOM
     function captureRealData() {
-        // Nouvelle version : capture uniquement depuis les variables globales
         const data = {
             timestamp: Date.now(),
-            plongeursEnListe: Array.isArray(window.plongeurs) ? window.plongeurs.length : 0,
+            plongeursEnListe: 0,
             plongeursEnPalanquees: 0,
-            nombrePalanquees: Array.isArray(window.palanquees) ? window.palanquees.length : 0,
-            plongeurs: Array.isArray(window.plongeurs) ? window.plongeurs.map(p => ({
-                nom: p.nom || '',
-                niveau: p.niveau || '',
-                pre: p.pre || ''
-            })) : [],
+            nombrePalanquees: 0,
+            plongeurs: [],
             palanquees: [],
             metadata: {}
         };
-
-        if (Array.isArray(window.palanquees)) {
-            window.palanquees.forEach(pal => {
-                if (Array.isArray(pal)) {
-                    data.plongeursEnPalanquees += pal.length;
-                    // On copie les plongeurs de chaque palanquée
-                    data.palanquees.push(pal.map(p => ({
-                        nom: p.nom || '',
-                        niveau: p.niveau || '',
-                        pre: p.pre || ''
-                    })));
+        
+        // Capturer plongeurs en liste
+        const listePlongeurs = document.getElementById('listePlongeurs');
+        if (listePlongeurs) {
+            const items = listePlongeurs.querySelectorAll('.plongeur-item:not([style*="display: none"])');
+            data.plongeursEnListe = items.length;
+            
+            items.forEach(item => {
+                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                const pre = item.querySelector('.plongeur-prerogatives')?.textContent?.replace(/[\[\]]/g, '').trim() || '';
+                
+                if (nom) {
+                    data.plongeurs.push({ nom, niveau, pre });
                 }
             });
         }
-
-        // Métadonnées
+        
+        // Capturer palanquées
+        const palanqueeElements = document.querySelectorAll('.palanquee:not([style*="display: none"])');
+        data.nombrePalanquees = palanqueeElements.length;
+        
+        palanqueeElements.forEach((palEl, index) => {
+            const plongeursItems = palEl.querySelectorAll('.palanquee-plongeur-item:not([style*="display: none"])');
+            data.plongeursEnPalanquees += plongeursItems.length;
+            
+            const palanquee = [];
+            plongeursItems.forEach(item => {
+                const nom = item.querySelector('.plongeur-nom')?.textContent?.trim() || '';
+                const niveau = item.querySelector('.plongeur-niveau')?.textContent?.trim() || '';
+                const preInput = item.querySelector('.plongeur-prerogatives-editable');
+                const pre = preInput ? preInput.value.trim() : '';
+                
+                if (nom) {
+                    palanquee.push({ nom, niveau, pre });
+                }
+            });
+            
+            if (palanquee.length > 0) {
+                data.palanquees.push(palanquee);
+            }
+        });
+        
+        // Capturer métadonnées
         const dpSelect = document.getElementById('dp-select');
         const dpDate = document.getElementById('dp-date');
         const dpLieu = document.getElementById('dp-lieu');
         const dpPlongee = document.getElementById('dp-plongee');
+        
         data.metadata = {
             dp: dpSelect && dpSelect.selectedOptions[0] ? dpSelect.selectedOptions[0].text : '',
             date: dpDate ? dpDate.value : '',
             lieu: dpLieu ? dpLieu.value.trim() : '',
             plongee: dpPlongee ? dpPlongee.value : 'matin'
         };
-
+        
         data.totalGeneral = data.plongeursEnListe + data.plongeursEnPalanquees;
+        
         return data;
     }
     
@@ -203,11 +228,9 @@ console.log('✅ Système de sauvegarde automatique chargé');
                 if (typeof window.updateAlertes === 'function') window.updateAlertes();
             }, 100);
             
-            // Forcer une sauvegarde juste après restauration pour garantir que la session affichée soit sauvegardée
-            setTimeout(() => {
-                saveData();
-            }, 1200);
-
+            // Supprimer sauvegarde après restauration
+            localStorage.removeItem(STORAGE_KEY);
+            
             // Message de succès
             const success = document.createElement('div');
             success.innerHTML = `✅ Session restaurée: ${data.totalGeneral} plongeurs (${data.nombrePalanquees} palanquées)`;
@@ -217,9 +240,9 @@ console.log('✅ Système de sauvegarde automatique chargé');
             `;
             document.body.appendChild(success);
             setTimeout(() => success.remove(), 4000);
-
+            
             console.log('✅ Restauration terminée');
-
+            
         } catch (error) {
             console.error('❌ Erreur restauration:', error);
             alert('Erreur lors de la restauration: ' + error.message);
@@ -328,7 +351,7 @@ console.log('✅ Système de sauvegarde automatique chargé');
     // Initialisation
     function init() {
         console.log('🚀 Initialisation sauvegarde automatique simple...');
-
+        
         // Nettoyer anciennes sauvegardes
         ['jsas_auto_save', 'jsas_emergency_save', 'jsas_last_session'].forEach(key => {
             if (localStorage.getItem(key)) {
@@ -336,35 +359,19 @@ console.log('✅ Système de sauvegarde automatique chargé');
                 console.log(`🧹 Supprimé: ${key}`);
             }
         });
-
+        
         setupWatchers();
         setupGlobalWatcher();
-
-        // Écouter l'événement de restauration de session/sessionLoaded
+        
+        // Écouter l'événement de restauration de session si disponible
         window.addEventListener('sessionRestored', () => {
-            console.log('🔄 Session restaurée détectée, rendu et sauvegarde...');
-            setTimeout(() => {
-                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
-                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
-                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
-                if (typeof window.updateAlertes === 'function') window.updateAlertes();
-                setTimeout(saveData, 400);
-            }, 200);
+            console.log('🔄 Session restaurée détectée, sauvegarde...');
+            setTimeout(saveData, 800);
         });
-        window.addEventListener('sessionLoaded', () => {
-            console.log('🔄 Session chargée détectée, rendu et sauvegarde...');
-            setTimeout(() => {
-                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
-                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
-                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
-                if (typeof window.updateAlertes === 'function') window.updateAlertes();
-                setTimeout(saveData, 400);
-            }, 200);
-        });
-
+        
         // Vérifier restauration après délai court
         setTimeout(checkRestore, 500);
-
+        
         console.log('✅ Sauvegarde automatique active avec surveillance globale');
     }
     
