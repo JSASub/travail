@@ -353,7 +353,7 @@ console.log('✅ Système de sauvegarde automatique chargé');
     // Initialisation
     function init() {
         console.log('🚀 Initialisation sauvegarde automatique simple...');
-        
+
         // Nettoyer anciennes sauvegardes
         ['jsas_auto_save', 'jsas_emergency_save', 'jsas_last_session'].forEach(key => {
             if (localStorage.getItem(key)) {
@@ -361,19 +361,35 @@ console.log('✅ Système de sauvegarde automatique chargé');
                 console.log(`🧹 Supprimé: ${key}`);
             }
         });
-        
+
         setupWatchers();
         setupGlobalWatcher();
-        
-        // Écouter l'événement de restauration de session si disponible
+
+        // Écouter l'événement de restauration de session/sessionLoaded
         window.addEventListener('sessionRestored', () => {
-            console.log('🔄 Session restaurée détectée, sauvegarde...');
-            setTimeout(saveData, 800);
+            console.log('🔄 Session restaurée détectée, rendu et sauvegarde...');
+            setTimeout(() => {
+                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
+                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
+                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
+                if (typeof window.updateAlertes === 'function') window.updateAlertes();
+                setTimeout(saveData, 400);
+            }, 200);
         });
-        
+        window.addEventListener('sessionLoaded', () => {
+            console.log('🔄 Session chargée détectée, rendu et sauvegarde...');
+            setTimeout(() => {
+                if (typeof window.renderPlongeurs === 'function') window.renderPlongeurs();
+                if (typeof window.renderPalanquees === 'function') window.renderPalanquees();
+                if (typeof window.updateCompteurs === 'function') window.updateCompteurs();
+                if (typeof window.updateAlertes === 'function') window.updateAlertes();
+                setTimeout(saveData, 400);
+            }, 200);
+        });
+
         // Vérifier restauration après délai court
         setTimeout(checkRestore, 500);
-        
+
         console.log('✅ Sauvegarde automatique active avec surveillance globale');
     }
     
