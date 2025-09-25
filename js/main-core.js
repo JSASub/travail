@@ -48,7 +48,69 @@ window.confirm = function(message) {
     }
     return originalConfirm.call(this, message);
 };
+//
+function fixPalanqueesData() {
+    // Si window.palanquees n'est pas un tableau, le corriger
+    if (!Array.isArray(window.palanquees)) {
+        console.log("Correction de window.palanquees détecté...");
+        window.palanquees = [];
+        
+        // Reconstruire depuis le DOM
+        document.querySelectorAll('.palanquee').forEach((palDiv, index) => {
+            const plongeurs = [];
+            palDiv.querySelectorAll('.palanquee-plongeur-item').forEach(item => {
+                const nom = item.querySelector('.plongeur-nom')?.textContent.trim();
+                const niveau = item.querySelector('.plongeur-niveau')?.textContent.trim();
+                const preInput = item.querySelector('.plongeur-prerogatives-editable');
+                const pre = preInput ? preInput.value.trim() : "";
+                if (nom && niveau) {
+                    plongeurs.push({nom, niveau, pre});
+                }
+            });
+            window.palanquees.push(plongeurs);
+        });
+        
+        // Nettoyer les doublons
+        const plongeursEnPalanquees = new Set();
+        window.palanquees.forEach(pal => {
+            pal.forEach(p => plongeursEnPalanquees.add(p.nom));
+        });
+        window.plongeurs = window.plongeurs.filter(p => !plongeursEnPalanquees.has(p.nom));
+        
+        console.log("window.palanquees corrigé:", window.palanquees.length, "palanquées");
+    }
+}
 
+// Maintenant, trouvez la fonction handleDrop et modifiez-la
+// Cherchez cette partie vers la ligne 1550 :
+
+/*
+} finally {
+    dragData = null;
+}
+////
+setTimeout(() => updateFloatingPlongeursList(), 50);
+*/
+
+// Et remplacez-la par :
+
+/*
+} finally {
+    dragData = null;
+}
+
+// CORRECTION AJOUTÉE ICI
+setTimeout(() => {
+    fixPalanqueesData(); // Corriger window.palanquees si nécessaire
+    if (typeof updateFloatingPlongeursList === 'function') {
+        updateFloatingPlongeursList();
+    }
+    if (typeof window.forceUpdatePlongeursMenu === 'function') {
+        window.forceUpdatePlongeursMenu();
+    }
+}, 100);
+*/
+//
 function getCurrentPalanqueesStats() {
     const palanqueesCount = document.querySelectorAll('.palanquee').length;
     let plongeursCount = 0;
@@ -1361,9 +1423,18 @@ if (indexToRemove !== -1) {
     handleError(error, "Handle drop");
   } finally {
     dragData = null;
-  }
-  ////
-  setTimeout(() => updateFloatingPlongeursList(), 50);
+}
+
+// CORRECTION AJOUTÉE
+setTimeout(() => {
+    fixPalanqueesData(); // Corriger window.palanquees si nécessaire
+    if (typeof updateFloatingPlongeursList === 'function') {
+        updateFloatingPlongeursList();
+    }
+    if (typeof window.forceUpdatePlongeursMenu === 'function') {
+        window.forceUpdatePlongeursMenu();
+    }
+}, 100);
 
 }
 
