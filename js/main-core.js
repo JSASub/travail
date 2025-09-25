@@ -1357,9 +1357,9 @@ async function handleDrop(e) {
   }
   ////
   setTimeout(() => {
-    //if (window.updateFloatingPlongeursList) {
-    window.updateFloatingPlongeursList();
-//}
+    if (window.updateFloatingPlongeursList) {
+    //window.updateFloatingPlongeursList();
+}
 }, 100);
 
 }
