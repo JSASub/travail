@@ -229,130 +229,117 @@
      * Mettre à jour la liste des plongeurs flottante
      */
     function updateFloatingPlongeursList() {
-    const floatingList = document.getElementById('floating-plongeurs-list');
-    const floatingCount = document.getElementById('floating-plongeurs-count');
-    
-    if (!floatingList || !floatingCount) return;
-    
-    // Obtenir les plongeurs depuis la variable globale
-    let plongeurs = window.plongeurs || [];
-    
-    // AJOUT : Filtrer les plongeurs qui ne sont PAS dans les palanquées
-    const plongeursDisponibles = plongeurs.filter(plongeur => {
-        // Vérifier si ce plongeur est dans une palanquée
-        const estDansPalanquee = window.palanquees && window.palanquees.some(palanquee => 
-            palanquee.plongeurs && palanquee.plongeurs.some(p => 
-                p.nom === plongeur.nom && p.niveau === plongeur.niveau
-            )
-        );
-        return !estDansPalanquee; // Ne garder que ceux qui ne sont PAS dans une palanquée
-    });
-    
-    // Obtenir le tri actuel de la liste principale
-    const currentSortBtn = document.querySelector('.sort-btn.active');
-    const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
-    
-    // Copier les plongeurs DISPONIBLES pour ne pas modifier l'original
-    let plongeursTriés = [...plongeursDisponibles];
-    
-    // Appliquer EXACTEMENT le même tri que la liste principale
-    switch(currentSort) {
-        case 'nom':
-            plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
-            break;
-        case 'niveau':
-            // Ordre de priorité identique à ui-interface.js
-            const niveauOrder = {
-                'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-                'N3': 7, 'N2': 8, 'N1': 9,
-                'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-                'Déb.': 13, 'débutant': 14, 'Déb': 15
-            };
-            
-            plongeursTriés.sort((a, b) => {
-                const orderA = niveauOrder[a.niveau] || 99;
-                const orderB = niveauOrder[b.niveau] || 99;
+        const floatingList = document.getElementById('floating-plongeurs-list');
+        const floatingCount = document.getElementById('floating-plongeurs-count');
+        
+        if (!floatingList || !floatingCount) return;
+        
+        // Obtenir les plongeurs depuis la variable globale
+        let plongeurs = window.plongeurs || [];
+        
+        // Obtenir le tri actuel de la liste principale
+        const currentSortBtn = document.querySelector('.sort-btn.active');
+        const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
+        
+        // Copier les plongeurs pour ne pas modifier l'original
+        let plongeursTriés = [...plongeurs];
+        
+        // Appliquer EXACTEMENT le même tri que la liste principale
+        switch(currentSort) {
+            case 'nom':
+                plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
+                break;
+            case 'niveau':
+                // Ordre de priorité identique à ui-interface.js
+                const niveauOrder = {
+                    'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+                    'N3': 7, 'N2': 8, 'N1': 9,
+                    'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+                    'Déb.': 13, 'débutant': 14, 'Déb': 15
+                };
                 
-                // Si même niveau, trier par nom (critère secondaire)
-                if (orderA === orderB) {
-                    return a.nom.localeCompare(b.nom);
-                }
-                
-                return orderA - orderB;
-            });
-            break;
-        case 'none':
-        default:
-            // Utiliser l'ordre original exact pour les disponibles seulement
-            plongeursTriés = plongeursDisponibles.filter(p => 
-                (window.plongeursOriginaux || plongeurs).includes(p)
+                plongeursTriés.sort((a, b) => {
+                    const orderA = niveauOrder[a.niveau] || 99;
+                    const orderB = niveauOrder[b.niveau] || 99;
+                    
+                    // Si même niveau, trier par nom (critère secondaire)
+                    if (orderA === orderB) {
+                        return a.nom.localeCompare(b.nom);
+                    }
+                    
+                    return orderA - orderB;
+                });
+                break;
+            case 'none':
+            default:
+                // Utiliser l'ordre original exact
+                plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
+                break;
+        }
+        
+        // Mettre à jour l'affichage avec l'ordre correct
+        floatingCount.textContent = `(${plongeursTriés.length})`;
+        floatingList.innerHTML = '';
+        
+        if (plongeursTriés.length === 0) {
+            floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
+            return;
+        }
+        
+        // Créer les éléments dans l'ordre trié
+        plongeursTriés.forEach((plongeur, sortedIndex) => {
+            // Trouver l'index original dans window.plongeurs pour le drag & drop
+            const originalIndex = window.plongeurs.findIndex(p => 
+                p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
             );
-            break;
-    }
-    
-    // Mettre à jour l'affichage avec l'ordre correct
-    floatingCount.textContent = `(${plongeursTriés.length})`;
-    floatingList.innerHTML = '';
-    
-    if (plongeursTriés.length === 0) {
-        floatingList.innerHTML = '<div class="floating-plongeurs-empty">Tous les plongeurs sont assignés</div>';
-        return;
-    }
-    
-    // Créer les éléments dans l'ordre trié
-    plongeursTriés.forEach((plongeur, sortedIndex) => {
-        // Trouver l'index original dans window.plongeurs pour le drag & drop
-        const originalIndex = window.plongeurs.findIndex(p => 
-            p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
-        );
-        
-        const nom = plongeur.nom || 'Nom inconnu';
-        const niveau = plongeur.niveau || 'N/A';
-        
-        const floatingItem = document.createElement('div');
-        floatingItem.className = 'floating-plongeur-item';
-        floatingItem.draggable = true;
-        floatingItem.dataset.originalIndex = originalIndex;
-        floatingItem.dataset.sortedIndex = sortedIndex;
-        
-        floatingItem.innerHTML = `
-            <span class="floating-plongeur-nom">${nom}</span>
-            <span class="floating-plongeur-niveau">${niveau}</span>
-        `;
-        
-        // Events de drag & drop
-        floatingItem.addEventListener('dragstart', function(e) {
-            floatingItem.classList.add('dragging');
             
-            const dragData = {
-                type: "fromMainList",
-                plongeur: {
-                    nom: plongeur.nom,
-                    niveau: plongeur.niveau,
-                    pre: plongeur.pre || ''
-                },
-                originalIndex: originalIndex
-            };
+            const nom = plongeur.nom || 'Nom inconnu';
+            const niveau = plongeur.niveau || 'N/A';
             
-            try {
-                e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-                e.dataTransfer.effectAllowed = 'move';
-                window.dragData = dragData;
-            } catch (error) {
-                window.dragData = dragData;
-            }
+            const floatingItem = document.createElement('div');
+            floatingItem.className = 'floating-plongeur-item';
+            floatingItem.draggable = true;
+            floatingItem.dataset.originalIndex = originalIndex;
+            floatingItem.dataset.sortedIndex = sortedIndex;
+            
+            floatingItem.innerHTML = `
+                <span class="floating-plongeur-nom">${nom}</span>
+                <span class="floating-plongeur-niveau">${niveau}</span>
+            `;
+            
+            // Events de drag & drop
+            floatingItem.addEventListener('dragstart', function(e) {
+                floatingItem.classList.add('dragging');
+                
+                const dragData = {
+                    type: "fromMainList",
+                    plongeur: {
+                        nom: plongeur.nom,
+                        niveau: plongeur.niveau,
+                        pre: plongeur.pre || ''
+                    },
+                    originalIndex: originalIndex
+                };
+                
+                try {
+                    e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+                    e.dataTransfer.effectAllowed = 'move';
+                    window.dragData = dragData;
+                } catch (error) {
+                    window.dragData = dragData;
+                }
+            });
+            
+            floatingItem.addEventListener('dragend', function(e) {
+                floatingItem.classList.remove('dragging');
+                window.dragData = null;
+            });
+            
+            floatingList.appendChild(floatingItem);
         });
         
-        floatingItem.addEventListener('dragend', function(e) {
-            floatingItem.classList.remove('dragging');
-            window.dragData = null;
-        });
-        
-        floatingList.appendChild(floatingItem);
-    });
-    
-    console.log('Menu synchronisé - Disponibles:', plongeursTriés.length, '- Tri:', currentSort);
-}
+        console.log('Menu synchronisé - Tri:', currentSort, '- Premier plongeur:', plongeursTriés[0]?.nom);
+    }
 
     /**
      * Gérer la visibilité du menu des plongeurs
