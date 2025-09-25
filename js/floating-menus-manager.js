@@ -484,7 +484,7 @@
         
         // Mettre à jour régulièrement
         setInterval(updateFloatingPlongeursList, 3000);
-        //setInterval(updateFloatingPlongeursVisibility, 1000);
+        setInterval(updateFloatingPlongeursVisibility, 1000);
         
         // Observer les changements
         let lastPlongeursLength = window.plongeurs.length;
@@ -619,73 +619,117 @@
     /**
      * Handler de drop spécifique pour le menu flottant
      */
-    function handleFloatingMenuDrop(e) {
-        e.preventDefault();
-        
-        const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-        if (!dropZone) return;
-        
-        dropZone.classList.remove('drag-over');
-        
-        // Récupérer les données
-        let data = window.dragData;
-        
-        if (!data) {
-            try {
-                const dataStr = e.dataTransfer.getData('text/plain');
-                if (dataStr) {
-                    data = JSON.parse(dataStr);
-                }
-            } catch (error) {
-                console.warn('Erreur parsing dataTransfer:', error);
-            }
-        }
-        
-        if (!data) return;
-        
-        console.log('Données de drop:', data);
-        
-        // S'assurer que les variables globales existent
-        if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
-        if (typeof window.palanquees === 'undefined') window.palanquees = [];
-        
-        // Drop vers la liste principale
-        if (dropZone.id === 'listePlongeurs') {
-            console.log('Drop vers liste principale');
-            return; // La logique principale devrait gérer cela
-        } else {
-            // Drop vers une palanquée
-            const palanqueeIndex = parseInt(dropZone.dataset.index);
-            if (isNaN(palanqueeIndex)) return;
-            
-            console.log('Drop vers palanquée', palanqueeIndex);
-            
-            if (data.type === "fromMainList") {
-                // Trouver et supprimer le plongeur de la liste principale
-                const indexToRemove = data.originalIndex;
-                
-                if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
-                    const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
-                    
-                    // Ajouter à la palanquée
-                    if (window.palanquees[palanqueeIndex]) {
-                        window.palanquees[palanqueeIndex].push(plongeur);
-                        
-                        console.log('Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
-                        
-                        // Synchroniser
-                        if (typeof window.syncToDatabase === 'function') {
-                            window.syncToDatabase();
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Nettoyer
-        window.dragData = null;
-    }
+// Dans floating-menus-manager.js - fonction handleFloatingMenuDrop
 
+function handleFloatingMenuDrop(e) {
+  e.preventDefault();
+  
+  const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
+  if (!dropZone) return;
+  
+  dropZone.classList.remove('drag-over');
+  
+  // Récupérer les données
+  let data = window.dragData;
+  
+  if (!data) {
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain');
+      if (dataStr) {
+        data = JSON.parse(dataStr);
+      }
+    } catch (error) {
+      console.warn('Erreur parsing dataTransfer:', error);
+    }
+  }
+  
+  if (!data) return;
+  
+  console.log('🔄 Drop depuis menu flottant:', data);
+  
+  // S'assurer que les variables globales existent
+  if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
+  if (typeof window.palanquees === 'undefined') window.palanquees = [];
+  
+  // Drop vers la liste principale
+  if (dropZone.id === 'listePlongeurs') {
+    console.log('📋 Drop vers liste principale');
+    return; // La logique principale devrait gérer cela
+  } else {
+    // Drop vers une palanquée
+    const palanqueeIndex = parseInt(dropZone.dataset.index);
+    if (isNaN(palanqueeIndex)) return;
+    
+    console.log('🏊 Drop vers palanquée', palanqueeIndex + 1);
+    
+    if (data.type === "fromMainList") {
+      console.log('📊 État avant suppression:');
+      console.log('- Plongeurs en liste:', window.plongeurs.length);
+      console.log('- Index original:', data.originalIndex);
+      console.log('- Plongeur à déplacer:', data.plongeur.nom);
+      
+      // CORRECTION: Utiliser la même logique que dans handleDrop
+      let indexToRemove = -1;
+      
+      // Méthode 1: Utiliser l'index original si disponible et valide
+      if (typeof data.originalIndex === 'number' && 
+          data.originalIndex >= 0 && 
+          data.originalIndex < window.plongeurs.length &&
+          window.plongeurs[data.originalIndex] &&
+          window.plongeurs[data.originalIndex].nom === data.plongeur.nom) {
+        
+        indexToRemove = data.originalIndex;
+        console.log('✅ Utilisation index original:', indexToRemove);
+        
+      } else {
+        // Méthode 2: Recherche par nom et niveau
+        indexToRemove = window.plongeurs.findIndex(p => 
+          p && p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
+        );
+        console.log('🔍 Recherche par nom:', indexToRemove);
+      }
+      
+      if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
+        const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
+        
+        // Ajouter à la palanquée
+        if (window.palanquees[palanqueeIndex]) {
+          window.palanquees[palanqueeIndex].push(plongeur);
+          
+          console.log('✅ Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
+          console.log('📊 État après déplacement:');
+          console.log('- Plongeurs restants:', window.plongeurs.length);
+          console.log('- Plongeurs dans palanquée:', window.palanquees[palanqueeIndex].length);
+          
+          // Synchroniser
+          if (typeof window.syncToDatabase === 'function') {
+            window.syncToDatabase();
+          }
+          
+          // Mettre à jour les affichages
+          if (typeof window.renderPlongeurs === 'function') {
+            window.renderPlongeurs();
+          }
+          if (typeof window.renderPalanquees === 'function') {
+            window.renderPalanquees();
+          }
+          if (typeof window.updateCompteurs === 'function') {
+            window.updateCompteurs();
+          }
+          
+          // Mettre à jour le menu flottant
+          setTimeout(updateFloatingPlongeursList, 200);
+        }
+      } else {
+        console.error('❌ Impossible de trouver le plongeur à supprimer');
+        console.log('Liste actuelle:', window.plongeurs.map(p => p.nom));
+      }
+    }
+  }
+  
+  // Nettoyer
+  window.dragData = null;
+}
     // ===== GESTION DES RACCOURCIS CLAVIER =====
 
     /**
