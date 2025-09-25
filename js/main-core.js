@@ -1222,8 +1222,6 @@ function handleDragLeave(e) {
   }
 }
 
-// Correction dans main-core.js - fonction handleDrop
-
 async function handleDrop(e) {
   try {
     e.preventDefault();
@@ -1265,7 +1263,6 @@ async function handleDrop(e) {
     }
     
     if (dropZone.id === 'listePlongeurs') {
-      // Drop vers la liste principale
       if (data.type === "fromPalanquee") {
         if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
           const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
@@ -1287,7 +1284,6 @@ async function handleDrop(e) {
         }
       }
     } else {
-      // Drop vers une palanquée
       const palanqueeIndex = parseInt(dropZone.dataset.index);
       if (isNaN(palanqueeIndex)) {
         dragData = null;
@@ -1311,74 +1307,29 @@ async function handleDrop(e) {
       }
       
       if (data.type === "fromMainList") {
-        // CORRECTION MAJEURE ICI
-        console.log("🔧 Déplacement depuis liste principale vers palanquée", palanqueeIndex + 1);
-        console.log("Données du plongeur:", data.plongeur);
-        console.log("Index original:", data.originalIndex);
+        const indexToRemove = plongeurs.findIndex(p => 
+          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
+        );
         
-        // Méthode 1: Utiliser l'index original si disponible et valide
-        if (typeof data.originalIndex === 'number' && 
-            data.originalIndex >= 0 && 
-            data.originalIndex < plongeurs.length &&
-            plongeurs[data.originalIndex] &&
-            plongeurs[data.originalIndex].nom === data.plongeur.nom) {
-          
-          console.log("✅ Utilisation index original:", data.originalIndex);
-          const plongeur = plongeurs.splice(data.originalIndex, 1)[0];
+        if (indexToRemove !== -1) {
+          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
           targetPalanquee.push(plongeur);
           
-        } else {
-          // Méthode 2: Recherche par nom et niveau (plus sûre)
-          console.log("🔍 Recherche par nom et niveau");
-          const indexToRemove = plongeurs.findIndex(p => 
-            p && p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-          );
-          
-          if (indexToRemove !== -1) {
-            console.log("✅ Plongeur trouvé à l'index:", indexToRemove);
-            const plongeur = plongeurs.splice(indexToRemove, 1)[0];
-            targetPalanquee.push(plongeur);
-          } else {
-            console.error("❌ Plongeur non trouvé dans la liste!");
-            console.log("Liste actuelle des plongeurs:", plongeurs.map(p => `${p.nom} (${p.niveau})`));
-            // Ajouter quand même le plongeur à la palanquée
-            targetPalanquee.push(data.plongeur);
+          if (typeof syncToDatabase === 'function') {
+            syncToDatabase();
+          }
+          if (typeof renderPlongeurs === 'function') {
+            renderPlongeurs();
+          }
+          if (typeof renderPalanquees === 'function') {
+            renderPalanquees();
+          }
+          if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
           }
         }
         
-        // Nettoyer aussi plongeursOriginaux
-        const originalIndex = plongeursOriginaux.findIndex(p => 
-          p && p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-        );
-        if (originalIndex !== -1) {
-          plongeursOriginaux.splice(originalIndex, 1);
-        }
-        
-        console.log("📊 État après déplacement:");
-        console.log("- Plongeurs restants:", plongeurs.length);
-        console.log("- Plongeurs dans palanquée", palanqueeIndex + 1, ":", targetPalanquee.length);
-        
-        // Synchronisation et rendu
-        if (typeof syncToDatabase === 'function') {
-          syncToDatabase();
-        }
-        if (typeof renderPlongeurs === 'function') {
-          renderPlongeurs();
-        }
-        if (typeof renderPalanquees === 'function') {
-          renderPalanquees();
-        }
-        if (typeof updateCompteurs === 'function') {
-          updateCompteurs();
-        }
-        
-        // Mise à jour du menu flottant
-        if (typeof updateFloatingPlongeursList === 'function') {
-          setTimeout(updateFloatingPlongeursList, 200);
-        }
-        
       } else if (data.type === "fromPalanquee") {
-        // Déplacement de palanquée à palanquée
         if (palanquees[data.palanqueeIndex] && palanquees[data.palanqueeIndex][data.plongeurIndex]) {
           const plongeur = palanquees[data.palanqueeIndex].splice(data.plongeurIndex, 1)[0];
           targetPalanquee.push(plongeur);
@@ -1400,13 +1351,12 @@ async function handleDrop(e) {
     }
   } catch (error) {
     console.error("Erreur lors du drop:", error);
-    if (typeof handleError === 'function') {
-      handleError(error, "Handle drop");
-    }
+    handleError(error, "Handle drop");
   } finally {
     dragData = null;
   }
 }
+
 // ===== EVENT HANDLERS SÉCURISÉS (PRÉSERVÉS) =====
 function setupEventListeners() {
   console.log("Configuration des event listeners sécurisés...");

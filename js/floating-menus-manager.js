@@ -228,128 +228,118 @@
     /**
      * Mettre à jour la liste des plongeurs flottante
      */
-function updateFloatingPlongeursList() {
-    const floatingList = document.getElementById('floating-plongeurs-list');
-    const floatingCount = document.getElementById('floating-plongeurs-count');
-    
-    if (!floatingList || !floatingCount) return;
-    
-    console.log('🔄 Mise à jour menu flottant...');
-    
-    // CORRECTION MAJEURE: Forcer la synchronisation avec le DOM principal
-    reconstructDataFromDOM();
-    
-    // Obtenir les plongeurs depuis la variable globale APRÈS synchronisation
-    let plongeurs = window.plongeurs || [];
-    
-    console.log('📊 Plongeurs dans menu flottant:', plongeurs.length);
-    
-    // Obtenir le tri actuel de la liste principale
-    const currentSortBtn = document.querySelector('.sort-btn.active');
-    const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
-    
-    // Copier les plongeurs pour ne pas modifier l'original
-    let plongeursTriés = [...plongeurs];
-    
-    // Appliquer EXACTEMENT le même tri que la liste principale
-    switch(currentSort) {
-        case 'nom':
-            plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
-            break;
-        case 'niveau':
-            // Ordre de priorité identique à ui-interface.js
-            const niveauOrder = {
-                'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
-                'N3': 7, 'N2': 8, 'N1': 9,
-                'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
-                'Déb.': 13, 'débutant': 14, 'Déb': 15
-            };
-            
-            plongeursTriés.sort((a, b) => {
-                const orderA = niveauOrder[a.niveau] || 99;
-                const orderB = niveauOrder[b.niveau] || 99;
+    function updateFloatingPlongeursList() {
+        const floatingList = document.getElementById('floating-plongeurs-list');
+        const floatingCount = document.getElementById('floating-plongeurs-count');
+        
+        if (!floatingList || !floatingCount) return;
+        
+        // Obtenir les plongeurs depuis la variable globale
+        let plongeurs = window.plongeurs || [];
+        
+        // Obtenir le tri actuel de la liste principale
+        const currentSortBtn = document.querySelector('.sort-btn.active');
+        const currentSort = currentSortBtn ? currentSortBtn.dataset.sort : 'none';
+        
+        // Copier les plongeurs pour ne pas modifier l'original
+        let plongeursTriés = [...plongeurs];
+        
+        // Appliquer EXACTEMENT le même tri que la liste principale
+        switch(currentSort) {
+            case 'nom':
+                plongeursTriés.sort((a, b) => a.nom.localeCompare(b.nom));
+                break;
+            case 'niveau':
+                // Ordre de priorité identique à ui-interface.js
+                const niveauOrder = {
+                    'E4': 1, 'E3': 2, 'E2': 3, 'GP': 4, 'N4/GP': 5, 'N4': 6,
+                    'N3': 7, 'N2': 8, 'N1': 9,
+                    'Plg.Or': 10, 'Plg.Ar': 11, 'Plg.Br': 12,
+                    'Déb.': 13, 'débutant': 14, 'Déb': 15
+                };
                 
-                // Si même niveau, trier par nom (critère secondaire)
-                if (orderA === orderB) {
-                    return a.nom.localeCompare(b.nom);
+                plongeursTriés.sort((a, b) => {
+                    const orderA = niveauOrder[a.niveau] || 99;
+                    const orderB = niveauOrder[b.niveau] || 99;
+                    
+                    // Si même niveau, trier par nom (critère secondaire)
+                    if (orderA === orderB) {
+                        return a.nom.localeCompare(b.nom);
+                    }
+                    
+                    return orderA - orderB;
+                });
+                break;
+            case 'none':
+            default:
+                // Utiliser l'ordre original exact
+                plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
+                break;
+        }
+        
+        // Mettre à jour l'affichage avec l'ordre correct
+        floatingCount.textContent = `(${plongeursTriés.length})`;
+        floatingList.innerHTML = '';
+        
+        if (plongeursTriés.length === 0) {
+            floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
+            return;
+        }
+        
+        // Créer les éléments dans l'ordre trié
+        plongeursTriés.forEach((plongeur, sortedIndex) => {
+            // Trouver l'index original dans window.plongeurs pour le drag & drop
+            const originalIndex = window.plongeurs.findIndex(p => 
+                p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
+            );
+            
+            const nom = plongeur.nom || 'Nom inconnu';
+            const niveau = plongeur.niveau || 'N/A';
+            
+            const floatingItem = document.createElement('div');
+            floatingItem.className = 'floating-plongeur-item';
+            floatingItem.draggable = true;
+            floatingItem.dataset.originalIndex = originalIndex;
+            floatingItem.dataset.sortedIndex = sortedIndex;
+            
+            floatingItem.innerHTML = `
+                <span class="floating-plongeur-nom">${nom}</span>
+                <span class="floating-plongeur-niveau">${niveau}</span>
+            `;
+            
+            // Events de drag & drop
+            floatingItem.addEventListener('dragstart', function(e) {
+                floatingItem.classList.add('dragging');
+                
+                const dragData = {
+                    type: "fromMainList",
+                    plongeur: {
+                        nom: plongeur.nom,
+                        niveau: plongeur.niveau,
+                        pre: plongeur.pre || ''
+                    },
+                    originalIndex: originalIndex
+                };
+                
+                try {
+                    e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+                    e.dataTransfer.effectAllowed = 'move';
+                    window.dragData = dragData;
+                } catch (error) {
+                    window.dragData = dragData;
                 }
-                
-                return orderA - orderB;
             });
-            break;
-        case 'none':
-        default:
-            // Utiliser l'ordre original exact
-            plongeursTriés = [...(window.plongeursOriginaux || plongeurs)];
-            break;
-    }
-    
-    // Mettre à jour l'affichage avec l'ordre correct
-    floatingCount.textContent = `(${plongeursTriés.length})`;
-    floatingList.innerHTML = '';
-    
-    console.log('🎯 Nombre de plongeurs à afficher:', plongeursTriés.length);
-    
-    if (plongeursTriés.length === 0) {
-        floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>';
-        return;
-    }
-    
-    // Créer les éléments dans l'ordre trié
-    plongeursTriés.forEach((plongeur, sortedIndex) => {
-        // Trouver l'index original dans window.plongeurs pour le drag & drop
-        const originalIndex = window.plongeurs.findIndex(p => 
-            p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
-        );
-        
-        const nom = plongeur.nom || 'Nom inconnu';
-        const niveau = plongeur.niveau || 'N/A';
-        
-        const floatingItem = document.createElement('div');
-        floatingItem.className = 'floating-plongeur-item';
-        floatingItem.draggable = true;
-        floatingItem.dataset.originalIndex = originalIndex;
-        floatingItem.dataset.sortedIndex = sortedIndex;
-        
-        floatingItem.innerHTML = `
-            <span class="floating-plongeur-nom">${nom}</span>
-            <span class="floating-plongeur-niveau">${niveau}</span>
-        `;
-        
-        // Events de drag & drop
-        floatingItem.addEventListener('dragstart', function(e) {
-            floatingItem.classList.add('dragging');
             
-            const dragData = {
-                type: "fromMainList",
-                plongeur: {
-                    nom: plongeur.nom,
-                    niveau: plongeur.niveau,
-                    pre: plongeur.pre || ''
-                },
-                originalIndex: originalIndex
-            };
+            floatingItem.addEventListener('dragend', function(e) {
+                floatingItem.classList.remove('dragging');
+                window.dragData = null;
+            });
             
-            try {
-                e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-                e.dataTransfer.effectAllowed = 'move';
-                window.dragData = dragData;
-                console.log('🎯 Drag start depuis menu:', dragData);
-            } catch (error) {
-                window.dragData = dragData;
-            }
+            floatingList.appendChild(floatingItem);
         });
         
-        floatingItem.addEventListener('dragend', function(e) {
-            floatingItem.classList.remove('dragging');
-            // NE PAS nettoyer dragData ici, c'est fait dans handleDrop
-        });
-        
-        floatingList.appendChild(floatingItem);
-    });
-    
-    console.log('✅ Menu flottant synchronisé - Tri:', currentSort, '- Plongeurs affichés:', plongeursTriés.length);
-}
+        console.log('Menu synchronisé - Tri:', currentSort, '- Premier plongeur:', plongeursTriés[0]?.nom);
+    }
 
     /**
      * Gérer la visibilité du menu des plongeurs
@@ -494,7 +484,7 @@ function updateFloatingPlongeursList() {
         
         // Mettre à jour régulièrement
         setInterval(updateFloatingPlongeursList, 3000);
-        setInterval(updateFloatingPlongeursVisibility, 1000);
+        //setInterval(updateFloatingPlongeursVisibility, 1000);
         
         // Observer les changements
         let lastPlongeursLength = window.plongeurs.length;
@@ -629,117 +619,73 @@ function updateFloatingPlongeursList() {
     /**
      * Handler de drop spécifique pour le menu flottant
      */
-// Dans floating-menus-manager.js - fonction handleFloatingMenuDrop
-
-function handleFloatingMenuDrop(e) {
-  e.preventDefault();
-  
-  const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
-  if (!dropZone) return;
-  
-  dropZone.classList.remove('drag-over');
-  
-  // Récupérer les données
-  let data = window.dragData;
-  
-  if (!data) {
-    try {
-      const dataStr = e.dataTransfer.getData('text/plain');
-      if (dataStr) {
-        data = JSON.parse(dataStr);
-      }
-    } catch (error) {
-      console.warn('Erreur parsing dataTransfer:', error);
-    }
-  }
-  
-  if (!data) return;
-  
-  console.log('🔄 Drop depuis menu flottant:', data);
-  
-  // S'assurer que les variables globales existent
-  if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
-  if (typeof window.palanquees === 'undefined') window.palanquees = [];
-  
-  // Drop vers la liste principale
-  if (dropZone.id === 'listePlongeurs') {
-    console.log('📋 Drop vers liste principale');
-    return; // La logique principale devrait gérer cela
-  } else {
-    // Drop vers une palanquée
-    const palanqueeIndex = parseInt(dropZone.dataset.index);
-    if (isNaN(palanqueeIndex)) return;
-    
-    console.log('🏊 Drop vers palanquée', palanqueeIndex + 1);
-    
-    if (data.type === "fromMainList") {
-      console.log('📊 État avant suppression:');
-      console.log('- Plongeurs en liste:', window.plongeurs.length);
-      console.log('- Index original:', data.originalIndex);
-      console.log('- Plongeur à déplacer:', data.plongeur.nom);
-      
-      // CORRECTION: Utiliser la même logique que dans handleDrop
-      let indexToRemove = -1;
-      
-      // Méthode 1: Utiliser l'index original si disponible et valide
-      if (typeof data.originalIndex === 'number' && 
-          data.originalIndex >= 0 && 
-          data.originalIndex < window.plongeurs.length &&
-          window.plongeurs[data.originalIndex] &&
-          window.plongeurs[data.originalIndex].nom === data.plongeur.nom) {
+    function handleFloatingMenuDrop(e) {
+        e.preventDefault();
         
-        indexToRemove = data.originalIndex;
-        console.log('✅ Utilisation index original:', indexToRemove);
+        const dropZone = e.target.closest('.palanquee') || e.target.closest('#listePlongeurs');
+        if (!dropZone) return;
         
-      } else {
-        // Méthode 2: Recherche par nom et niveau
-        indexToRemove = window.plongeurs.findIndex(p => 
-          p && p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-        );
-        console.log('🔍 Recherche par nom:', indexToRemove);
-      }
-      
-      if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
-        const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
+        dropZone.classList.remove('drag-over');
         
-        // Ajouter à la palanquée
-        if (window.palanquees[palanqueeIndex]) {
-          window.palanquees[palanqueeIndex].push(plongeur);
-          
-          console.log('✅ Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
-          console.log('📊 État après déplacement:');
-          console.log('- Plongeurs restants:', window.plongeurs.length);
-          console.log('- Plongeurs dans palanquée:', window.palanquees[palanqueeIndex].length);
-          
-          // Synchroniser
-          if (typeof window.syncToDatabase === 'function') {
-            window.syncToDatabase();
-          }
-          
-          // Mettre à jour les affichages
-          if (typeof window.renderPlongeurs === 'function') {
-            window.renderPlongeurs();
-          }
-          if (typeof window.renderPalanquees === 'function') {
-            window.renderPalanquees();
-          }
-          if (typeof window.updateCompteurs === 'function') {
-            window.updateCompteurs();
-          }
-          
-          // Mettre à jour le menu flottant
-          setTimeout(updateFloatingPlongeursList, 200);
+        // Récupérer les données
+        let data = window.dragData;
+        
+        if (!data) {
+            try {
+                const dataStr = e.dataTransfer.getData('text/plain');
+                if (dataStr) {
+                    data = JSON.parse(dataStr);
+                }
+            } catch (error) {
+                console.warn('Erreur parsing dataTransfer:', error);
+            }
         }
-      } else {
-        console.error('❌ Impossible de trouver le plongeur à supprimer');
-        console.log('Liste actuelle:', window.plongeurs.map(p => p.nom));
-      }
+        
+        if (!data) return;
+        
+        console.log('Données de drop:', data);
+        
+        // S'assurer que les variables globales existent
+        if (typeof window.plongeurs === 'undefined') window.plongeurs = [];
+        if (typeof window.palanquees === 'undefined') window.palanquees = [];
+        
+        // Drop vers la liste principale
+        if (dropZone.id === 'listePlongeurs') {
+            console.log('Drop vers liste principale');
+            return; // La logique principale devrait gérer cela
+        } else {
+            // Drop vers une palanquée
+            const palanqueeIndex = parseInt(dropZone.dataset.index);
+            if (isNaN(palanqueeIndex)) return;
+            
+            console.log('Drop vers palanquée', palanqueeIndex);
+            
+            if (data.type === "fromMainList") {
+                // Trouver et supprimer le plongeur de la liste principale
+                const indexToRemove = data.originalIndex;
+                
+                if (indexToRemove >= 0 && indexToRemove < window.plongeurs.length) {
+                    const plongeur = window.plongeurs.splice(indexToRemove, 1)[0];
+                    
+                    // Ajouter à la palanquée
+                    if (window.palanquees[palanqueeIndex]) {
+                        window.palanquees[palanqueeIndex].push(plongeur);
+                        
+                        console.log('Plongeur déplacé:', plongeur.nom, 'vers palanquée', palanqueeIndex + 1);
+                        
+                        // Synchroniser
+                        if (typeof window.syncToDatabase === 'function') {
+                            window.syncToDatabase();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Nettoyer
+        window.dragData = null;
     }
-  }
-  
-  // Nettoyer
-  window.dragData = null;
-}
+
     // ===== GESTION DES RACCOURCIS CLAVIER =====
 
     /**
