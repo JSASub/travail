@@ -1308,12 +1308,19 @@ async function handleDrop(e) {
       
       if (data.type === "fromMainList") {
         const indexToRemove = plongeurs.findIndex(p => 
-          p.nom === data.plongeur.nom && p.niveau === data.plongeur.niveau
-        );
-        
-        if (indexToRemove !== -1) {
-          const plongeur = plongeurs.splice(indexToRemove, 1)[0];
-          targetPalanquee.push(plongeur);
+  p.nom.trim() === data.plongeur.nom.trim() && p.niveau === data.plongeur.niveau
+);
+
+if (indexToRemove !== -1) {
+  const plongeur = plongeurs.splice(indexToRemove, 1)[0];
+  targetPalanquee.push(plongeur);
+  
+  // Forcer la mise à jour du menu flottant immédiatement
+  setTimeout(() => {
+    if (typeof window.forceUpdatePlongeursMenu === 'function') {
+      window.forceUpdatePlongeursMenu();
+    }
+  }, 50);
           
           if (typeof syncToDatabase === 'function') {
             syncToDatabase();
