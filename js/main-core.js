@@ -1355,6 +1355,11 @@ async function handleDrop(e) {
   } finally {
     dragData = null;
   }
+  ////
+  setTimeout(() => {
+    updateFloatingPlongeursList();
+}, 100);
+
 }
 
 // ===== EVENT HANDLERS SÉCURISÉS (PRÉSERVÉS) =====
