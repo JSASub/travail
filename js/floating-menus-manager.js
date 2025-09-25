@@ -246,11 +246,13 @@
 		// CORRECTION : Filtrer les plongeurs déjà assignés aux palanquées
 		const nomsAssignés = new Set();
 		document.querySelectorAll('.palanquee .plongeur-nom').forEach(nom => {
-		nomsAssignés.add(nom.textContent.trim());
+			nomsAssignés.add(nom.textContent.trim());
 		});
+		// Ne garder que les plongeurs disponibles (non assignés)
+		plongeurs = plongeurs.filter(plongeur => !nomsAssignés.has(plongeur.nom));
 
-// Ne garder que les plongeurs disponibles (non assignés)
-plongeurs = plongeurs.filter(plongeur => !nomsAssignés.has(plongeur.nom));			
+		// Copier les plongeurs FILTRÉS pour ne pas modifier l'original
+		let plongeursTriés = [...plongeurs];		
         
         // Appliquer EXACTEMENT le même tri que la liste principale
         switch(currentSort) {
