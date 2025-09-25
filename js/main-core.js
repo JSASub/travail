@@ -1356,11 +1356,7 @@ async function handleDrop(e) {
     dragData = null;
   }
   ////
-  setTimeout(() => {
-    if (window.updateFloatingPlongeursList) {
-    //window.updateFloatingPlongeursList();
-}
-}, 100);
+  setTimeout(() => updateFloatingPlongeursList(), 50);
 
 }
 
