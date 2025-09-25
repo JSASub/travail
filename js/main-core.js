@@ -1355,15 +1355,6 @@ async function handleDrop(e) {
   } finally {
     dragData = null;
   }
-    setTimeout(() => {
-        if (window.floatingMenusManager && window.floatingMenusManager.updatePlongeurs) {
-            window.floatingMenusManager.updatePlongeurs();
-            console.log("Menu flottant forcé après drop");
-        }
-    }, 100);
-    
-    // Sauvegarder les données
-    savePalanquees();
 }
 
 // ===== EVENT HANDLERS SÉCURISÉS (PRÉSERVÉS) =====
