@@ -247,13 +247,32 @@ function fixPrerogativesAfterRender() {
           const plongeurIndex = this.closest('.palanquee-plongeur-item').dataset.plongeurIndex;
           updatePlongeurPrerogativesRealTime(palanqueeIndex, plongeurIndex, this.value);
         });
-        
+
+        // Ajout d'une info contextuelle lors du focus
+        newInput.addEventListener('focus', function() {
+          let info = this.parentNode.querySelector('.prerogative-edit-info');
+          if (!info) {
+            info = document.createElement('div');
+            info.className = 'prerogative-edit-info';
+            info.textContent = 'Astuce : Ctrl+A pour tout sélectionner, flèches ←/→ pour naviguer.';
+            info.style.fontSize = '11px';
+            info.style.color = '#0077cc';
+            info.style.marginTop = '2px';
+            info.style.background = '#eef6ff';
+            info.style.padding = '2px 6px';
+            info.style.borderRadius = '3px';
+            this.parentNode.appendChild(info);
+          }
+        });
+        newInput.addEventListener('blur', function() {
+          const info = this.parentNode.querySelector('.prerogative-edit-info');
+          if (info) info.remove();
+        });
+
         // Forcer les styles de sélection
         newInput.style.userSelect = 'text';
         newInput.style.cursor = 'text';
         newInput.style.pointerEvents = 'auto';
-        
-        // Autoriser tous les événements souris pour permettre la sélection et l'édition normale
       }
     });
   }, 100);
