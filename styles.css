@@ -1505,3 +1505,20 @@ div[style*="align-items: center"] span#user-info {
 #load-session {
   display: none;
 }
+
+.plongeur-prerogatives-editable[contenteditable="true"] {
+  user-select: text !important;
+  cursor: text !important;
+  outline: none;
+}
+
+.plongeur-prerogatives-editable[contenteditable="true"]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  font-style: italic;
+}
+
+.plongeur-prerogatives-editable[contenteditable="true"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 3px rgba(0,123,255,0.3);
+}
