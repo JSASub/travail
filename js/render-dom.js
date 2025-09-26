@@ -255,20 +255,7 @@ function fixPrerogativesAfterRender() {
         newInput.style.cursor = 'text';
         newInput.style.pointerEvents = 'auto';
         
-        // Gérer les événements de souris
-        newInput.addEventListener('mousedown', function(e) {
-          e.stopPropagation();
-          this.focus();
-        });
-        
-        newInput.addEventListener('click', function(e) {
-          e.stopPropagation();
-        });
-        
-        newInput.addEventListener('selectstart', function(e) {
-          e.stopPropagation();
-          return true;
-        });
+        // Autoriser tous les événements souris pour permettre la sélection et l'édition normale
       }
     });
   }, 100);
