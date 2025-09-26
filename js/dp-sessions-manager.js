@@ -598,6 +598,19 @@ sessionsList.sort((a, b) => {
         });
         
         console.log(`✅ ${sessionsList.length} sessions chargées (fallback)`);
+		// AJOUTEZ CES LIGNES ICI
+		sessionSelector.onchange = async function() {
+		const sessionKey = this.value;
+		if (sessionKey && sessionKey !== "" && typeof loadSession === 'function') {
+		try {
+			console.log("Auto-chargement:", sessionKey);
+			await loadSession(sessionKey);
+    } catch (error) {
+      console.error("Erreur auto-chargement:", error);
+      this.value = "";
+    }
+  }
+};
       } else {
         sessionSelector.innerHTML += '<option disabled>Firebase non disponible</option>';
         console.warn("⚠️ Firebase non disponible pour charger les sessions");
@@ -611,6 +624,19 @@ sessionsList.sort((a, b) => {
     }
     sessionSelector.innerHTML += '<option disabled>Erreur de chargement</option>';
   }
+// Auto-chargement des sessions
+sessionSelector.onchange = async function() {
+  const sessionKey = this.value;
+  if (sessionKey && sessionKey !== "" && typeof loadSession === 'function') {
+    try {
+      console.log("Auto-chargement:", sessionKey);
+      await loadSession(sessionKey);
+    } catch (error) {
+      console.error("Erreur auto-chargement:", error);
+      this.value = "";
+    }
+  }
+};
 }
 
 async function loadSessionFromSelector() {
