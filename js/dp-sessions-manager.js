@@ -1,14 +1,14 @@
-// dp-sessions-manager.js - Gestion DP et Sessions (version corrigée)
+// dp-sessions-manager.js - Gestion DP et Sessions (version corrigÃ©e)
 
-// Fonction utilitaire pour vérifier l'existence des éléments
+// Fonction utilitaire pour vÃ©rifier l'existence des Ã©lÃ©ments
 function checkElementExists(elementId) {
   const element = document.getElementById(elementId);
   return element !== null;
 }
 
-// NOUVELLE FONCTION MANQUANTE : Vérifier les éléments requis
+// NOUVELLE FONCTION MANQUANTE : VÃ©rifier les Ã©lÃ©ments requis
 function checkRequiredElements() {
-  console.log("🔍 Vérification des éléments requis...");
+  console.log("ðŸ" VÃ©rification des Ã©lÃ©ments requis...");
   
   const requiredElements = [
     'dp-nom', 'dp-date', 'dp-lieu', 'dp-plongee',
@@ -27,14 +27,14 @@ function checkRequiredElements() {
   });
   
   if (missing.length > 0) {
-    console.warn("⚠️ Éléments manquants:", missing);
+    console.warn("âš ï¸ Ã‰lÃ©ments manquants:", missing);
     return {
       allPresent: false,
       missing: missing,
       present: present
     };
   } else {
-    console.log("✅ Tous les éléments requis sont présents");
+    console.log("âœ… Tous les Ã©lÃ©ments requis sont prÃ©sents");
     return {
       allPresent: true,
       missing: [],
@@ -43,9 +43,9 @@ function checkRequiredElements() {
   }
 }
 
-// NOUVELLE FONCTION : Rafraîchissement avec indicateur visuel
+// NOUVELLE FONCTION : RafraÃ®chissement avec indicateur visuel
 async function refreshAllListsWithIndicator(buttonId = null) {
-  console.log("🔄 Rafraîchissement avec indicateur visuel...");
+  console.log("ðŸ"„ RafraÃ®chissement avec indicateur visuel...");
   
   let btn = null;
   if (buttonId) {
@@ -56,47 +56,47 @@ async function refreshAllListsWithIndicator(buttonId = null) {
     // Indicateur de chargement
     if (btn) {
       btn.disabled = true;
-      btn.textContent = "🔄 Actualisation...";
+      btn.textContent = "ðŸ"„ Actualisation...";
       btn.style.backgroundColor = "#6c757d";
     }
     
     await refreshAllLists();
     
-    // Indicateur de succès
+    // Indicateur de succÃ¨s
     if (btn) {
-      btn.textContent = "✅ Actualisé !";
+      btn.textContent = "âœ… ActualisÃ© !";
       btn.style.backgroundColor = "#28a745";
       setTimeout(() => {
-        btn.textContent = "🔄 Actualiser";
+        btn.textContent = "ðŸ"„ Actualiser";
         btn.style.backgroundColor = "#6c757d";
       }, 2000);
     }
     
-    console.log("✅ Rafraîchissement avec indicateur terminé");
+    console.log("âœ… RafraÃ®chissement avec indicateur terminÃ©");
     
   } catch (error) {
-    console.error("❌ Erreur rafraîchissement avec indicateur:", error);
+    console.error("âŒ Erreur rafraÃ®chissement avec indicateur:", error);
     
     if (btn) {
-      btn.textContent = "❌ Erreur";
+      btn.textContent = "âŒ Erreur";
       btn.style.backgroundColor = "#dc3545";
       setTimeout(() => {
-        btn.textContent = "🔄 Actualiser";
+        btn.textContent = "ðŸ"„ Actualiser";
         btn.style.backgroundColor = "#6c757d";
       }, 3000);
     }
   } finally {
     if (btn) {
       btn.disabled = false;
-      if (btn.textContent.includes("🔄") && !btn.textContent.includes("Actualiser")) {
-        btn.textContent = "🔄 Actualiser";
+      if (btn.textContent.includes("ðŸ"„") && !btn.textContent.includes("Actualiser")) {
+        btn.textContent = "ðŸ"„ Actualiser";
         btn.style.backgroundColor = "#6c757d";
       }
     }
   }
 }
 
-// ===== GESTION DU DIRECTEUR DE PLONGÉE =====
+// ===== GESTION DU DIRECTEUR DE PLONGÃ‰E =====
 window.checkRequiredElements = checkRequiredElements;
 window.refreshAllLists = refreshAllLists;
 window.refreshAllListsWithIndicator = refreshAllListsWithIndicator;
@@ -120,7 +120,7 @@ async function validateAndSaveDP() {
       return false;
     }
     
-    // Créer l'objet informations DP
+    // CrÃ©er l'objet informations DP
     const dpInfo = {
       nom: dpNom,
       date: dpDate,
@@ -135,24 +135,24 @@ async function validateAndSaveDP() {
       try {
         const dpKey = `${dpDate}_${dpNom.split(' ')[0].substring(0, 8)}_${dpPlongee}`;
         await db.ref(`dpInfo/${dpKey}`).set(dpInfo);
-        console.log("✅ Informations DP sauvegardées dans Firebase");
+        console.log("âœ… Informations DP sauvegardÃ©es dans Firebase");
         
-        // NOUVEAU : Sauvegarder également la session complète
+        // NOUVEAU : Sauvegarder Ã©galement la session complÃ¨te
         if (typeof saveSessionData === 'function') {
           await saveSessionData();
-          console.log("✅ Session complète sauvegardée");
+          console.log("âœ… Session complÃ¨te sauvegardÃ©e");
         }
         
-        // NOUVEAU : Mettre à jour l'indicateur de session courante
+        // NOUVEAU : Mettre Ã  jour l'indicateur de session courante
         updateCurrentSessionAfterSave();
         
-        // NOUVEAU : Rafraîchir automatiquement après validation
+        // NOUVEAU : RafraÃ®chir automatiquement aprÃ¨s validation
         if (typeof refreshAllLists === 'function') {
           setTimeout(refreshAllLists, 500);
         }
         
       } catch (firebaseError) {
-        console.warn("⚠️ Erreur sauvegarde Firebase:", firebaseError.message);
+        console.warn("âš ï¸ Erreur sauvegarde Firebase:", firebaseError.message);
         throw firebaseError;
       }
     }
@@ -160,10 +160,10 @@ async function validateAndSaveDP() {
     // Afficher le message de confirmation
     showDPValidationMessage(dpMessage, dpNom, dpDate, dpLieu, dpPlongee, true);
     
-    // Mettre à jour l'interface du bouton temporairement
+    // Mettre Ã  jour l'interface du bouton temporairement
     updateValidationButton(true);
     
-    console.log("✅ Validation DP réussie:", dpInfo);
+    console.log("âœ… Validation DP rÃ©ussie:", dpInfo);
     
     // Synchronisation optionnelle
     if (typeof syncToDatabase === 'function') {
@@ -173,7 +173,7 @@ async function validateAndSaveDP() {
     return true;
     
   } catch (error) {
-    console.error("❌ Erreur validation DP:", error);
+    console.error("âŒ Erreur validation DP:", error);
     
     const dpMessage = document.getElementById("dp-message");
     showDPValidationMessage(dpMessage, "", "", "", "", false, error.message);
@@ -190,7 +190,7 @@ function validateDPFields(nom, date, lieu, plongee) {
   if (!nom) {
     return {
       valid: false,
-      message: "⚠️ Veuillez saisir le nom du Directeur de Plongée",
+      message: "âš ï¸ Veuillez saisir le nom du Directeur de PlongÃ©e",
       focusElement: "dp-nom"
     };
   }
@@ -198,7 +198,7 @@ function validateDPFields(nom, date, lieu, plongee) {
   if (nom.length < 2) {
     return {
       valid: false,
-      message: "⚠️ Le nom du DP doit contenir au moins 2 caractères",
+      message: "âš ï¸ Le nom du DP doit contenir au moins 2 caractÃ¨res",
       focusElement: "dp-nom"
     };
   }
@@ -206,26 +206,26 @@ function validateDPFields(nom, date, lieu, plongee) {
   if (!date) {
     return {
       valid: false,
-      message: "⚠️ Veuillez sélectionner une date",
+      message: "âš ï¸ Veuillez sÃ©lectionner une date",
       focusElement: "dp-date"
     };
   }
   
-  // Vérifier que la date n'est pas trop ancienne (plus de 1 an)
+  // VÃ©rifier que la date n'est pas trop ancienne (plus de 1 an)
   const selectedDate = new Date(date);
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   
   if (selectedDate < oneYearAgo) {
     const confirm = window.confirm(
-      "⚠️ La date sélectionnée remonte à plus d'un an.\n\n" +
-      "Êtes-vous sûr de vouloir continuer ?"
+      "âš ï¸ La date sÃ©lectionnÃ©e remonte Ã  plus d'un an.\n\n" +
+      "ÃŠtes-vous sÃ»r de vouloir continuer ?"
     );
     
     if (!confirm) {
       return {
         valid: false,
-        message: "Validation annulée",
+        message: "Validation annulÃ©e",
         focusElement: "dp-date"
       };
     }
@@ -234,7 +234,7 @@ function validateDPFields(nom, date, lieu, plongee) {
   if (!lieu) {
     return {
       valid: false,
-      message: "⚠️ Veuillez saisir le lieu de plongée",
+      message: "âš ï¸ Veuillez saisir le lieu de plongÃ©e",
       focusElement: "dp-lieu"
     };
   }
@@ -242,7 +242,7 @@ function validateDPFields(nom, date, lieu, plongee) {
   if (lieu.length < 2) {
     return {
       valid: false,
-      message: "⚠️ Le lieu doit contenir au moins 2 caractères",
+      message: "âš ï¸ Le lieu doit contenir au moins 2 caractÃ¨res",
       focusElement: "dp-lieu"
     };
   }
@@ -256,10 +256,10 @@ function showDPValidationMessage(messageElement, nom, date, lieu, plongee, succe
   if (success) {
     messageElement.innerHTML = `
       <div style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
-        ✅ Session complète enregistrée avec succès
+        âœ… Session complÃ¨te enregistrÃ©e avec succÃ¨s
         <br><small style="font-weight: normal;">
-          📋 ${typeof plongeurs !== 'undefined' ? plongeurs.length : 0} plongeurs, ${typeof palanquees !== 'undefined' ? palanquees.length : 0} palanquées
-          <br>📄 ${nom} - ${new Date(date).toLocaleDateString('fr-FR')} - ${lieu} (${plongee})
+          ðŸ"‹ ${typeof plongeurs !== 'undefined' ? plongeurs.length : 0} plongeurs, ${typeof palanquees !== 'undefined' ? palanquees.length : 0} palanquÃ©es
+          <br>ðŸ"„ ${nom} - ${new Date(date).toLocaleDateString('fr-FR')} - ${lieu} (${plongee})
         </small>
       </div>
     `;
@@ -267,7 +267,7 @@ function showDPValidationMessage(messageElement, nom, date, lieu, plongee, succe
   } else {
     messageElement.innerHTML = `
       <div style="color: #dc3545; font-weight: bold; padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
-        ❌ Erreur lors de l'enregistrement : ${errorMsg}
+        âŒ Erreur lors de l'enregistrement : ${errorMsg}
       </div>
     `;
     messageElement.classList.remove("dp-valide");
@@ -280,7 +280,7 @@ function updateValidationButton(success) {
   
   if (success) {
     validerDPBtn.disabled = true;
-    validerDPBtn.textContent = "✅ Enregistré";
+    validerDPBtn.textContent = "âœ… EnregistrÃ©";
     validerDPBtn.style.backgroundColor = "#28a745";
     
     setTimeout(() => {
@@ -293,9 +293,9 @@ function updateValidationButton(success) {
 
 // ===== HISTORIQUE DP =====
 async function chargerHistoriqueDP() {
-  // Vérifier si l'élément dp-dates existe avant de l'utiliser
+  // VÃ©rifier si l'Ã©lÃ©ment dp-dates existe avant de l'utiliser
   if (!checkElementExists('dp-dates')) {
-    console.log("ℹ️ Élément dp-dates non présent - historique DP ignoré");
+    console.log("â„¹ï¸ Ã‰lÃ©ment dp-dates non prÃ©sent - historique DP ignorÃ©");
     return; // Sortir sans erreur
   }
 
@@ -303,7 +303,7 @@ async function chargerHistoriqueDP() {
     // Votre code existant pour charger l'historique DP
     const dpDatesElement = document.getElementById('dp-dates');
     // ... reste du code
-    console.log("✅ Historique DP chargé");
+    console.log("âœ… Historique DP chargÃ©");
   } catch (error) {
     console.error("Erreur lors du chargement de l'historique DP:", error);
   }
@@ -314,7 +314,7 @@ function afficherInfoDP() {
   const historiqueInfo = document.getElementById("historique-info");
   
   if (!dpDatesSelect || !historiqueInfo) {
-    console.error("❌ Éléments DOM manquants pour afficher les infos DP");
+    console.error("âŒ Ã‰lÃ©ments DOM manquants pour afficher les infos DP");
     return;
   }
   
@@ -325,17 +325,17 @@ function afficherInfoDP() {
     return;
   }
   
-  historiqueInfo.innerHTML = '<p>⏳ Chargement des informations...</p>';
+  historiqueInfo.innerHTML = '<p>â³ Chargement des informations...</p>';
   
   if (typeof db === 'undefined' || !db) {
-    historiqueInfo.innerHTML = '<p style="color: red;">❌ Firebase non disponible</p>';
+    historiqueInfo.innerHTML = '<p style="color: red;">âŒ Firebase non disponible</p>';
     return;
   }
   
   db.ref(`dpInfo/${selectedKey}`).once('value')
     .then(snapshot => {
       if (!snapshot.exists()) {
-        historiqueInfo.innerHTML = '<p style="color: red;">❌ DP non trouvé</p>';
+        historiqueInfo.innerHTML = '<p style="color: red;">âŒ DP non trouvÃ©</p>';
         return;
       }
       
@@ -355,51 +355,51 @@ function afficherInfoDP() {
       
       historiqueInfo.innerHTML = `
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
-          <h4 style="margin: 0 0 10px 0; color: #004080;">📋 Informations DP</h4>
-          <p><strong>👨‍💼 Directeur de Plongée :</strong> ${dpData.nom || 'Non défini'}</p>
-          <p><strong>📅 Date :</strong> ${formatDate(dpData.date)}</p>
-          <p><strong>📍 Lieu :</strong> ${dpData.lieu || 'Non défini'}</p>
-          <p><strong>🕐 Session :</strong> ${dpData.plongee || 'matin'}</p>
-          <p><strong>⏰ Créé le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
+          <h4 style="margin: 0 0 10px 0; color: #004080;">ðŸ"‹ Informations DP</h4>
+          <p><strong>ðŸ'¨â€ðŸ'¼ Directeur de PlongÃ©e :</strong> ${dpData.nom || 'Non dÃ©fini'}</p>
+          <p><strong>ðŸ"… Date :</strong> ${formatDate(dpData.date)}</p>
+          <p><strong>ðŸ" Lieu :</strong> ${dpData.lieu || 'Non dÃ©fini'}</p>
+          <p><strong>ðŸ• Session :</strong> ${dpData.plongee || 'matin'}</p>
+          <p><strong>â° CrÃ©Ã© le :</strong> ${dpData.timestamp ? new Date(dpData.timestamp).toLocaleString('fr-FR') : 'Date inconnue'}</p>
           
           <div style="margin-top: 15px;">
             <button onclick="chargerDonneesDPSelectionne('${selectedKey}')" 
                     style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-              📥 Charger dans l'interface
+              ðŸ"¥ Charger dans l'interface
             </button>
             <button onclick="supprimerDPSelectionne('${selectedKey}')" 
                     style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-              🗑️ Supprimer
+              ðŸ—'ï¸ Supprimer
             </button>
           </div>
         </div>
       `;
     })
     .catch(error => {
-      console.error("❌ Erreur chargement DP:", error);
+      console.error("âŒ Erreur chargement DP:", error);
       if (typeof handleError === 'function') {
         handleError(error, "Chargement DP");
       }
-      historiqueInfo.innerHTML = `<p style="color: red;">❌ Erreur : ${error.message}</p>`;
+      historiqueInfo.innerHTML = `<p style="color: red;">âŒ Erreur : ${error.message}</p>`;
     });
 }
 
 async function chargerDonneesDPSelectionne(dpKey) {
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("âŒ Firebase non disponible");
       return;
     }
     
     const snapshot = await db.ref(`dpInfo/${dpKey}`).once('value');
     if (!snapshot.exists()) {
-      alert("❌ DP non trouvé");
+      alert("âŒ DP non trouvÃ©");
       return;
     }
     
     const dpData = snapshot.val();
     
-    // Charger les données dans l'interface
+    // Charger les donnÃ©es dans l'interface
     const dpNomInput = document.getElementById("dp-nom");
     const dpDateInput = document.getElementById("dp-date");
     const dpLieuInput = document.getElementById("dp-lieu");
@@ -410,65 +410,65 @@ async function chargerDonneesDPSelectionne(dpKey) {
     if (dpLieuInput) dpLieuInput.value = dpData.lieu || "";
     if (dpPlongeeInput) dpPlongeeInput.value = dpData.plongee || "matin";
     
-    // NOUVEAU : Effacer le message de validation DP précédent
+    // NOUVEAU : Effacer le message de validation DP prÃ©cÃ©dent
     clearDPValidationMessage();
     
-    alert("✅ Données DP chargées avec succès !");
-    console.log("✅ DP chargé:", dpData);
+    alert("âœ… DonnÃ©es DP chargÃ©es avec succÃ¨s !");
+    console.log("âœ… DP chargÃ©:", dpData);
     
   } catch (error) {
-    console.error("❌ Erreur chargement DP:", error);
+    console.error("âŒ Erreur chargement DP:", error);
     if (typeof handleError === 'function') {
-      handleError(error, "Chargement DP sélectionné");
+      handleError(error, "Chargement DP sÃ©lectionnÃ©");
     }
-    alert("❌ Erreur lors du chargement : " + error.message);
+    alert("âŒ Erreur lors du chargement : " + error.message);
   }
 }
 
 async function supprimerDPSelectionne(dpKey) {
-  const confirmation = confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce DP ?\n\nCette action est irréversible !");
+  const confirmation = confirm("âš ï¸ ÃŠtes-vous sÃ»r de vouloir supprimer ce DP ?\n\nCette action est irrÃ©versible !");
   
   if (!confirmation) return;
   
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("âŒ Firebase non disponible");
       return;
     }
     
     await db.ref(`dpInfo/${dpKey}`).remove();
-    alert("✅ DP supprimé avec succès !");
+    alert("âœ… DP supprimÃ© avec succÃ¨s !");
     
     // Recharger l'historique
     await chargerHistoriqueDP();
     
-    // Rafraîchir les listes si la fonction existe
+    // RafraÃ®chir les listes si la fonction existe
     if (typeof refreshAllLists === 'function') {
       await refreshAllLists();
     }
     
-    console.log("✅ DP supprimé:", dpKey, "+ listes rafraîchies");
+    console.log("âœ… DP supprimÃ©:", dpKey, "+ listes rafraÃ®chies");
     
   } catch (error) {
-    console.error("❌ Erreur suppression DP:", error);
+    console.error("âŒ Erreur suppression DP:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Suppression DP");
     }
-    alert("❌ Erreur lors de la suppression : " + error.message);
+    alert("âŒ Erreur lors de la suppression : " + error.message);
   }
 }
 
 // ===== GESTION DES SESSIONS =====
 async function populateSessionSelector() {
-  console.log("📋 Chargement des sessions disponibles...");
+  console.log("ðŸ"‹ Chargement des sessions disponibles...");
   
   const sessionSelector = document.getElementById("session-selector");
   if (!sessionSelector) {
-    console.error("❌ Élément session-selector non trouvé");
+    console.error("âŒ Ã‰lÃ©ment session-selector non trouvÃ©");
     return;
   }
   
-  // Vider le sélecteur
+  // Vider le sÃ©lecteur
   sessionSelector.innerHTML = '<option value="">-- Charger une session --</option>';
   
   try {
@@ -477,9 +477,44 @@ async function populateSessionSelector() {
       
       if (sessions.length === 0) {
         sessionSelector.innerHTML += '<option disabled>Aucune session disponible</option>';
-        console.log("ℹ️ Aucune session trouvée");
+        console.log("â„¹ï¸ Aucune session trouvÃ©e");
         return;
       }
+      
+      // TRIER LES SESSIONS AVANT DE CRÉER LES OPTIONS
+      sessions.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateB - dateA;
+        }
+        
+        const siteA = (a.lieu || "").toLowerCase().trim();
+        const siteB = (b.lieu || "").toLowerCase().trim();
+        
+        if (siteA !== siteB) {
+          return siteA.localeCompare(siteB, 'fr');
+        }
+        
+        const typeOrder = {
+          'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+          'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+          'formation': 9, 'autre': 10
+        };
+        
+        const typeA = typeOrder[a.plongee] || 99;
+        const typeB = typeOrder[b.plongee] || 99;
+        
+        if (typeA !== typeB) {
+          return typeA - typeB;
+        }
+        
+        const dpA = (a.dp || "").toLowerCase().trim();
+        const dpB = (b.dp || "").toLowerCase().trim();
+        
+        return dpA.localeCompare(dpB, 'fr');
+      });
       
       sessions.forEach(session => {
         const option = document.createElement("option");
@@ -488,41 +523,7 @@ async function populateSessionSelector() {
         sessionSelector.appendChild(option);
       });
       
-      console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
-	  // Forcer le tri complet
-sessions.sort((a, b) => {
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
-  
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
-  
-  const siteA = (a.lieu || "").toLowerCase().trim();
-  const siteB = (b.lieu || "").toLowerCase().trim();
-  
-  if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
-  }
-  
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
-  
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
-  
-  if (typeA !== typeB) {
-    return typeA - typeB;
-  }
-  
-  const dpA = (a.dp || "").toLowerCase().trim();
-  const dpB = (b.dp || "").toLowerCase().trim();
-  
-  return dpA.localeCompare(dpB, 'fr');
-});
+      console.log(`âœ… ${sessions.length} sessions chargÃ©es dans le sÃ©lecteur`);
       
     } else {
       // Fallback : charger directement depuis Firebase
@@ -530,7 +531,7 @@ sessions.sort((a, b) => {
         const snapshot = await db.ref('sessions').once('value');
         
         if (!snapshot.exists()) {
-          sessionSelector.innerHTML += '<option disabled>Aucune session trouvée</option>';
+          sessionSelector.innerHTML += '<option disabled>Aucune session trouvÃ©e</option>';
           return;
         }
         
@@ -551,43 +552,43 @@ sessions.sort((a, b) => {
         });
         
         // TRI : Date > Site > Type > Nom DP
-sessionsList.sort((a, b) => {
-  // 1. Date (plus récent d'abord)
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
-  
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
-  
-  // 2. Site alphabétique
-  const siteA = (a.lieu || "").toLowerCase().trim();
-  const siteB = (b.lieu || "").toLowerCase().trim();
-  
-  if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
-  }
-  
-  // 3. Type de plongée
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
-  
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
-  
-  if (typeA !== typeB) {
-    return typeA - typeB;
-  }
-  
-  // 4. Nom DP alphabétique
-  const dpA = (a.dp || "").toLowerCase().trim();
-  const dpB = (b.dp || "").toLowerCase().trim();
-  
-  return dpA.localeCompare(dpB, 'fr');
-});
+        sessionsList.sort((a, b) => {
+          // 1. Date (plus rÃ©cent d'abord)
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateB - dateA;
+          }
+          
+          // 2. Site alphabÃ©tique
+          const siteA = (a.lieu || "").toLowerCase().trim();
+          const siteB = (b.lieu || "").toLowerCase().trim();
+          
+          if (siteA !== siteB) {
+            return siteA.localeCompare(siteB, 'fr');
+          }
+          
+          // 3. Type de plongÃ©e
+          const typeOrder = {
+            'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+            'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+            'formation': 9, 'autre': 10
+          };
+          
+          const typeA = typeOrder[a.plongee] || 99;
+          const typeB = typeOrder[b.plongee] || 99;
+          
+          if (typeA !== typeB) {
+            return typeA - typeB;
+          }
+          
+          // 4. Nom DP alphabÃ©tique
+          const dpA = (a.dp || "").toLowerCase().trim();
+          const dpB = (b.dp || "").toLowerCase().trim();
+          
+          return dpA.localeCompare(dpB, 'fr');
+        });
         
         sessionsList.forEach(session => {
           const option = document.createElement("option");
@@ -596,15 +597,15 @@ sessionsList.sort((a, b) => {
           sessionSelector.appendChild(option);
         });
         
-        console.log(`✅ ${sessionsList.length} sessions chargées (fallback)`);
+        console.log(`âœ… ${sessionsList.length} sessions chargÃ©es (fallback)`);
       } else {
         sessionSelector.innerHTML += '<option disabled>Firebase non disponible</option>';
-        console.warn("⚠️ Firebase non disponible pour charger les sessions");
+        console.warn("âš ï¸ Firebase non disponible pour charger les sessions");
       }
     }
     
   } catch (error) {
-    console.error("❌ Erreur chargement sessions:", error);
+    console.error("âŒ Erreur chargement sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement sessions");
     }
@@ -619,19 +620,19 @@ async function loadSessionFromSelector() {
     // Indicateur de chargement
     if (loadBtn) {
       loadBtn.disabled = true;
-      loadBtn.textContent = "📄 Chargement...";
+      loadBtn.textContent = "ðŸ"„ Chargement...";
       loadBtn.style.backgroundColor = "#6c757d";
     }
     
     const sessionSelector = document.getElementById("session-selector");
     if (!sessionSelector) {
-      alert("Sélecteur de session non trouvé");
+      alert("SÃ©lecteur de session non trouvÃ©");
       return false;
     }
     
     const sessionKey = sessionSelector.value;
     if (!sessionKey) {
-      alert("Veuillez sélectionner une session à charger.");
+      alert("Veuillez sÃ©lectionner une session Ã  charger.");
       return false;
     }
     
@@ -641,17 +642,17 @@ async function loadSessionFromSelector() {
         alert("Erreur lors du chargement de la session.");
         return false;
       } else {
-        console.log("✅ Session chargée:", sessionKey);
+        console.log("âœ… Session chargÃ©e:", sessionKey);
         
-        // NOUVEAU : Effacer le message de validation DP précédent
+        // NOUVEAU : Effacer le message de validation DP prÃ©cÃ©dent
         clearDPValidationMessage();
         
-        // NOUVEAU : Afficher quelle session est chargée
+        // NOUVEAU : Afficher quelle session est chargÃ©e
         updateCurrentSessionDisplay(sessionKey, sessionSelector.options[sessionSelector.selectedIndex].text);
         
-        // Indicateur de succès temporaire
+        // Indicateur de succÃ¨s temporaire
         if (loadBtn) {
-          loadBtn.textContent = "✅ Chargé !";
+          loadBtn.textContent = "âœ… ChargÃ© !";
           loadBtn.style.backgroundColor = "#28a745";
           setTimeout(() => {
             loadBtn.textContent = "Charger";
@@ -667,7 +668,7 @@ async function loadSessionFromSelector() {
     }
     
   } catch (error) {
-    console.error("❌ Erreur chargement session:", error);
+    console.error("âŒ Erreur chargement session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Chargement session");
     }
@@ -677,7 +678,7 @@ async function loadSessionFromSelector() {
     // Restaurer le bouton dans tous les cas
     if (loadBtn) {
       loadBtn.disabled = false;
-      if (loadBtn.textContent.includes("📄")) {
+      if (loadBtn.textContent.includes("ðŸ"„")) {
         loadBtn.textContent = "Charger";
         loadBtn.style.backgroundColor = "#6c757d";
       }
@@ -685,14 +686,14 @@ async function loadSessionFromSelector() {
   }
 }
 
-// NOUVELLE FONCTION : Afficher la session actuellement chargée
+// NOUVELLE FONCTION : Afficher la session actuellement chargÃ©e
 function updateCurrentSessionDisplay(sessionKey, sessionText) {
   try {
-    // Chercher ou créer l'indicateur de session courante
+    // Chercher ou crÃ©er l'indicateur de session courante
     let currentSessionDiv = document.getElementById("current-session-indicator");
     
     if (!currentSessionDiv) {
-      // Créer l'indicateur s'il n'existe pas
+      // CrÃ©er l'indicateur s'il n'existe pas
       currentSessionDiv = document.createElement("div");
       currentSessionDiv.id = "current-session-indicator";
       currentSessionDiv.style.cssText = `
@@ -709,7 +710,7 @@ function updateCurrentSessionDisplay(sessionKey, sessionText) {
         gap: 8px;
       `;
       
-      // L'insérer après le bouton "Enregistrer Session + DP"
+      // L'insÃ©rer aprÃ¨s le bouton "Enregistrer Session + DP"
       const validerDPBtn = document.getElementById("valider-dp");
       if (validerDPBtn && validerDPBtn.parentNode) {
         validerDPBtn.parentNode.insertBefore(currentSessionDiv, validerDPBtn.nextSibling);
@@ -743,7 +744,7 @@ function updateCurrentSessionDisplay(sessionKey, sessionText) {
     }
     
   } catch (error) {
-    console.error("❌ Erreur updateCurrentSessionDisplay:", error);
+    console.error("⛔ Erreur updateCurrentSessionDisplay:", error);
   }
 }
 
@@ -755,7 +756,7 @@ function clearCurrentSessionDisplay() {
       currentSessionDiv.style.display = "none";
     }
   } catch (error) {
-    console.error("❌ Erreur clearCurrentSessionDisplay:", error);
+    console.error("⛔ Erreur clearCurrentSessionDisplay:", error);
   }
 }
 
@@ -773,7 +774,7 @@ function updateCurrentSessionAfterSave() {
       updateCurrentSessionDisplay(sessionKey, sessionText);
     }
   } catch (error) {
-    console.error("❌ Erreur updateCurrentSessionAfterSave:", error);
+    console.error("⛔ Erreur updateCurrentSessionAfterSave:", error);
   }
 }
 
@@ -787,7 +788,7 @@ function clearDPValidationMessage() {
       dpMessage.style.display = 'none';
     }
   } catch (error) {
-    console.error("❌ Erreur clearDPValidationMessage:", error);
+    console.error("⛔ Erreur clearDPValidationMessage:", error);
   }
 }
 
@@ -810,7 +811,7 @@ async function saveCurrentSession() {
       return false;
     }
   } catch (error) {
-    console.error("❌ Erreur sauvegarde session:", error);
+    console.error("⛔ Erreur sauvegarde session:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Sauvegarde session");
     }
@@ -825,7 +826,7 @@ async function populateSessionsCleanupList() {
   
   const cleanupList = document.getElementById("sessions-cleanup-list");
   if (!cleanupList) {
-    console.error("❌ Élément sessions-cleanup-list non trouvé");
+    console.error("⛔ Élément sessions-cleanup-list non trouvé");
     return;
   }
   
@@ -860,7 +861,7 @@ async function populateSessionsCleanupList() {
     console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage`);
     
   } catch (error) {
-    console.error("❌ Erreur chargement liste nettoyage sessions:", error);
+    console.error("⛔ Erreur chargement liste nettoyage sessions:", error);
     cleanupList.innerHTML = '<em>Erreur de chargement</em>';
   }
 }
@@ -897,41 +898,49 @@ async function loadSessionsDirectly() {
       }
     });
     
-    // Trier par date décroissante
+    // TRI : Date > Site > Type > Nom DP
     sessionsList.sort((a, b) => {
-  // 1. Date (plus récent d'abord)
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
-  
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
-  
-  // 2. Site alphabétique
-  const siteA = (a.lieu || "").toLowerCase();
-  const siteB = (b.lieu || "").toLowerCase();
-  
-  if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
-  }
-  
-  // 3. Type de plongée
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
-  
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
-  
-  return typeA - typeB;
-});
+      // 1. Date (plus récent d'abord)
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateB - dateA;
+      }
+      
+      // 2. Site alphabétique
+      const siteA = (a.lieu || "").toLowerCase();
+      const siteB = (b.lieu || "").toLowerCase();
+      
+      if (siteA !== siteB) {
+        return siteA.localeCompare(siteB, 'fr');
+      }
+      
+      // 3. Type de plongée
+      const typeOrder = {
+        'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+        'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+        'formation': 9, 'autre': 10
+      };
+      
+      const typeA = typeOrder[a.plongee] || 99;
+      const typeB = typeOrder[b.plongee] || 99;
+      
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+      
+      // 4. Nom DP alphabétique
+      const dpA = (a.dp || "").toLowerCase();
+      const dpB = (b.dp || "").toLowerCase();
+      
+      return dpA.localeCompare(dpB, 'fr');
+    });
     
     return sessionsList;
     
   } catch (error) {
-    console.error("❌ Erreur loadSessionsDirectly:", error);
+    console.error("⛔ Erreur loadSessionsDirectly:", error);
     return [];
   }
 }
@@ -970,7 +979,7 @@ async function deleteSelectedSessions() {
   
   try {
     if (typeof db === 'undefined' || !db) {
-      alert("❌ Firebase non disponible");
+      alert("⛔ Firebase non disponible");
       return;
     }
     
@@ -990,8 +999,8 @@ async function deleteSelectedSessions() {
     console.log(`✅ ${checkboxes.length} sessions supprimées + listes rafraîchies`);
     
   } catch (error) {
-    console.error("❌ Erreur suppression sessions:", error);
-    alert("❌ Erreur lors de la suppression : " + error.message);
+    console.error("⛔ Erreur suppression sessions:", error);
+    alert("⛔ Erreur lors de la suppression : " + error.message);
   }
 }
 
@@ -1020,7 +1029,7 @@ async function refreshAllLists() {
     console.log("✅ Rafraîchissement terminé sans erreur");
     
   } catch (error) {
-    console.error("❌ Erreur lors du rafraîchissement:", error);
+    console.error("⛔ Erreur lors du rafraîchissement:", error);
   }
 }
 
@@ -1036,7 +1045,7 @@ function diagnosticElements() {
   
   elements.forEach(id => {
     const exists = checkElementExists(id);
-    const status = exists ? "✅ Présent" : "❌ Absent";
+    const status = exists ? "✅ Présent" : "⛔ Absent";
     console.log(`  ${id}: ${status}`);
   });
 }
@@ -1054,7 +1063,7 @@ async function testFirebaseConnection() {
   try {
     console.log("📡 Test 1: Vérification connexion Firebase");
     console.log("Firebase connecté:", typeof firebaseConnected !== 'undefined' ? firebaseConnected : 'undefined');
-    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "❌ MANQUANTE");
+    console.log("Instance db:", typeof db !== 'undefined' && db ? "✅ OK" : "⛔ MANQUANTE");
     
     if (typeof db !== 'undefined' && db) {
       console.log("📖 Test 2: Lecture /sessions");
@@ -1075,7 +1084,7 @@ async function testFirebaseConnection() {
     alert("Test Firebase terminé !\n\nRegardez la console pour les détails.");
     
   } catch (error) {
-    console.error("❌ Erreur test Firebase:", error);
+    console.error("⛔ Erreur test Firebase:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Test Firebase");
     }
@@ -1085,7 +1094,7 @@ async function testFirebaseConnection() {
 
 // ===== INITIALISATION APRÈS CONNEXION =====
 async function initializeAfterAuth() {
-  console.log("🔐 Initialisation après authentification...");
+  console.log("🔑 Initialisation après authentification...");
   
   try {
     // Charger toutes les données utilisateur
@@ -1100,27 +1109,27 @@ async function initializeAfterAuth() {
       await chargerHistoriqueDP();
       console.log("✅ Historique DP chargé après auth");
     } catch (error) {
-      console.error("❌ Erreur historique DP après auth:", error);
+      console.error("⛔ Erreur historique DP après auth:", error);
     }
     
     try {
       await populateSessionSelector();
       console.log("✅ Sélecteur sessions chargé après auth");
     } catch (error) {
-      console.error("❌ Erreur sélecteur sessions après auth:", error);
+      console.error("⛔ Erreur sélecteur sessions après auth:", error);
     }
     
     try {
       await populateSessionsCleanupList();
       console.log("✅ Liste nettoyage sessions chargée après auth");
     } catch (error) {
-      console.error("❌ Erreur liste sessions après auth:", error);
+      console.error("⛔ Erreur liste sessions après auth:", error);
     }
     
     console.log("✅ Initialisation complète après authentification terminée");
     
   } catch (error) {
-    console.error("❌ Erreur initialisation après auth:", error);
+    console.error("⛔ Erreur initialisation après auth:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Initialisation après authentification");
     }
@@ -1182,7 +1191,7 @@ function setupDPSessionsEventListeners() {
           } else {
             // Indicateur d'erreur
             if (saveBtn) {
-              saveBtn.textContent = "❌ Erreur";
+              saveBtn.textContent = "⛔ Erreur";
               saveBtn.style.backgroundColor = "#dc3545";
               setTimeout(() => {
                 saveBtn.textContent = "Sauvegarder Session";
@@ -1192,9 +1201,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("❌ Erreur sauvegarde:", error);
+          console.error("⛔ Erreur sauvegarde:", error);
           if (saveBtn) {
-            saveBtn.textContent = "❌ Erreur";
+            saveBtn.textContent = "⛔ Erreur";
             saveBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               saveBtn.textContent = "Sauvegarder Session";
@@ -1260,9 +1269,9 @@ function setupDPSessionsEventListeners() {
           }
           
         } catch (error) {
-          console.error("❌ Erreur actualisation liste:", error);
+          console.error("⛔ Erreur actualisation liste:", error);
           if (refreshBtn) {
-            refreshBtn.textContent = "❌ Erreur";
+            refreshBtn.textContent = "⛔ Erreur";
             refreshBtn.style.backgroundColor = "#dc3545";
             setTimeout(() => {
               refreshBtn.textContent = "Actualiser liste";
@@ -1288,7 +1297,7 @@ function setupDPSessionsEventListeners() {
           updateCleanupSelection();
         }
       } catch (error) {
-        console.error("❌ Erreur checkbox cleanup:", error);
+        console.error("⛔ Erreur checkbox cleanup:", error);
         if (typeof handleError === 'function') {
           handleError(error, "Checkbox cleanup");
         }
@@ -1304,7 +1313,7 @@ function setupDPSessionsEventListeners() {
     console.log("✅ Event listeners DP et Sessions configurés avec succès");
     
   } catch (error) {
-    console.error("❌ Erreur configuration event listeners DP/Sessions:", error);
+    console.error("⛔ Erreur configuration event listeners DP/Sessions:", error);
     if (typeof handleError === 'function') {
       handleError(error, "Configuration event listeners DP/Sessions");
     }
@@ -1322,7 +1331,7 @@ function initializeDPSessionsManager() {
     console.log("✅ Gestionnaire DP et Sessions initialisé");
     
   } catch (error) {
-    console.error("❌ Erreur initialisation gestionnaire DP/Sessions:", error);
+    console.error("⛔ Erreur initialisation gestionnaire DP/Sessions:", error);
   }
 }
 
