@@ -482,47 +482,47 @@ async function populateSessionSelector() {
       }
       
       sessions.sort((a, b) => {
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
+		const dateA = new Date(a.date);
+		const dateB = new Date(b.date);
   
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
+		if (dateA.getTime() !== dateB.getTime()) {
+			return dateB - dateA;
+		}
   
-  const siteA = (a.lieu || "").toLowerCase().trim();
-  const siteB = (b.lieu || "").toLowerCase().trim();
-  
-  if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
-  }
-  
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
-  
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
-  
-  if (typeA !== typeB) {
-    return typeA - typeB;
-  }
-  
-  const dpA = (a.dp || "").toLowerCase().trim();
-  const dpB = (b.dp || "").toLowerCase().trim();
-  
-  return dpA.localeCompare(dpB, 'fr');
-});
+		const siteA = (a.lieu || "").toLowerCase().trim();
+		const siteB = (b.lieu || "").toLowerCase().trim();
 
-sessions.forEach(session => {
-  const option = document.createElement("option");
-  option.value = session.key;
-  option.textContent = `${session.date} - ${session.dp} - ${session.lieu} (${session.plongee})`;
-  sessionSelector.appendChild(option);
-});
+		if (siteA !== siteB) {
+			return siteA.localeCompare(siteB, 'fr', { numeric: true });
+		}
+  
+		const typeOrder = {
+			'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+			'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+			'formation': 9, 'autre': 10
+		};
+  
+		const typeA = typeOrder[a.plongee] || 99;
+		const typeB = typeOrder[b.plongee] || 99;
+  
+		if (typeA !== typeB) {
+			return typeA - typeB;
+		}
+  
+		const dpA = (a.dp || "").toLowerCase().trim();
+		const dpB = (b.dp || "").toLowerCase().trim();
 
-console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
+		return dpA.localeCompare(dpB, 'fr', { numeric: true });
+	});
+
+	sessions.forEach(session => {
+		const option = document.createElement("option");
+		option.value = session.key;
+		option.textContent = `${session.date} - ${session.dp} - ${session.lieu} (${session.plongee})`;
+		sessionSelector.appendChild(option);
+	});
+
+	console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
       
     } else {
       // Fallback : charger directement depuis Firebase
