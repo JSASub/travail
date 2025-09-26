@@ -254,7 +254,14 @@ function fixPrerogativesAfterRender() {
           if (!info) {
             info = document.createElement('div');
             info.className = 'prerogative-edit-info';
-            info.textContent = 'Astuce : Ctrl+A pour tout sélectionner, flèches ←/→ pour naviguer.';
+            info.innerHTML = '<b>Édition rapide :</b><br>' +
+              '• <b>Ctrl+A</b> : tout sélectionner<br>' +
+              '• <b>Ctrl+C</b> : copier<br>' +
+              '• <b>Ctrl+V</b> : coller<br>' +
+              '• <b>Ctrl+X</b> : couper<br>' +
+              '• <b>Flèches ←/→</b> : naviguer dans le texte<br>' +
+              '• <b>Double-clic</b> : sélectionner un mot<br>' +
+              '• <b>Maj+clic ou Maj+flèche</b> : sélection partielle';
             info.style.fontSize = '11px';
             info.style.color = '#0077cc';
             info.style.marginTop = '2px';
