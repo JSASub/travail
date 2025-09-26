@@ -250,41 +250,37 @@ function fixPrerogativesAfterRender() {
 
         // Ajout d'une info contextuelle lors du focus
         newInput.addEventListener('focus', function() {
-          let info = this.parentNode.querySelector('.prerogative-edit-info');
-          if (!info) {
-            info = document.createElement('div');
-            info.className = 'prerogative-edit-info';
-            info.innerHTML = '<b>Édition rapide :</b><br>' +
-              '• <b>Ctrl+A</b> : tout sélectionner<br>' +
-              '• <b>Ctrl+C</b> : copier<br>' +
-              '• <b>Ctrl+V</b> : coller<br>' +
-              '• <b>Ctrl+X</b> : couper<br>' +
-              '• <b>Flèches ←/→</b> : naviguer dans le texte';
-            info.style.fontSize = '11px';
-            info.style.color = '#0077cc';
-            info.style.background = '#eef6ff';
-            info.style.padding = '2px 6px';
-            info.style.borderRadius = '3px';
-            info.style.position = 'fixed';
-            const rect = this.getBoundingClientRect();
-            info.style.left = (rect.right + 12) + 'px';
-            info.style.top = (rect.top - 2) + 'px';
-            info.style.zIndex = '1000';
-            info.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
-            info.style.minWidth = '180px';
-            info.style.maxWidth = '260px';
-            document.body.appendChild(info);
-          }
+          // Toujours créer une nouvelle info-bulle pour chaque focus
+          const info = document.createElement('div');
+          info.className = 'prerogative-edit-info';
+          info.innerHTML = '<b>Édition rapide :</b><br>' +
+            '• <b>Ctrl+A</b> : tout sélectionner<br>' +
+            '• <b>Ctrl+C</b> : copier<br>' +
+            '• <b>Ctrl+V</b> : coller<br>' +
+            '• <b>Ctrl+X</b> : couper<br>' +
+            '• <b>Flèches ←/→</b> : naviguer dans le texte';
+          info.style.fontSize = '11px';
+          info.style.color = '#0077cc';
+          info.style.background = '#eef6ff';
+          info.style.padding = '2px 6px';
+          info.style.borderRadius = '3px';
+          info.style.position = 'fixed';
+          const rect = this.getBoundingClientRect();
+          info.style.left = (rect.right + 12) + 'px';
+          info.style.top = (rect.top - 2) + 'px';
+          info.style.zIndex = '1000';
+          info.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
+          info.style.minWidth = '180px';
+          info.style.maxWidth = '260px';
+          document.body.appendChild(info);
+          this._prerogativeInfo = info;
         });
         newInput.addEventListener('blur', function() {
           // Efface uniquement le menu d'aide lié à ce champ
-          document.querySelectorAll('.prerogative-edit-info').forEach(el => {
-            const rectInput = this.getBoundingClientRect();
-            const rectInfo = el.getBoundingClientRect();
-            if (Math.abs(rectInput.top - rectInfo.top) < 5 && Math.abs(rectInput.right + 12 - rectInfo.left) < 20) {
-              el.remove();
-            }
-          });
+          if (this._prerogativeInfo) {
+            this._prerogativeInfo.remove();
+            this._prerogativeInfo = null;
+          }
         });
 
         // Forcer les styles de sélection
