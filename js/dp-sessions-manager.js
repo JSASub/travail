@@ -523,6 +523,18 @@ async function populateSessionSelector() {
 	});
 
 	console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
+	sessionSelector.onchange = async function() {
+	const sessionKey = this.value;
+	if (sessionKey && sessionKey !== "" && typeof loadSession === 'function') {
+	try {
+      console.log("Auto-chargement:", sessionKey);
+      await loadSession(sessionKey);
+    } catch (error) {
+      console.error("Erreur auto-chargement:", error);
+      this.value = "";
+    }
+  }
+};
       
     } else {
       // Fallback : charger directement depuis Firebase
@@ -551,44 +563,44 @@ async function populateSessionSelector() {
         });
         
         // TRI : Date > Site > Type > Nom DP
-sessionsList.sort((a, b) => {
-  // 1. Date (plus récent d'abord)
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
+		sessionsList.sort((a, b) => {
+		// 1. Date (plus récent d'abord)
+		const dateA = new Date(a.date);
+		const dateB = new Date(b.date);
   
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
+		if (dateA.getTime() !== dateB.getTime()) {
+			return dateB - dateA;
+		}
   
-  // 2. Site alphabétique
-  const siteA = (a.lieu || "").toLowerCase().trim();
-  const siteB = (b.lieu || "").toLowerCase().trim();
+		// 2. Site alphabétique
+		const siteA = (a.lieu || "").toLowerCase().trim();
+		const siteB = (b.lieu || "").toLowerCase().trim();
   
-	if (siteA !== siteB) {
+		if (siteA !== siteB) {
 		// Tri décroissant pour les sites avec numéros (42 avant 41)
-		return siteB.localeCompare(siteA, 'fr', { numeric: true });
-	}
+			return siteB.localeCompare(siteA, 'fr', { numeric: true });
+		}
   
-  // 3. Type de plongée
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
+		// 3. Type de plongée
+		const typeOrder = {
+			'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+			'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+			'formation': 9, 'autre': 10
+		};
   
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
+		const typeA = typeOrder[a.plongee] || 99;
+		const typeB = typeOrder[b.plongee] || 99;
   
-  if (typeA !== typeB) {
-    return typeA - typeB;
-  }
+		if (typeA !== typeB) {
+			return typeA - typeB;
+		}
+
+		// 4. Nom DP alphabétique
+		const dpA = (a.dp || "").toLowerCase().trim();
+		const dpB = (b.dp || "").toLowerCase().trim();
   
-  // 4. Nom DP alphabétique
-  const dpA = (a.dp || "").toLowerCase().trim();
-  const dpB = (b.dp || "").toLowerCase().trim();
-  
-  return dpA.localeCompare(dpB, 'fr', { numeric: true });
-});
+		return dpA.localeCompare(dpB, 'fr', { numeric: true });
+		});
         
         sessionsList.forEach(session => {
           const option = document.createElement("option");
@@ -611,6 +623,19 @@ sessionsList.sort((a, b) => {
     }
     sessionSelector.innerHTML += '<option disabled>Erreur de chargement</option>';
   }
+// Auto-chargement des sessions
+sessionSelector.onchange = async function() {
+  const sessionKey = this.value;
+  if (sessionKey && sessionKey !== "" && typeof loadSession === 'function') {
+    try {
+      console.log("Auto-chargement:", sessionKey);
+      await loadSession(sessionKey);
+    } catch (error) {
+      console.error("Erreur auto-chargement:", error);
+      this.value = "";
+    }
+  }
+};
 }
 
 async function loadSessionFromSelector() {
