@@ -52,7 +52,7 @@ window.confirm = function(message) {
 function fixPalanqueesData() {
     // Si window.palanquees n'est pas un tableau, le corriger
     if (!Array.isArray(window.palanquees)) {
-        console.log("Correction de window.palanquees détecté...");
+        console.log("Correction de window.palanquees...");
         window.palanquees = [];
         
         // Reconstruire depuis le DOM
@@ -69,70 +69,17 @@ function fixPalanqueesData() {
             });
             window.palanquees.push(plongeurs);
         });
-    }
-    
-    // NOUVELLE PARTIE : Synchronisation complète des données
-    console.log("Synchronisation complète des données...");
-    
-    // 1. Récupérer tous les plongeurs actuellement dans les palanquées
-    const plongeursEnPalanquees = new Set();
-    const plongeursDetailsPalanquees = [];
-    
-    window.palanquees.forEach(pal => {
-        if (Array.isArray(pal)) {
-            pal.forEach(p => {
-                if (p && p.nom) {
-                    plongeursEnPalanquees.add(p.nom);
-                    plongeursDetailsPalanquees.push(p);
-                }
-            });
-        }
-    });
-    
-    // 2. Vérifier la liste principale des plongeurs
-    window.plongeurs = window.plongeurs || [];
-    
-    // 3. Supprimer de window.plongeurs tous ceux qui sont dans les palanquées
-    const nouveauxPlongeurs = [];
-    window.plongeurs.forEach(p => {
-        if (p && p.nom && !plongeursEnPalanquees.has(p.nom)) {
-            nouveauxPlongeurs.push(p);
-        }
-    });
-    
-    // 4. Ajouter à window.plongeurs ceux qui sont dans le DOM mais pas dans la mémoire
-    const listDOM = document.getElementById('listePlongeurs');
-    if (listDOM) {
-        Array.from(listDOM.children).forEach(li => {
-            const text = li.textContent || li.innerText;
-            const parts = text.split(' - ');
-            
-            if (parts.length >= 2) {
-                const nom = parts[0].trim();
-                const niveau = parts[1].trim();
-                const pre = parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : '';
-                
-                // Vérifier si ce plongeur n'existe pas déjà
-                const existeDeja = nouveauxPlongeurs.some(p => p.nom === nom && p.niveau === niveau);
-                const estEnPalanquee = plongeursEnPalanquees.has(nom);
-                
-                if (!existeDeja && !estEnPalanquee) {
-                    nouveauxPlongeurs.push({nom, niveau, pre});
-                }
-            }
+        
+        // Nettoyer les doublons
+        const plongeursEnPalanquees = new Set();
+        window.palanquees.forEach(pal => {
+            pal.forEach(p => plongeursEnPalanquees.add(p.nom));
         });
-    }
-    
-    window.plongeurs = nouveauxPlongeurs;
-    
-    console.log(`Synchronisation terminée: ${window.plongeurs.length} plongeurs disponibles, ${plongeursDetailsPalanquees.length} en palanquées`);
-    
-    // 5. Mettre à jour window.plongeursOriginaux si nécessaire
-    if (!window.plongeursOriginaux || window.plongeursOriginaux.length === 0) {
-        window.plongeursOriginaux = [...window.plongeurs, ...plongeursDetailsPalanquees];
+        window.plongeurs = window.plongeurs.filter(p => !plongeursEnPalanquees.has(p.nom));
+        
+        console.log("window.palanquees corrigé:", window.palanquees);
     }
 }
-
 // Ajoutez également cette fonction pour forcer la mise à jour du menu
 function forceMenuUpdate() {
     fixPalanqueesData();
