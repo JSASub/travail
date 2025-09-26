@@ -564,9 +564,10 @@ sessionsList.sort((a, b) => {
   const siteA = (a.lieu || "").toLowerCase().trim();
   const siteB = (b.lieu || "").toLowerCase().trim();
   
-  if (siteA !== siteB) {
-	return siteA.localeCompare(siteB, 'fr', { numeric: true });
-  }
+	if (siteA !== siteB) {
+		// Tri décroissant pour les sites avec numéros (42 avant 41)
+		return siteB.localeCompare(siteA, 'fr', { numeric: true });
+	}
   
   // 3. Type de plongée
   const typeOrder = {
@@ -911,9 +912,10 @@ async function loadSessionsDirectly() {
   const siteA = (a.lieu || "").toLowerCase();
   const siteB = (b.lieu || "").toLowerCase();
   
-  if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
-  }
+	if (siteA !== siteB) {
+		// Tri décroissant pour les sites avec numéros (42 avant 41)
+		return siteB.localeCompare(siteA, 'fr', { numeric: true });
+	}
   
   // 3. Type de plongée
   const typeOrder = {
