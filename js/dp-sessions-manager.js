@@ -565,7 +565,7 @@ sessionsList.sort((a, b) => {
   const siteB = (b.lieu || "").toLowerCase().trim();
   
   if (siteA !== siteB) {
-    return siteA.localeCompare(siteB, 'fr');
+	return siteA.localeCompare(siteB, 'fr', { numeric: true });
   }
   
   // 3. Type de plongée
@@ -586,7 +586,7 @@ sessionsList.sort((a, b) => {
   const dpA = (a.dp || "").toLowerCase().trim();
   const dpB = (b.dp || "").toLowerCase().trim();
   
-  return dpA.localeCompare(dpB, 'fr');
+  return dpA.localeCompare(dpB, 'fr', { numeric: true });
 });
         
         sessionsList.forEach(session => {
