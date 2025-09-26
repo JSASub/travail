@@ -69,47 +69,87 @@ function fixPalanqueesData() {
             });
             window.palanquees.push(plongeurs);
         });
-        
-        // Nettoyer les doublons
-        const plongeursEnPalanquees = new Set();
-        window.palanquees.forEach(pal => {
-            pal.forEach(p => plongeursEnPalanquees.add(p.nom));
+    }
+    
+    // NOUVELLE PARTIE : Synchronisation complète des données
+    console.log("Synchronisation complète des données...");
+    
+    // 1. Récupérer tous les plongeurs actuellement dans les palanquées
+    const plongeursEnPalanquees = new Set();
+    const plongeursDetailsPalanquees = [];
+    
+    window.palanquees.forEach(pal => {
+        if (Array.isArray(pal)) {
+            pal.forEach(p => {
+                if (p && p.nom) {
+                    plongeursEnPalanquees.add(p.nom);
+                    plongeursDetailsPalanquees.push(p);
+                }
+            });
+        }
+    });
+    
+    // 2. Vérifier la liste principale des plongeurs
+    window.plongeurs = window.plongeurs || [];
+    
+    // 3. Supprimer de window.plongeurs tous ceux qui sont dans les palanquées
+    const nouveauxPlongeurs = [];
+    window.plongeurs.forEach(p => {
+        if (p && p.nom && !plongeursEnPalanquees.has(p.nom)) {
+            nouveauxPlongeurs.push(p);
+        }
+    });
+    
+    // 4. Ajouter à window.plongeurs ceux qui sont dans le DOM mais pas dans la mémoire
+    const listDOM = document.getElementById('listePlongeurs');
+    if (listDOM) {
+        Array.from(listDOM.children).forEach(li => {
+            const text = li.textContent || li.innerText;
+            const parts = text.split(' - ');
+            
+            if (parts.length >= 2) {
+                const nom = parts[0].trim();
+                const niveau = parts[1].trim();
+                const pre = parts[2] ? parts[2].replace(/[\[\]]/g, '').trim() : '';
+                
+                // Vérifier si ce plongeur n'existe pas déjà
+                const existeDeja = nouveauxPlongeurs.some(p => p.nom === nom && p.niveau === niveau);
+                const estEnPalanquee = plongeursEnPalanquees.has(nom);
+                
+                if (!existeDeja && !estEnPalanquee) {
+                    nouveauxPlongeurs.push({nom, niveau, pre});
+                }
+            }
         });
-        window.plongeurs = window.plongeurs.filter(p => !plongeursEnPalanquees.has(p.nom));
-        
-        console.log("window.palanquees corrigé:", window.palanquees.length, "palanquées");
+    }
+    
+    window.plongeurs = nouveauxPlongeurs;
+    
+    console.log(`Synchronisation terminée: ${window.plongeurs.length} plongeurs disponibles, ${plongeursDetailsPalanquees.length} en palanquées`);
+    
+    // 5. Mettre à jour window.plongeursOriginaux si nécessaire
+    if (!window.plongeursOriginaux || window.plongeursOriginaux.length === 0) {
+        window.plongeursOriginaux = [...window.plongeurs, ...plongeursDetailsPalanquees];
     }
 }
 
-// Maintenant, trouvez la fonction handleDrop et modifiez-la
-// Cherchez cette partie vers la ligne 1550 :
-
-/*
-} finally {
-    dragData = null;
+// Ajoutez également cette fonction pour forcer la mise à jour du menu
+function forceMenuUpdate() {
+    fixPalanqueesData();
+    
+    setTimeout(() => {
+        if (typeof updateFloatingPlongeursList === 'function') {
+            updateFloatingPlongeursList();
+        }
+        if (typeof window.forceUpdatePlongeursMenu === 'function') {
+            window.forceUpdatePlongeursMenu();
+        }
+        if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+        }
+    }, 50);
 }
-////
-setTimeout(() => updateFloatingPlongeursList(), 50);
-*/
 
-// Et remplacez-la par :
-
-/*
-} finally {
-    dragData = null;
-}
-
-// CORRECTION AJOUTÉE ICI
-setTimeout(() => {
-    fixPalanqueesData(); // Corriger window.palanquees si nécessaire
-    if (typeof updateFloatingPlongeursList === 'function') {
-        updateFloatingPlongeursList();
-    }
-    if (typeof window.forceUpdatePlongeursMenu === 'function') {
-        window.forceUpdatePlongeursMenu();
-    }
-}, 100);
-*/
 //
 function getCurrentPalanqueesStats() {
     const palanqueesCount = document.querySelectorAll('.palanquee').length;
@@ -1425,15 +1465,9 @@ if (indexToRemove !== -1) {
     dragData = null;
 }
 
-// CORRECTION AJOUTÉE
+// CORRECTION AMÉLIORÉE
 setTimeout(() => {
-    fixPalanqueesData(); // Corriger window.palanquees si nécessaire
-    if (typeof updateFloatingPlongeursList === 'function') {
-        updateFloatingPlongeursList();
-    }
-    if (typeof window.forceUpdatePlongeursMenu === 'function') {
-        window.forceUpdatePlongeursMenu();
-    }
+    forceMenuUpdate(); // Synchronisation complète + mise à jour menu
 }, 100);
 
 }
