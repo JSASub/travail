@@ -855,6 +855,42 @@ async function loadSession(sessionKey) {
     
     console.log("Session chargée - tracking initialisé -", sessionData.meta?.dp);
     
+    // Effacer l'ancien message de sauvegarde pour éviter la confusion
+    const dpMessage = document.getElementById("dp-message");
+    if (dpMessage) {
+      dpMessage.innerHTML = '';
+      dpMessage.style.display = 'none';
+    }
+    
+    // Afficher l'indicateur de session chargée avec les bonnes données
+    setTimeout(() => {
+      if (typeof updateCurrentSessionDisplay === 'function') {
+        const sessionText = `${sessionData.meta.date} - ${sessionData.meta.dp} - ${sessionData.meta.lieu} (${sessionData.meta.plongee})`;
+        updateCurrentSessionDisplay(sessionKey, sessionText);
+        console.log("Indicateur de session mis à jour:", sessionText);
+      } else {
+        // Fallback: créer notre propre affichage si la fonction n'existe pas
+        const currentSessionDiv = document.getElementById('current-session-indicator') || 
+                                 document.querySelector('.current-session-display');
+        
+        if (currentSessionDiv) {
+          const totalPlongeurs = sessionData.stats?.totalPlongeurs || 0;
+          const nombrePalanquees = sessionData.stats?.nombrePalanquees || 0;
+          
+          currentSessionDiv.innerHTML = `
+            <div style="background: #17a2b8; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; font-size: 12px;">
+              📂 SESSION CHARGÉE<br>
+              ${sessionData.meta.date} - ${sessionData.meta.dp}<br>
+              ${sessionData.meta.lieu} (${sessionData.meta.plongee})<br>
+              ${totalPlongeurs} plongeurs, ${nombrePalanquees} palanquée${nombrePalanquees > 1 ? 's' : ''}
+            </div>
+          `;
+          currentSessionDiv.style.display = 'block';
+          console.log("Affichage de session chargée créé en fallback");
+        }
+      }
+    }, 200);
+    
     const forceCompteurUpdate = () => {
       const compteur = document.getElementById('compteur-plongeurs');
       if (compteur && plongeurs) {
@@ -1714,4 +1750,4 @@ window.setupCompteurSurveillance = setupCompteurSurveillance;
 window.setupPostRefusalSurveillance = setupPostRefusalSurveillance;
 window.getSelectedDPName = getSelectedDPName;
 
-console.log("Main Core corrigé chargé - Version 7.8.0 - Préservation des sessions existantes avec intégration sauvegarde automatique");
+console.log("Main Core corrigé chargé - Version 7.8.1 - Correction bandeau session chargée");
