@@ -259,8 +259,7 @@ function fixPrerogativesAfterRender() {
               '• <b>Ctrl+C</b> : copier<br>' +
               '• <b>Ctrl+V</b> : coller<br>' +
               '• <b>Ctrl+X</b> : couper<br>' +
-              '• <b>Flèches ←/→</b> : naviguer dans le texte<br>' +
-              '• <b>Maj+clic ou Maj+flèche</b> : sélection partielle';
+              '• <b>Flèches ←/→</b> : naviguer dans le texte';
             info.style.fontSize = '11px';
             info.style.color = '#0077cc';
             info.style.background = '#eef6ff';
@@ -278,8 +277,14 @@ function fixPrerogativesAfterRender() {
           }
         });
         newInput.addEventListener('blur', function() {
-          // Efface tous les menus d'aide à la sortie du champ
-          document.querySelectorAll('.prerogative-edit-info').forEach(el => el.remove());
+          // Efface uniquement le menu d'aide lié à ce champ
+          document.querySelectorAll('.prerogative-edit-info').forEach(el => {
+            const rectInput = this.getBoundingClientRect();
+            const rectInfo = el.getBoundingClientRect();
+            if (Math.abs(rectInput.top - rectInfo.top) < 5 && Math.abs(rectInput.right + 12 - rectInfo.left) < 20) {
+              el.remove();
+            }
+          });
         });
 
         // Forcer les styles de sélection
