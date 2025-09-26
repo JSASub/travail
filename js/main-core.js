@@ -1683,38 +1683,6 @@ window.addEventListener('error', (event) => {
   };
 });
 
-///
-document.addEventListener('focusin', function(e) {
-  if (e.target.classList.contains('plongeur-prerogatives-editable')) {
-    // Désactiver temporairement les événements sur les parents
-    let parent = e.target.parentElement;
-    const affectedParents = [];
-    
-    while (parent && parent !== document.body) {
-      affectedParents.push(parent);
-      parent.style.pointerEvents = 'none';
-      parent = parent.parentElement;
-    }
-    
-    // Réactiver seulement sur l'input
-    e.target.style.pointerEvents = 'auto';
-    e.target.style.userSelect = 'text';
-    e.target._affectedParents = affectedParents;
-  }
-});
-
-document.addEventListener('focusout', function(e) {
-  if (e.target.classList.contains('plongeur-prerogatives-editable')) {
-    // Restaurer les événements sur les parents
-    if (e.target._affectedParents) {
-      e.target._affectedParents.forEach(parent => {
-        parent.style.pointerEvents = '';
-      });
-      delete e.target._affectedParents;
-    }
-  }
-});
-///
 // ===== INITIALISATION SÉCURISÉE DE L'APPLICATION (PRÉSERVÉ MAIS NE PAS CASSER LES SESSIONS) =====
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("Initialisation sécurisée de l'application JSAS...");
