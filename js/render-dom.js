@@ -264,11 +264,18 @@ function fixPrerogativesAfterRender() {
               '• <b>Maj+clic ou Maj+flèche</b> : sélection partielle';
             info.style.fontSize = '11px';
             info.style.color = '#0077cc';
-            info.style.marginTop = '2px';
             info.style.background = '#eef6ff';
             info.style.padding = '2px 6px';
             info.style.borderRadius = '3px';
-            this.parentNode.appendChild(info);
+            info.style.position = 'fixed';
+            const rect = this.getBoundingClientRect();
+            info.style.left = (rect.right + 12) + 'px';
+            info.style.top = (rect.top - 2) + 'px';
+            info.style.zIndex = '1000';
+            info.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
+            info.style.minWidth = '180px';
+            info.style.maxWidth = '260px';
+            document.body.appendChild(info);
           }
         });
         newInput.addEventListener('blur', function() {
