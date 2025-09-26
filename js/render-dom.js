@@ -260,7 +260,6 @@ function fixPrerogativesAfterRender() {
               '• <b>Ctrl+V</b> : coller<br>' +
               '• <b>Ctrl+X</b> : couper<br>' +
               '• <b>Flèches ←/→</b> : naviguer dans le texte<br>' +
-              '• <b>Double-clic</b> : sélectionner un mot<br>' +
               '• <b>Maj+clic ou Maj+flèche</b> : sélection partielle';
             info.style.fontSize = '11px';
             info.style.color = '#0077cc';
@@ -279,8 +278,8 @@ function fixPrerogativesAfterRender() {
           }
         });
         newInput.addEventListener('blur', function() {
-          const info = this.parentNode.querySelector('.prerogative-edit-info');
-          if (info) info.remove();
+          // Efface tous les menus d'aide à la sortie du champ
+          document.querySelectorAll('.prerogative-edit-info').forEach(el => el.remove());
         });
 
         // Forcer les styles de sélection
