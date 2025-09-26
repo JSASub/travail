@@ -489,6 +489,40 @@ async function populateSessionSelector() {
       });
       
       console.log(`✅ ${sessions.length} sessions chargées dans le sélecteur`);
+	  // Forcer le tri complet
+sessions.sort((a, b) => {
+  const dateA = new Date(a.date);
+  const dateB = new Date(b.date);
+  
+  if (dateA.getTime() !== dateB.getTime()) {
+    return dateB - dateA;
+  }
+  
+  const siteA = (a.lieu || "").toLowerCase().trim();
+  const siteB = (b.lieu || "").toLowerCase().trim();
+  
+  if (siteA !== siteB) {
+    return siteA.localeCompare(siteB, 'fr');
+  }
+  
+  const typeOrder = {
+    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+    'formation': 9, 'autre': 10
+  };
+  
+  const typeA = typeOrder[a.plongee] || 99;
+  const typeB = typeOrder[b.plongee] || 99;
+  
+  if (typeA !== typeB) {
+    return typeA - typeB;
+  }
+  
+  const dpA = (a.dp || "").toLowerCase().trim();
+  const dpB = (b.dp || "").toLowerCase().trim();
+  
+  return dpA.localeCompare(dpB, 'fr');
+});
       
     } else {
       // Fallback : charger directement depuis Firebase
@@ -516,12 +550,44 @@ async function populateSessionSelector() {
           }
         });
         
-        // Trier par date décroissante
-        sessionsList.sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateB - dateA;
-        });
+        // TRI : Date > Site > Type > Nom DP
+sessionsList.sort((a, b) => {
+  // 1. Date (plus récent d'abord)
+  const dateA = new Date(a.date);
+  const dateB = new Date(b.date);
+  
+  if (dateA.getTime() !== dateB.getTime()) {
+    return dateB - dateA;
+  }
+  
+  // 2. Site alphabétique
+  const siteA = (a.lieu || "").toLowerCase().trim();
+  const siteB = (b.lieu || "").toLowerCase().trim();
+  
+  if (siteA !== siteB) {
+    return siteA.localeCompare(siteB, 'fr');
+  }
+  
+  // 3. Type de plongée
+  const typeOrder = {
+    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+    'formation': 9, 'autre': 10
+  };
+  
+  const typeA = typeOrder[a.plongee] || 99;
+  const typeB = typeOrder[b.plongee] || 99;
+  
+  if (typeA !== typeB) {
+    return typeA - typeB;
+  }
+  
+  // 4. Nom DP alphabétique
+  const dpA = (a.dp || "").toLowerCase().trim();
+  const dpB = (b.dp || "").toLowerCase().trim();
+  
+  return dpA.localeCompare(dpB, 'fr');
+});
         
         sessionsList.forEach(session => {
           const option = document.createElement("option");
