@@ -1501,3 +1501,7 @@ span#user-info {
 div[style*="align-items: center"] span#user-info {
     align-self: center !important;
 }
+/* CACHER BOUTON LOAD SESSION
+#load-session {
+  display: none;
+}
