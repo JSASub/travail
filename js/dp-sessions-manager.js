@@ -486,7 +486,7 @@ async function populateSessionSelector() {
 		const dateB = new Date(b.date);
   
 		if (dateA.getTime() !== dateB.getTime()) {
-			return dateB - dateA;
+			return dateA - dateB;
 		}
   
 		const siteA = (a.lieu || "").toLowerCase().trim();
@@ -905,7 +905,7 @@ async function loadSessionsDirectly() {
   const dateB = new Date(b.date);
   
   if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
+    return dateA - dateB;
   }
   
   // 2. Site alphabétique
