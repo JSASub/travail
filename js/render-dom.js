@@ -141,14 +141,16 @@ function renderPalanquees() {
             data-plongeur-index="${originalIndex}">
           <div class="plongeur-content">
             <span class="plongeur-nom">${plongeur.nom}</span>
-            <div contenteditable="true"
+            <input type="text" 
 				class="plongeur-prerogatives-editable" 
-				data-placeholder="PE40..."
+				value="${plongeur.pre || ''}" 
+				placeholder="PE40..."
 				title="Prérogatives du plongeur"
-				style="display: inline-block; min-width: 80px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; background: white; cursor: text; user-select: text;"
-				oninput="updatePlongeurPrerogativesRealTime(${index}, ${originalIndex}, this.textContent || '')"
+				oninput="updatePlongeurPrerogativesRealTime(${index}, ${originalIndex}, this.value || '')"
 				onmousedown="event.stopPropagation();"
-				onclick="event.stopPropagation();">${plongeur.pre || ''}</div>
+				onclick="event.stopPropagation(); handlePalanqueeEdit(${index});"
+				onfocus="this.style.userSelect='text';"
+				style="user-select: text; cursor: text;" />
             <span class="plongeur-niveau">${plongeur.niveau}</span>
             <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
           </div>
