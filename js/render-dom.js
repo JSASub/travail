@@ -230,48 +230,19 @@ function renderPalanquees() {
   if (typeof updateAlertes === 'function') {
     updateAlertes();
   }
-// À la fin de renderPalanquees(), avant la dernière }
-fixPrerogativesAfterRender();
 }
 //
-function fixPrerogativesAfterRender() {
-  setTimeout(() => {
-    document.querySelectorAll('.plongeur-prerogatives-editable').forEach(input => {
-      // Supprimer tous les gestionnaires d'événements existants
-      input.replaceWith(input.cloneNode(true));
-      
-      // Récupérer la nouvelle référence
-      const newInput = document.querySelector(`input[value="${input.value}"].plongeur-prerogatives-editable`);
-      if (newInput) {
-        // Réattacher seulement l'événement oninput
-        newInput.addEventListener('input', function() {
-          const palanqueeIndex = this.closest('.palanquee').dataset.index;
-          const plongeurIndex = this.closest('.palanquee-plongeur-item').dataset.plongeurIndex;
-          updatePlongeurPrerogativesRealTime(palanqueeIndex, plongeurIndex, this.value);
-        });
-        
-        // Forcer les styles de sélection
-        newInput.style.userSelect = 'text';
-        newInput.style.cursor = 'text';
-        newInput.style.pointerEvents = 'auto';
-        
-        // Gérer les événements de souris
-        newInput.addEventListener('mousedown', function(e) {
-          e.stopPropagation();
-          this.focus();
-        });
-        
-        newInput.addEventListener('click', function(e) {
-          e.stopPropagation();
-        });
-        
-        newInput.addEventListener('selectstart', function(e) {
-          e.stopPropagation();
-          return true;
-        });
-      }
-    });
-  }, 100);
+function updatePlongeurPrerogativesRealTime(palanqueeIndex, plongeurIndex, newValue) {
+  try {
+    const cleanValue = (newValue || "").toString().trim();
+    
+    if (palanquees[palanqueeIndex] && palanquees[palanqueeIndex][plongeurIndex]) {
+      palanquees[palanqueeIndex][plongeurIndex].pre = cleanValue;
+      // PAS de syncToDatabase() ici pour éviter le re-rendu
+    }
+  } catch (error) {
+    console.error("Erreur updatePlongeurPrerogativesRealTime:", error);
+  }
 }
 // ===== FONCTION DE STATISTIQUES DE BASE (FALLBACK) =====
 function getBasicStats(palanquee) {
