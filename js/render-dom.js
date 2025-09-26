@@ -275,11 +275,23 @@ function fixPrerogativesAfterRender() {
           document.body.appendChild(info);
           this._prerogativeInfo = info;
         });
-        newInput.addEventListener('blur', function() {
-          // Efface uniquement le menu d'aide lié à ce champ
-          if (this._prerogativeInfo) {
-            this._prerogativeInfo.remove();
-            this._prerogativeInfo = null;
+        // Efface le menu d'aide à la sortie du champ, même si le focus va ailleurs
+        const removeInfo = () => {
+          if (newInput._prerogativeInfo) {
+            newInput._prerogativeInfo.remove();
+            newInput._prerogativeInfo = null;
+          }
+        };
+        newInput.addEventListener('blur', removeInfo);
+        newInput.addEventListener('keydown', function(e) {
+          // Si touche Tab, Entrée ou Échap, on retire l'info
+          if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Escape') {
+            removeInfo();
+          }
+        });
+        document.addEventListener('mousedown', function(e) {
+          if (newInput._prerogativeInfo && !newInput.contains(e.target)) {
+            removeInfo();
           }
         });
 
