@@ -1214,7 +1214,53 @@ function setupDPSessionsEventListeners() {
           }
         }
       });
+    
+	const sessionSelector = document.getElementById("session-selector");
+if (sessionSelector) {
+  sessionSelector.addEventListener("change", async function() {
+    const sessionKey = this.value;
+    
+    if (sessionKey && sessionKey !== "") {
+      // Chargement automatique de la session sélectionnée
+      console.log("Chargement automatique de la session:", sessionKey);
+      
+      if (typeof loadSession === 'function') {
+        try {
+          const success = await loadSession(sessionKey);
+          if (success) {
+            console.log("Session chargée automatiquement:", sessionKey);
+            
+            // Effacer le message de validation DP précédent
+            if (typeof clearDPValidationMessage === 'function') {
+              clearDPValidationMessage();
+            }
+            
+            // Afficher quelle session est chargée
+            if (typeof updateCurrentSessionDisplay === 'function') {
+              const selectedText = this.options[this.selectedIndex].text;
+              updateCurrentSessionDisplay(sessionKey, selectedText);
+            }
+          } else {
+            console.error("Erreur lors du chargement automatique");
+            alert("Erreur lors du chargement de la session");
+            
+            // Remettre le sélecteur à "-- Charger une session --"
+            this.value = "";
+          }
+        } catch (error) {
+          console.error("Erreur chargement automatique:", error);
+          alert("Erreur: " + error.message);
+          this.value = "";
+        }
+      } else {
+        alert("Fonction de chargement non disponible");
+        this.value = "";
+      }
     }
+  });
+}
+	
+	}
 
     // === NETTOYAGE SESSIONS ===
     const selectAllSessionsBtn = document.getElementById("select-all-sessions");
