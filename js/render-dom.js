@@ -142,13 +142,15 @@ function renderPalanquees() {
           <div class="plongeur-content">
             <span class="plongeur-nom">${plongeur.nom}</span>
             <input type="text" 
-                class="plongeur-prerogatives-editable" 
-                value="${plongeur.pre || ''}" 
-                placeholder="PE40..."
-                title="Prérogatives du plongeur"
-                oninput="updatePlongeurPrerogativesRealTime(${index}, ${originalIndex}, this.value || '')"
-                onfocus="this.style.userSelect='text';"
-                style="user-select: text; cursor: text;" />
+				class="plongeur-prerogatives-editable" 
+				value="${plongeur.pre || ''}" 
+				placeholder="PE40..."
+				title="Prérogatives du plongeur"
+				oninput="updatePlongeurPrerogativesRealTime(${index}, ${originalIndex}, this.value || '')"
+				onmousedown="event.stopPropagation();"
+				onclick="event.stopPropagation(); handlePalanqueeEdit(${index});"
+				onfocus="this.style.userSelect='text';"
+				style="user-select: text; cursor: text;" />
             <span class="plongeur-niveau">${plongeur.niveau}</span>
             <span class="return-plongeur" onclick="returnPlongeurToMainList(${index}, ${originalIndex})" title="Remettre dans la liste principale">↩️</span>
           </div>
@@ -247,58 +249,26 @@ function fixPrerogativesAfterRender() {
           const plongeurIndex = this.closest('.palanquee-plongeur-item').dataset.plongeurIndex;
           updatePlongeurPrerogativesRealTime(palanqueeIndex, plongeurIndex, this.value);
         });
-
-        // Ajout d'une info contextuelle lors du focus
-        newInput.addEventListener('focus', function() {
-          // Toujours créer une nouvelle info-bulle pour chaque focus
-          const info = document.createElement('div');
-          info.className = 'prerogative-edit-info';
-          info.innerHTML = '<b>Édition rapide :</b><br>' +
-            '• <b>Ctrl+A</b> : tout sélectionner<br>' +
-            '• <b>Ctrl+C</b> : copier<br>' +
-            '• <b>Ctrl+V</b> : coller<br>' +
-            '• <b>Ctrl+X</b> : couper<br>' +
-            '• <b>Flèches ←/→</b> : naviguer dans le texte';
-          info.style.fontSize = '11px';
-          info.style.color = '#0077cc';
-          info.style.background = '#eef6ff';
-          info.style.padding = '2px 6px';
-          info.style.borderRadius = '3px';
-          info.style.position = 'fixed';
-          const rect = this.getBoundingClientRect();
-          info.style.left = (rect.right + 12) + 'px';
-          info.style.top = (rect.top - 2) + 'px';
-          info.style.zIndex = '1000';
-          info.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
-          info.style.minWidth = '180px';
-          info.style.maxWidth = '260px';
-          document.body.appendChild(info);
-          this._prerogativeInfo = info;
-        });
-        // Efface le menu d'aide à la sortie du champ, même si le focus va ailleurs
-        const removeInfo = () => {
-          if (newInput._prerogativeInfo) {
-            newInput._prerogativeInfo.remove();
-            newInput._prerogativeInfo = null;
-          }
-        };
-        newInput.addEventListener('blur', removeInfo);
-        newInput.addEventListener('keydown', function(e) {
-          // Si touche Tab, Entrée ou Échap, on retire l'info
-          if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Escape') {
-            removeInfo();
-          }
-        });
-        document.addEventListener('mousedown', function(e) {
-          if (newInput._prerogativeInfo && !newInput.contains(e.target)) {
-            removeInfo();
-          }
-        });
-
+        
         // Forcer les styles de sélection
         newInput.style.userSelect = 'text';
         newInput.style.cursor = 'text';
         newInput.style.pointerEvents = 'auto';
+        
+        // Gérer les événements de souris
+        newInput.addEventListener('mousedown', function(e) {
+          e.stopPropagation();
+          this.focus();
+        });
+        
+        newInput.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+        
+        newInput.addEventListener('selectstart', function(e) {
+          e.stopPropagation();
+          return true;
+        });
       }
     });
   }, 100);
