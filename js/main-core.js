@@ -341,49 +341,73 @@ function forceInitializeFloatingMenus() {
         }
     }
     
+    function forceMenuUpdate() {
+        const menu = document.getElementById('floating-plongeurs-menu');
+        if (menu) {
+            menu.style.display = 'flex';
+            menu.style.visibility = 'visible';
+            menu.style.opacity = '1';
+        }
+        
+        // Forcer la mise à jour du contenu du menu
+        if (typeof window.forceUpdatePlongeursMenu === 'function') {
+            window.forceUpdatePlongeursMenu();
+            console.log('Contenu du menu forcé à se mettre à jour');
+        }
+        
+        if (typeof updateFloatingPlongeursList === 'function') {
+            updateFloatingPlongeursList();
+            console.log('Liste plongeurs flottante mise à jour');
+        }
+        
+        if (typeof updateCompteurs === 'function') {
+            updateCompteurs();
+            console.log('Compteurs mis à jour');
+        }
+    }
+    
     setTimeout(() => {
         const mainApp = document.getElementById('main-app');
         if (mainApp) {
             mainApp.style.display = 'block';
         }
         
-        const floatingMenu = document.getElementById('floating-plongeurs-menu');
-        if (floatingMenu) {
-            floatingMenu.style.display = 'flex';
-            floatingMenu.style.visibility = 'visible';
-            floatingMenu.style.opacity = '1';
-            console.log('Menu latéral forcé à s\'afficher');
-        }
+        forceMenuUpdate();
         
         if (typeof window.initFloatingMenusManager === 'function') {
             window.initFloatingMenusManager();
-        }
-        
-        if (typeof window.forceUpdatePlongeursMenu === 'function') {
-            window.forceUpdatePlongeursMenu();
         }
         
         if (typeof window.enableDPButtons === 'function') {
             window.enableDPButtons();
         }
         
-        setTimeout(() => {
-          if (typeof updateCompteurs === 'function') {
-            updateCompteurs();
-            console.log('Compteurs mis à jour après initialisation menu');
-          }
-        }, 1000);
-        
         setTimeout(syncMenuWidth, 500);
         setTimeout(syncMenuWidth, 1500);
         
+        // Mise à jour répétée pour s'assurer que le menu est correct
+        setTimeout(forceMenuUpdate, 1000);
+        setTimeout(forceMenuUpdate, 2500);
+        setTimeout(forceMenuUpdate, 4000);
+        
+        // Surveillance continue
         setInterval(() => {
             const menu = document.getElementById('floating-plongeurs-menu');
             if (menu && (menu.style.width === '0px' || menu.style.width === '')) {
                 syncMenuWidth();
                 console.log('Largeur du menu resynchronisée');
             }
-        }, 3000);
+            
+            // Vérifier si le contenu du menu est vide ou incorrect
+            const menuList = menu?.querySelector('#floating-plongeurs-list');
+            const actualPlongeursCount = window.plongeurs ? window.plongeurs.length : 0;
+            const menuItemsCount = menuList ? menuList.children.length : 0;
+            
+            if (actualPlongeursCount > 0 && menuItemsCount === 0) {
+                console.log('Menu vide détecté, mise à jour forcée');
+                forceMenuUpdate();
+            }
+        }, 5000);
         
     }, 1500);
 }
@@ -411,11 +435,100 @@ function setupMenuSurveillance() {
             }
         }
         
+        // Vérifier aussi si le contenu du menu est synchronisé
+        if (floatingMenu) {
+            const menuList = floatingMenu.querySelector('#floating-plongeurs-list');
+            const actualPlongeursCount = window.plongeurs ? window.plongeurs.length : 0;
+            const menuItemsCount = menuList ? menuList.children.length : 0;
+            const compteurElement = document.getElementById('compteur-plongeurs');
+            const compteurText = compteurElement ? compteurElement.textContent : '';
+            
+            // Si il y a des plongeurs en mémoire mais pas dans le menu, corriger
+            if (actualPlongeursCount > 0 && menuItemsCount === 0) {
+                console.log(`Désynchronisation menu détectée: ${actualPlongeursCount} plongeurs en mémoire, ${menuItemsCount} dans le menu`);
+                
+                if (typeof window.forceUpdatePlongeursMenu === 'function') {
+                    window.forceUpdatePlongeursMenu();
+                }
+                if (typeof updateFloatingPlongeursList === 'function') {
+                    updateFloatingPlongeursList();
+                }
+                if (typeof updateCompteurs === 'function') {
+                    updateCompteurs();
+                }
+            }
+            
+            // Si le compteur affiche (0) mais qu'il y a des plongeurs, corriger
+            if (compteurText === '(0)' && actualPlongeursCount > 0) {
+                console.log('Correction compteur automatique');
+                if (typeof updateCompteurs === 'function') {
+                    updateCompteurs();
+                }
+            }
+        }
+        
         if (surveillanceCount >= maxSurveillance || 
             (floatingMenu && floatingMenu.style.display === 'flex')) {
             clearInterval(surveillanceInterval);
         }
         
+    }, 1000);
+}
+
+// Nouvelle fonction pour surveiller spécifiquement au démarrage
+function setupStartupMenuSurveillance() {
+    console.log('Surveillance de démarrage du menu activée');
+    
+    let startupAttempts = 0;
+    const maxStartupAttempts = 15;
+    
+    const startupInterval = setInterval(() => {
+        startupAttempts++;
+        
+        const mainApp = document.getElementById('main-app');
+        const isLoggedIn = mainApp && mainApp.style.display !== 'none';
+        
+        if (isLoggedIn) {
+            console.log('Utilisateur connecté détecté, vérification du menu...');
+            
+            // Reconstruction des données si nécessaire
+            const listDOM = document.getElementById('listePlongeurs');
+            const domCount = listDOM ? listDOM.children.length : 0;
+            const memoryCount = window.plongeurs ? window.plongeurs.length : 0;
+            
+            if (domCount > 0 && memoryCount === 0) {
+                console.log('Reconstruction des données plongeurs depuis le DOM au démarrage...');
+                reconstructDataFromDOM();
+            }
+            
+            // Forcer la mise à jour du menu
+            if (typeof window.forceUpdatePlongeursMenu === 'function') {
+                window.forceUpdatePlongeursMenu();
+                console.log('Menu forcé à se mettre à jour au démarrage');
+            }
+            
+            if (typeof updateFloatingPlongeursList === 'function') {
+                updateFloatingPlongeursList();
+            }
+            
+            if (typeof updateCompteurs === 'function') {
+                updateCompteurs();
+            }
+            
+            // Démarrer la surveillance normale
+            setTimeout(() => {
+                setupMenuSurveillance();
+            }, 2000);
+            
+            clearInterval(startupInterval);
+            console.log('Surveillance de démarrage terminée');
+            return;
+        }
+        
+        if (startupAttempts >= maxStartupAttempts) {
+            clearInterval(startupInterval);
+            console.log('Surveillance de démarrage timeout');
+        }
     }, 1000);
 }
 
@@ -1693,7 +1806,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       initializeDPSessionsManager();
     }
     
-    // 6. Ajouter les gestionnaires d'erreurs globaux
+    // 6. Démarrer la surveillance du menu dès le début
+    setupStartupMenuSurveillance();
+    
+    // 7. Ajouter les gestionnaires d'erreurs globaux
     window.addEventListener('error', (event) => {
       console.error("Erreur JavaScript globale:", event.error);
       handleError(event.error, "Erreur JavaScript globale");
@@ -1748,6 +1864,7 @@ window.testDPSelection = testDPSelection;
 window.forceInitializeFloatingMenus = forceInitializeFloatingMenus;
 window.setupCompteurSurveillance = setupCompteurSurveillance;
 window.setupPostRefusalSurveillance = setupPostRefusalSurveillance;
+window.setupStartupMenuSurveillance = setupStartupMenuSurveillance;
 window.getSelectedDPName = getSelectedDPName;
 
-console.log("Main Core corrigé chargé - Version 7.8.1 - Correction bandeau session chargée");
+console.log("Main Core corrigé chargé - Version 7.8.2 - Surveillance menu améliorée au démarrage");
