@@ -868,6 +868,45 @@ async function populateSessionsCleanupList() {
       return;
     }
     
+    // TRI : Date > Site > Type > Nom DP
+    sessions.sort((a, b) => {
+      // 1. Date (plus récent d'abord)
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateB - dateA;
+      }
+      
+      // 2. Site alphabétique
+      const siteA = (a.lieu || "").toLowerCase().trim();
+      const siteB = (b.lieu || "").toLowerCase().trim();
+      
+      if (siteA !== siteB) {
+        return siteA.localeCompare(siteB, 'fr', { numeric: true });
+      }
+      
+      // 3. Type de plongée
+      const typeOrder = {
+        'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+        'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+        'formation': 9, 'autre': 10
+      };
+      
+      const typeA = typeOrder[a.plongee] || 99;
+      const typeB = typeOrder[b.plongee] || 99;
+      
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+      
+      // 4. Nom DP alphabétique
+      const dpA = (a.dp || "").toLowerCase().trim();
+      const dpB = (b.dp || "").toLowerCase().trim();
+      
+      return dpA.localeCompare(dpB, 'fr', { numeric: true });
+    });
+    
     let html = '';
     sessions.forEach(session => {
       const sessionDate = new Date(session.timestamp || Date.now()).toLocaleDateString('fr-FR');
@@ -884,7 +923,7 @@ async function populateSessionsCleanupList() {
     });
     
     cleanupList.innerHTML = html;
-    console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage`);
+    console.log(`✅ ${sessions.length} sessions dans la liste de nettoyage (triées)`);
     
   } catch (error) {
     console.error("❌ Erreur chargement liste nettoyage sessions:", error);
