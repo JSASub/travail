@@ -977,12 +977,12 @@ async function loadSessionsDirectly() {
       const siteB = (b.lieu || "").toLowerCase().trim();
       
       if (siteA !== siteB) {
-        return siteA.localeCompare(siteB, 'fr', { numeric: true });
+        return siteB.localeCompare(siteA, 'fr', { numeric: true });
       }
       
       // 3. Type de plongée
       const typeOrder = {
-        'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+        'matin': 1, 'après-midi': 2, 'soir': 3, 
         'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
         'formation': 9, 'autre': 10
       };
