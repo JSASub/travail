@@ -969,7 +969,7 @@ async function loadSessionsDirectly() {
   const dateB = new Date(b.date);
   
   if (dateA.getTime() !== dateB.getTime()) {
-    return dateA - dateB;
+    return dateB - dateA;
   }
   
   // 2. Site alphabétique
@@ -978,7 +978,7 @@ async function loadSessionsDirectly() {
   
 	if (siteA !== siteB) {
 		// Tri décroissant pour les sites avec numéros (42 avant 41)
-		return siteB.localeCompare(siteA, 'fr', { numeric: true });
+		return siteA.localeCompare(siteB, 'fr', { numeric: true });
 	}
   
   // 3. Type de plongée
@@ -991,7 +991,7 @@ async function loadSessionsDirectly() {
   const typeA = typeOrder[a.plongee] || 99;
   const typeB = typeOrder[b.plongee] || 99;
   
-  return typeA - typeB;
+  return typeB - typeA;
 });
     
     return sessionsList;
