@@ -897,14 +897,14 @@ async function populateSessionsCleanupList() {
       const typeB = typeOrder[b.plongee] || 99;
       
       if (typeA !== typeB) {
-        return typeA - typeB;
+        return typeB - typeA;
       }
       
       // 4. Nom DP alphabétique
       const dpA = (a.dp || "").toLowerCase().trim();
       const dpB = (b.dp || "").toLowerCase().trim();
       
-      return dpA.localeCompare(dpB, 'fr', { numeric: true });
+      return dpB.localeCompare(dpA, 'fr', { numeric: true });
     });
     
     let html = '';
@@ -991,14 +991,14 @@ async function loadSessionsDirectly() {
       const typeB = typeOrder[b.plongee] || 99;
       
       if (typeA !== typeB) {
-        return typeA - typeB;
+        return typeB - typeA;
       }
       
       // 4. Nom DP alphabétique
       const dpA = (a.dp || "").toLowerCase().trim();
       const dpB = (b.dp || "").toLowerCase().trim();
       
-      return dpA.localeCompare(dpB, 'fr', { numeric: true });
+      return dpB.localeCompare(dpA, 'fr', { numeric: true });
     });
     
     return sessionsList;
