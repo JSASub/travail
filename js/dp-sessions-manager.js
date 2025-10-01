@@ -930,7 +930,6 @@ async function populateSessionsCleanupList() {
     cleanupList.innerHTML = '<em>Erreur de chargement</em>';
   }
 }
-
 async function loadSessionsDirectly() {
   if (typeof db === 'undefined' || !db) {
     return [];
