@@ -883,7 +883,7 @@ async function populateSessionsCleanupList() {
       const siteB = (b.lieu || "").toLowerCase().trim();
       
       if (siteA !== siteB) {
-        return siteA.localeCompare(siteB, 'fr', { numeric: true });
+        return siteB.localeCompare(siteA, 'fr', { numeric: true });
       }
       
       // 3. Type de plongée
@@ -972,7 +972,7 @@ async function loadSessionsDirectly() {
         return dateB - dateA;
       }
       
-      // 2. Site alphabétique croissant
+      // 2. Site alphabétique décroissant
       const siteA = (a.lieu || "").toLowerCase().trim();
       const siteB = (b.lieu || "").toLowerCase().trim();
       
