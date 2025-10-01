@@ -964,35 +964,42 @@ async function loadSessionsDirectly() {
     
     // Trier par date décroissante
     sessionsList.sort((a, b) => {
-  // 1. Date (plus récent d'abord)
-  const dateA = new Date(a.date);
-  const dateB = new Date(b.date);
-  
-  if (dateA.getTime() !== dateB.getTime()) {
-    return dateB - dateA;
-  }
-  
-  // 2. Site alphabétique
-  const siteA = (a.lieu || "").toLowerCase();
-  const siteB = (b.lieu || "").toLowerCase();
-  
-	if (siteA !== siteB) {
-		// Tri décroissant pour les sites avec numéros (42 avant 41)
-		return siteA.localeCompare(siteB, 'fr', { numeric: true });
-	}
-  
-  // 3. Type de plongée
-  const typeOrder = {
-    'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
-    'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
-    'formation': 9, 'autre': 10
-  };
-  
-  const typeA = typeOrder[a.plongee] || 99;
-  const typeB = typeOrder[b.plongee] || 99;
-  
-  return typeB - typeA;
-});
+      // 1. Date (plus récent d'abord)
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateB - dateA;
+      }
+      
+      // 2. Site alphabétique croissant
+      const siteA = (a.lieu || "").toLowerCase().trim();
+      const siteB = (b.lieu || "").toLowerCase().trim();
+      
+      if (siteA !== siteB) {
+        return siteA.localeCompare(siteB, 'fr', { numeric: true });
+      }
+      
+      // 3. Type de plongée
+      const typeOrder = {
+        'matin': 1, 'apres-midi': 2, 'après-midi': 2, 'soir': 3, 
+        'nuit': 4, 'plg1': 5, 'plg2': 6, 'plg3': 7, 'plg4': 8, 
+        'formation': 9, 'autre': 10
+      };
+      
+      const typeA = typeOrder[a.plongee] || 99;
+      const typeB = typeOrder[b.plongee] || 99;
+      
+      if (typeA !== typeB) {
+        return typeA - typeB;
+      }
+      
+      // 4. Nom DP alphabétique
+      const dpA = (a.dp || "").toLowerCase().trim();
+      const dpB = (b.dp || "").toLowerCase().trim();
+      
+      return dpA.localeCompare(dpB, 'fr', { numeric: true });
+    });
     
     return sessionsList;
     
