@@ -294,9 +294,21 @@ function returnPlongeurToMainList(palanqueeIndex, plongeurIndex) {
     plongeurs.push(plongeur);
     plongeursOriginaux.push(plongeur);
     syncToDatabase();
+    
+    // Mettre à jour la liste principale
     if (typeof renderPlongeurs === 'function') {
       renderPlongeurs();
     }
+    
+    // ✅ AJOUT : Forcer la mise à jour du menu flottant
+    setTimeout(() => {
+      if (typeof updateFloatingPlongeursList === 'function') {
+        updateFloatingPlongeursList();
+      }
+      if (typeof window.forceUpdatePlongeursMenu === 'function') {
+        window.forceUpdatePlongeursMenu();
+      }
+    }, 100);
   }
 }
 
