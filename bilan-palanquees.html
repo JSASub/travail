@@ -375,7 +375,9 @@
       });
       csv += `TOTAL;${totalPlongeurs};100%\n`;
       
-      const blob = new Blob([csv], { type: 'text/csv' });
+      // UTF-8 BOM pour assurer la compatibilité des accents avec Excel
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -385,7 +387,8 @@
     }
 
     function exporterExcel() {
-      let html = '<table border="1"><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
+      html += '<table border="1"><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       bilanData.forEach(row => {
         // Les plongeurs sont déjà triés
         const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
@@ -413,9 +416,11 @@
         html += `<tr><td>${niveau}</td><td>${count}</td><td>${((count / totalPlongeurs) * 100).toFixed(1)}%</td></tr>`;
       });
       html += `<tr style="background: #e3f2fd; font-weight: bold;"><td>TOTAL</td><td>${totalPlongeurs}</td><td>100%</td></tr>`;
-      html += '</table>';
+      html += '</table></body></html>';
       
-      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      // UTF-8 BOM pour garantir les accents dans Excel
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
