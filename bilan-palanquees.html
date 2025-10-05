@@ -325,7 +325,7 @@
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const separateur = document.createElement('tr');
           separateur.innerHTML = `
-            <td colspan="13" style="background: linear-gradient(90deg, var(--primary-blue), var(--success-green)); height: 3px; padding: 0;"></td>
+            <td colspan="13" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
           `;
           tbody.appendChild(separateur);
         }
@@ -404,7 +404,7 @@
     tr:nth-child(even) { background-color: #f2f2f2; }
     .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
     .total-row { background-color: #e3f2fd; font-weight: bold; }
-    .session-separator { background: linear-gradient(90deg, #007bff, #28a745); height: 8px; }
+    .session-separator { background: #FF6B00; height: 10px; }
     .session-header { background-color: #e3f2fd; font-weight: bold; border: 2px solid #007bff; }
   </style>
 </head>
