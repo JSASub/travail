@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bilan Global Palanquées - JSAS</title>
   
-  <!-- Configuration Firebase -->
-  <script src="js/config-firebase.js"></script>
-  
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  
+  <!-- Configuration Firebase -->
+  <script src="js/config-firebase.js"></script>
   
   <style>
     :root {
@@ -390,35 +390,36 @@
 
   <script>
     // Attendre l'initialisation complète de Firebase depuis config-firebase.js
-    let db;
-    let firebaseReady = false;
+    // Variables (pas de redéclaration de db)
+  let db; // Gardez celle-ci
+  let firebaseReady = false;
+  let sessionsData = [];
+  let bilanData = [];
 
-    function attendreFirebase() {
-  return new Promise((resolve, reject) => {
-    let tentatives = 0;
-    const maxTentatives = 50;
-    
-    const checkFirebase = setInterval(() => {
-      tentatives++;
+  function attendreFirebase() {
+    return new Promise((resolve, reject) => {
+      let tentatives = 0;
+      const maxTentatives = 50;
       
-      // Vérifier si Firebase est disponible ET initialisé
-      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-        clearInterval(checkFirebase);
-        // Créer notre propre référence db
-        db = firebase.database();
-        firebaseReady = true;
-        console.log('✅ Firebase prêt - DB créée');
-        resolve();
-        return;
-      }
-      
-      if (tentatives >= maxTentatives) {
-        clearInterval(checkFirebase);
-        reject(new Error('Timeout Firebase'));
-      }
-    }, 100);
-  });
-}
+      const checkFirebase = setInterval(() => {
+        tentatives++;
+        
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+          clearInterval(checkFirebase);
+          db = firebase.database();
+          firebaseReady = true;
+          console.log('✅ Firebase prêt');
+          resolve();
+          return;
+        }
+        
+        if (tentatives >= maxTentatives) {
+          clearInterval(checkFirebase);
+          reject(new Error('Timeout Firebase'));
+        }
+      }, 100);
+    });
+  }
 
     let sessionsData = [];
     let bilanData = [];
