@@ -239,6 +239,26 @@
           });
         });
         if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
+        
+        // Trier les données par date puis par type de session
+        const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
+        bilanData.sort((a, b) => {
+          // D'abord par date
+          if (a.date !== b.date) {
+            return a.date.localeCompare(b.date);
+          }
+          // Ensuite par type de session
+          const indexA = ordreSession.indexOf(a.typeSession);
+          const indexB = ordreSession.indexOf(b.typeSession);
+          const posA = indexA === -1 ? 999 : indexA;
+          const posB = indexB === -1 ? 999 : indexB;
+          if (posA !== posB) {
+            return posA - posB;
+          }
+          // Enfin par numéro de palanquée
+          return a.numeroPalanquee - b.numeroPalanquee;
+        });
+        
         afficherStatistiques();
         afficherTableau();
         document.getElementById('results').style.display = 'block';
