@@ -232,12 +232,62 @@
       const totalPalanquees = bilanData.length;
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      // Compter les plongeurs par niveau
+      const niveaux = {};
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      // Trier les niveaux par ordre hiérarchique
+      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ordreNiveaux.indexOf(a[0]);
+        const indexB = ordreNiveaux.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
       statsContainer.innerHTML = `
         <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
         <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
         <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongées totales</div></div>
         <div class="stat-card"><div class="stat-value">${(totalPlongeurs / totalPalanquees).toFixed(1)}</div><div class="stat-label">Plongeurs/Palanquée</div></div>
       `;
+      
+      // Ajouter le tableau des niveaux
+      if (niveauxTries.length > 0) {
+        const niveauxHTML = `
+          <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid var(--primary-blue);">
+            <h3 style="color: var(--dark-blue); margin-bottom: 15px;">📊 Répartition par niveau</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--dark-blue); color: white;">
+                  <th style="padding: 10px; text-align: left;">Niveau</th>
+                  <th style="padding: 10px; text-align: right;">Nombre de plongées</th>
+                  <th style="padding: 10px; text-align: right;">Pourcentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${niveauxTries.map(([niveau, count]) => `
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;"><span class="niveau-badge">${niveau}</span></td>
+                    <td style="padding: 8px; text-align: right; font-weight: bold;">${count}</td>
+                    <td style="padding: 8px; text-align: right;">${((count / totalPlongeurs) * 100).toFixed(1)}%</td>
+                  </tr>
+                `).join('')}
+                <tr style="background: #e3f2fd; font-weight: bold;">
+                  <td style="padding: 10px;">TOTAL</td>
+                  <td style="padding: 10px; text-align: right;">${totalPlongeurs}</td>
+                  <td style="padding: 10px; text-align: right;">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+        statsContainer.insertAdjacentHTML('afterend', niveauxHTML);
+      }
     }
 
     function afficherTableau() {
@@ -286,6 +336,28 @@
         const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
         csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
       });
+      
+      // Ajouter les statistiques par niveau
+      csv += '\n\n STATISTIQUES PAR NIVEAU\n';
+      csv += 'Niveau;Nombre de plongées;Pourcentage\n';
+      const niveaux = {};
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ordreNiveaux.indexOf(a[0]);
+        const indexB = ordreNiveaux.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      niveauxTries.forEach(([niveau, count]) => {
+        csv += `${niveau};${count};${((count / totalPlongeurs) * 100).toFixed(1)}%\n`;
+      });
+      csv += `TOTAL;${totalPlongeurs};100%\n`;
+      
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -303,6 +375,29 @@
         html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
       });
       html += '</table>';
+      
+      // Ajouter les statistiques par niveau
+      html += '<br><br><h3>STATISTIQUES PAR NIVEAU</h3>';
+      html += '<table border="1"><tr><th>Niveau</th><th>Nombre de plongées</th><th>Pourcentage</th></tr>';
+      const niveaux = {};
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ordreNiveaux.indexOf(a[0]);
+        const indexB = ordreNiveaux.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      niveauxTries.forEach(([niveau, count]) => {
+        html += `<tr><td>${niveau}</td><td>${count}</td><td>${((count / totalPlongeurs) * 100).toFixed(1)}%</td></tr>`;
+      });
+      html += `<tr style="background: #e3f2fd; font-weight: bold;"><td>TOTAL</td><td>${totalPlongeurs}</td><td>100%</td></tr>`;
+      html += '</table>';
+      
       const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
