@@ -360,7 +360,6 @@
   </div>
 
   <script>
-    let db;
     let firebaseReady = false;
     let bilanData = [];
 
@@ -374,7 +373,7 @@
           
           if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
             clearInterval(checkFirebase);
-            db = firebase.database();
+            //db = firebase.database();
             firebaseReady = true;
             console.log('✅ Firebase prêt');
             resolve();
@@ -393,7 +392,7 @@
       try {
         await attendreFirebase();
         
-        if (!db || !firebaseReady) {
+        if (!windows-db || !firebaseReady) {
           afficherErreur('Impossible de se connecter à Firebase');
           return;
         }
@@ -416,14 +415,14 @@
     });
 
     async function chargerFiltres() {
-      if (!db) {
+      if (!windows-db) {
         console.error('DB non disponible');
         return;
       }
       
       try {
         console.log('📋 Chargement des filtres...');
-        const snapshot = await db.ref('sessions').once('value');
+        const snapshot = await windows-db.ref('sessions').once('value');
         
         if (!snapshot.exists()) {
           console.log('⚠️ Aucune session trouvée');
@@ -491,7 +490,7 @@
       }, 10000);
 
       try {
-        const snapshot = await db.ref('sessions').once('value');
+        const snapshot = await windows-db.ref('sessions').once('value');
         clearTimeout(timeoutId);
         
         if (!snapshot.exists()) {
