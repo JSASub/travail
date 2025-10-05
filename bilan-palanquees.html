@@ -5,61 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bilan Global Palanquées - JSAS</title>
   
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  
-  <!-- Configuration Firebase -->
-  <script>
-  // Configuration Firebase (identique à config-firebase.js)
-  const firebaseConfig = {
-    apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
-    authDomain: "palanquees-jsas.firebaseapp.com",
-    databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "palanquees-jsas",
-    storageBucket: "palanquees-jsas.firebasestorage.app",
-    messagingSenderId: "284449736616",
-    appId: "1:284449736616:web:a0949a9b669def06323f9d"
-  };
-
-  // Initialiser Firebase immédiatement
-  let app, db;
-  
-  try {
-    app = firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    console.log('✅ Firebase initialisé directement');
-  } catch (error) {
-    console.error('❌ Erreur init Firebase:', error);
-  }
-
-  let bilanData = [];
-
-  document.addEventListener('DOMContentLoaded', async function() {
-    try {
-      if (!db) {
-        afficherErreur('Firebase non disponible');
-        return;
-      }
-      
-      console.log('🔥 Firebase connecté');
-      
-      const aujourdhui = new Date();
-      const ilYaUnMois = new Date();
-      ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
-      
-      document.getElementById('date-fin').valueAsDate = aujourdhui;
-      document.getElementById('date-debut').valueAsDate = ilYaUnMois;
-
-      await chargerFiltres();
-      
-    } catch (error) {
-      console.error('❌ Erreur:', error);
-      afficherErreur('Erreur: ' + error.message);
-    }
-  });
-  </script>
   
   <style>
     :root {
@@ -68,258 +16,45 @@
       --danger-red: #dc3545;
       --dark-blue: #003366;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7fcff;
-      color: #333;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid var(--primary-blue);
-    }
-
-    .logo {
-      height: 60px;
-      width: auto;
-    }
-
-    h1 {
-      color: var(--dark-blue);
-      font-size: 28px;
-    }
-
-    .filters {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 30px;
-    }
-
-    .filter-row {
-      display: flex;
-      gap: 20px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      margin-bottom: 15px;
-    }
-
-    .filter-group {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .filter-group label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 5px;
-      color: var(--dark-blue);
-    }
-
-    .filter-group input,
-    .filter-group select {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ddd;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-
-    .filter-group input:focus,
-    .filter-group select:focus {
-      outline: none;
-      border-color: var(--primary-blue);
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border: none;
-      border-radius: 5px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: var(--primary-blue);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #0056b3;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,123,255,0.3);
-    }
-
-    .btn-success {
-      background: var(--success-green);
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: #1e7e34;
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #545b62;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .stat-card {
-      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-      border: 2px solid var(--primary-blue);
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 32px;
-      font-weight: bold;
-      color: var(--dark-blue);
-    }
-
-    .stat-label {
-      font-size: 14px;
-      color: #666;
-      margin-top: 5px;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--primary-blue);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .table-container {
-      overflow-x: auto;
-      margin-top: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      background: var(--dark-blue);
-      color: white;
-      padding: 12px 8px;
-      text-align: left;
-      font-weight: bold;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #ddd;
-    }
-
-    tr:hover {
-      background: #f8f9fa;
-    }
-
-    tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    .niveau-badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: bold;
-      color: white;
-      background: var(--success-green);
-    }
-
-    .alert {
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-    }
-
-    .alert-info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
-    }
-
-    .alert-danger {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-
-    .export-buttons {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .back-link {
-      display: inline-block;
-      margin-bottom: 20px;
-      color: var(--primary-blue);
-      text-decoration: none;
-      font-weight: bold;
-    }
-
-    .back-link:hover {
-      text-decoration: underline;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f7fcff; color: #333; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid var(--primary-blue); }
+    .logo { height: 60px; width: auto; }
+    h1 { color: var(--dark-blue); font-size: 28px; }
+    .filters { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .filter-row { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--dark-blue); }
+    .filter-group input, .filter-group select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; }
+    .filter-group input:focus, .filter-group select:focus { outline: none; border-color: var(--primary-blue); }
+    .btn { padding: 12px 24px; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: var(--primary-blue); color: white; }
+    .btn-primary:hover { background: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,123,255,0.3); }
+    .btn-success { background: var(--success-green); color: white; }
+    .btn-success:hover { background: #1e7e34; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #545b62; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat-card { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid var(--primary-blue); border-radius: 8px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 32px; font-weight: bold; color: var(--dark-blue); }
+    .stat-label { font-size: 14px; color: #666; margin-top: 5px; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+    td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
+    tr:hover { background: #f8f9fa; }
+    tr:nth-child(even) { background: #fafafa; }
+    .niveau-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: var(--success-green); }
+    .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-blue); text-decoration: none; font-weight: bold; }
+    .back-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -346,15 +81,11 @@
         </div>
         <div class="filter-group">
           <label for="filtre-dp">Directeur de Plongée</label>
-          <select id="filtre-dp">
-            <option value="">Tous les DP</option>
-          </select>
+          <select id="filtre-dp"><option value="">Tous les DP</option></select>
         </div>
         <div class="filter-group">
           <label for="filtre-lieu">Lieu</label>
-          <select id="filtre-lieu">
-            <option value="">Tous les lieux</option>
-          </select>
+          <select id="filtre-lieu"><option value="">Tous les lieux</option></select>
         </div>
       </div>
       <div class="filter-row">
@@ -370,29 +101,15 @@
 
     <div id="results" style="display: none;">
       <div class="stats" id="stats-container"></div>
-
       <div class="export-buttons">
         <button class="btn btn-success" onclick="exporterCSV()">📊 Exporter CSV</button>
         <button class="btn btn-success" onclick="exporterExcel()">📗 Exporter Excel</button>
       </div>
-
       <div class="table-container">
-        <table id="bilan-table">
+        <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>DP</th>
-              <th>Lieu</th>
-              <th>Session</th>
-              <th>Palanquée</th>
-              <th>Horaire</th>
-              <th>Plongeurs</th>
-              <th>Niveaux</th>
-              <th>Prof. Prévue</th>
-              <th>Durée Prévue</th>
-              <th>Prof. Réalisée</th>
-              <th>Durée Réalisée</th>
-              <th>Paliers</th>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
             </tr>
           </thead>
           <tbody id="bilan-tbody"></tbody>
@@ -400,98 +117,46 @@
       </div>
     </div>
 
-    <div id="no-data" class="alert alert-info" style="display: none;">
-      Aucune donnée disponible pour la période sélectionnée.
-    </div>
-
+    <div id="no-data" class="alert alert-info" style="display: none;">Aucune donnée disponible pour la période sélectionnée.</div>
     <div id="error" class="alert alert-danger" style="display: none;"></div>
   </div>
 
   <script>
-    let firebaseReady = false;
-    let bilanData = [];
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
+      authDomain: "palanquees-jsas.firebaseapp.com",
+      databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "palanquees-jsas",
+      storageBucket: "palanquees-jsas.firebasestorage.app",
+      messagingSenderId: "284449736616",
+      appId: "1:284449736616:web:a0949a9b669def06323f9d"
+    };
 
-    function attendreFirebase() {
-      return new Promise((resolve, reject) => {
-        let tentatives = 0;
-        const maxTentatives = 50;
-        
-        const checkFirebase = setInterval(() => {
-          tentatives++;
-          
-          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-            clearInterval(checkFirebase);
-            //db = firebase.database();
-            firebaseReady = true;
-            console.log('✅ Firebase prêt');
-            resolve();
-            return;
-          }
-          
-          if (tentatives >= maxTentatives) {
-            clearInterval(checkFirebase);
-            reject(new Error('Timeout Firebase'));
-          }
-        }, 100);
-      });
+    let app, db;
+    let bilanData = [];
+    
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      console.log('✅ Firebase initialisé');
+    } catch (error) {
+      console.error('❌ Erreur init Firebase:', error);
     }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      try {
-        await attendreFirebase();
-        
-        if (!windows-db || !firebaseReady) {
-          afficherErreur('Impossible de se connecter à Firebase');
-          return;
-        }
-        
-        console.log('🔥 Firebase connecté');
-        
-        const aujourdhui = new Date();
-        const ilYaUnMois = new Date();
-        ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
-        
-        document.getElementById('date-fin').valueAsDate = aujourdhui;
-        document.getElementById('date-debut').valueAsDate = ilYaUnMois;
-
-        await chargerFiltres();
-        
-      } catch (error) {
-        console.error('❌ Erreur initialisation:', error);
-        afficherErreur('Erreur d\'initialisation: ' + error.message);
-      }
-    });
-
     async function chargerFiltres() {
-      if (!windows-db) {
-        console.error('DB non disponible');
-        return;
-      }
-      
+      if (!db) return;
       try {
-        console.log('📋 Chargement des filtres...');
-        const snapshot = await windows-db.ref('sessions').once('value');
-        
-        if (!snapshot.exists()) {
-          console.log('⚠️ Aucune session trouvée');
-          return;
-        }
-
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) return;
         const sessions = snapshot.val();
-        console.log('✅ Sessions trouvées:', Object.keys(sessions).length);
-        
         const dps = new Set();
         const lieux = new Set();
-
         Object.values(sessions).forEach(session => {
           if (session.meta) {
             if (session.meta.dp) dps.add(session.meta.dp);
             if (session.meta.lieu) lieux.add(session.meta.lieu);
           }
         });
-
-        console.log('DPs:', dps.size, 'Lieux:', lieux.size);
-
         const dpSelect = document.getElementById('filtre-dp');
         Array.from(dps).sort().forEach(dp => {
           const option = document.createElement('option');
@@ -499,7 +164,6 @@
           option.textContent = dp;
           dpSelect.appendChild(option);
         });
-
         const lieuSelect = document.getElementById('filtre-lieu');
         Array.from(lieux).sort().forEach(lieu => {
           const option = document.createElement('option');
@@ -507,9 +171,8 @@
           option.textContent = lieu;
           lieuSelect.appendChild(option);
         });
-
       } catch (error) {
-        console.error('❌ Erreur chargement filtres:', error);
+        console.error('Erreur filtres:', error);
       }
     }
 
@@ -518,57 +181,27 @@
       const dateFin = document.getElementById('date-fin').value;
       const filtreDP = document.getElementById('filtre-dp').value;
       const filtreLieu = document.getElementById('filtre-lieu').value;
-
-      if (!dateDebut || !dateFin) {
-        afficherErreur('Veuillez sélectionner les dates');
-        return;
-      }
-
-      if (new Date(dateDebut) > new Date(dateFin)) {
-        afficherErreur('Date de début invalide');
-        return;
-      }
-
+      if (!dateDebut || !dateFin) { afficherErreur('Veuillez sélectionner les dates'); return; }
+      if (new Date(dateDebut) > new Date(dateFin)) { afficherErreur('Date de début invalide'); return; }
       afficherLoading(true);
       cacherErreur();
-
-      const timeoutId = setTimeout(() => {
-        afficherLoading(false);
-        afficherErreur('Timeout - vérifiez votre connexion');
-      }, 10000);
-
       try {
-        const snapshot = await windows-db.ref('sessions').once('value');
-        clearTimeout(timeoutId);
-        
-        if (!snapshot.exists()) {
-          afficherAucuneDonnee();
-          return;
-        }
-
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) { afficherAucuneDonnee(); return; }
         const sessions = snapshot.val();
         bilanData = [];
-
         Object.entries(sessions).forEach(([key, session]) => {
           if (!session.meta || !session.palanquees) return;
-
           const sessionDate = session.meta.date;
-          
           if (sessionDate < dateDebut || sessionDate > dateFin) return;
           if (filtreDP && session.meta.dp !== filtreDP) return;
           if (filtreLieu && session.meta.lieu !== filtreLieu) return;
-
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
-
             bilanData.push({
-              date: session.meta.date,
-              dp: session.meta.dp,
-              lieu: session.meta.lieu,
-              typeSession: session.meta.plongee || 'matin',
-              numeroPalanquee: idx + 1,
-              horaire: palanquee.parametres?.horaire || '',
-              plongeurs: palanquee.plongeurs,
+              date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
+              typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
+              horaire: palanquee.parametres?.horaire || '', plongeurs: palanquee.plongeurs,
               profPrevue: palanquee.parametres?.profondeurPrevue || '',
               dureePrevue: palanquee.parametres?.dureePrevue || '',
               profRealisee: palanquee.parametres?.profondeurRealisee || '',
@@ -577,21 +210,12 @@
             });
           });
         });
-
-        if (bilanData.length === 0) {
-          afficherAucuneDonnee();
-          return;
-        }
-
+        if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
         afficherStatistiques();
         afficherTableau();
-        
         document.getElementById('results').style.display = 'block';
         document.getElementById('no-data').style.display = 'none';
-
       } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('Erreur:', error);
         afficherErreur('Erreur: ' + error.message);
       } finally {
         afficherLoading(false);
@@ -603,52 +227,25 @@
       const totalPalanquees = bilanData.length;
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
-
       statsContainer.innerHTML = `
-        <div class="stat-card">
-          <div class="stat-value">${totalSessions}</div>
-          <div class="stat-label">Sessions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${totalPalanquees}</div>
-          <div class="stat-label">Palanquées</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${totalPlongeurs}</div>
-          <div class="stat-label">Plongées totales</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${(totalPlongeurs / totalPalanquees).toFixed(1)}</div>
-          <div class="stat-label">Plongeurs/Palanquée</div>
-        </div>
+        <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongées totales</div></div>
+        <div class="stat-card"><div class="stat-value">${(totalPlongeurs / totalPalanquees).toFixed(1)}</div><div class="stat-label">Plongeurs/Palanquée</div></div>
       `;
     }
 
     function afficherTableau() {
       const tbody = document.getElementById('bilan-tbody');
       tbody.innerHTML = '';
-
       bilanData.forEach(row => {
         const tr = document.createElement('tr');
         const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
-        const niveauxStr = row.plongeurs.map(p => 
-          `<span class="niveau-badge">${p.niveau}</span>`
-        ).join(' ');
-
+        const niveauxStr = row.plongeurs.map(p => `<span class="niveau-badge">${p.niveau}</span>`).join(' ');
         tr.innerHTML = `
-          <td>${new Date(row.date).toLocaleDateString('fr-FR')}</td>
-          <td>${row.dp}</td>
-          <td>${row.lieu}</td>
-          <td>${row.typeSession}</td>
-          <td>${row.numeroPalanquee}</td>
-          <td>${row.horaire}</td>
-          <td title="${plongeursStr}">${plongeursStr}</td>
-          <td>${niveauxStr}</td>
-          <td>${row.profPrevue}</td>
-          <td>${row.dureePrevue}</td>
-          <td>${row.profRealisee}</td>
-          <td>${row.dureeRealisee}</td>
-          <td>${row.paliers}</td>
+          <td>${new Date(row.date).toLocaleDateString('fr-FR')}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td>
+          <td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td title="${plongeursStr}">${plongeursStr}</td><td>${niveauxStr}</td>
+          <td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -661,7 +258,13 @@
         const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
         csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
       });
-      telechargerFichier(csv, 'bilan-palanquees.csv', 'text/csv');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bilan-palanquees.csv';
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     function exporterExcel() {
@@ -681,50 +284,43 @@
       URL.revokeObjectURL(url);
     }
 
-    function telechargerFichier(contenu, nomFichier, type) {
-      const blob = new Blob([contenu], { type: type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nomFichier;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function afficherLoading(show) {
-      document.getElementById('loading').style.display = show ? 'block' : 'none';
-    }
-
+    function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
     function afficherAucuneDonnee() {
       document.getElementById('results').style.display = 'none';
       document.getElementById('no-data').style.display = 'block';
       afficherLoading(false);
     }
-
     function afficherErreur(message) {
-      const errorDiv = document.getElementById('error');
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
+      document.getElementById('error').textContent = message;
+      document.getElementById('error').style.display = 'block';
       afficherLoading(false);
     }
-
-    function cacherErreur() {
-      document.getElementById('error').style.display = 'none';
-    }
-
+    function cacherErreur() { document.getElementById('error').style.display = 'none'; }
     function reinitialiserFiltres() {
       const aujourdhui = new Date();
       const ilYaUnMois = new Date();
       ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
-      
       document.getElementById('date-debut').valueAsDate = ilYaUnMois;
       document.getElementById('date-fin').valueAsDate = aujourdhui;
       document.getElementById('filtre-dp').value = '';
       document.getElementById('filtre-lieu').value = '';
-      
       document.getElementById('results').style.display = 'none';
       document.getElementById('no-data').style.display = 'none';
     }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        if (!db) { afficherErreur('Firebase non disponible'); return; }
+        const aujourdhui = new Date();
+        const ilYaUnMois = new Date();
+        ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
+        document.getElementById('date-fin').valueAsDate = aujourdhui;
+        document.getElementById('date-debut').valueAsDate = ilYaUnMois;
+        await chargerFiltres();
+      } catch (error) {
+        afficherErreur('Erreur: ' + error.message);
+      }
+    });
   </script>
 </body>
 </html>
