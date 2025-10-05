@@ -138,13 +138,19 @@
     // Ordre hiérarchique des niveaux (global)
     const ORDRE_NIVEAUX = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
     
-    // Fonction pour trier les plongeurs par niveau
+    // Fonction pour trier les plongeurs par niveau puis par nom
     function trierPlongeursParNiveau(plongeurs) {
       return [...plongeurs].sort((a, b) => {
         const indexA = ORDRE_NIVEAUX.indexOf(a.niveau);
         const indexB = ORDRE_NIVEAUX.indexOf(b.niveau);
         const posA = indexA === -1 ? 999 : indexA;
         const posB = indexB === -1 ? 999 : indexB;
+        
+        // Si même niveau, trier par nom alphabétiquement
+        if (posA === posB) {
+          return a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
+        }
+        
         return posA - posB;
       });
     }
