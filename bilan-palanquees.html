@@ -248,12 +248,6 @@
       border: 1px solid #bee5eb;
     }
 
-    .alert-warning {
-      background: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeaa7;
-    }
-
     .alert-danger {
       background: #f8d7da;
       color: #721c24;
@@ -277,28 +271,6 @@
 
     .back-link:hover {
       text-decoration: underline;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-      }
-
-      .filter-row {
-        flex-direction: column;
-      }
-
-      .stats {
-        grid-template-columns: 1fr;
-      }
-
-      table {
-        font-size: 11px;
-      }
-
-      th, td {
-        padding: 8px 4px;
-      }
     }
   </style>
 </head>
@@ -375,8 +347,7 @@
               <th>Paliers</th>
             </tr>
           </thead>
-          <tbody id="bilan-tbody">
-          </tbody>
+          <tbody id="bilan-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -389,39 +360,35 @@
   </div>
 
   <script>
-    // Attendre l'initialisation complète de Firebase depuis config-firebase.js
-    // Variables (pas de redéclaration de db)
-  let db;
-  let firebaseReady = false;
-  let sessionsData = [];
-  let bilanData = [];
+    let db;
+    let firebaseReady = false;
+    let bilanData = [];
 
-  function attendreFirebase() {
-    return new Promise((resolve, reject) => {
-      let tentatives = 0;
-      const maxTentatives = 50;
-      
-      const checkFirebase = setInterval(() => {
-        tentatives++;
+    function attendreFirebase() {
+      return new Promise((resolve, reject) => {
+        let tentatives = 0;
+        const maxTentatives = 50;
         
-        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-          clearInterval(checkFirebase);
-          db = firebase.database();
-          firebaseReady = true;
-          console.log('✅ Firebase prêt');
-          resolve();
-          return;
-        }
-        
-        if (tentatives >= maxTentatives) {
-          clearInterval(checkFirebase);
-          reject(new Error('Timeout Firebase'));
-        }
-      }, 100);
-    });
-  }
+        const checkFirebase = setInterval(() => {
+          tentatives++;
+          
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            clearInterval(checkFirebase);
+            db = firebase.database();
+            firebaseReady = true;
+            console.log('✅ Firebase prêt');
+            resolve();
+            return;
+          }
+          
+          if (tentatives >= maxTentatives) {
+            clearInterval(checkFirebase);
+            reject(new Error('Timeout Firebase'));
+          }
+        }, 100);
+      });
+    }
 
-    // Initialisation
     document.addEventListener('DOMContentLoaded', async function() {
       try {
         await attendreFirebase();
@@ -444,11 +411,10 @@
         
       } catch (error) {
         console.error('❌ Erreur initialisation:', error);
-        afficherErreur('Erreur d\'initialisation Firebase: ' + error.message);
+        afficherErreur('Erreur d\'initialisation: ' + error.message);
       }
     });
 
-    // Charger les options des filtres
     async function chargerFiltres() {
       if (!db) {
         console.error('DB non disponible');
@@ -500,7 +466,6 @@
       }
     }
 
-    // Charger et générer le bilan
     async function chargerBilan() {
       const dateDebut = document.getElementById('date-debut').value;
       const dateFin = document.getElementById('date-fin').value;
@@ -508,12 +473,12 @@
       const filtreLieu = document.getElementById('filtre-lieu').value;
 
       if (!dateDebut || !dateFin) {
-        afficherErreur('Veuillez sélectionner les dates de début et de fin');
+        afficherErreur('Veuillez sélectionner les dates');
         return;
       }
 
       if (new Date(dateDebut) > new Date(dateFin)) {
-        afficherErreur('La date de début doit être antérieure à la date de fin');
+        afficherErreur('Date de début invalide');
         return;
       }
 
@@ -522,7 +487,7 @@
 
       const timeoutId = setTimeout(() => {
         afficherLoading(false);
-        afficherErreur('Le chargement prend trop de temps. Vérifiez votre connexion.');
+        afficherErreur('Timeout - vérifiez votre connexion');
       }, 10000);
 
       try {
@@ -530,13 +495,11 @@
         clearTimeout(timeoutId);
         
         if (!snapshot.exists()) {
-          console.log('Aucune session dans Firebase');
           afficherAucuneDonnee();
           return;
         }
 
         const sessions = snapshot.val();
-        console.log('Sessions trouvées:', Object.keys(sessions).length);
         bilanData = [];
 
         Object.entries(sessions).forEach(([key, session]) => {
@@ -569,7 +532,6 @@
         });
 
         if (bilanData.length === 0) {
-          console.log('Aucune donnée après filtrage');
           afficherAucuneDonnee();
           return;
         }
@@ -582,27 +544,18 @@
 
       } catch (error) {
         clearTimeout(timeoutId);
-        console.error('Erreur complète:', error);
+        console.error('Erreur:', error);
         afficherErreur('Erreur: ' + error.message);
       } finally {
         afficherLoading(false);
       }
     }
 
-    // Afficher les statistiques
     function afficherStatistiques() {
       const statsContainer = document.getElementById('stats-container');
-      
       const totalPalanquees = bilanData.length;
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
-      
-      const niveaux = {};
-      bilanData.forEach(p => {
-        p.plongeurs.forEach(plongeur => {
-          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
-        });
-      });
 
       statsContainer.innerHTML = `
         <div class="stat-card">
@@ -624,14 +577,12 @@
       `;
     }
 
-    // Afficher le tableau
     function afficherTableau() {
       const tbody = document.getElementById('bilan-tbody');
       tbody.innerHTML = '';
 
       bilanData.forEach(row => {
         const tr = document.createElement('tr');
-        
         const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
         const niveauxStr = row.plongeurs.map(p => 
           `<span class="niveau-badge">${p.niveau}</span>`
@@ -644,61 +595,36 @@
           <td>${row.typeSession}</td>
           <td>${row.numeroPalanquee}</td>
           <td>${row.horaire}</td>
-          <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${plongeursStr}">${plongeursStr}</td>
+          <td title="${plongeursStr}">${plongeursStr}</td>
           <td>${niveauxStr}</td>
           <td>${row.profPrevue}</td>
           <td>${row.dureePrevue}</td>
           <td>${row.profRealisee}</td>
           <td>${row.dureeRealisee}</td>
-          <td style="max-width: 150px;">${row.paliers}</td>
+          <td>${row.paliers}</td>
         `;
-
         tbody.appendChild(tr);
       });
     }
 
-    // Exporter en CSV
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeurs;Niveaux;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
-
       bilanData.forEach(row => {
         const plongeurs = row.plongeurs.map(p => p.nom).join(' | ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
-
         csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
       });
-
       telechargerFichier(csv, 'bilan-palanquees.csv', 'text/csv');
     }
 
-    // Exporter en Excel (format HTML)
     function exporterExcel() {
-      let html = '<table border="1">';
-      html += '<tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
-
+      let html = '<table border="1"><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       bilanData.forEach(row => {
         const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
-
-        html += `<tr>
-          <td>${row.date}</td>
-          <td>${row.dp}</td>
-          <td>${row.lieu}</td>
-          <td>${row.typeSession}</td>
-          <td>${row.numeroPalanquee}</td>
-          <td>${row.horaire}</td>
-          <td>${plongeurs}</td>
-          <td>${niveaux}</td>
-          <td>${row.profPrevue}</td>
-          <td>${row.dureePrevue}</td>
-          <td>${row.profRealisee}</td>
-          <td>${row.dureeRealisee}</td>
-          <td>${row.paliers}</td>
-        </tr>`;
+        html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
       });
-
       html += '</table>';
-
       const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -708,7 +634,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // Télécharger un fichier
     function telechargerFichier(contenu, nomFichier, type) {
       const blob = new Blob([contenu], { type: type });
       const url = URL.createObjectURL(blob);
@@ -719,7 +644,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // Utilitaires d'affichage
     function afficherLoading(show) {
       document.getElementById('loading').style.display = show ? 'block' : 'none';
     }
