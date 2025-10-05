@@ -418,7 +418,7 @@
       bilanData.forEach(row => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
-        // Ajouter un séparateur si changement de session
+        // Ajouter un séparateur AVANT la ligne si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           html += `<tr><td colspan="13" class="session-separator"></td></tr>`;
         }
@@ -426,10 +426,7 @@
         const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
         
-        // Style différent pour la première ligne d'une nouvelle session
-        const rowClass = (sessionPrecedente !== sessionActuelle) ? ' class="session-header"' : '';
-        
-        html += `<tr${rowClass}><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
+        html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
         
         sessionPrecedente = sessionActuelle;
       });
