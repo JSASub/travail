@@ -11,7 +11,55 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
   <!-- Configuration Firebase -->
-  <script src="js/config-firebase.js"></script>
+  <script>
+  // Configuration Firebase (identique à config-firebase.js)
+  const firebaseConfig = {
+    apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
+    authDomain: "palanquees-jsas.firebaseapp.com",
+    databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "palanquees-jsas",
+    storageBucket: "palanquees-jsas.firebasestorage.app",
+    messagingSenderId: "284449736616",
+    appId: "1:284449736616:web:a0949a9b669def06323f9d"
+  };
+
+  // Initialiser Firebase immédiatement
+  let app, db;
+  
+  try {
+    app = firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log('✅ Firebase initialisé directement');
+  } catch (error) {
+    console.error('❌ Erreur init Firebase:', error);
+  }
+
+  let bilanData = [];
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      if (!db) {
+        afficherErreur('Firebase non disponible');
+        return;
+      }
+      
+      console.log('🔥 Firebase connecté');
+      
+      const aujourdhui = new Date();
+      const ilYaUnMois = new Date();
+      ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
+      
+      document.getElementById('date-fin').valueAsDate = aujourdhui;
+      document.getElementById('date-debut').valueAsDate = ilYaUnMois;
+
+      await chargerFiltres();
+      
+    } catch (error) {
+      console.error('❌ Erreur:', error);
+      afficherErreur('Erreur: ' + error.message);
+    }
+  });
+  </script>
   
   <style>
     :root {
