@@ -387,19 +387,35 @@
     }
 
     function exporterExcel() {
-      let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
-      html += '<table border="1"><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th { background-color: #003366; color: white; padding: 10px; border: 2px solid #000; font-weight: bold; text-align: left; }
+    td { padding: 8px; border: 1px solid #666; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
+    .total-row { background-color: #e3f2fd; font-weight: bold; }
+  </style>
+</head>
+<body>`;
+      
+      html += '<h2>Bilan Global des Palanquées</h2>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      
       bilanData.forEach(row => {
-        // Les plongeurs sont déjà triés
         const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
         html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
       });
       html += '</table>';
       
-      // Ajouter les statistiques par niveau
-      html += '<br><br><h3>STATISTIQUES PAR NIVEAU</h3>';
-      html += '<table border="1"><tr><th>Niveau</th><th>Nombre de plongées</th><th>Pourcentage</th></tr>';
+      // Statistiques par niveau
+      html += '<br><br><h3 class="stats-header">STATISTIQUES PAR NIVEAU</h3>';
+      html += '<table style="width: 50%;"><tr><th>Niveau</th><th>Nombre de plongées</th><th>Pourcentage</th></tr>';
+      
       const niveaux = {};
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       bilanData.forEach(p => {
@@ -407,15 +423,17 @@
           niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
         });
       });
+      
       const niveauxTries = Object.entries(niveaux).sort((a, b) => {
         const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
         const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
+      
       niveauxTries.forEach(([niveau, count]) => {
         html += `<tr><td>${niveau}</td><td>${count}</td><td>${((count / totalPlongeurs) * 100).toFixed(1)}%</td></tr>`;
       });
-      html += `<tr style="background: #e3f2fd; font-weight: bold;"><td>TOTAL</td><td>${totalPlongeurs}</td><td>100%</td></tr>`;
+      html += `<tr class="total-row"><td>TOTAL</td><td>${totalPlongeurs}</td><td>100%</td></tr>`;
       html += '</table></body></html>';
       
       // UTF-8 BOM pour garantir les accents dans Excel
