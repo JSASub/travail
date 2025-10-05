@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bilan Global Palanquées - JSAS</title>
   
-  <!-- Configuration Firebase depuis votre fichier existant -->
+  <!-- Configuration Firebase -->
   <script src="js/config-firebase.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
   <style>
     :root {
@@ -384,86 +389,103 @@
   </div>
 
   <script>
-// ✅ NOUVEAU - Utiliser le même fichier de config
-// Variable qui sera définie par config-firebase.js
-// ✅ Utiliser la variable db déjà déclarée par config-firebase.js
-// Variable qui sera définie par config-firebase.js (déjà déclarée globalement)
+    // Attendre l'initialisation complète de Firebase depuis config-firebase.js
+    let db;
+    let firebaseReady = false;
 
-// Attendre que Firebase soit initialisé
-function attendreFirebase() {
-  return new Promise((resolve) => {
-    const checkFirebase = setInterval(() => {
-      if (typeof window.db !== 'undefined' && window.db) {
-        clearInterval(checkFirebase);
-        resolve();
-      }
-    }, 100);
-    
-    // Timeout après 5 secondes
-    setTimeout(() => {
-      clearInterval(checkFirebase);
-      if (!window.db) {
-        console.error('Firebase non initialisé après 5 secondes');
-        afficherErreur('Erreur d\'initialisation Firebase');
-      }
-    }, 5000);
-  });
-}
-
-// Attendre que Firebase soit initialisé
-function attendreFirebase() {
-  return new Promise((resolve) => {
-    const checkFirebase = setInterval(() => {
-      if (typeof window.db !== 'undefined' && window.db) {
-        db = window.db;
-        clearInterval(checkFirebase);
-        resolve();
-      }
-    }, 100);
-    
-    // Timeout après 5 secondes
-    setTimeout(() => {
-      clearInterval(checkFirebase);
-      if (!db) {
-        console.error('Firebase non initialisé après 5 secondes');
-        afficherErreur('Erreur d\'initialisation Firebase');
-      }
-    }, 5000);
-  });
-}
+    function attendreFirebase() {
+      return new Promise((resolve, reject) => {
+        let tentatives = 0;
+        const maxTentatives = 50;
+        
+        const checkFirebase = setInterval(() => {
+          tentatives++;
+          
+          if (typeof firebase !== 'undefined' && 
+              firebase.database && 
+              typeof window.db !== 'undefined') {
+            db = window.db;
+            firebaseReady = true;
+            clearInterval(checkFirebase);
+            console.log('✅ Firebase prêt');
+            resolve();
+            return;
+          }
+          
+          if (tentatives >= maxTentatives) {
+            clearInterval(checkFirebase);
+            console.log('⚠️ Initialisation Firebase manuelle');
+            
+            try {
+              if (typeof firebase !== 'undefined' && firebase.database) {
+                if (firebase.apps.length > 0) {
+                  db = firebase.database();
+                  firebaseReady = true;
+                  console.log('✅ Connexion à Firebase existante');
+                  resolve();
+                } else {
+                  reject(new Error('Firebase non initialisé'));
+                }
+              } else {
+                reject(new Error('Firebase SDK non chargé'));
+              }
+            } catch (error) {
+              reject(error);
+            }
+          }
+        }, 100);
+      });
+    }
 
     let sessionsData = [];
     let bilanData = [];
 
     // Initialisation
     document.addEventListener('DOMContentLoaded', async function() {
-  // Attendre que Firebase soit prêt
-  await attendreFirebase();
-  
-  if (!db) {
-    afficherErreur('Impossible de se connecter à Firebase');
-    return;
-  }
-  
-  // Définir les dates par défaut
-  const aujourdhui = new Date();
-  const ilYaUnMois = new Date();
-  ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
-  
-  document.getElementById('date-fin').valueAsDate = aujourdhui;
-  document.getElementById('date-debut').valueAsDate = ilYaUnMois;
+      try {
+        await attendreFirebase();
+        
+        if (!db || !firebaseReady) {
+          afficherErreur('Impossible de se connecter à Firebase');
+          return;
+        }
+        
+        console.log('🔥 Firebase connecté');
+        
+        const aujourdhui = new Date();
+        const ilYaUnMois = new Date();
+        ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
+        
+        document.getElementById('date-fin').valueAsDate = aujourdhui;
+        document.getElementById('date-debut').valueAsDate = ilYaUnMois;
 
-  // Charger les filtres
-  await chargerFiltres();
-});
+        await chargerFiltres();
+        
+      } catch (error) {
+        console.error('❌ Erreur initialisation:', error);
+        afficherErreur('Erreur d\'initialisation Firebase: ' + error.message);
+      }
+    });
 
     // Charger les options des filtres
     async function chargerFiltres() {
+      if (!db) {
+        console.error('DB non disponible');
+        return;
+      }
+      
       try {
-        const snapshot = await window.db.ref('sessions').once('value');
-        if (!snapshot.exists()) return;
+        console.log('📋 Chargement des filtres...');
+        const snapshot = await db.ref('sessions').once('value');
+        
+        if (!snapshot.exists()) {
+          console.log('⚠️ Aucune session trouvée');
+          return;
+        }
 
         const sessions = snapshot.val();
+        console.log('✅ Sessions trouvées:', Object.keys(sessions).length);
+        
         const dps = new Set();
         const lieux = new Set();
 
@@ -474,7 +496,8 @@ function attendreFirebase() {
           }
         });
 
-        // Remplir les selects
+        console.log('DPs:', dps.size, 'Lieux:', lieux.size);
+
         const dpSelect = document.getElementById('filtre-dp');
         Array.from(dps).sort().forEach(dp => {
           const option = document.createElement('option');
@@ -492,7 +515,7 @@ function attendreFirebase() {
         });
 
       } catch (error) {
-        console.error('Erreur chargement filtres:', error);
+        console.error('❌ Erreur chargement filtres:', error);
       }
     }
 
@@ -508,18 +531,31 @@ function attendreFirebase() {
         return;
       }
 
+      if (new Date(dateDebut) > new Date(dateFin)) {
+        afficherErreur('La date de début doit être antérieure à la date de fin');
+        return;
+      }
+
       afficherLoading(true);
       cacherErreur();
 
+      const timeoutId = setTimeout(() => {
+        afficherLoading(false);
+        afficherErreur('Le chargement prend trop de temps. Vérifiez votre connexion.');
+      }, 10000);
+
       try {
-        const snapshot = await window.db.ref('sessions').once('value');
+        const snapshot = await db.ref('sessions').once('value');
+        clearTimeout(timeoutId);
         
         if (!snapshot.exists()) {
+          console.log('Aucune session dans Firebase');
           afficherAucuneDonnee();
           return;
         }
 
         const sessions = snapshot.val();
+        console.log('Sessions trouvées:', Object.keys(sessions).length);
         bilanData = [];
 
         Object.entries(sessions).forEach(([key, session]) => {
@@ -527,16 +563,10 @@ function attendreFirebase() {
 
           const sessionDate = session.meta.date;
           
-          // Filtrer par dates
           if (sessionDate < dateDebut || sessionDate > dateFin) return;
-          
-          // Filtrer par DP
           if (filtreDP && session.meta.dp !== filtreDP) return;
-          
-          // Filtrer par lieu
           if (filtreLieu && session.meta.lieu !== filtreLieu) return;
 
-          // Traiter chaque palanquée
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
 
@@ -558,11 +588,11 @@ function attendreFirebase() {
         });
 
         if (bilanData.length === 0) {
+          console.log('Aucune donnée après filtrage');
           afficherAucuneDonnee();
           return;
         }
 
-        // Afficher les résultats
         afficherStatistiques();
         afficherTableau();
         
@@ -570,8 +600,9 @@ function attendreFirebase() {
         document.getElementById('no-data').style.display = 'none';
 
       } catch (error) {
-        console.error('Erreur:', error);
-        afficherErreur('Erreur lors du chargement des données: ' + error.message);
+        clearTimeout(timeoutId);
+        console.error('Erreur complète:', error);
+        afficherErreur('Erreur: ' + error.message);
       } finally {
         afficherLoading(false);
       }
