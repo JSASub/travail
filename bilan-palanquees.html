@@ -135,6 +135,20 @@
     let app, db;
     let bilanData = [];
     
+    // Ordre hiérarchique des niveaux (global)
+    const ORDRE_NIVEAUX = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+    
+    // Fonction pour trier les plongeurs par niveau
+    function trierPlongeursParNiveau(plongeurs) {
+      return [...plongeurs].sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a.niveau);
+        const indexB = ORDRE_NIVEAUX.indexOf(b.niveau);
+        const posA = indexA === -1 ? 999 : indexA;
+        const posB = indexB === -1 ? 999 : indexB;
+        return posA - posB;
+      });
+    }
+    
     try {
       app = firebase.initializeApp(firebaseConfig);
       db = firebase.database();
@@ -153,7 +167,6 @@
         const lieux = new Set();
         Object.values(sessions).forEach(session => {
           if (session.meta) {
-            // Normaliser le nom du DP (trim + minuscules pour comparaison)
             if (session.meta.dp) {
               const dpNormalise = session.meta.dp.trim();
               dps.add(dpNormalise);
@@ -203,10 +216,14 @@
           if (filtreLieu && session.meta.lieu !== filtreLieu) return;
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
+            
+            // Trier les plongeurs par niveau avant de les stocker
+            const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+            
             bilanData.push({
               date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
               typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
-              horaire: palanquee.parametres?.horaire || '', plongeurs: palanquee.plongeurs,
+              horaire: palanquee.parametres?.horaire || '', plongeurs: plongeursTries,
               profPrevue: palanquee.parametres?.profondeurPrevue || '',
               dureePrevue: palanquee.parametres?.dureePrevue || '',
               profRealisee: palanquee.parametres?.profondeurRealisee || '',
@@ -242,10 +259,9 @@
       });
       
       // Trier les niveaux par ordre hiérarchique
-      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
       const niveauxTries = Object.entries(niveaux).sort((a, b) => {
-        const indexA = ordreNiveaux.indexOf(a[0]);
-        const indexB = ordreNiveaux.indexOf(b[0]);
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
       
@@ -309,6 +325,7 @@
         }
         
         const tr = document.createElement('tr');
+        // Les plongeurs sont déjà triés dans row.plongeurs
         const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
         const niveauxStr = row.plongeurs.map(p => `<span class="niveau-badge">${p.niveau}</span>`).join(' ');
         
@@ -332,13 +349,14 @@
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeurs;Niveaux;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
       bilanData.forEach(row => {
+        // Les plongeurs sont déjà triés
         const plongeurs = row.plongeurs.map(p => p.nom).join(' | ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
         csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
       });
       
       // Ajouter les statistiques par niveau
-      csv += '\n\n STATISTIQUES PAR NIVEAU\n';
+      csv += '\n\nSTATISTIQUES PAR NIVEAU\n';
       csv += 'Niveau;Nombre de plongées;Pourcentage\n';
       const niveaux = {};
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
@@ -347,10 +365,9 @@
           niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
         });
       });
-      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
       const niveauxTries = Object.entries(niveaux).sort((a, b) => {
-        const indexA = ordreNiveaux.indexOf(a[0]);
-        const indexB = ordreNiveaux.indexOf(b[0]);
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
       niveauxTries.forEach(([niveau, count]) => {
@@ -370,6 +387,7 @@
     function exporterExcel() {
       let html = '<table border="1"><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       bilanData.forEach(row => {
+        // Les plongeurs sont déjà triés
         const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
         const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
         html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
@@ -386,10 +404,9 @@
           niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
         });
       });
-      const ordreNiveaux = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
       const niveauxTries = Object.entries(niveaux).sort((a, b) => {
-        const indexA = ordreNiveaux.indexOf(a[0]);
-        const indexB = ordreNiveaux.indexOf(b[0]);
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
       niveauxTries.forEach(([niveau, count]) => {
