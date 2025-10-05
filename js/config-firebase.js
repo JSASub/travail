@@ -759,7 +759,7 @@ async function loadSession(sessionKey) {
 window.db = db;
 window.auth = auth;
 window.app = app;
-window.firebase = firebase;
+//window.firebase = firebase;
 
 console.log('✅ Variables Firebase exportées globalement');
 
