@@ -754,3 +754,12 @@ async function loadSession(sessionKey) {
     return false;
   }
 }
+
+// EXPORT DES VARIABLES GLOBALES
+window.db = db;
+window.auth = auth;
+window.app = app;
+window.firebase = firebase;
+
+console.log('✅ Variables Firebase exportées globalement');
+
