@@ -122,13 +122,20 @@ function renderPalanquees() {
       plongeursHTML = '<li class="palanquee-empty">Aucun plongeur assigné - Glissez des plongeurs ici</li>';
     } else {
       // Trier les plongeurs par niveau dans l'affichage
-      const ordreNiveaux = ['E4', 'E3', 'E2', 'GP', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb', 'N4/GP', 'N4'];
-      
-      const plongeursTriés = [...palanquee].sort((a, b) => {
-        const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
-        const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
-        return indexA - indexB;
-      });
+      const ordreNiveaux = [
+		'E4', 'E3', 'E2',           // Encadrants E
+		'N4/GP', 'GP', 'N4',        // Guide de palanquée et N4
+		'N3', 'N2', 'N1',           // Autonomes et encadrés
+		'Plg.Or', 'Plg.Ar', 'Plg.Br',  // Jeunes plongeurs
+		'Déb.', 'débutant', 'Déb'   // Débutants
+	  ];
+
+      // Trier les plongeurs par niveau dans l'affichage
+	  const plongeursTriés = [...palanquee].sort((a, b) => {
+		  const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
+		  const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
+		  return indexA - indexB;
+	  });
       
       plongeursHTML = plongeursTriés.map((plongeur, sortedIndex) => {
         // Retrouver l'index original pour les opérations
