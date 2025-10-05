@@ -153,10 +153,15 @@
         const lieux = new Set();
         Object.values(sessions).forEach(session => {
           if (session.meta) {
-            if (session.meta.dp) dps.add(session.meta.dp);
-            if (session.meta.lieu) lieux.add(session.meta.lieu);
+            // Normaliser le nom du DP (trim + minuscules pour comparaison)
+            if (session.meta.dp) {
+              const dpNormalise = session.meta.dp.trim();
+              dps.add(dpNormalise);
+            }
+            if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
           }
         });
+        console.log('DPs trouvés:', Array.from(dps).length, 'Lieux:', Array.from(lieux).length);
         const dpSelect = document.getElementById('filtre-dp');
         Array.from(dps).sort().forEach(dp => {
           const option = document.createElement('option');
@@ -238,16 +243,39 @@
     function afficherTableau() {
       const tbody = document.getElementById('bilan-tbody');
       tbody.innerHTML = '';
+      
+      let sessionPrecedente = null;
+      
       bilanData.forEach(row => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        
+        // Ajouter une ligne de séparation si changement de session
+        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
+          const separateur = document.createElement('tr');
+          separateur.innerHTML = `
+            <td colspan="13" style="background: linear-gradient(90deg, var(--primary-blue), var(--success-green)); height: 3px; padding: 0;"></td>
+          `;
+          tbody.appendChild(separateur);
+        }
+        
         const tr = document.createElement('tr');
         const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
         const niveauxStr = row.plongeurs.map(p => `<span class="niveau-badge">${p.niveau}</span>`).join(' ');
+        
+        // Style différent pour la première ligne d'une nouvelle session
+        if (sessionPrecedente !== sessionActuelle) {
+          tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
+          tr.style.fontWeight = 'bold';
+        }
+        
         tr.innerHTML = `
           <td>${new Date(row.date).toLocaleDateString('fr-FR')}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td>
           <td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td title="${plongeursStr}">${plongeursStr}</td><td>${niveauxStr}</td>
           <td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td>
         `;
         tbody.appendChild(tr);
+        
+        sessionPrecedente = sessionActuelle;
       });
     }
 
