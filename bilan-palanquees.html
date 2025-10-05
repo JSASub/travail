@@ -386,7 +386,29 @@
   <script>
 // ✅ NOUVEAU - Utiliser le même fichier de config
 // Variable qui sera définie par config-firebase.js
-let db;
+// ✅ Utiliser la variable db déjà déclarée par config-firebase.js
+// Variable qui sera définie par config-firebase.js (déjà déclarée globalement)
+
+// Attendre que Firebase soit initialisé
+function attendreFirebase() {
+  return new Promise((resolve) => {
+    const checkFirebase = setInterval(() => {
+      if (typeof window.db !== 'undefined' && window.db) {
+        clearInterval(checkFirebase);
+        resolve();
+      }
+    }, 100);
+    
+    // Timeout après 5 secondes
+    setTimeout(() => {
+      clearInterval(checkFirebase);
+      if (!window.db) {
+        console.error('Firebase non initialisé après 5 secondes');
+        afficherErreur('Erreur d\'initialisation Firebase');
+      }
+    }, 5000);
+  });
+}
 
 // Attendre que Firebase soit initialisé
 function attendreFirebase() {
@@ -438,7 +460,7 @@ function attendreFirebase() {
     // Charger les options des filtres
     async function chargerFiltres() {
       try {
-        const snapshot = await db.ref('sessions').once('value');
+        const snapshot = await window.db.ref('sessions').once('value');
         if (!snapshot.exists()) return;
 
         const sessions = snapshot.val();
@@ -490,7 +512,7 @@ function attendreFirebase() {
       cacherErreur();
 
       try {
-        const snapshot = await db.ref('sessions').once('value');
+        const snapshot = await window.db.ref('sessions').once('value');
         
         if (!snapshot.exists()) {
           afficherAucuneDonnee();
