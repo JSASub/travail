@@ -109,7 +109,7 @@
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue [m]</th><th>Durée Prévue [min]</th><th>Prof. Réalisée [m]</th><th>Durée Réalisée [min]</th><th>Paliers</th>
             </tr>
           </thead>
           <tbody id="bilan-tbody"></tbody>
@@ -405,7 +405,7 @@
     }
 
     function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
       let sessionPrecedente = null;
       
       bilanData.forEach(row => {
@@ -489,7 +489,7 @@
 <body>`;
       
       html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue [m]</th><th>Durée Prévue [min]</th><th>Prof. Réalisée [m]</th><th>Durée Réalisée [min]</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
