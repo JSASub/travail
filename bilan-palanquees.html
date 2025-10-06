@@ -161,24 +161,35 @@
     async function chargerFiltres() {
       if (!db) return;
       try {
+        // Charger les DP depuis dp_database
+        const dpSnapshot = await db.ref('dp_database').once('value');
+        const dpSelect = document.getElementById('filtre-dp');
+        
+        if (dpSnapshot.exists()) {
+          const dpsData = dpSnapshot.val();
+          const dpsArray = Object.values(dpsData).map(dp => dp.nom).sort();
+          console.log('DPs trouvés dans dp_database:', dpsArray.length, dpsArray);
+          
+          dpsArray.forEach(dp => {
+            const option = document.createElement('option');
+            option.value = dp;
+            option.textContent = dp;
+            dpSelect.appendChild(option);
+          });
+        }
+        
+        // Charger les lieux depuis les sessions
         const snapshot = await db.ref('sessions').once('value');
         if (!snapshot.exists()) return;
         const sessions = snapshot.val();
-        const dps = new Set();
         const lieux = new Set();
         Object.values(sessions).forEach(session => {
-          if (session.meta) {
-            if (session.meta.dp) dps.add(session.meta.dp.trim());
-            if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
+          if (session.meta && session.meta.lieu) {
+            lieux.add(session.meta.lieu.trim());
           }
         });
-        const dpSelect = document.getElementById('filtre-dp');
-        Array.from(dps).sort().forEach(dp => {
-          const option = document.createElement('option');
-          option.value = dp;
-          option.textContent = dp;
-          dpSelect.appendChild(option);
-        });
+        
+        console.log('Lieux trouvés:', Array.from(lieux).length);
         const lieuSelect = document.getElementById('filtre-lieu');
         Array.from(lieux).sort().forEach(lieu => {
           const option = document.createElement('option');
@@ -209,7 +220,6 @@
           if (!session.meta || !session.palanquees) return;
           const sessionDate = session.meta.date;
           if (sessionDate < dateDebut || sessionDate > dateFin) return;
-          // Ne filtrer que si un filtre spécifique est sélectionné
           if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
           if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
           session.palanquees.forEach((palanquee, idx) => {
@@ -322,7 +332,6 @@
       bilanData.forEach((row, index) => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
-        // Afficher le total de la session précédente si on change de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
@@ -337,17 +346,14 @@
           `;
           tbody.appendChild(trTotalSession);
           
-          // Séparateur orange
           const separateur = document.createElement('tr');
           separateur.innerHTML = `<td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
           tbody.appendChild(separateur);
         }
         
-        // Afficher chaque plongeur sur une ligne séparée
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
           
-          // Style pour la première ligne d'une nouvelle session
           if (sessionPrecedente !== sessionActuelle && plongeurIdx === 0) {
             tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
             tr.style.fontWeight = 'bold';
@@ -372,7 +378,6 @@
           tbody.appendChild(tr);
         });
         
-        // Ligne de total pour la palanquée
         const trTotal = document.createElement('tr');
         trTotal.style.background = '#e8f4f8';
         trTotal.style.fontWeight = 'bold';
@@ -386,7 +391,6 @@
         sessionPrecedente = sessionActuelle;
       });
       
-      // Ajouter le total de la dernière session
       if (bilanData.length > 0) {
         const dernierIndex = bilanData.length - 1;
         const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
@@ -412,7 +416,6 @@
       bilanData.forEach(row => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
-        // Total session si changement
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
@@ -421,18 +424,15 @@
           csv += ';;;;;;;;;;;;;;\n';
         }
         
-        // Une ligne par plongeur
         row.plongeurs.forEach((plongeur, idx) => {
           csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
         });
         
-        // Total palanquée
         csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;;;\n`;
         
         sessionPrecedente = sessionActuelle;
       });
       
-      // Total de la dernière session
       if (bilanData.length > 0) {
         const dernierIndex = bilanData.length - 1;
         const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
@@ -511,7 +511,6 @@
           html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
         }
         
-        // Une ligne par plongeur
         row.plongeurs.forEach((plongeur, idx) => {
           html += `<tr>
             <td>${idx === 0 ? row.date : ''}</td>
