@@ -359,7 +359,7 @@
             <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
             <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
             <td>${plongeur.nom}</td>
-            <td>${plongeur.prerogatives || ''}</td>
+            <td>${plongeur.pre || ''}</td>
             <td><span class="niveau-badge">${plongeur.niveau}</span></td>
             <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
             <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
@@ -422,7 +422,7 @@
         
         // Une ligne par plongeur
         row.plongeurs.forEach((plongeur, idx) => {
-          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.prerogatives || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
+          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
         });
         
         // Total palanquée
@@ -519,7 +519,7 @@
             <td>${idx === 0 ? row.typeSession : ''}</td>
             <td>${idx === 0 ? row.numeroPalanquee : ''}</td>
             <td>${plongeur.nom}</td>
-            <td>${plongeur.prerogatives || ''}</td>
+            <td>${plongeur.pre || ''}</td>
             <td>${plongeur.niveau}</td>
             <td>${idx === 0 ? row.horaire : ''}</td>
             <td>${idx === 0 ? row.profPrevue : ''}</td>
