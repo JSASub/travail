@@ -349,7 +349,7 @@
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const separateur = document.createElement('tr');
           separateur.innerHTML = `
-            <td colspan="8" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
+            <td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
           `;
           tbody.appendChild(separateur);
         }
@@ -364,7 +364,7 @@
             tr.style.fontWeight = 'bold';
           }
           
-          // Déterminer la prérogative (vide par défaut, ou Guide/Directeur si applicable)
+          // Déterminer la prérogative
           let prerogative = '';
           if (plongeur.nom === row.guide) {
             prerogative = 'Guide de palanquée';
@@ -379,25 +379,15 @@
             <td>${plongeur.nom}</td>
             <td>${prerogative}</td>
             <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+            <td>${index === 0 ? row.horaire : ''}</td>
+            <td>${index === 0 ? row.profPrevue : ''}</td>
+            <td>${index === 0 ? row.dureePrevue : ''}</td>
+            <td>${index === 0 ? row.profRealisee : ''}</td>
+            <td>${index === 0 ? row.dureeRealisee : ''}</td>
+            <td>${index === 0 ? row.paliers : ''}</td>
           `;
           tbody.appendChild(tr);
         });
-        
-        // Ligne fusionnée avec les caractéristiques de la palanquée
-        const trCarac = document.createElement('tr');
-        trCarac.style.background = '#f0f8ff';
-        trCarac.style.fontStyle = 'italic';
-        trCarac.innerHTML = `
-          <td colspan="8" style="padding: 8px; border-top: 2px solid #007bff;">
-            <strong>Horaire:</strong> ${row.horaire} | 
-            <strong>Prof. Prévue:</strong> ${row.profPrevue} | 
-            <strong>Durée Prévue:</strong> ${row.dureePrevue} | 
-            <strong>Prof. Réalisée:</strong> ${row.profRealisee} | 
-            <strong>Durée Réalisée:</strong> ${row.dureeRealisee} | 
-            <strong>Paliers:</strong> ${row.paliers}
-          </td>
-        `;
-        tbody.appendChild(trCarac);
         
         sessionPrecedente = sessionActuelle;
       });
@@ -454,6 +444,8 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    body { font-family: Arial, sans-serif; }
+    h2 { background-color: #003366; color: white; padding: 15px; margin: 0 0 20px 0; border-radius: 5px; }
     table { border-collapse: collapse; width: 100%; }
     th { background-color: #003366; color: white; padding: 10px; border: 2px solid #000; font-weight: bold; text-align: left; }
     td { padding: 8px; border: 1px solid #666; }
@@ -461,13 +453,12 @@
     .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
     .total-row { background-color: #e3f2fd; font-weight: bold; }
     .session-separator { background: #FF6B00; height: 10px; }
-    .session-header { background-color: #e3f2fd; font-weight: bold; border: 2px solid #007bff; }
   </style>
 </head>
 <body>`;
       
       html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
@@ -476,7 +467,7 @@
         
         // Ajouter un séparateur AVANT la ligne si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
-          html += `<tr><td colspan="8" class="session-separator"></td></tr>`;
+          html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
         }
         
         // Afficher un plongeur par ligne
@@ -496,20 +487,14 @@
             <td>${plongeur.nom}</td>
             <td>${prerogative}</td>
             <td>${plongeur.niveau}</td>
+            <td>${index === 0 ? row.horaire : ''}</td>
+            <td>${index === 0 ? row.profPrevue : ''}</td>
+            <td>${index === 0 ? row.dureePrevue : ''}</td>
+            <td>${index === 0 ? row.profRealisee : ''}</td>
+            <td>${index === 0 ? row.dureeRealisee : ''}</td>
+            <td>${index === 0 ? row.paliers : ''}</td>
           </tr>`;
         });
-        
-        // Ligne fusionnée avec les caractéristiques de la palanquée
-        html += `<tr style="background: #f0f8ff; font-style: italic;">
-          <td colspan="8" style="padding: 8px; border-top: 2px solid #007bff;">
-            <strong>Horaire:</strong> ${row.horaire} | 
-            <strong>Prof. Prévue:</strong> ${row.profPrevue} | 
-            <strong>Durée Prévue:</strong> ${row.dureePrevue} | 
-            <strong>Prof. Réalisée:</strong> ${row.profRealisee} | 
-            <strong>Durée Réalisée:</strong> ${row.dureeRealisee} | 
-            <strong>Paliers:</strong> ${row.paliers}
-          </td>
-        </tr>`;
         
         sessionPrecedente = sessionActuelle;
       });
