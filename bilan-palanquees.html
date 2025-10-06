@@ -341,15 +341,25 @@
       tbody.innerHTML = '';
       
       let sessionPrecedente = null;
+      let palanqueePrecedente = null;
       
       bilanData.forEach(row => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        const palanqueeActuelle = `${sessionActuelle}_${row.numeroPalanquee}`;
         
-        // Ajouter une ligne de séparation si changement de session
+        // Ajouter une ligne de séparation orange si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const separateur = document.createElement('tr');
           separateur.innerHTML = `
             <td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
+          `;
+          tbody.appendChild(separateur);
+        }
+        // Ajouter une ligne de séparation grise si changement de palanquée (mais pas de session)
+        else if (palanqueePrecedente !== null && palanqueePrecedente !== palanqueeActuelle) {
+          const separateur = document.createElement('tr');
+          separateur.innerHTML = `
+            <td colspan="14" style="background: #999; height: 3px; padding: 0; border: none;"></td>
           `;
           tbody.appendChild(separateur);
         }
@@ -390,6 +400,7 @@
         });
         
         sessionPrecedente = sessionActuelle;
+        palanqueePrecedente = palanqueeActuelle;
       });
     }
 
@@ -444,30 +455,37 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: Arial, sans-serif; }
-    h2 { background-color: #003366; color: white; padding: 15px; margin: 0 0 20px 0; border-radius: 5px; }
-    table { border-collapse: collapse; width: 100%; }
+    body { font-family: Arial, sans-serif; background-color: #f5f5f5; }
+    h2 { background-color: #FF6B00; color: white; padding: 20px; margin: 0 0 30px 0; text-align: center; font-size: 24px; border: 3px solid #000; }
+    table { border-collapse: collapse; width: 100%; background: white; }
     th { background-color: #003366; color: white; padding: 10px; border: 2px solid #000; font-weight: bold; text-align: left; }
     td { padding: 8px; border: 1px solid #666; }
     tr:nth-child(even) { background-color: #f2f2f2; }
     .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
     .total-row { background-color: #e3f2fd; font-weight: bold; }
     .session-separator { background: #FF6B00; height: 10px; }
+    .palanquee-separator { background: #999; height: 3px; }
   </style>
 </head>
 <body>`;
       
-      html += '<h2>Bilan Global des Palanquées</h2>';
+      html += '<h2>📊 Bilan Global des Palanquées - JSAS</h2>';
       html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
+      let palanqueePrecedente = null;
       
       bilanData.forEach(row => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        const palanqueeActuelle = `${sessionActuelle}_${row.numeroPalanquee}`;
         
-        // Ajouter un séparateur AVANT la ligne si changement de session
+        // Ajouter un séparateur orange si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
+        }
+        // Ajouter un séparateur gris si changement de palanquée (mais pas de session)
+        else if (palanqueePrecedente !== null && palanqueePrecedente !== palanqueeActuelle) {
+          html += `<tr><td colspan="14" class="palanquee-separator"></td></tr>`;
         }
         
         // Afficher un plongeur par ligne
@@ -497,6 +515,7 @@
         });
         
         sessionPrecedente = sessionActuelle;
+        palanqueePrecedente = palanqueeActuelle;
       });
       html += '</table>';
       
