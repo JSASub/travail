@@ -183,19 +183,19 @@
           }
         });
         
-        // Ajouter aussi tous les directeurs de la base
+        // Ajouter tous les DP depuis dp_database
         try {
-          const dpSnapshot = await db.ref('directeurs').once('value');
-          if (dpSnapshot.exists()) {
-            const directeurs = dpSnapshot.val();
-            Object.values(directeurs).forEach(directeur => {
-              if (directeur.nom) {
-                dps.add(directeur.nom.trim());
+          const dpDbSnapshot = await db.ref('dp_database').once('value');
+          if (dpDbSnapshot.exists()) {
+            const dpDatabase = dpDbSnapshot.val();
+            Object.values(dpDatabase).forEach(dp => {
+              if (dp.nom) {
+                dps.add(dp.nom.trim());
               }
             });
           }
         } catch (e) {
-          console.log('Pas de liste directeurs séparée');
+          console.log('Erreur chargement dp_database:', e);
         }
         
         console.log('DPs trouvés:', Array.from(dps).length, 'Lieux:', Array.from(lieux).length);
@@ -395,12 +395,16 @@
             tr.style.fontWeight = 'bold';
           }
           
-          // Déterminer la prérogative
+          // Déterminer la prérogative depuis le champ 'pre' du plongeur
           let prerogative = '';
-          if (plongeur.nom === row.guide) {
-            prerogative = 'Guide de palanquée';
-          } else if (plongeur.nom === row.directeur) {
-            prerogative = 'Directeur de plongée';
+          if (plongeur.pre) {
+            if (plongeur.pre === 'DP') {
+              prerogative = 'Directeur de plongée';
+            } else if (plongeur.pre === 'GP') {
+              prerogative = 'Guide de palanquée';
+            } else {
+              prerogative = plongeur.pre;
+            }
           }
           
           tr.innerHTML = `
@@ -433,10 +437,14 @@
       bilanData.forEach(row => {
         row.plongeurs.forEach((plongeur, index) => {
           let prerogative = '';
-          if (plongeur.nom === row.guide) {
-            prerogative = 'Guide de palanquée';
-          } else if (plongeur.nom === row.directeur) {
-            prerogative = 'Directeur de plongée';
+          if (plongeur.pre) {
+            if (plongeur.pre === 'DP') {
+              prerogative = 'Directeur de plongée';
+            } else if (plongeur.pre === 'GP') {
+              prerogative = 'Guide de palanquée';
+            } else {
+              prerogative = plongeur.pre;
+            }
           }
           
           csv += `${index === 0 ? row.date : ''};${index === 0 ? row.dp : ''};${index === 0 ? row.lieu : ''};${index === 0 ? row.typeSession : ''};${index === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${prerogative};${plongeur.niveau};${index === 0 ? row.horaire : ''};${index === 0 ? row.profPrevue : ''};${index === 0 ? row.dureePrevue : ''};${index === 0 ? row.profRealisee : ''};${index === 0 ? row.dureeRealisee : ''};${index === 0 ? row.paliers : ''}\n`;
@@ -514,12 +522,16 @@
         
         // Afficher un plongeur par ligne
         row.plongeurs.forEach((plongeur, index) => {
-          // Déterminer la prérogative
+          // Déterminer la prérogative depuis le champ 'pre' du plongeur
           let prerogative = '';
-          if (plongeur.nom === row.guide) {
-            prerogative = 'Guide de palanquée';
-          } else if (plongeur.nom === row.directeur) {
-            prerogative = 'Directeur de plongée';
+          if (plongeur.pre) {
+            if (plongeur.pre === 'DP') {
+              prerogative = 'Directeur de plongée';
+            } else if (plongeur.pre === 'GP') {
+              prerogative = 'Guide de palanquée';
+            } else {
+              prerogative = plongeur.pre;
+            }
           }
           
           html += `<tr>
