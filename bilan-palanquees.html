@@ -485,12 +485,13 @@
     .session-separator { background: #FF6B00; height: 10px; }
     .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
     .total-row { background-color: #e3f2fd; font-weight: bold; }
+    .titre-principal { background-color: #007bff; color: white; padding: 15px; font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
   </style>
 </head>
 <body>`;
       
-      html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue [m]</th><th>Durée Prévue [min]</th><th>Prof. Réalisée [m]</th><th>Durée Réalisée [min]</th><th>Paliers</th></tr>';
+      html += '<div class="titre-principal">Bilan Global des Palanquées - JSAS</div>';
+      html += '<table><tr style="background-color: #007bff; color: white;"><th style="background-color: #007bff;">Date</th><th style="background-color: #007bff;">DP</th><th style="background-color: #007bff;">Lieu</th><th style="background-color: #007bff;">Session</th><th style="background-color: #007bff;">Palanquée</th><th style="background-color: #007bff;">Plongeur</th><th style="background-color: #007bff;">Prérogatives</th><th style="background-color: #007bff;">Niveau</th><th style="background-color: #007bff;">Horaire</th><th style="background-color: #007bff;">Prof. Prévue [m]</th><th style="background-color: #007bff;">Durée Prévue [min]</th><th style="background-color: #007bff;">Prof. Réalisée [m]</th><th style="background-color: #007bff;">Durée Réalisée [min]</th><th style="background-color: #007bff;">Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
