@@ -349,40 +349,72 @@
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const separateur = document.createElement('tr');
           separateur.innerHTML = `
-            <td colspan="13" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
+            <td colspan="8" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>
           `;
           tbody.appendChild(separateur);
         }
         
-        const tr = document.createElement('tr');
-        // Les plongeurs sont déjà triés dans row.plongeurs
-        const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
-        const niveauxStr = row.plongeurs.map(p => `<span class="niveau-badge">${p.niveau}</span>`).join(' ');
+        // Afficher un plongeur par ligne
+        row.plongeurs.forEach((plongeur, index) => {
+          const tr = document.createElement('tr');
+          
+          // Style différent pour la première ligne d'une nouvelle session
+          if (sessionPrecedente !== sessionActuelle && index === 0) {
+            tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
+            tr.style.fontWeight = 'bold';
+          }
+          
+          // Déterminer la prérogative (vide par défaut, ou Guide/Directeur si applicable)
+          let prerogative = '';
+          if (plongeur.nom === row.guide) {
+            prerogative = 'Guide de palanquée';
+          }
+          
+          tr.innerHTML = `
+            <td>${index === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+            <td>${index === 0 ? row.dp : ''}</td>
+            <td>${index === 0 ? row.lieu : ''}</td>
+            <td>${index === 0 ? row.typeSession : ''}</td>
+            <td>${index === 0 ? row.numeroPalanquee : ''}</td>
+            <td>${plongeur.nom}</td>
+            <td>${prerogative}</td>
+            <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
         
-        // Style différent pour la première ligne d'une nouvelle session
-        if (sessionPrecedente !== sessionActuelle) {
-          tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
-          tr.style.fontWeight = 'bold';
-        }
-        
-        tr.innerHTML = `
-          <td>${new Date(row.date).toLocaleDateString('fr-FR')}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td>
-          <td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td title="${plongeursStr}">${plongeursStr}</td><td>${niveauxStr}</td>
-          <td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td>
+        // Ligne fusionnée avec les caractéristiques de la palanquée
+        const trCarac = document.createElement('tr');
+        trCarac.style.background = '#f0f8ff';
+        trCarac.style.fontStyle = 'italic';
+        trCarac.innerHTML = `
+          <td colspan="8" style="padding: 8px; border-top: 2px solid #007bff;">
+            <strong>Horaire:</strong> ${row.horaire} | 
+            <strong>Prof. Prévue:</strong> ${row.profPrevue} | 
+            <strong>Durée Prévue:</strong> ${row.dureePrevue} | 
+            <strong>Prof. Réalisée:</strong> ${row.profRealisee} | 
+            <strong>Durée Réalisée:</strong> ${row.dureeRealisee} | 
+            <strong>Paliers:</strong> ${row.paliers}
+          </td>
         `;
-        tbody.appendChild(tr);
+        tbody.appendChild(trCarac);
         
         sessionPrecedente = sessionActuelle;
       });
     }
 
     function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeurs;Niveaux;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogative;Niveau;Horaire;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      
       bilanData.forEach(row => {
-        // Les plongeurs sont déjà triés
-        const plongeurs = row.plongeurs.map(p => p.nom).join(' | ');
-        const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
-        csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
+        row.plongeurs.forEach((plongeur, index) => {
+          let prerogative = '';
+          if (plongeur.nom === row.guide) {
+            prerogative = 'Guide de palanquée';
+          }
+          
+          csv += `${index === 0 ? row.date : ''};${index === 0 ? row.dp : ''};${index === 0 ? row.lieu : ''};${index === 0 ? row.typeSession : ''};${index === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${prerogative};${plongeur.niveau};${index === 0 ? row.horaire : ''};${index === 0 ? row.profPrevue : ''};${index === 0 ? row.dureePrevue : ''};${index === 0 ? row.profRealisee : ''};${index === 0 ? row.dureeRealisee : ''};${index === 0 ? row.paliers : ''}\n`;
+        });
       });
       
       // Ajouter les statistiques par niveau
@@ -435,7 +467,7 @@
 <body>`;
       
       html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th></tr>';
       
       let sessionPrecedente = null;
       
@@ -444,13 +476,40 @@
         
         // Ajouter un séparateur AVANT la ligne si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
-          html += `<tr><td colspan="13" class="session-separator"></td></tr>`;
+          html += `<tr><td colspan="8" class="session-separator"></td></tr>`;
         }
         
-        const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
-        const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
+        // Afficher un plongeur par ligne
+        row.plongeurs.forEach((plongeur, index) => {
+          // Déterminer la prérogative
+          let prerogative = '';
+          if (plongeur.nom === row.guide) {
+            prerogative = 'Guide de palanquée';
+          }
+          
+          html += `<tr>
+            <td>${index === 0 ? row.date : ''}</td>
+            <td>${index === 0 ? row.dp : ''}</td>
+            <td>${index === 0 ? row.lieu : ''}</td>
+            <td>${index === 0 ? row.typeSession : ''}</td>
+            <td>${index === 0 ? row.numeroPalanquee : ''}</td>
+            <td>${plongeur.nom}</td>
+            <td>${prerogative}</td>
+            <td>${plongeur.niveau}</td>
+          </tr>`;
+        });
         
-        html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
+        // Ligne fusionnée avec les caractéristiques de la palanquée
+        html += `<tr style="background: #f0f8ff; font-style: italic;">
+          <td colspan="8" style="padding: 8px; border-top: 2px solid #007bff;">
+            <strong>Horaire:</strong> ${row.horaire} | 
+            <strong>Prof. Prévue:</strong> ${row.profPrevue} | 
+            <strong>Durée Prévue:</strong> ${row.dureePrevue} | 
+            <strong>Prof. Réalisée:</strong> ${row.profRealisee} | 
+            <strong>Durée Réalisée:</strong> ${row.dureeRealisee} | 
+            <strong>Paliers:</strong> ${row.paliers}
+          </td>
+        </tr>`;
         
         sessionPrecedente = sessionActuelle;
       });
