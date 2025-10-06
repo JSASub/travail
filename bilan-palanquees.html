@@ -167,33 +167,35 @@
       if (!db) return;
       try {
         const snapshot = await db.ref('sessions').once('value');
-        const dpSnapshot = await db.ref('directeurs').once('value');
-        
+        if (!snapshot.exists()) return;
+        const sessions = snapshot.val();
         const dps = new Set();
         const lieux = new Set();
         
-        // Charger les DPs depuis les sessions
-        if (snapshot.exists()) {
-          const sessions = snapshot.val();
-          Object.values(sessions).forEach(session => {
-            if (session.meta) {
-              if (session.meta.dp) {
-                const dpNormalise = session.meta.dp.trim();
-                dps.add(dpNormalise);
-              }
-              if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
+        // Charger les DPs et lieux depuis les sessions
+        Object.values(sessions).forEach(session => {
+          if (session.meta) {
+            if (session.meta.dp) {
+              const dpNormalise = session.meta.dp.trim();
+              dps.add(dpNormalise);
             }
-          });
-        }
+            if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
+          }
+        });
         
-        // Ajouter TOUS les directeurs depuis la base de données
-        if (dpSnapshot.exists()) {
-          const directeurs = dpSnapshot.val();
-          Object.values(directeurs).forEach(directeur => {
-            if (directeur.nom) {
-              dps.add(directeur.nom.trim());
-            }
-          });
+        // Ajouter aussi tous les directeurs de la base
+        try {
+          const dpSnapshot = await db.ref('directeurs').once('value');
+          if (dpSnapshot.exists()) {
+            const directeurs = dpSnapshot.val();
+            Object.values(directeurs).forEach(directeur => {
+              if (directeur.nom) {
+                dps.add(directeur.nom.trim());
+              }
+            });
+          }
+        } catch (e) {
+          console.log('Pas de liste directeurs séparée');
         }
         
         console.log('DPs trouvés:', Array.from(dps).length, 'Lieux:', Array.from(lieux).length);
@@ -492,7 +494,6 @@
 </head>
 <body>`;
       
-      html += '<h2>📊 Bilan Global des Palanquées - JSAS</h2>';
       html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
