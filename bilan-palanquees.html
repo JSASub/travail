@@ -368,21 +368,7 @@
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         const palanqueeActuelle = `${sessionActuelle}_${row.numeroPalanquee}`;
         
-        // Calculer et afficher le total de la session précédente
-        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
-          const plongeursDansSession = bilanData.filter(r => 
-            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
-          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-          
-          const trTotalSession = document.createElement('tr');
-          trTotalSession.style.background = '#d4edda';
-          trTotalSession.style.fontWeight = 'bold';
-          trTotalSession.innerHTML = `
-            <td colspan="6" style="text-align: right; padding: 12px;">TOTAL SESSION:</td>
-            <td colspan="8" style="padding: 12px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
-          `;
-          tbody.appendChild(trTotalSession);
-		// Ajouter une ligne de séparation orange si changement de session
+        // Ajouter une ligne de séparation orange si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const separateur = document.createElement('tr');
           separateur.innerHTML = `
@@ -519,15 +505,6 @@
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         const palanqueeActuelle = `${sessionActuelle}_${row.numeroPalanquee}`;
         
-		if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
-          const plongeursDansSession = bilanData.filter(r => 
-            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
-          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-          
-          html += `<tr style="background: #d4edda; font-weight: bold;">
-            <td colspan="6" style="text-align: right; padding: 12px;">TOTAL SESSION:</td>
-            <td colspan="8" style="padding: 12px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
-          </tr>`;
         // Ajouter un séparateur orange si changement de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
@@ -569,24 +546,7 @@
           </tr>`;
         });
         
-        // Ligne de total pour la palanquée
-        const trTotal = document.createElement('tr');
-        trTotal.style.background = '#e8f4f8';
-        trTotal.style.fontWeight = 'bold';
-        trTotal.style.fontSize = '12px';
-        trTotal.innerHTML = `
-          <td colspan="6" style="text-align: right; padding-right: 10px;">Total palanquée:</td>
-          <td colspan="8">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
-        `;
-        tbody.appendChild(trTotal);
-		
-		// Total palanquée
-        html += `<tr style="background: #e8f4f8; font-weight: bold;">
-          <td colspan="6" style="text-align: right;">Total palanquée:</td>
-          <td colspan="8">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
-        </tr>`;
-		
-		sessionPrecedente = sessionActuelle;
+        sessionPrecedente = sessionActuelle;
         palanqueePrecedente = palanqueeActuelle;
       });
       html += '</table>';
