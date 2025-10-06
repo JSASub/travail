@@ -223,13 +223,16 @@
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
             
-            // Trier les plongeurs par niveau avant de les stocker
+            // Trier les plongeurs par niveau puis par nom avant de les stocker
             const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
             
             bilanData.push({
               date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
               typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
-              horaire: palanquee.parametres?.horaire || '', plongeurs: plongeursTries,
+              horaire: palanquee.parametres?.horaire || '', 
+              plongeurs: plongeursTries,
+              guide: palanquee.parametres?.guide || '',
+              directeur: palanquee.parametres?.directeur || '',
               profPrevue: palanquee.parametres?.profondeurPrevue || '',
               dureePrevue: palanquee.parametres?.dureePrevue || '',
               profRealisee: palanquee.parametres?.profondeurRealisee || '',
@@ -378,6 +381,8 @@
           let prerogative = '';
           if (plongeur.nom === row.guide) {
             prerogative = 'Guide de palanquée';
+          } else if (plongeur.nom === row.directeur) {
+            prerogative = 'Directeur de plongée';
           }
           
           tr.innerHTML = `
@@ -412,6 +417,8 @@
           let prerogative = '';
           if (plongeur.nom === row.guide) {
             prerogative = 'Guide de palanquée';
+          } else if (plongeur.nom === row.directeur) {
+            prerogative = 'Directeur de plongée';
           }
           
           csv += `${index === 0 ? row.date : ''};${index === 0 ? row.dp : ''};${index === 0 ? row.lieu : ''};${index === 0 ? row.typeSession : ''};${index === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${prerogative};${plongeur.niveau};${index === 0 ? row.horaire : ''};${index === 0 ? row.profPrevue : ''};${index === 0 ? row.dureePrevue : ''};${index === 0 ? row.profRealisee : ''};${index === 0 ? row.dureeRealisee : ''};${index === 0 ? row.paliers : ''}\n`;
@@ -458,7 +465,7 @@
     body { font-family: Arial, sans-serif; background-color: #f5f5f5; }
     h2 { background-color: #FF6B00; color: white; padding: 20px; margin: 0 0 30px 0; text-align: center; font-size: 24px; border: 3px solid #000; }
     table { border-collapse: collapse; width: 100%; background: white; }
-    th { background-color: #003366; color: white; padding: 10px; border: 2px solid #000; font-weight: bold; text-align: left; }
+    th { background-color: #FF6B00; color: white; padding: 12px; border: 3px solid #000; font-weight: bold; text-align: left; font-size: 14px; }
     td { padding: 8px; border: 1px solid #666; }
     tr:nth-child(even) { background-color: #f2f2f2; }
     .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
@@ -494,6 +501,8 @@
           let prerogative = '';
           if (plongeur.nom === row.guide) {
             prerogative = 'Guide de palanquée';
+          } else if (plongeur.nom === row.directeur) {
+            prerogative = 'Directeur de plongée';
           }
           
           html += `<tr>
