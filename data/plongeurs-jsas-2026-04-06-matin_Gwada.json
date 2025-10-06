@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "dp": "Non défini",
+    "date": "2026-04-06",
+    "lieu": "Gwada11  ilet Pigeon (19m) 10h",
+    "plongee": "matin",
+    "version": "7.7.1",
+    "exportDate": "2025-10-05T10:21:22.087Z",
+    "type": "plongeurs_only"
+  },
+  "plongeurs": [
+    {
+      "nom": "AUBARD Corinne",
+      "niveau": "N4/GP",
+      "prerogatives": "PA60"
+    },
+    {
+      "nom": "AGUIRRE Raoul",
+      "niveau": "E3",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "BERTIN Armand",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BERTIN Élina",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "AMAT Élisaberh",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "MARTY David",
+      "niveau": "E3",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "PRADINE Christiane",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "TROUBADIS Guillaume",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "TROUBADIS Lola",
+      "niveau": "N1",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "MARTY Élina",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "GONTHIER Éric",
+      "niveau": "N3",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "FONTANILLAS Romain",
+      "niveau": "N3",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "MARTY Léa",
+      "niveau": "N2",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "GAUTHIER Christophe",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "NICOT Damien",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "BUCHERIC Nicolas",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CATTEROU Raphaël",
+      "niveau": "N2",
+      "prerogatives": "PE20"
+    },
+    {
+      "nom": "CATTEROU Sacha",
+      "niveau": "E2",
+      "prerogatives": "GP"
+    },
+    {
+      "nom": "PETRUCEL Sacha",
+      "niveau": "N2",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "BEST Sébastien",
+      "niveau": "E2",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "BEST Stéphanie",
+      "niveau": "N3",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "AGUIRRE Anne",
+      "niveau": "N2",
+      "prerogatives": "PA20"
+    },
+    {
+      "nom": "CALAU Samuel",
+      "niveau": "N2",
+      "prerogatives": "PA20"
+    }
+  ],
+  "stats": {
+    "totalPlongeurs": 23,
+    "niveaux": {
+      "parNiveau": {
+        "N4/GP": 1,
+        "E3": 2,
+        "N1": 3,
+        "N2": 10,
+        "E2": 4,
+        "N3": 3
+      },
+      "parCategorie": {
+        "encadrants": 7,
+        "autonomes": 13,
+        "encadres": 3,
+        "jeunes": 0,
+        "debutants": 0
+      },
+      "total": 23
+    }
+  }
+}
