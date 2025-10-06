@@ -167,19 +167,35 @@
       if (!db) return;
       try {
         const snapshot = await db.ref('sessions').once('value');
-        if (!snapshot.exists()) return;
-        const sessions = snapshot.val();
+        const dpSnapshot = await db.ref('directeurs').once('value');
+        
         const dps = new Set();
         const lieux = new Set();
-        Object.values(sessions).forEach(session => {
-          if (session.meta) {
-            if (session.meta.dp) {
-              const dpNormalise = session.meta.dp.trim();
-              dps.add(dpNormalise);
+        
+        // Charger les DPs depuis les sessions
+        if (snapshot.exists()) {
+          const sessions = snapshot.val();
+          Object.values(sessions).forEach(session => {
+            if (session.meta) {
+              if (session.meta.dp) {
+                const dpNormalise = session.meta.dp.trim();
+                dps.add(dpNormalise);
+              }
+              if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
             }
-            if (session.meta.lieu) lieux.add(session.meta.lieu.trim());
-          }
-        });
+          });
+        }
+        
+        // Ajouter TOUS les directeurs depuis la base de données
+        if (dpSnapshot.exists()) {
+          const directeurs = dpSnapshot.val();
+          Object.values(directeurs).forEach(directeur => {
+            if (directeur.nom) {
+              dps.add(directeur.nom.trim());
+            }
+          });
+        }
+        
         console.log('DPs trouvés:', Array.from(dps).length, 'Lieux:', Array.from(lieux).length);
         const dpSelect = document.getElementById('filtre-dp');
         Array.from(dps).sort().forEach(dp => {
