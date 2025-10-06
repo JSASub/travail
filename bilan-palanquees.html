@@ -432,7 +432,7 @@
     }
 
     function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogative;Niveau;Horaire;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogative;Niveau;Horaire;Prof. Prévue (m);Durée Prévue (min);Prof. Réalisée (m);Durée Réalisée (min);Paliers\n';
       
       bilanData.forEach(row => {
         row.plongeurs.forEach((plongeur, index) => {
@@ -502,7 +502,7 @@
 </head>
 <body>`;
       
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogative</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue (m)</th><th>Durée Prévue (min)</th><th>Prof. Réalisée (m)</th><th>Durée Réalisée (min)</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
       let palanqueePrecedente = null;
