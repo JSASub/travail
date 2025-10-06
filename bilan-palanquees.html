@@ -472,85 +472,28 @@
     }
 
     function exporterExcel() {
-      let html = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
- <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-  <Author>JSAS</Author>
-  <Created>${new Date().toISOString()}</Created>
- </DocumentProperties>
- <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
-  <WindowHeight>12000</WindowHeight>
-  <WindowWidth>18000</WindowWidth>
- </ExcelWorkbook>
- <Styles>
-  <Style ss:ID="Default" ss:Name="Normal">
-   <Font ss:FontName="Calibri" ss:Size="11"/>
-  </Style>
-  <Style ss:ID="titre">
-   <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
-   <Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-   <Borders>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="entete">
-   <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
-   <Font ss:Bold="1" ss:Color="#FFFFFF"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-   <Borders>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2"/>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="totalPalanquee">
-   <Interior ss:Color="#e8f4f8" ss:Pattern="Solid"/>
-   <Font ss:Bold="1" ss:Size="10"/>
-  </Style>
-  <Style ss:ID="totalSession">
-   <Interior ss:Color="#d4edda" ss:Pattern="Solid"/>
-   <Font ss:Bold="1"/>
-  </Style>
-  <Style ss:ID="separateur">
-   <Interior ss:Color="#FF6B00" ss:Pattern="Solid"/>
-  </Style>
- </Styles>
- <Worksheet ss:Name="Bilan Palanquées">
-  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-   <PageSetup>
-    <Layout x:Orientation="Landscape"/>
-    <Header x:Margin="0"/>
-    <Footer x:Margin="0"/>
-    <PageMargins x:Bottom="0" x:Left="0" x:Right="0" x:Top="0"/>
-    <FitToPage/>
-    <Print>
-     <FitWidth>1</FitWidth>
-     <FitHeight>0</FitHeight>
-     <ValidPrinterInfo/>
-     <Scale>100</Scale>
-    </Print>
-   </PageSetup>
-  </WorksheetOptions>
-  <Table>`;
+      let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th { background-color: #003366; color: white; padding: 10px; border: 2px solid #000; font-weight: bold; text-align: left; }
+    td { padding: 8px; border: 1px solid #666; }
+    .total-palanquee { background-color: #e8f4f8; font-weight: bold; font-size: 12px; }
+    .total-session { background-color: #d4edda; font-weight: bold; }
+    .session-separator { background: #FF6B00; height: 10px; }
+    .stats-header { background-color: #007bff; color: white; padding: 10px; margin-top: 20px; }
+    .total-row { background-color: #e3f2fd; font-weight: bold; }
+    .titre-principal { background-color: #007bff; color: white; padding: 15px; font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+  </style>
+</head>
+<body>`;
       
-      // Titre
-      html += '<Row ss:Height="30"><Cell ss:MergeAcross="13" ss:StyleID="titre"><Data ss:Type="String">Bilan Global des Palanquées - JSAS</Data></Cell></Row>';
-      html += '<Row ss:Height="10"></Row>';
-      
-      // En-têtes
-      html += '<Row>';
-      ['Date', 'DP', 'Lieu', 'Session', 'Palanquée', 'Plongeur', 'Prérogatives', 'Niveau', 'Horaire', 'Prof. Prévue [m]', 'Durée Prévue [min]', 'Prof. Réalisée [m]', 'Durée Réalisée [min]', 'Paliers'].forEach(entete => {
-        html += `<Cell ss:StyleID="entete"><Data ss:Type="String">${entete}</Data></Cell>`;
-      });
-      html += '</Row>';
+      html += '<table>';
+      html += '<tr><td colspan="14" style="background-color: #007bff; color: white; padding: 15px; font-size: 18px; font-weight: bold; text-align: center; border: 2px solid #003366;">Bilan Global des Palanquées - JSAS</td></tr>';
+      html += '<tr><td colspan="14" style="height: 10px; border: none;"></td></tr>';
+      html += '<tr style="background-color: #007bff; color: white;"><th style="background-color: #007bff; border: 2px solid #003366;">Date</th><th style="background-color: #007bff; border: 2px solid #003366;">DP</th><th style="background-color: #007bff; border: 2px solid #003366;">Lieu</th><th style="background-color: #007bff; border: 2px solid #003366;">Session</th><th style="background-color: #007bff; border: 2px solid #003366;">Palanquée</th><th style="background-color: #007bff; border: 2px solid #003366;">Plongeur</th><th style="background-color: #007bff; border: 2px solid #003366;">Prérogatives</th><th style="background-color: #007bff; border: 2px solid #003366;">Niveau</th><th style="background-color: #007bff; border: 2px solid #003366;">Horaire</th><th style="background-color: #007bff; border: 2px solid #003366;">Prof. Prévue [m]</th><th style="background-color: #007bff; border: 2px solid #003366;">Durée Prévue [min]</th><th style="background-color: #007bff; border: 2px solid #003366;">Prof. Réalisée [m]</th><th style="background-color: #007bff; border: 2px solid #003366;">Durée Réalisée [min]</th><th style="background-color: #007bff; border: 2px solid #003366;">Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
@@ -562,32 +505,40 @@
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
           
-          html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalSession"><Data ss:Type="String">TOTAL SESSION:</Data></Cell>';
-          html += `<Cell ss:MergeAcross="11" ss:StyleID="totalSession"><Data ss:Type="String">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</Data></Cell></Row>`;
-          html += '<Row ss:Height="10"><Cell ss:MergeAcross="13" ss:StyleID="separateur"></Cell></Row>';
+          html += `
+            <tr class="total-session">
+              <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+              <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+            </tr>
+          `;
+          html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
         }
         
         row.plongeurs.forEach((plongeur, idx) => {
-          html += '<Row>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.date}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dp}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.lieu}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.typeSession}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="Number">${row.numeroPalanquee}</Data></Cell>` : '<Cell></Cell>';
-          html += `<Cell><Data ss:Type="String">${plongeur.nom}</Data></Cell>`;
-          html += `<Cell><Data ss:Type="String">${plongeur.pre || ''}</Data></Cell>`;
-          html += `<Cell><Data ss:Type="String">${plongeur.niveau}</Data></Cell>`;
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.horaire}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.profPrevue}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dureePrevue}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.profRealisee}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dureeRealisee}</Data></Cell>` : '<Cell></Cell>';
-          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.paliers}</Data></Cell>` : '<Cell></Cell>';
-          html += '</Row>';
+          html += `<tr>
+            <td>${idx === 0 ? row.date : ''}</td>
+            <td>${idx === 0 ? row.dp : ''}</td>
+            <td>${idx === 0 ? row.lieu : ''}</td>
+            <td>${idx === 0 ? row.typeSession : ''}</td>
+            <td>${idx === 0 ? row.numeroPalanquee : ''}</td>
+            <td>${plongeur.nom}</td>
+            <td>${plongeur.pre || ''}</td>
+            <td>${plongeur.niveau}</td>
+            <td>${idx === 0 ? row.horaire : ''}</td>
+            <td>${idx === 0 ? row.profPrevue : ''}</td>
+            <td>${idx === 0 ? row.dureePrevue : ''}</td>
+            <td>${idx === 0 ? row.profRealisee : ''}</td>
+            <td>${idx === 0 ? row.dureeRealisee : ''}</td>
+            <td>${idx === 0 ? row.paliers : ''}</td>
+          </tr>`;
         });
         
-        html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalPalanquee"><Data ss:Type="String">Total palanquée:</Data></Cell>';
-        html += `<Cell ss:MergeAcross="11" ss:StyleID="totalPalanquee"><Data ss:Type="String">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</Data></Cell></Row>`;
+        html += `
+          <tr class="total-palanquee">
+            <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+            <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+          </tr>
+        `;
         
         sessionPrecedente = sessionActuelle;
       });
@@ -599,15 +550,41 @@
           `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
         
-        html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalSession"><Data ss:Type="String">TOTAL SESSION:</Data></Cell>';
-        html += `<Cell ss:MergeAcross="11" ss:StyleID="totalSession"><Data ss:Type="String">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</Data></Cell></Row>`;
+        html += `
+          <tr class="total-session">
+            <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+            <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+          </tr>
+        `;
       }
       
-      html += '</Table>';
-      html += '</Worksheet></Workbook>';
+      html += '</table>';
+      
+      html += '<br><br><h3 class="stats-header">STATISTIQUES PAR NIVEAU</h3>';
+      html += '<table style="width: 50%;"><tr><th>Niveau</th><th>Nombre de plongées</th><th>Pourcentage</th></tr>';
+      
+      const niveaux = {};
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
+      niveauxTries.forEach(([niveau, count]) => {
+        html += `<tr><td>${niveau}</td><td>${count}</td><td>${((count / totalPlongeurs) * 100).toFixed(1)}%</td></tr>`;
+      });
+      html += `<tr class="total-row"><td>TOTAL</td><td>${totalPlongeurs}</td><td>100%</td></tr>`;
+      html += '</table></body></html>';
       
       const BOM = '\uFEFF';
-      const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel' });
+      const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
