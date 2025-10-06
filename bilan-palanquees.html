@@ -109,7 +109,7 @@
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeurs</th><th>Prérogative</th><th>Niveaux</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeur</th><th>Niveau</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
             </tr>
           </thead>
           <tbody id="bilan-tbody"></tbody>
@@ -213,7 +213,9 @@
           if (filtreLieu && session.meta.lieu !== filtreLieu) return;
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
+            
             const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+            
             bilanData.push({
               date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
               typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
@@ -319,6 +321,7 @@
       bilanData.forEach((row, index) => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
+        // Afficher le total de la session précédente si on change de session
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
@@ -333,27 +336,41 @@
           `;
           tbody.appendChild(trTotalSession);
           
+          // Séparateur orange
           const separateur = document.createElement('tr');
           separateur.innerHTML = `<td colspan="13" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
           tbody.appendChild(separateur);
         }
         
-        const tr = document.createElement('tr');
-        const plongeursStr = row.plongeurs.map(p => p.nom).join(', ');
-        const niveauxStr = row.plongeurs.map(p => `<span class="niveau-badge">${p.niveau}</span>`).join(' ');
+        // Afficher chaque plongeur sur une ligne séparée
+        row.plongeurs.forEach((plongeur, plongeurIdx) => {
+          const tr = document.createElement('tr');
+          
+          // Style pour la première ligne d'une nouvelle session
+          if (sessionPrecedente !== sessionActuelle && plongeurIdx === 0) {
+            tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
+            tr.style.fontWeight = 'bold';
+          }
+          
+          tr.innerHTML = `
+            <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+            <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+            <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+            <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+            <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+            <td>${plongeur.nom}</td>
+            <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+            <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+            <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+            <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+          `;
+          tbody.appendChild(tr);
+        });
         
-        if (sessionPrecedente !== sessionActuelle) {
-          tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
-          tr.style.fontWeight = 'bold';
-        }
-        
-        tr.innerHTML = `
-          <td>${new Date(row.date).toLocaleDateString('fr-FR')}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td>
-          <td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td title="${plongeursStr}">${plongeursStr}</td><td>${niveauxStr}</td>
-          <td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td>
-        `;
-        tbody.appendChild(tr);
-        
+        // Ligne de total pour la palanquée
         const trTotal = document.createElement('tr');
         trTotal.style.background = '#e8f4f8';
         trTotal.style.fontWeight = 'bold';
@@ -367,6 +384,7 @@
         sessionPrecedente = sessionActuelle;
       });
       
+      // Ajouter le total de la dernière session
       if (bilanData.length > 0) {
         const dernierIndex = bilanData.length - 1;
         const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
@@ -386,12 +404,13 @@
     }
 
     function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeurs;Niveaux;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeur;Niveau;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
       let sessionPrecedente = null;
       
       bilanData.forEach(row => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
+        // Total session si changement
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
@@ -400,14 +419,18 @@
           csv += ';;;;;;;;;;;;;\n';
         }
         
-        const plongeurs = row.plongeurs.map(p => p.nom).join(' | ');
-        const niveaux = row.plongeurs.map(p => p.niveau).join(' | ');
-        csv += `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};${row.horaire};"${plongeurs}";"${niveaux}";${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};"${row.paliers}"\n`;
+        // Une ligne par plongeur
+        row.plongeurs.forEach((plongeur, idx) => {
+          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${idx === 0 ? row.horaire : ''};${plongeur.nom};${plongeur.niveau};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
+        });
+        
+        // Total palanquée
         csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;\n`;
         
         sessionPrecedente = sessionActuelle;
       });
       
+      // Total de la dernière session
       if (bilanData.length > 0) {
         const dernierIndex = bilanData.length - 1;
         const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
@@ -465,7 +488,7 @@
 <body>`;
       
       html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeurs</th><th>Niveaux</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeur</th><th>Niveau</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
@@ -486,10 +509,24 @@
           html += `<tr><td colspan="13" class="session-separator"></td></tr>`;
         }
         
-        const plongeurs = row.plongeurs.map(p => p.nom).join(', ');
-        const niveaux = row.plongeurs.map(p => p.niveau).join(', ');
-        
-        html += `<tr><td>${row.date}</td><td>${row.dp}</td><td>${row.lieu}</td><td>${row.typeSession}</td><td>${row.numeroPalanquee}</td><td>${row.horaire}</td><td>${plongeurs}</td><td>${niveaux}</td><td>${row.profPrevue}</td><td>${row.dureePrevue}</td><td>${row.profRealisee}</td><td>${row.dureeRealisee}</td><td>${row.paliers}</td></tr>`;
+        // Une ligne par plongeur
+        row.plongeurs.forEach((plongeur, idx) => {
+          html += `<tr>
+            <td>${idx === 0 ? row.date : ''}</td>
+            <td>${idx === 0 ? row.dp : ''}</td>
+            <td>${idx === 0 ? row.lieu : ''}</td>
+            <td>${idx === 0 ? row.typeSession : ''}</td>
+            <td>${idx === 0 ? row.numeroPalanquee : ''}</td>
+            <td>${idx === 0 ? row.horaire : ''}</td>
+            <td>${plongeur.nom}</td>
+            <td>${plongeur.niveau}</td>
+            <td>${idx === 0 ? row.profPrevue : ''}</td>
+            <td>${idx === 0 ? row.dureePrevue : ''}</td>
+            <td>${idx === 0 ? row.profRealisee : ''}</td>
+            <td>${idx === 0 ? row.dureeRealisee : ''}</td>
+            <td>${idx === 0 ? row.paliers : ''}</td>
+          </tr>`;
+        });
         
         html += `
           <tr class="total-palanquee">
