@@ -389,12 +389,6 @@
         row.plongeurs.forEach((plongeur, index) => {
           const tr = document.createElement('tr');
           
-          // Style différent pour la première ligne d'une nouvelle session
-          if (sessionPrecedente !== sessionActuelle && index === 0) {
-            tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
-            tr.style.fontWeight = 'bold';
-          }
-          
           // Déterminer la prérogative depuis le champ 'pre' du plongeur
           let prerogative = '';
           if (plongeur.pre) {
