@@ -209,8 +209,9 @@
           if (!session.meta || !session.palanquees) return;
           const sessionDate = session.meta.date;
           if (sessionDate < dateDebut || sessionDate > dateFin) return;
-          if (filtreDP && session.meta.dp !== filtreDP) return;
-          if (filtreLieu && session.meta.lieu !== filtreLieu) return;
+          // Ne filtrer que si un filtre spécifique est sélectionné
+          if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
+          if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
           session.palanquees.forEach((palanquee, idx) => {
             if (!palanquee || !palanquee.plongeurs) return;
             
