@@ -109,7 +109,7 @@
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeur</th><th>Niveau</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th>
             </tr>
           </thead>
           <tbody id="bilan-tbody"></tbody>
@@ -332,13 +332,13 @@
           trTotalSession.style.fontWeight = 'bold';
           trTotalSession.innerHTML = `
             <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-            <td colspan="11" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+            <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
           `;
           tbody.appendChild(trTotalSession);
           
           // Séparateur orange
           const separateur = document.createElement('tr');
-          separateur.innerHTML = `<td colspan="13" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
+          separateur.innerHTML = `<td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
           tbody.appendChild(separateur);
         }
         
@@ -358,9 +358,10 @@
             <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
             <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
             <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-            <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
             <td>${plongeur.nom}</td>
+            <td>${plongeur.prerogatives || ''}</td>
             <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+            <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
             <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
             <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
             <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
@@ -377,7 +378,7 @@
         trTotal.style.fontSize = '12px';
         trTotal.innerHTML = `
           <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-          <td colspan="11" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+          <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
         `;
         tbody.appendChild(trTotal);
         
@@ -397,14 +398,14 @@
         trTotalSession.style.fontWeight = 'bold';
         trTotalSession.innerHTML = `
           <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-          <td colspan="11" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+          <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
         `;
         tbody.appendChild(trTotalSession);
       }
     }
 
     function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Horaire;Plongeur;Niveau;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue;Durée Prévue;Prof. Réalisée;Durée Réalisée;Paliers\n';
       let sessionPrecedente = null;
       
       bilanData.forEach(row => {
@@ -415,17 +416,17 @@
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-          csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;\n`;
-          csv += ';;;;;;;;;;;;;\n';
+          csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
+          csv += ';;;;;;;;;;;;;;\n';
         }
         
         // Une ligne par plongeur
         row.plongeurs.forEach((plongeur, idx) => {
-          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${idx === 0 ? row.horaire : ''};${plongeur.nom};${plongeur.niveau};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
+          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.prerogatives || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
         });
         
         // Total palanquée
-        csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;\n`;
+        csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;;;\n`;
         
         sessionPrecedente = sessionActuelle;
       });
@@ -437,7 +438,7 @@
         const plongeursDansSession = bilanData.filter(r => 
           `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-        csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;\n`;
+        csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
       }
       
       csv += '\n\nSTATISTIQUES PAR NIVEAU\n';
@@ -488,7 +489,7 @@
 <body>`;
       
       html += '<h2>Bilan Global des Palanquées</h2>';
-      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Horaire</th><th>Plongeur</th><th>Niveau</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
+      html += '<table><tr><th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue</th><th>Durée Prévue</th><th>Prof. Réalisée</th><th>Durée Réalisée</th><th>Paliers</th></tr>';
       
       let sessionPrecedente = null;
       
@@ -503,10 +504,10 @@
           html += `
             <tr class="total-session">
               <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-              <td colspan="11" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+              <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
             </tr>
           `;
-          html += `<tr><td colspan="13" class="session-separator"></td></tr>`;
+          html += `<tr><td colspan="14" class="session-separator"></td></tr>`;
         }
         
         // Une ligne par plongeur
@@ -517,9 +518,10 @@
             <td>${idx === 0 ? row.lieu : ''}</td>
             <td>${idx === 0 ? row.typeSession : ''}</td>
             <td>${idx === 0 ? row.numeroPalanquee : ''}</td>
-            <td>${idx === 0 ? row.horaire : ''}</td>
             <td>${plongeur.nom}</td>
+            <td>${plongeur.prerogatives || ''}</td>
             <td>${plongeur.niveau}</td>
+            <td>${idx === 0 ? row.horaire : ''}</td>
             <td>${idx === 0 ? row.profPrevue : ''}</td>
             <td>${idx === 0 ? row.dureePrevue : ''}</td>
             <td>${idx === 0 ? row.profRealisee : ''}</td>
@@ -531,7 +533,7 @@
         html += `
           <tr class="total-palanquee">
             <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-            <td colspan="11" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+            <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
           </tr>
         `;
         
@@ -548,7 +550,7 @@
         html += `
           <tr class="total-session">
             <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-            <td colspan="11" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+            <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
           </tr>
         `;
       }
