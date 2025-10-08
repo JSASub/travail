@@ -405,7 +405,42 @@ function updateFloatingPlongeursList() {
             console.log('Synchronisation automatique terminée:', window.plongeurs.length, 'plongeurs');
         }
     }
-
+	/**
+ * Écouter les événements de chargement de session
+ */
+function setupSessionLoadListener() {
+    console.log('Configuration de l\'écouteur de chargement de session...');
+    
+    // Écouter l'événement sessionLoaded émis par main-core.js
+    window.addEventListener('sessionLoaded', function(e) {
+        console.log('📋 Événement sessionLoaded détecté - Mise à jour du menu flottant...');
+        
+        // Attendre que le rendu soit terminé avant de mettre à jour le menu
+        setTimeout(() => {
+            // Mise à jour immédiate
+            updateFloatingPlongeursList();
+            updateFloatingPlongeursVisibility();
+            
+            console.log('✅ Menu flottant mis à jour après chargement session');
+            
+            // Mise à jour supplémentaire après un court délai pour s'assurer
+            setTimeout(updateFloatingPlongeursList, 500);
+            setTimeout(updateFloatingPlongeursList, 1500);
+        }, 300);
+    });
+    
+    // Écouter aussi l'événement sessionSaved pour cohérence
+    window.addEventListener('sessionSaved', function(e) {
+        console.log('💾 Événement sessionSaved détecté - Mise à jour du menu flottant...');
+        
+        setTimeout(() => {
+            updateFloatingPlongeursList();
+            console.log('✅ Menu flottant mis à jour après sauvegarde session');
+        }, 300);
+    });
+    
+    console.log('✅ Écouteur de chargement de session configuré');
+}
     /**
      * Rendre le menu déplaçable
      */
@@ -717,17 +752,20 @@ function updateFloatingPlongeursList() {
     /**
      * Initialisation principale du module
      */
-    function initFloatingMenusManager() {
-        console.log('Initialisation du gestionnaire de menus flottants...');
-        
-        // Initialiser les raccourcis clavier
-        initKeyboardShortcuts();
-        
-        // Surveiller les changements d'état d'authentification
-        setupAuthStateListener();
-        
-        // Surveiller la visibilité de l'application principale
-        watchForMainAppVisibility();
+	function initFloatingMenusManager() {
+		console.log('Initialisation du gestionnaire de menus flottants...');
+    
+		// Initialiser les raccourcis clavier
+		initKeyboardShortcuts();
+    
+		// ✅ AJOUT : Écouter les événements de session
+		setupSessionLoadListener();
+    
+		// Surveiller les changements d'état d'authentification
+		setupAuthStateListener();
+    
+		// Surveiller la visibilité de l'application principale
+		watchForMainAppVisibility();
         
         // Initialisation immédiate si l'application est déjà visible
         setTimeout(() => {
