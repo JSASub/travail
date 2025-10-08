@@ -132,10 +132,16 @@ function renderPalanquees() {
 
       // Trier les plongeurs par niveau dans l'affichage
 	  const plongeursTriés = [...palanquee].sort((a, b) => {
-		  const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
-		  const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
-		  return indexA - indexB;
-	  });
+	  const indexA = ordreNiveaux.indexOf(a.niveau) !== -1 ? ordreNiveaux.indexOf(a.niveau) : 999;
+      const indexB = ordreNiveaux.indexOf(b.niveau) !== -1 ? ordreNiveaux.indexOf(b.niveau) : 999;
+  
+      // Si même niveau, trier par nom
+      if (indexA === indexB) {
+        return a.nom.localeCompare(b.nom, 'fr');
+      }
+  
+      return indexA - indexB;
+    });
       
       plongeursHTML = plongeursTriés.map((plongeur, sortedIndex) => {
         // Retrouver l'index original pour les opérations
