@@ -2,7 +2,7 @@
   "name": "JSAS Palanquées - Fiches de Sécurité",
   "short_name": "JSAS Palanquées",
   "description": "Application de gestion des palanquées et création de fiches de sécurité pour la plongée subaquatique",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a4d68",
   "theme_color": "#0077be",
@@ -10,7 +10,7 @@
   "scope": "/",
   "icons": [
     {
-      "src": "images/icon-72x72.png",
+      "src": "./images/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
