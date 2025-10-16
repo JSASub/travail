@@ -3,11 +3,11 @@ const CACHE_VERSION = 'jsas-v1.0.0';
 const CACHE_NAME = `jsas-palanquees-${CACHE_VERSION}`;
 
 const ESSENTIAL_FILES = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/manifest.json',
-  '/images/logo-jsas.png'
+  './',
+  './index.html',
+  './styles.css',
+  './manifest.json',
+  './images/logo-jsas.png'
 ];
 
 // Installation
