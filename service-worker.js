@@ -1,5 +1,6 @@
 // ===== SERVICE WORKER JSAS - VERSION 1.0 =====
-const CACHE_VERSION = 'jsas-v1.0.0';
+// Version 1.0.0 - Version initiale
+const CACHE_VERSION = 'jsas-v1.0.1';
 const CACHE_NAME = `jsas-palanquees-${CACHE_VERSION}`;
 
 const ESSENTIAL_FILES = [
