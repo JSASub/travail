@@ -4,7 +4,7 @@ let deferredPrompt;
 // Enregistrement du Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
       .then((registration) => {
         console.log('✅ Service Worker enregistré:', registration.scope);
       })
@@ -70,35 +70,3 @@ window.addEventListener('offline', () => {
 });
 
 console.log('🤿 PWA Installer chargé !');
-```
-
----
-
-### **ÉTAPE 2 : Uploader sur GitHub**
-
-Vous utilisez **GitHub Pages** (`jsasub.github.io`), donc :
-
-1. **Allez dans votre dépôt GitHub**
-2. **Cliquez sur "Add file" → "Upload files"**
-3. **Uploadez les 2 fichiers** :
-   - `service-worker.js`
-   - `pwa-installer.js`
-4. **Commit** les fichiers
-
----
-
-### **ÉTAPE 3 : Attendre 1-2 minutes**
-
-GitHub Pages met à jour le site (1-2 minutes).
-
----
-
-### **ÉTAPE 4 : Tester**
-
-1. **Videz le cache** : Ctrl+Shift+R
-2. **Rechargez** : https://jsasub.github.io/
-3. **Ouvrez la Console** (F12)
-4. Vous devriez voir :
-```
-   ✅ Service Worker enregistré
-   🤿 PWA Installer chargé !
