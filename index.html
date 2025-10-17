@@ -432,6 +432,195 @@ de votre navigateur (Ctrl+Shift+R)`;
     // Rafraîchir périodiquement l'état (toutes les 30 secondes)
     setInterval(getServiceWorkerVersion, 30000);
   })();
+  
+  (function() {
+  // Détection du navigateur
+  function detectBrowser() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (userAgent.indexOf('firefox') > -1) {
+      return 'firefox';
+    } else if (userAgent.indexOf('chrome') > -1 && userAgent.indexOf('edg') === -1) {
+      return 'chrome';
+    } else if (userAgent.indexOf('edg') > -1) {
+      return 'edge';
+    } else if (userAgent.indexOf('safari') > -1 && userAgent.indexOf('chrome') === -1) {
+      return 'safari';
+    }
+    return 'other';
+  }
+  
+  const browser = detectBrowser();
+  let currentVersion = '2.0.1';
+  
+  function updatePWAStatus() {
+    const statusElement = document.getElementById('sw-status');
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration('./service-worker.js')
+        .then(registration => {
+          if (registration && registration.active) {
+            // Service Worker actif
+            
+            // Messages personnalisés selon le navigateur
+            switch(browser) {
+              case 'firefox':
+                statusElement.innerHTML = `
+                  🦊 <span style="color: #ff9500;">Firefox - Cache actif</span>
+                  <span style="font-size: 0.7em; display: block; margin-top: 2px;">
+                    (Mode hors ligne ✅ | Installation ❌)
+                  </span>
+                `;
+                break;
+                
+              case 'chrome':
+              case 'edge':
+                statusElement.innerHTML = '✅ <span style="color: #28a745;">PWA Active</span>';
+                // Vérifier si l'app est installée
+                if (window.matchMedia('(display-mode: standalone)').matches) {
+                  statusElement.innerHTML += ' 📱';
+                }
+                break;
+                
+              case 'safari':
+                statusElement.innerHTML = `
+                  🍎 <span style="color: #007aff;">Safari - PWA partielle</span>
+                `;
+                break;
+                
+              default:
+                statusElement.innerHTML = '✅ <span style="color: #28a745;">Service Worker actif</span>';
+            }
+            
+            // Récupérer la version depuis le cache
+            caches.keys().then(cacheNames => {
+              const jsasCache = cacheNames.find(name => name.startsWith('jsas-palanquees-'));
+              if (jsasCache) {
+                const versionMatch = jsasCache.match(/jsas-v([\d.]+)/);
+                if (versionMatch) {
+                  currentVersion = versionMatch[1];
+                  document.getElementById('version-number').textContent = currentVersion;
+                }
+              }
+            });
+            
+          } else {
+            // Service Worker non actif
+            statusElement.innerHTML = '⚠️ <span style="color: #ffc107;">Service Worker inactif</span>';
+          }
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+          statusElement.innerHTML = '❌ <span style="color: #dc3545;">Erreur Service Worker</span>';
+        });
+    } else {
+      statusElement.innerHTML = '❌ <span style="color: #dc3545;">Non supporté</span>';
+    }
+  }
+  
+  // Fonction améliorée pour les infos de version
+  window.showVersionInfo = function() {
+    const buildDate = new Date().toLocaleDateString('fr-FR');
+    const swActive = navigator.serviceWorker && navigator.serviceWorker.controller;
+    
+    // Informations spécifiques au navigateur
+    let browserInfo = '';
+    let recommendations = '';
+    
+    switch(browser) {
+      case 'firefox':
+        browserInfo = '🦊 Firefox détecté';
+        recommendations = `
+⚠️ LIMITATIONS FIREFOX :
+• Installation PWA non supportée
+• Utilisez Chrome/Edge pour installer l'app
+• Le mode hors ligne fonctionne parfaitement !`;
+        break;
+        
+      case 'chrome':
+        browserInfo = '🌐 Chrome détecté';
+        recommendations = `
+✅ SUPPORT COMPLET :
+• Cliquez sur ⊕ dans la barre d'adresse
+• Ou utilisez le bouton "Installer" du site`;
+        break;
+        
+      case 'edge':
+        browserInfo = '🔷 Edge détecté';
+        recommendations = `
+✅ SUPPORT COMPLET :
+• Cliquez sur l'icône d'installation
+• Ou menu → Applications → Installer`;
+        break;
+        
+      case 'safari':
+        browserInfo = '🍎 Safari détecté';
+        recommendations = `
+📱 INSTALLATION iOS/Mac :
+• Appuyez sur Partager ↗
+• Puis "Sur l'écran d'accueil"`;
+        break;
+        
+      default:
+        browserInfo = '🌐 Navigateur : ' + navigator.userAgent.substring(0, 30);
+    }
+    
+    const info = `📱 JSAS PALANQUÉES PWA
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔢 Version : ${currentVersion}
+📅 Date : ${buildDate}
+${browserInfo}
+
+📊 ÉTAT DU SYSTÈME :
+━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Service Worker : ${swActive ? 'Actif' : 'Inactif'}
+✅ Cache hors ligne : ${swActive ? 'Disponible' : 'Non disponible'}
+${browser === 'firefox' ? '❌' : '✅'} Installation PWA : ${browser === 'firefox' ? 'Non supportée' : 'Disponible'}
+🌐 Connexion : ${navigator.onLine ? 'En ligne' : 'Hors ligne'}
+
+${recommendations}
+
+📋 HISTORIQUE :
+━━━━━━━━━━━━━━━━━━━━━━━━
+• v2.0.1 - Version PWA optimisée
+• v2.0.0 - Refonte architecture
+• v1.0.1 - Ajout système PWA
+
+💡 ASTUCE :
+Pour le meilleur support PWA,
+utilisez Chrome, Edge ou Brave.`;
+    
+    alert(info);
+  };
+  
+  // Exécuter au chargement
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updatePWAStatus);
+  } else {
+    updatePWAStatus();
+  }
+  
+  // Afficher une notification pour les utilisateurs Firefox
+  if (browser === 'firefox' && !localStorage.getItem('firefox-pwa-notice-shown')) {
+    setTimeout(() => {
+      if (confirm(`🦊 Information Firefox
+
+Le mode hors ligne fonctionne parfaitement sur Firefox !
+
+Cependant, Firefox ne permet pas l'installation comme application.
+
+Pour installer JSA Palanquées comme une app :
+→ Utilisez Chrome, Edge ou Brave
+
+Voulez-vous plus d'informations ?`)) {
+        showVersionInfo();
+      }
+      localStorage.setItem('firefox-pwa-notice-shown', 'true');
+    }, 3000);
+  }
+})();
+  
   </script>
 
   </div> <!-- Fin main-app -->
