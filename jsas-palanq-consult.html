@@ -835,9 +835,18 @@
         });
         
         loadLieux();
-        displaySessions(allSessions);
-        updateStats(allSessions);
+        
+        // Ne pas afficher automatiquement si on a des paramètres URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('session')) {
+          displaySessions(allSessions);
+          updateStats(allSessions);
+        }
+        
         updateCalendar();
+        
+        // Vérifier les paramètres URL après le chargement
+        checkURLParams();
         
       } catch (error) {
         console.error('Erreur:', error);
@@ -1318,6 +1327,81 @@
         loadData();
         btn.style.transform = 'rotate(0deg)';
       }, 500);
+    }
+    
+    // Gérer les paramètres d'URL (pour QR code)
+    function checkURLParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session');
+      const palanqueeNum = urlParams.get('palanquee');
+      
+      if (sessionId && palanqueeNum) {
+        // Attendre que les données soient chargées
+        setTimeout(() => {
+          // Filtrer pour afficher uniquement cette session/palanquée
+          const sessionFiltered = allSessions.filter(s => s.id === sessionId);
+          if (sessionFiltered.length > 0) {
+            // Ne garder que la palanquée spécifique
+            const session = {...sessionFiltered[0]};
+            session.palanquees = session.palanquees.filter(p => p.numero == palanqueeNum);
+            
+            if (session.palanquees.length > 0) {
+              // Afficher uniquement cette palanquée
+              displaySessions([session]);
+              updateStats([session]);
+              
+              // Ajouter un message d'info
+              const header = document.querySelector('.header');
+              const existingAlert = document.getElementById('qr-alert');
+              if (!existingAlert) {
+                header.insertAdjacentHTML('afterend', `
+                  <div id="qr-alert" style="
+                    background: #d4edda;
+                    color: #155724;
+                    padding: 15px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                    text-align: center;
+                    border: 1px solid #c3e6cb;
+                  ">
+                    🎯 Affichage de la palanquée #${palanqueeNum} du ${new Date(session.date).toLocaleDateString('fr-FR')}
+                    <button onclick="clearFilter()" style="
+                      margin-left: 20px;
+                      padding: 5px 15px;
+                      background: #28a745;
+                      color: white;
+                      border: none;
+                      border-radius: 5px;
+                      cursor: pointer;
+                    ">
+                      Voir toutes les palanquées
+                    </button>
+                  </div>
+                `);
+              }
+              
+              // Mettre à jour les filtres pour refléter la sélection
+              document.getElementById('search-date').value = session.date;
+            }
+          }
+        }, 1000);
+      }
+    }
+    
+    // Fonction pour effacer le filtre QR
+    function clearFilter() {
+      // Retirer les paramètres de l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Retirer l'alerte
+      const alert = document.getElementById('qr-alert');
+      if (alert) alert.remove();
+      
+      // Réinitialiser l'affichage
+      document.getElementById('search-name').value = '';
+      document.getElementById('search-date').value = '';
+      document.getElementById('search-lieu').value = '';
+      showAll(document.querySelector('.chip.active'));
     }
     
     // Charger au démarrage
