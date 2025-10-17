@@ -259,13 +259,178 @@
 
   
   <footer>
-  <a href="bilan-palanquees.html" style="display: inline-block; font-size: 1em; padding: 8px 20px; background: #6f42c1; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">
-  📊 Bilan Global Palanquées
-  </a>
-  <p style="text-align: center; font-size: 0.8em; padding: 20px;">
-  Version 8.3.0 PWA - RA - 2025 - JSA Subaquatique
-  </p>
+    <a href="bilan-palanquees.html" style="display: inline-block; font-size: 1em; padding: 8px 20px; background: #6f42c1; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+      📊 Bilan Global Palanquées
+    </a>
+    
+    <p style="text-align: center; font-size: 0.8em; padding: 20px;" id="app-version-footer">
+      Version <span id="version-number">Chargement...</span> - 
+      <span id="sw-status" style="color: #999;">⏳ Vérification...</span> - 
+      RA - 2025 - JSA Subaquatique
+    </p>
+    
+    <!-- Bouton d'informations optionnel -->
+    <div style="text-align: center; margin-top: -10px;">
+      <button onclick="showVersionInfo()" style="
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.8em;
+      ">
+        ℹ️ Infos version
+      </button>
+    </div>
   </footer>
+
+  <!-- Script pour afficher la version depuis le Service Worker -->
+  <script>
+  (function() {
+    // Variable pour stocker la version récupérée
+    let currentVersion = '8.3.0'; // Version par défaut
+    
+    // Fonction pour extraire la version du Service Worker
+    function getServiceWorkerVersion() {
+      if ('serviceWorker' in navigator) {
+        // Vérifier l'état du Service Worker
+        navigator.serviceWorker.getRegistration('./service-worker.js')
+          .then(registration => {
+            if (registration && registration.active) {
+              // Le SW est actif
+              document.getElementById('sw-status').innerHTML = '✅ <span style="color: #28a745;">PWA Active</span>';
+              
+              // Récupérer la version depuis le nom du cache
+              caches.keys().then(cacheNames => {
+                const jsasCache = cacheNames.find(name => name.startsWith('jsas-palanquees-'));
+                if (jsasCache) {
+                  // Extraire la version (ex: "jsas-palanquees-jsas-v1.0.1" -> "1.0.1")
+                  const versionMatch = jsasCache.match(/jsas-v([\d.]+)/);
+                  if (versionMatch) {
+                    currentVersion = versionMatch[1];
+                    document.getElementById('version-number').textContent = currentVersion;
+                  } else {
+                    // Version alternative si le format change
+                    document.getElementById('version-number').textContent = currentVersion;
+                  }
+                } else {
+                  // Pas de cache trouvé
+                  document.getElementById('version-number').textContent = currentVersion;
+                }
+              }).catch(error => {
+                console.error('Erreur lors de la récupération du cache:', error);
+                document.getElementById('version-number').textContent = currentVersion;
+              });
+            } else if (registration && registration.installing) {
+              // Le SW est en cours d'installation
+              document.getElementById('sw-status').innerHTML = '🔄 <span style="color: #17a2b8;">Installation...</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+              
+              // Réessayer après l'installation
+              registration.installing.addEventListener('statechange', function() {
+                if (this.state === 'activated') {
+                  setTimeout(getServiceWorkerVersion, 1000);
+                }
+              });
+            } else if (registration && registration.waiting) {
+              // Une nouvelle version est en attente
+              document.getElementById('sw-status').innerHTML = '🔄 <span style="color: #ffc107;">Mise à jour disponible</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+            } else {
+              // Le SW n'est pas actif
+              document.getElementById('sw-status').innerHTML = '⚠️ <span style="color: #ffc107;">PWA Inactive</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+            }
+          })
+          .catch(error => {
+            console.error('Erreur Service Worker:', error);
+            document.getElementById('sw-status').innerHTML = '❌ <span style="color: #dc3545;">Non installée</span>';
+            document.getElementById('version-number').textContent = currentVersion;
+          });
+      } else {
+        // Service Worker non supporté
+        document.getElementById('sw-status').innerHTML = '❌ <span style="color: #dc3545;">Non supportée</span>';
+        document.getElementById('version-number').textContent = currentVersion;
+      }
+    }
+    
+    // Fonction pour afficher les informations détaillées
+    window.showVersionInfo = function() {
+      const buildDate = new Date().toLocaleDateString('fr-FR');
+      const swActive = navigator.serviceWorker && navigator.serviceWorker.controller;
+      const onlineStatus = navigator.onLine;
+      
+      // Vérifier le support des fonctionnalités PWA
+      const pwaFeatures = {
+        'Service Worker': 'serviceWorker' in navigator,
+        'Cache API': 'caches' in window,
+        'Notifications': 'Notification' in window,
+        'Installation': 'BeforeInstallPromptEvent' in window,
+        'Mode hors ligne': swActive
+      };
+      
+      let featuresText = '';
+      for (let [feature, supported] of Object.entries(pwaFeatures)) {
+        featuresText += `${supported ? '✅' : '❌'} ${feature}\n`;
+      }
+      
+      const info = `📱 JSAS PALANQUÉES PWA
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔢 Version : ${currentVersion}
+📅 Date : ${buildDate}
+🤿 Développé par : RA - JSA Subaquatique
+
+📋 HISTORIQUE DES VERSIONS :
+━━━━━━━━━━━━━━━━━━━━━━━━
+• v1.0.1 - Ajout système PWA complet
+• v1.0.0 - Version initiale
+• v8.3.0 - Version legacy
+
+🔧 ÉTAT DU SYSTÈME :
+━━━━━━━━━━━━━━━━━━━━━━━━
+${featuresText}
+🌐 Connexion : ${onlineStatus ? '✅ En ligne' : '📵 Hors ligne'}
+💾 Cache actif : ${swActive ? 'Oui' : 'Non'}
+
+💡 ASTUCE :
+Pour forcer la mise à jour, videz le cache
+de votre navigateur (Ctrl+Shift+R)`;
+      
+      alert(info);
+    };
+    
+    // Écouter les mises à jour du Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Nouveau Service Worker actif, rechargement...');
+        setTimeout(getServiceWorkerVersion, 500);
+      });
+      
+      // Vérifier les mises à jour disponibles
+      navigator.serviceWorker.ready.then(registration => {
+        if (registration.waiting) {
+          // Une mise à jour est disponible
+          if (confirm('🔄 Une nouvelle version est disponible !\n\nVoulez-vous l\'installer maintenant ?')) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          }
+        }
+      });
+    }
+    
+    // Exécuter après le chargement complet
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', getServiceWorkerVersion);
+    } else {
+      getServiceWorkerVersion();
+    }
+    
+    // Rafraîchir périodiquement l'état (toutes les 30 secondes)
+    setInterval(getServiceWorkerVersion, 30000);
+  })();
+  </script>
 
   </div> <!-- Fin main-app -->
 
@@ -312,7 +477,7 @@
   <script src="js/floating-menus-manager.js"></script>
   
   <!-- PWA INSTALLER - DOIT ÊTRE EN DERNIER -->
-  <script src="pwa-installer.js"></script>
+  <script src="./pwa-installer.js"></script>
 
 <!-- Modal pour ajouter/modifier un DP -->
 <div id="dp-modal">
