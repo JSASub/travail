@@ -814,42 +814,24 @@
           }
         });
         
-        // Trier par date, puis lieu, puis type de session
+        // Trier par date : plus proche en premier
         allSessions.sort((a, b) => {
-          // 1. Trier par date (plus proche en premier)
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
           const now = new Date();
           
-          // Dates futures d'abord, puis passées
-          if ((dateA >= now && dateB >= now)) {
+          // Si les deux dates sont futures ou passées, trier normalement
+          if ((dateA >= now && dateB >= now) || (dateA < now && dateB < now)) {
             // Dates futures : plus proche en premier
-            if (dateA.getTime() !== dateB.getTime()) {
+            if (dateA >= now) {
               return dateA - dateB;
             }
-          } else if ((dateA < now && dateB < now)) {
             // Dates passées : plus récente en premier
-            if (dateA.getTime() !== dateB.getTime()) {
-              return dateB - dateA;
-            }
-          } else {
-            // Une future, une passée : la future en premier
-            return dateB >= now ? 1 : -1;
+            return dateB - dateA;
           }
           
-          // 2. Si même date, trier par lieu (site de plongée)
-          if (a.lieu !== b.lieu) {
-            return a.lieu.localeCompare(b.lieu, 'fr', { sensitivity: 'base' });
-          }
-          
-          // 3. Si même lieu, trier par type de session
-          const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
-          const indexA = ordreSession.indexOf(a.typeSession);
-          const indexB = ordreSession.indexOf(b.typeSession);
-          const posA = indexA === -1 ? 999 : indexA;
-          const posB = indexB === -1 ? 999 : indexB;
-          
-          return posA - posB;
+          // Si une est future et l'autre passée, la future en premier
+          return dateB >= now ? 1 : -1;
         });
         
         loadLieux();
@@ -903,65 +885,8 @@
       }
       
       noResults.style.display = 'none';
-      
-      // Regrouper et trier toutes les palanquées
-      let allPalanquees = [];
-      
-      sessions.forEach(session => {
-        session.palanquees.forEach(palanquee => {
-          allPalanquees.push({
-            ...palanquee,
-            sessionId: session.id,
-            date: session.date,
-            dp: session.dp,
-            lieu: session.lieu,
-            typeSession: session.typeSession
-          });
-        });
-      });
-      
-      // Trier les palanquées selon les critères
-      const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
-      
-      allPalanquees.sort((a, b) => {
-        // 1. Par date (plus proche en premier)
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        
-        if (dateA.getTime() !== dateB.getTime()) {
-          // Dates futures : plus proche en premier
-          if (dateA >= now && dateB >= now) {
-            return dateA - dateB;
-          }
-          // Dates passées : plus récente en premier
-          else if (dateA < now && dateB < now) {
-            return dateB - dateA;
-          }
-          // Une future, une passée : future en premier
-          else {
-            return dateB >= now ? 1 : -1;
-          }
-        }
-        
-        // 2. Par type de session
-        const indexA = ordreSession.indexOf(a.typeSession);
-        const indexB = ordreSession.indexOf(b.typeSession);
-        const posA = indexA === -1 ? 999 : indexA;
-        const posB = indexB === -1 ? 999 : indexB;
-        
-        if (posA !== posB) {
-          return posA - posB;
-        }
-        
-        // 3. Par numéro de palanquée
-        return a.numero - b.numero;
-      });
-      
-      // Afficher les palanquées triées
-      container.innerHTML = allPalanquees.map(palanquee => {
-        const dateObj = new Date(palanquee.date);
+      container.innerHTML = sessions.map(session => {
+        const dateObj = new Date(session.date);
         const dateFormatted = dateObj.toLocaleDateString('fr-FR', {
           weekday: 'long',
           year: 'numeric',
@@ -969,105 +894,18 @@
           day: 'numeric'
         });
         
-        // Déterminer si c'est aujourd'hui, futur ou passé
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        dateObj.setHours(0, 0, 0, 0);
-        
-        let dateStatus = '';
-        if (dateObj.getTime() === today.getTime()) {
-          dateStatus = '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8em;">AUJOURD\'HUI</span>';
-        } else if (dateObj > today) {
-          const daysUntil = Math.ceil((dateObj - today) / (1000 * 60 * 60 * 24));
-          dateStatus = `<span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8em;">Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}</span>`;
-        }
-        
-        return `
+        return session.palanquees.map(palanquee => `
           <div class="palanquee-card">
-            <button class="qr-button" onclick="showQRCode('${palanquee.sessionId}', ${palanquee.numero})">
+            <button class="qr-button" onclick="showQRCode('${session.id}', ${palanquee.numero})">
               QR Code
             </button>
             
             <div class="session-header">
               <div class="session-date">📅 ${dateFormatted}</div>
-              ${dateStatus}
               <div class="session-info">
-                <span>📍 ${palanquee.lieu}</span>
-                <span>👨‍✈️ ${palanquee.dp}</span>
+                <span>📍 ${session.lieu}</span>
+                <span>👨‍✈️ ${session.dp}</span>
               </div>
-            </div>
-            
-            <div class="palanquee-title">
-              Palanquée #${palanquee.numero} - ${palanquee.typeSession}
-            </div>
-            
-            <div class="palanquee-details">
-              ${palanquee.horaire ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🕐</span>
-                  <span class="detail-label">Horaire:</span>
-                  <span class="detail-value">${palanquee.horaire}</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.profPrevue ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🌊</span>
-                  <span class="detail-label">Prof. prévue:</span>
-                  <span class="detail-value">${palanquee.profPrevue} m</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.dureePrevue ? `
-                <div class="detail-row">
-                  <span class="detail-icon">⏱️</span>
-                  <span class="detail-label">Durée prévue:</span>
-                  <span class="detail-value">${palanquee.dureePrevue} min</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.profRealisee ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🎯</span>
-                  <span class="detail-label">Prof. réalisée:</span>
-                  <span class="detail-value">${palanquee.profRealisee} m</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.dureeRealisee ? `
-                <div class="detail-row">
-                  <span class="detail-icon">⏱️</span>
-                  <span class="detail-label">Durée réalisée:</span>
-                  <span class="detail-value">${palanquee.dureeRealisee} min</span>
-                </div>
-              ` : ''}
-            </div>
-            
-            ${palanquee.paliers ? `
-              <div class="paliers-info">
-                <strong>⚠️ Paliers effectués:</strong> ${palanquee.paliers}
-              </div>
-            ` : ''}
-            
-            <div class="plongeurs-list">
-              <div class="plongeurs-title">👥 Plongeurs (${palanquee.plongeurs.length})</div>
-              ${palanquee.plongeurs.map((plongeur, idx) => `
-                <div class="plongeur-item">
-                  <div style="display: flex; align-items: center; flex: 1;">
-                    <span class="plongeur-rank">#${idx + 1}</span>
-                    <span class="plongeur-name">${plongeur.nom}</span>
-                  </div>
-                  <div class="plongeur-badges">
-                    ${plongeur.pre ? `<span class="pre-badge">${plongeur.pre}</span>` : ''}
-                    <span class="niveau-badge">${plongeur.niveau}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
             </div>
             
             <div class="palanquee-title">
