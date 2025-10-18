@@ -1358,52 +1358,83 @@
       const sessionId = urlParams.get('session');
       const palanqueeNum = urlParams.get('palanquee');
       
-      if (sessionId && palanqueeNum) {
-        setTimeout(() => {
-          const sessionFiltered = allSessions.filter(s => s.id === sessionId);
-          if (sessionFiltered.length > 0) {
-            const session = {...sessionFiltered[0]};
-            session.palanquees = session.palanquees.filter(p => p.numero == palanqueeNum);
-            
-            if (session.palanquees.length > 0) {
-              displaySessions([session]);
-              updateStats([session]);
-              
-              const header = document.querySelector('.header');
-              const existingAlert = document.getElementById('qr-alert');
-              if (!existingAlert) {
-                header.insertAdjacentHTML('afterend', `
-                  <div id="qr-alert" style="
-                    background: #d4edda;
-                    color: #155724;
-                    padding: 15px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                    text-align: center;
-                    border: 1px solid #c3e6cb;
-                  ">
-                    🎯 Affichage de la palanquée #${palanqueeNum} du ${new Date(session.date).toLocaleDateString('fr-FR')}
-                    <button onclick="clearFilter()" style="
-                      margin-left: 20px;
-                      padding: 5px 15px;
-                      background: #28a745;
-                      color: white;
-                      border: none;
-                      border-radius: 5px;
-                      cursor: pointer;
-                    ">
-                      Voir toutes les palanquées
-                    </button>
-                  </div>
-                `);
-              }
-              
-              document.getElementById('search-date').value = session.date;
-            }
+      // Si pas de paramètres, afficher tout et sortir
+      if (!sessionId || !palanqueeNum) {
+        // Retirer l'alerte si elle existe
+        const alert = document.getElementById('qr-alert');
+        if (alert) alert.remove();
+        return;
+      }
+      
+      // Attendre que les données soient chargées
+      if (allSessions.length === 0) {
+        setTimeout(() => checkURLParams(), 500);
+        return;
+      }
+      
+      const sessionFiltered = allSessions.filter(s => s.id === sessionId);
+      if (sessionFiltered.length > 0) {
+        const session = {...sessionFiltered[0]};
+        session.palanquees = session.palanquees.filter(p => p.numero == palanqueeNum);
+        
+        if (session.palanquees.length > 0) {
+          displaySessions([session]);
+          updateStats([session]);
+          
+          // Mettre à jour ou créer l'alerte
+          const header = document.querySelector('.header');
+          let existingAlert = document.getElementById('qr-alert');
+          
+          const alertHTML = `
+            <div id="qr-alert" style="
+              background: #d4edda;
+              color: #155724;
+              padding: 15px;
+              border-radius: 10px;
+              margin: 20px 0;
+              text-align: center;
+              border: 1px solid #c3e6cb;
+            ">
+              🎯 Affichage de la palanquée #${palanqueeNum} du ${new Date(session.date).toLocaleDateString('fr-FR')}
+              <button onclick="clearFilter()" style="
+                margin-left: 20px;
+                padding: 5px 15px;
+                background: #28a745;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+              ">
+                Voir toutes les palanquées
+              </button>
+            </div>
+          `;
+          
+          if (existingAlert) {
+            existingAlert.outerHTML = alertHTML;
+          } else {
+            header.insertAdjacentHTML('afterend', alertHTML);
           }
-        }, 1000);
+          
+          document.getElementById('search-date').value = session.date;
+        }
       }
     }
+    
+    // Surveiller les changements d'URL pour les QR codes
+    window.addEventListener('popstate', function() {
+      checkURLParams();
+    });
+    
+    // Surveiller les changements d'URL (pour navigation dans la page)
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+      const url = location.href;
+      if (url !== lastUrl) {
+        lastUrl = url;
+        checkURLParams();
+      }
+    }).observe(document, {subtree: true, childList: true});
     
     // Fonction pour effacer le filtre QR
     function clearFilter() {
