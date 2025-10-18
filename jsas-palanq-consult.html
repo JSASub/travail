@@ -1,1414 +1,1041 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JSA - Consultation des Palanquées</title>
-  
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  
-  <!-- Librairies pour PDF et QR Code -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-    
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    
-    .header {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      text-align: center;
-    }
-    
-    .header h1 {
-      color: #6f42c1;
-      margin-bottom: 10px;
-    }
-    
-    .header .mode-badge {
-      display: inline-block;
-      background: #28a745;
-      color: white;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 0.9em;
-    }
-    
-    .view-toggle {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px 0;
-    }
-    
-    .view-btn {
-      padding: 10px 20px;
-      border: 2px solid #6f42c1;
-      background: white;
-      color: #6f42c1;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-weight: bold;
-    }
-    
-    .view-btn.active {
-      background: #6f42c1;
-      color: white;
-    }
-    
-    .search-section {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    }
-    
-    .search-box {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    
-    .search-box input, .search-box select {
-      flex: 1;
-      min-width: 200px;
-      padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    
-    .search-box input:focus, .search-box select:focus {
-      outline: none;
-      border-color: #6f42c1;
-    }
-    
-    .btn-search {
-      background: #6f42c1;
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.3s;
-    }
-    
-    .btn-search:hover {
-      background: #5a32a3;
-    }
-    
-    .export-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-      flex-wrap: wrap;
-    }
-    
-    .btn-export {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-    
-    .btn-pdf {
-      background: #dc3545;
-      color: white;
-    }
-    
-    .btn-pdf:hover {
-      background: #c82333;
-    }
-    
-    /* Vue Calendrier */
-    .calendar-view {
-      display: none;
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    }
-    
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .calendar-nav {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .calendar-btn {
-      padding: 8px 15px;
-      background: #6f42c1;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    
-    .calendar-btn:hover {
-      background: #5a32a3;
-    }
-    
-    .calendar-month {
-      font-size: 1.5em;
-      color: #333;
-      font-weight: bold;
-    }
-    
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 1px;
-      background: #ddd;
-      border: 1px solid #ddd;
-    }
-    
-    .calendar-day-header {
-      background: #f8f9fa;
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-      color: #666;
-    }
-    
-    .calendar-day {
-      background: white;
-      min-height: 80px;
-      padding: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-      position: relative;
-    }
-    
-    .calendar-day:hover {
-      background: #f0f0f0;
-    }
-    
-    .calendar-day-number {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    
-    .calendar-day-sessions {
-      font-size: 0.8em;
-    }
-    
-    .calendar-session-badge {
-      display: inline-block;
-      background: #6f42c1;
-      color: white;
-      padding: 2px 6px;
-      border-radius: 3px;
-      margin: 2px;
-      font-size: 0.75em;
-    }
-    
-    .calendar-day.has-sessions {
-      background: #e3f2fd;
-    }
-    
-    .calendar-day.selected {
-      background: #6f42c1;
-      color: white;
-    }
-    
-    .calendar-day.selected .calendar-session-badge {
-      background: white;
-      color: #6f42c1;
-    }
-    
-    /* Vue Liste */
-    .palanquees-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .palanquee-card {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-      transition: transform 0.3s, box-shadow 0.3s;
-      position: relative;
-    }
-    
-    .palanquee-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    
-    .qr-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.8em;
-    }
-    
-    .qr-button:hover {
-      background: #0056b3;
-    }
-    
-    .session-header {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin: -20px -20px 20px -20px;
-      text-align: center;
-    }
-    
-    .session-date {
-      font-size: 1.2em;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    
-    .session-info {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      font-size: 0.9em;
-      opacity: 0.95;
-    }
-    
-    .palanquee-title {
-      font-size: 1.1em;
-      color: #333;
-      font-weight: bold;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #f0f0f0;
-    }
-    
-    .palanquee-details {
-      display: grid;
-      gap: 8px;
-      margin-bottom: 15px;
-      font-size: 0.95em;
-    }
-    
-    .detail-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .detail-icon {
-      width: 20px;
-      text-align: center;
-    }
-    
-    .detail-label {
-      font-weight: 600;
-      color: #666;
-      min-width: 100px;
-    }
-    
-    .detail-value {
-      color: #333;
-    }
-    
-    .paliers-info {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 5px;
-      padding: 8px;
-      margin-top: 10px;
-      font-size: 0.9em;
-      color: #856404;
-    }
-    
-    .plongeurs-list {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 15px;
-    }
-    
-    .plongeurs-title {
-      font-size: 0.9em;
-      font-weight: bold;
-      color: #666;
-      margin-bottom: 10px;
-    }
-    
-    .plongeur-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      margin: 5px 0;
-      background: white;
-      border-radius: 5px;
-      border-left: 4px solid #6f42c1;
-    }
-    
-    .plongeur-rank {
-      background: #f0f0f0;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 0.8em;
-      margin-right: 8px;
-      font-weight: bold;
-      color: #666;
-    }
-    
-    .plongeur-name {
-      font-weight: 500;
-      color: #333;
-      flex: 1;
-    }
-    
-    .plongeur-badges {
-      display: flex;
-      gap: 5px;
-    }
-    
-    .niveau-badge {
-      background: #6f42c1;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 0.85em;
-      font-weight: bold;
-    }
-    
-    .pre-badge {
-      background: #17a2b8;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 0.85em;
-    }
-    
-    .no-results {
-      background: white;
-      border-radius: 15px;
-      padding: 40px;
-      text-align: center;
-      color: #999;
-    }
-    
-    .stats-banner {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 20px;
-      text-align: center;
-    }
-    
-    .stat-item {
-      padding: 10px;
-    }
-    
-    .stat-value {
-      font-size: 2em;
-      color: #6f42c1;
-      font-weight: bold;
-    }
-    
-    .stat-label {
-      color: #666;
-      font-size: 0.9em;
-      margin-top: 5px;
-    }
-    
-    .filter-chips {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 15px;
-    }
-    
-    .chip {
-      background: #e0e0e0;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 0.9em;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    
-    .chip.active {
-      background: #6f42c1;
-      color: white;
-    }
-    
-    .chip:hover {
-      background: #d0d0d0;
-    }
-    
-    .chip.active:hover {
-      background: #5a32a3;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: white;
-    }
-    
-    .spinner {
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    /* Modal QR Code */
-    .qr-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .qr-modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      text-align: center;
-      max-width: 400px;
-    }
-    
-    .qr-modal-title {
-      font-size: 1.2em;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    
-    .qr-modal-close {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #6f42c1;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    
-    @media (max-width: 768px) {
-      .search-box {
-        flex-direction: column;
-      }
-      
-      .search-box input, .search-box select {
-        width: 100%;
-      }
-      
-      .palanquees-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .calendar-grid {
-        font-size: 0.8em;
-      }
-      
-      .calendar-day {
-        min-height: 60px;
-        padding: 5px;
-      }
-    }
-    
-    .footer {
-      text-align: center;
-      color: white;
-      margin-top: 40px;
-      padding: 20px;
-    }
-    
-    .refresh-btn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 15px;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-      font-size: 1.5em;
-      transition: transform 0.3s;
-      z-index: 100;
-    }
-    
-    .refresh-btn:hover {
-      transform: rotate(180deg);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSA - Consultation des Palanquées</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- jsPDF pour l'export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+        }
+
+        .view-toggle button {
+            padding: 10px 20px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .view-toggle button.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .session-group {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .date-header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+        }
+
+        .session-card {
+            background: white;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .session-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .session-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .meta-item strong {
+            color: #2c3e50;
+        }
+
+        .palanquee-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .palanquee-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .plongeur-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .plongeur-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .plongeur-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .plongeur-role {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            background: #ecf0f1;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+
+        .plongeur-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .stat-badge {
+            background: #e8f4f8;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .qr-code-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .qr-code-btn:hover {
+            background: #8e44ad;
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: #2c3e50;
+        }
+
+        #qrcode {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .calendar-view {
+            display: none;
+        }
+
+        .calendar-view.active {
+            display: block;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-radius: 12px;
+        }
+
+        .calendar-header h2 {
+            font-size: 1.8em;
+        }
+
+        .calendar-nav button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 6px;
+        }
+
+        .calendar-day {
+            min-height: 100px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calendar-day:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .calendar-day.today {
+            background: #e8f4f8;
+            border-color: #3498db;
+        }
+
+        .calendar-day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .calendar-session {
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            margin: 3px 0;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-session:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .btn-group {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .calendar-grid {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 5px;
+            }
+
+            .calendar-day {
+                min-height: 80px;
+                padding: 5px;
+            }
+
+            .session-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <!-- En-tête -->
-    <div class="header">
-      <h1>🤿 JSA Subaquatique - Palanquées</h1>
-      <div class="mode-badge">👁️ Mode Consultation</div>
-      <p style="margin-top: 10px; color: #666;">Consultez les palanquées et trouvez vos sessions de plongée</p>
-      
-      <!-- Boutons de vue -->
-      <div class="view-toggle">
-        <button class="view-btn active" onclick="switchView('list')">📋 Liste</button>
-        <button class="view-btn" onclick="switchView('calendar')">📅 Calendrier</button>
-      </div>
-    </div>
-    
-    <!-- Statistiques -->
-    <div class="stats-banner" id="stats">
-      <div class="stat-item">
-        <div class="stat-value" id="stat-total">0</div>
-        <div class="stat-label">Sessions totales</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-today">0</div>
-        <div class="stat-label">Aujourd'hui</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-week">0</div>
-        <div class="stat-label">Cette semaine</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-plongeurs">0</div>
-        <div class="stat-label">Plongeurs actifs</div>
-      </div>
-    </div>
-    
-    <!-- Section recherche -->
-    <div class="search-section">
-      <h2 style="margin-bottom: 15px; color: #333;">🔍 Rechercher une palanquée</h2>
-      
-      <div class="search-box">
-        <input type="text" id="search-name" placeholder="Votre nom..." />
-        <input type="date" id="search-date" />
-        <select id="search-lieu">
-          <option value="">Tous les lieux</option>
-        </select>
-        <button class="btn-search" onclick="searchPalanquees()">
-          🔍 Rechercher
-        </button>
-      </div>
-      
-      <!-- Filtres rapides -->
-      <div class="filter-chips">
-        <div class="chip" onclick="filterToday(this)">📅 Aujourd'hui</div>
-        <div class="chip" onclick="filterWeek(this)">📆 Cette semaine</div>
-        <div class="chip" onclick="filterMonth(this)">📊 Ce mois</div>
-        <div class="chip" onclick="filterMyPalanquees(this)">👤 Mes palanquées</div>
-        <div class="chip active" onclick="showAll(this)">📋 Tout afficher</div>
-      </div>
-      
-      <!-- Boutons d'export -->
-      <div class="export-buttons">
-        <button class="btn-export btn-pdf" onclick="exportPDF()">📄 Exporter en PDF</button>
-      </div>
-    </div>
-    
-    <!-- Chargement -->
-    <div id="loading" class="loading" style="display: none;">
-      <div class="spinner"></div>
-      <p>Chargement des données...</p>
-    </div>
-    
-    <!-- Vue Calendrier -->
-    <div class="calendar-view" id="calendar-view">
-      <div class="calendar-header">
-        <div class="calendar-nav">
-          <button class="calendar-btn" onclick="previousMonth()">◀</button>
-          <button class="calendar-btn" onclick="currentMonth()">Aujourd'hui</button>
-          <button class="calendar-btn" onclick="nextMonth()">▶</button>
+    <div class="container">
+        <div class="header">
+            <h1>🤿 JSA Plongée</h1>
+            <p>Consultation des Palanquées</p>
         </div>
-        <div class="calendar-month" id="calendar-month"></div>
-      </div>
-      <div class="calendar-grid" id="calendar-grid"></div>
-    </div>
-    
-    <!-- Vue Liste -->
-    <div class="palanquees-grid" id="palanquees-container">
-      <!-- Les palanquées seront affichées ici -->
-    </div>
-    
-    <!-- Message si pas de résultats -->
-    <div class="no-results" id="no-results" style="display: none;">
-      <h3>🔍 Aucune palanquée trouvée</h3>
-      <p>Modifiez vos critères de recherche ou consultez toutes les palanquées</p>
-    </div>
-  </div>
-  
-  <!-- Modal QR Code -->
-  <div class="qr-modal" id="qr-modal">
-    <div class="qr-modal-content">
-      <h3 class="qr-modal-title">QR Code de la session</h3>
-      <div id="qr-code"></div>
-      <button class="qr-modal-close" onclick="closeQRModal()">Fermer</button>
-    </div>
-  </div>
-  
-  <!-- Bouton rafraîchir -->
-  <button class="refresh-btn" onclick="refreshData()" title="Rafraîchir les données">
-    🔄
-  </button>
-  
-  <!-- Footer -->
-  <div class="footer">
-    <p>Version consultation publique - Lecture seule</p>
-    <p style="font-size: 0.9em; opacity: 0.8;">JSA Subaquatique © 2025</p>
-  </div>
 
-  <script>
-    // Configuration Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
-      authDomain: "palanquees-jsas.firebaseapp.com",
-      databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "palanquees-jsas",
-      storageBucket: "palanquees-jsas.firebasestorage.app",
-      messagingSenderId: "284449736616",
-      appId: "1:284449736616:web:a0949a9b669def06323f9d"
-    };
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Rechercher un plongeur, un lieu, une date..." onkeyup="searchPalanquees()">
+            </div>
 
-    let app, db;
-    let allSessions = [];
-    let filteredSessions = [];
-    let currentView = 'list';
-    let currentDate = new Date();
-    
-    // Ordre des niveaux pour le tri
-    const ORDRE_NIVEAUX = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
-    
-    // Initialisation Firebase
-    try {
-      app = firebase.initializeApp(firebaseConfig);
-      db = firebase.database();
-      console.log('✅ Firebase initialisé');
-    } catch (error) {
-      console.error('❌ Erreur Firebase:', error);
-    }
-    
-    // Fonction de tri des plongeurs
-    function trierPlongeursParNiveau(plongeurs) {
-      return [...plongeurs].sort((a, b) => {
-        const indexA = ORDRE_NIVEAUX.indexOf(a.niveau);
-        const indexB = ORDRE_NIVEAUX.indexOf(b.niveau);
-        const posA = indexA === -1 ? 999 : indexA;
-        const posB = indexB === -1 ? 999 : indexB;
-        
-        if (posA === posB) {
-          // Si même niveau, trier par nom
-          return a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
+            <div class="btn-group">
+                <button class="btn btn-info" onclick="filterToday()">Aujourd'hui</button>
+                <button class="btn btn-info" onclick="filterWeek()">Cette semaine</button>
+                <button class="btn btn-info" onclick="filterMonth()">Ce mois</button>
+                <button class="btn btn-secondary" onclick="showAll()">Tout afficher</button>
+            </div>
+
+            <div class="view-toggle">
+                <button id="listViewBtn" class="active" onclick="switchView('list')">📋 Liste</button>
+                <button id="calendarViewBtn" onclick="switchView('calendar')">📅 Calendrier</button>
+            </div>
+
+            <button class="btn btn-success" onclick="exportPDF()">📥 Export PDF</button>
+            <button class="btn btn-primary" onclick="refreshData()">🔄 Actualiser</button>
+        </div>
+
+        <div class="content">
+            <div id="listView" class="list-view active">
+                <div id="sessionsContainer" class="loading">
+                    Chargement des données...
+                </div>
+            </div>
+
+            <div id="calendarView" class="calendar-view">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button onclick="previousMonth()">◀ Précédent</button>
+                        <button onclick="currentMonth()">Aujourd'hui</button>
+                        <button onclick="nextMonth()">Suivant ▶</button>
+                    </div>
+                    <h2 id="calendarTitle"></h2>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeQRModal()">&times;</span>
+            <h2>QR Code de la Session</h2>
+            <div id="qrcode"></div>
+            <p id="qrSessionInfo"></p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSDP97ト1pW33jPO0mAIgRh-0SWVV0Kh0",
+            authDomain: "jsasub-d5fb2.firebaseapp.com",
+            databaseURL: "https://jsasub-d5fb2-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "jsasub-d5fb2",
+            storageBucket: "jsasub-d5fb2.firebasestorage.app",
+            messagingSenderId: "420821380700",
+            appId: "1:420821380700:web:5c8cc4876ae41cca5d097c"
+        };
+
+        // Variables globales
+        let app, db;
+        let allSessions = [];
+        let filteredSessions = [];
+        let currentView = 'list';
+        let currentDate = new Date();
+
+        // Initialisation Firebase
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log("✅ Firebase initialisé");
+            loadData();
+        } catch (error) {
+            console.error("❌ Erreur Firebase:", error);
+            document.getElementById('sessionsContainer').innerHTML = 
+                '<p style="color: red;">Erreur de connexion à la base de données</p>';
         }
-        return posA - posB;
-      });
-    }
-    
-    // Charger toutes les données
-    async function loadData() {
-      if (!db) return;
-      
-      document.getElementById('loading').style.display = 'block';
-      
-      try {
-        const snapshot = await db.ref('sessions').once('value');
-        
-        if (!snapshot.exists()) {
-          document.getElementById('no-results').style.display = 'block';
-          document.getElementById('loading').style.display = 'none';
-          return;
-        }
-        
-        const sessions = snapshot.val();
-        allSessions = [];
-        
-        Object.entries(sessions).forEach(([key, session]) => {
-          if (!session.meta || !session.palanquees) return;
-          
-          const sessionData = {
-            id: key,
-            date: session.meta.date,
-            dp: session.meta.dp,
-            lieu: session.meta.lieu,
-            typeSession: session.meta.plongee || 'matin',
-            palanquees: []
-          };
-          
-          session.palanquees.forEach((palanquee, idx) => {
-            if (!palanquee || !palanquee.plongeurs) return;
+
+        // Charger les données
+        function loadData() {
+            console.log("🔄 Chargement des données...");
+            const sessionsRef = db.ref('sessions');
             
-            // Trier les plongeurs par niveau puis par nom
-            const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
-            
-            sessionData.palanquees.push({
-              numero: idx + 1,
-              horaire: palanquee.parametres?.horaire || '',
-              profPrevue: palanquee.parametres?.profondeurPrevue || '',
-              dureePrevue: palanquee.parametres?.dureePrevue || '',
-              profRealisee: palanquee.parametres?.profondeurRealisee || '',
-              dureeRealisee: palanquee.parametres?.dureeRealisee || '',
-              paliers: palanquee.parametres?.paliers || '',
-              plongeurs: plongeursTries
+            sessionsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log("📦 Données reçues:", data);
+                
+                if (!data) {
+                    document.getElementById('sessionsContainer').innerHTML = 
+                        '<p>Aucune session disponible</p>';
+                    return;
+                }
+
+                allSessions = [];
+                
+                Object.keys(data).forEach(sessionId => {
+                    const session = data[sessionId];
+                    if (session.meta && session.palanquees) {
+                        allSessions.push({
+                            id: sessionId,
+                            ...session
+                        });
+                    }
+                });
+
+                console.log(`✅ ${allSessions.length} sessions chargées`);
+                filteredSessions = [...allSessions];
+                displaySessions();
             });
-          });
-          
-          if (sessionData.palanquees.length > 0) {
-            allSessions.push(sessionData);
-          }
-        });
-        
-        // Trier par date : plus proche en premier
-        allSessions.sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          const now = new Date();
-          
-          // Si les deux dates sont futures ou passées, trier normalement
-          if ((dateA >= now && dateB >= now) || (dateA < now && dateB < now)) {
-            // Dates futures : plus proche en premier
-            if (dateA >= now) {
-              return dateA - dateB;
+        }
+
+        // Afficher les sessions avec le nouveau tri
+        function displaySessions() {
+            const container = document.getElementById('sessionsContainer');
+            
+            if (filteredSessions.length === 0) {
+                container.innerHTML = '<p class="loading">Aucune session trouvée</p>';
+                return;
             }
-            // Dates passées : plus récente en premier
-            return dateB - dateA;
-          }
-          
-          // Si une est future et l'autre passée, la future en premier
-          return dateB >= now ? 1 : -1;
-        });
-        
-        loadLieux();
-        
-        // Ne pas afficher automatiquement si on a des paramètres URL
-        const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.get('session')) {
-          displaySessions(allSessions);
-          updateStats(allSessions);
+
+            // ✅ TRI AVEC LIEU EN CLÉ 2
+            const sortedSessions = [...filteredSessions].sort((a, b) => {
+                const dateA = parseDate(a.meta.date);
+                const dateB = parseDate(b.meta.date);
+                const now = new Date();
+                
+                // Clé 1: Date (futures proches d'abord, puis passées récentes)
+                const futureA = dateA >= now;
+                const futureB = dateB >= now;
+                
+                if (futureA && !futureB) return -1;
+                if (!futureA && futureB) return 1;
+                
+                if (futureA && futureB) {
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateA - dateB;
+                    }
+                } else {
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateB - dateA;
+                    }
+                }
+                
+                // Clé 2: LIEU (Site de plongée) - TRI ALPHABÉTIQUE
+                const lieuA = (a.meta.lieu || '').toLowerCase();
+                const lieuB = (b.meta.lieu || '').toLowerCase();
+                if (lieuA !== lieuB) {
+                    return lieuA.localeCompare(lieuB);
+                }
+                
+                // Clé 3: Type de session
+                const typeOrder = { 'matin': 1, 'après-midi': 2, 'soir': 3, 'nuit': 4 };
+                const typeA = (a.meta.type || '').toLowerCase();
+                const typeB = (b.meta.type || '').toLowerCase();
+                const orderA = typeOrder[typeA] || 999;
+                const orderB = typeOrder[typeB] || 999;
+                
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                
+                // Clé 4: Numéro de palanquée
+                return 0;
+            });
+
+            // Grouper par date
+            const groupedByDate = {};
+            sortedSessions.forEach(session => {
+                const date = session.meta.date;
+                if (!groupedByDate[date]) {
+                    groupedByDate[date] = [];
+                }
+                groupedByDate[date].push(session);
+            });
+
+            // Afficher
+            let html = '';
+            Object.keys(groupedByDate).forEach(date => {
+                const sessions = groupedByDate[date];
+                const dateObj = parseDate(date);
+                const relativeDate = getRelativeDate(dateObj);
+                
+                html += `
+                    <div class="session-group">
+                        <div class="date-header">
+                            <span>${formatDate(dateObj)}</span>
+                            <span class="date-badge">${relativeDate}</span>
+                        </div>
+                `;
+                
+                sessions.forEach(session => {
+                    html += generateSessionCard(session);
+                });
+                
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
         }
-        
-        updateCalendar();
-        
-        // Vérifier les paramètres URL après le chargement
-        checkURLParams();
-        
-      } catch (error) {
-        console.error('Erreur:', error);
-      } finally {
-        document.getElementById('loading').style.display = 'none';
-      }
-    }
-    
-    // Charger les lieux
-    function loadLieux() {
-      const lieux = new Set();
-      allSessions.forEach(session => {
-        if (session.lieu) lieux.add(session.lieu);
-      });
-      
-      const lieuSelect = document.getElementById('search-lieu');
-      lieuSelect.innerHTML = '<option value="">Tous les lieux</option>';
-      
-      Array.from(lieux).sort().forEach(lieu => {
-        const option = document.createElement('option');
-        option.value = lieu;
-        option.textContent = lieu;
-        lieuSelect.appendChild(option);
-      });
-    }
-    
-    // Afficher les sessions
-    function displaySessions(sessions) {
-      const container = document.getElementById('palanquees-container');
-      const noResults = document.getElementById('no-results');
-      
-      if (sessions.length === 0) {
-        container.innerHTML = '';
-        noResults.style.display = 'block';
-        return;
-      }
-      
-      noResults.style.display = 'none';
-      container.innerHTML = sessions.map(session => {
-        const dateObj = new Date(session.date);
-        const dateFormatted = dateObj.toLocaleDateString('fr-FR', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-        
-        return session.palanquees.map(palanquee => `
-          <div class="palanquee-card">
-            <button class="qr-button" onclick="showQRCode('${session.id}', ${palanquee.numero})">
-              QR Code
-            </button>
-            
-            <div class="session-header">
-              <div class="session-date">📅 ${dateFormatted}</div>
-              <div class="session-info">
-                <span>📍 ${session.lieu}</span>
-                <span>👨‍✈️ ${session.dp}</span>
-              </div>
-            </div>
-            
-            <div class="palanquee-title">
-              Palanquée #${palanquee.numero} - ${session.typeSession}
-            </div>
-            
-            <div class="palanquee-details">
-              ${palanquee.horaire ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🕐</span>
-                  <span class="detail-label">Horaire:</span>
-                  <span class="detail-value">${palanquee.horaire}</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.profPrevue ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🌊</span>
-                  <span class="detail-label">Prof. prévue:</span>
-                  <span class="detail-value">${palanquee.profPrevue} m</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.dureePrevue ? `
-                <div class="detail-row">
-                  <span class="detail-icon">⏱️</span>
-                  <span class="detail-label">Durée prévue:</span>
-                  <span class="detail-value">${palanquee.dureePrevue} min</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.profRealisee ? `
-                <div class="detail-row">
-                  <span class="detail-icon">🎯</span>
-                  <span class="detail-label">Prof. réalisée:</span>
-                  <span class="detail-value">${palanquee.profRealisee} m</span>
-                </div>
-              ` : ''}
-              
-              ${palanquee.dureeRealisee ? `
-                <div class="detail-row">
-                  <span class="detail-icon">⏱️</span>
-                  <span class="detail-label">Durée réalisée:</span>
-                  <span class="detail-value">${palanquee.dureeRealisee} min</span>
-                </div>
-              ` : ''}
-            </div>
-            
-            ${palanquee.paliers ? `
-              <div class="paliers-info">
-                <strong>⚠️ Paliers effectués:</strong> ${palanquee.paliers}
-              </div>
-            ` : ''}
-            
-            <div class="plongeurs-list">
-              <div class="plongeurs-title">👥 Plongeurs (${palanquee.plongeurs.length})</div>
-              ${palanquee.plongeurs.map((plongeur, idx) => `
-                <div class="plongeur-item">
-                  <div style="display: flex; align-items: center; flex: 1;">
-                    <span class="plongeur-rank">#${idx + 1}</span>
-                    <span class="plongeur-name">${plongeur.nom}</span>
-                  </div>
-                  <div class="plongeur-badges">
-                    ${plongeur.pre ? `<span class="pre-badge">${plongeur.pre}</span>` : ''}
-                    <span class="niveau-badge">${plongeur.niveau}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `).join('');
-      }).join('');
-    }
-    
-    // Vue Calendrier
-    function switchView(view) {
-      currentView = view;
-      const buttons = document.querySelectorAll('.view-btn');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      
-      if (view === 'calendar') {
-        document.getElementById('palanquees-container').style.display = 'none';
-        document.getElementById('calendar-view').style.display = 'block';
-        updateCalendar();
-      } else {
-        document.getElementById('palanquees-container').style.display = 'grid';
-        document.getElementById('calendar-view').style.display = 'none';
-      }
-    }
-    
-    function updateCalendar() {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      
-      // Afficher le mois/année
-      const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                         'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-      document.getElementById('calendar-month').textContent = `${monthNames[month]} ${year}`;
-      
-      // Créer la grille du calendrier
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-      const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1; // Ajuster pour lundi = 0
-      
-      let calendarHTML = '';
-      
-      // En-têtes des jours
-      const dayHeaders = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      dayHeaders.forEach(day => {
-        calendarHTML += `<div class="calendar-day-header">${day}</div>`;
-      });
-      
-      // Jours vides au début
-      for (let i = 0; i < adjustedFirstDay; i++) {
-        calendarHTML += '<div class="calendar-day" style="background: #f8f9fa;"></div>';
-      }
-      
-      // Jours du mois
-      for (let date = 1; date <= lastDate; date++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-        const sessionsForDay = (filteredSessions.length ? filteredSessions : allSessions)
-          .filter(s => s.date === dateStr);
-        
-        let dayClass = 'calendar-day';
-        if (sessionsForDay.length > 0) dayClass += ' has-sessions';
-        
-        const today = new Date();
-        if (year === today.getFullYear() && month === today.getMonth() && date === today.getDate()) {
-          dayClass += ' selected';
-        }
-        
-        calendarHTML += `
-          <div class="${dayClass}" onclick="filterByDate('${dateStr}')">
-            <div class="calendar-day-number">${date}</div>
-            ${sessionsForDay.length > 0 ? `
-              <div class="calendar-day-sessions">
-                ${sessionsForDay.map(s => `
-                  <span class="calendar-session-badge" title="${s.lieu} - ${s.dp}">
-                    ${s.palanquees.length} pal.
-                  </span>
-                `).join('')}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }
-      
-      document.getElementById('calendar-grid').innerHTML = calendarHTML;
-    }
-    
-    function previousMonth() {
-      currentDate.setMonth(currentDate.getMonth() - 1);
-      updateCalendar();
-    }
-    
-    function nextMonth() {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      updateCalendar();
-    }
-    
-    function currentMonth() {
-      currentDate = new Date();
-      updateCalendar();
-    }
-    
-    function filterByDate(dateStr) {
-      document.getElementById('search-date').value = dateStr;
-      searchPalanquees();
-      switchView('list');
-    }
-    
-    // QR Code
-    function showQRCode(sessionId, palanqueeNum) {
-      const modal = document.getElementById('qr-modal');
-      const qrDiv = document.getElementById('qr-code');
-      
-      // Créer l'URL avec les infos de la session
-      const baseUrl = window.location.origin + window.location.pathname;
-      const qrUrl = `${baseUrl}?session=${sessionId}&palanquee=${palanqueeNum}`;
-      
-      // Vider le contenu précédent
-      qrDiv.innerHTML = '';
-      
-      // Générer le QR code
-      new QRCode(qrDiv, {
-        text: qrUrl,
-        width: 256,
-        height: 256,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      });
-      
-      modal.style.display = 'flex';
-    }
-    
-    function closeQRModal() {
-      document.getElementById('qr-modal').style.display = 'none';
-    }
-    
-    // Export PDF
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      // Titre
-      doc.setFontSize(20);
-      doc.setTextColor(111, 66, 193);
-      doc.text('JSA Subaquatique - Palanquées', 105, 20, { align: 'center' });
-      
-      // Date d'export
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Export du ${new Date().toLocaleDateString('fr-FR')}`, 105, 30, { align: 'center' });
-      
-      // Préparer les données pour le tableau
-      const tableData = [];
-      const sessions = filteredSessions.length ? filteredSessions : allSessions;
-      
-      sessions.forEach(session => {
-        session.palanquees.forEach(palanquee => {
-          // Première ligne avec infos de la palanquée
-          tableData.push([
-            new Date(session.date).toLocaleDateString('fr-FR'),
-            session.lieu,
-            session.dp,
-            `Pal. ${palanquee.numero}`,
-            palanquee.horaire || '-',
-            `${palanquee.profPrevue || '-'} m`,
-            palanquee.paliers || 'Aucun'
-          ]);
-          
-          // Lignes des plongeurs
-          palanquee.plongeurs.forEach((plongeur, idx) => {
-            tableData.push([
-              '', '', '', '',
-              `#${idx + 1} ${plongeur.nom}`,
-              plongeur.niveau,
-              plongeur.pre || ''
-            ]);
-          });
-        });
-      });
-      
-      // Créer le tableau
-      doc.autoTable({
-        startY: 40,
-        head: [['Date', 'Lieu', 'DP', 'Palanquée', 'Horaire/Plongeur', 'Prof./Niveau', 'Paliers/Préroga.']],
-        body: tableData,
-        styles: {
-          fontSize: 9,
-          cellPadding: 2
-        },
-        headStyles: {
-          fillColor: [111, 66, 193],
-          textColor: 255
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 250]
-        },
-        columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 45 },
-          5: { cellWidth: 25 },
-          6: { cellWidth: 25 }
-        }
-      });
-      
-      // Footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`Page ${i} / ${pageCount}`, 105, 285, { align: 'center' });
-      }
-      
-      // Sauvegarder
-      doc.save(`palanquees_JSA_${new Date().toISOString().split('T')[0]}.pdf`);
-    }
-    
-    // Rechercher les palanquées
-    function searchPalanquees() {
-      const name = document.getElementById('search-name').value.toLowerCase();
-      const date = document.getElementById('search-date').value;
-      const lieu = document.getElementById('search-lieu').value;
-      
-      filteredSessions = allSessions.filter(session => {
-        if (lieu && session.lieu !== lieu) return false;
-        if (date && session.date !== date) return false;
-        
-        if (name) {
-          const hasName = session.palanquees.some(palanquee =>
-            palanquee.plongeurs.some(plongeur =>
-              plongeur.nom.toLowerCase().includes(name)
-            )
-          );
-          if (!hasName) return false;
-        }
-        
-        return true;
-      });
-      
-      if (name) {
-        filteredSessions = filteredSessions.map(session => ({
-          ...session,
-          palanquees: session.palanquees.filter(palanquee =>
-            palanquee.plongeurs.some(plongeur =>
-              plongeur.nom.toLowerCase().includes(name)
-            )
-          )
-        }));
-      }
-      
-      displaySessions(filteredSessions);
-      updateStats(filteredSessions);
-      updateCalendar();
-    }
-    
-    // Filtres rapides
-    function filterToday(chip) {
-      resetChips();
-      chip.classList.add('active');
-      const today = new Date().toISOString().split('T')[0];
-      filteredSessions = allSessions.filter(s => s.date === today);
-      displaySessions(filteredSessions);
-      updateStats(filteredSessions);
-      updateCalendar();
-    }
-    
-    function filterWeek(chip) {
-      resetChips();
-      chip.classList.add('active');
-      const today = new Date();
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filteredSessions = allSessions.filter(s => {
-        const sDate = new Date(s.date);
-        return sDate >= weekAgo && sDate <= today;
-      });
-      displaySessions(filteredSessions);
-      updateStats(filteredSessions);
-      updateCalendar();
-    }
-    
-    function filterMonth(chip) {
-      resetChips();
-      chip.classList.add('active');
-      const today = new Date();
-      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      filteredSessions = allSessions.filter(s => {
-        const sDate = new Date(s.date);
-        return sDate >= monthAgo && sDate <= today;
-      });
-      displaySessions(filteredSessions);
-      updateStats(filteredSessions);
-      updateCalendar();
-    }
-    
-    function filterMyPalanquees(chip) {
-      const name = prompt('Entrez votre nom complet:');
-      if (name) {
-        resetChips();
-        chip.classList.add('active');
-        document.getElementById('search-name').value = name;
-        searchPalanquees();
-      }
-    }
-    
-    function showAll(chip) {
-      resetChips();
-      chip.classList.add('active');
-      document.getElementById('search-name').value = '';
-      document.getElementById('search-date').value = '';
-      document.getElementById('search-lieu').value = '';
-      filteredSessions = [];
-      displaySessions(allSessions);
-      updateStats(allSessions);
-      updateCalendar();
-    }
-    
-    function resetChips() {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    }
-    
-    // Mettre à jour les statistiques
-    function updateStats(sessions) {
-      const today = new Date().toISOString().split('T')[0];
-      const weekAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
-      
-      document.getElementById('stat-total').textContent = sessions.length;
-      document.getElementById('stat-today').textContent = 
-        sessions.filter(s => s.date === today).length;
-      document.getElementById('stat-week').textContent = 
-        sessions.filter(s => {
-          const sDate = new Date(s.date);
-          return sDate >= weekAgo;
-        }).length;
-      
-      const uniquePlongeurs = new Set();
-      sessions.forEach(session => {
-        session.palanquees.forEach(palanquee => {
-          palanquee.plongeurs.forEach(plongeur => {
-            uniquePlongeurs.add(plongeur.nom);
-          });
-        });
-      });
-      document.getElementById('stat-plongeurs').textContent = uniquePlongeurs.size;
-    }
-    
-    // Rafraîchir les données
-    function refreshData() {
-      const btn = document.querySelector('.refresh-btn');
-      btn.style.transform = 'rotate(360deg)';
-      setTimeout(() => {
-        loadData();
-        btn.style.transform = 'rotate(0deg)';
-      }, 500);
-    }
-    
-    // Gérer les paramètres d'URL (pour QR code)
-    function checkURLParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session');
-      const palanqueeNum = urlParams.get('palanquee');
-      
-      if (sessionId && palanqueeNum) {
-        // Attendre que les données soient chargées
-        setTimeout(() => {
-          // Filtrer pour afficher uniquement cette session/palanquée
-          const sessionFiltered = allSessions.filter(s => s.id === sessionId);
-          if (sessionFiltered.length > 0) {
-            // Ne garder que la palanquée spécifique
-            const session = {...sessionFiltered[0]};
-            session.palanquees = session.palanquees.filter(p => p.numero == palanqueeNum);
-            
-            if (session.palanquees.length > 0) {
-              // Afficher uniquement cette palanquée
-              displaySessions([session]);
-              updateStats([session]);
-              
-              // Ajouter un message d'info
-              const header = document.querySelector('.header');
-              const existingAlert = document.getElementById('qr-alert');
-              if (!existingAlert) {
-                header.insertAdjacentHTML('afterend', `
-                  <div id="qr-alert" style="
-                    background: #d4edda;
-                    color: #155724;
-                    padding: 15px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                    text-align: center;
-                    border: 1px solid #c3e6cb;
-                  ">
-                    🎯 Affichage de la palanquée #${palanqueeNum} du ${new Date(session.date).toLocaleDateString('fr-FR')}
-                    <button onclick="clearFilter()" style="
-                      margin-left: 20px;
-                      padding: 5px 15px;
-                      background: #28a745;
-                      color: white;
-                      border: none;
-                      border-radius: 5px;
-                      cursor: pointer;
-                    ">
-                      Voir toutes les palanquées
-                    </button>
-                  </div>
-                `);
-              }
-              
-              // Mettre à jour les filtres pour refléter la sélection
-              document.getElementById('search-date').value = session.date;
+
+        // Générer une carte de session
+        function generateSessionCard(session) {
+            let html = `
+                <div class="session-card">
+                    <div class="session-meta">
+                        <div class="meta-item">
+                            <strong>📍 Lieu:</strong> ${session.meta.lieu || 'Non spécifié'}
+                        </div>
+                        <div class="meta-item">
+                            <strong>⏰ Type:</strong> ${session.meta.type || 'Non spécifié'}
+                        </div>
+                        <div class="meta-item">
+                            <strong>🌊 Conditions:</strong> ${session.meta.conditions || 'Non spécifiées'}
+                        </div>
+                    </div>
+            `;
+
+            if (session.palanquees) {
+                Object.keys(session.palanquees).forEach(palanqueeId => {
+                    const palanquee = session.palanquees[palanqueeId];
+                    html += `
+                        <div class="palanquee-section">
+                            <div class="palanquee-title">
+                                ${palanquee.numero ? `Palanquée #${palanquee.numero}` : 'Palanquée'}
+                                <button class="qr-code-btn" onclick="showQRCode('${session.id}', '${palanqueeId}')">
+                                    📱 QR Code
+                                </button>
+                            </div>
+                            <div class="plongeur-list">
+                    `;
+
+                    if (palanquee.plongeurs) {
+                        Object.keys(palanquee.plongeurs).forEach(plongeurId => {
+                            const plongeur = palanquee.plongeurs[plongeurId];
+                            html += `
+                                <div class="plongeur-item">
+                                    <div>
+                                        <div class="plongeur-name">${plongeur.nom}</div>
+                                        <div class="plongeur-stats">
+                                            ${plongeur.profondeurRealisee ? `<span class="stat-badge">🌊 ${plongeur.profondeurRealisee}m</span>` : ''}
+                                            ${plongeur.tempsRealise ? `<span class="stat-badge">⏱️ ${plongeur.tempsRealise}min</span>` : ''}
+                                            ${plongeur.paliers ? `<span class="stat-badge">⚠️ Paliers: ${plongeur.paliers}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <span class="plongeur-role">${plongeur.role || 'Plongeur'}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
             }
-          }
-        }, 1000);
-      }
-    }
-    
-    // Fonction pour effacer le filtre QR
-    function clearFilter() {
-      // Retirer les paramètres de l'URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Retirer l'alerte
-      const alert = document.getElementById('qr-alert');
-      if (alert) alert.remove();
-      
-      // Réinitialiser l'affichage
-      document.getElementById('search-name').value = '';
-      document.getElementById('search-date').value = '';
-      document.getElementById('search-lieu').value = '';
-      showAll(document.querySelector('.chip.active'));
-    }
-    
-    // Charger au démarrage
-    document.addEventListener('DOMContentLoaded', () => {
-      loadData();
-      setInterval(loadData, 5 * 60 * 1000);
-    });
-  </script>
+
+            html += '</div>';
+            return html;
+        }
+
+        // Fonctions utilitaires
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split('/');
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('fr-FR', options);
+        }
+
+        function getRelativeDate(date) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0);
+            
+            const diffTime = date - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'AUJOURD\'HUI';
+            if (diffDays === 1) return 'Demain';
+            if (diffDays === -1) return 'Hier';
+            if (diffDays > 0) return `Dans ${diffDays} jours`;
+            return `Il y a ${Math.abs(diffDays)} jours`;
+        }
+
+        // Recherche
+        function searchPalanquees() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredSessions = [...allSessions];
+            } else {
+                filteredSessions = allSessions.filter(session => {
+                    const searchableText = JSON.stringify(session).toLowerCase();
+                    return searchableText.includes(searchTerm);
+                });
+            }
+            
+            displaySessions();
+        }
+
+        // Filtres
+        function filterToday() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            filteredSessions = allSessions.filter(session => {
+                const sessionDate = parseDate(session.meta.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                return sessionDate.getTime() === today.getTime();
+            });
+            
+            displaySessions();
+        }
+
+        function filterWeek() {
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            filteredSessions = allSessions.filter(session => {
+                const sessionDate = parseDate(session.meta.date);
+                return sessionDate >= today && sessionDate <= nextWeek;
+            });
+            
+            displaySessions();
+        }
+
+        function filterMonth() {
+            const today = new Date();
+            const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+            
+            filteredSessions = allSessions.filter(session => {
+                const sessionDate = parseDate(session.meta.date);
+                return sessionDate >= today && sessionDate <= nextMonth;
+            });
+            
+            displaySessions();
+        }
+
+        function showAll() {
+            filteredSessions = [...allSessions];
+            displaySessions();
+        }
+
+        // QR Code
+        function showQRCode(sessionId, palanqueeId) {
+            const modal = document.getElementById('qrModal');
+            const qrcodeDiv = document.getElementById('qrcode');
+            qrcodeDiv.innerHTML = '';
+            
+            const url = `${window.location.origin}${window.location.pathname}?session=${sessionId}&palanquee=${palanqueeId}`;
+            
+            new QRCode(qrcodeDiv, {
+                text: url,
+                width: 256,
+                height: 256
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('active');
+        }
+
+        // Export PDF
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(18);
+            doc.text('JSA Plongée - Sessions', 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Date d'export: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+            
+            const tableData = [];
+            
+            filteredSessions.forEach(session => {
+                if (session.palanquees) {
+                    Object.keys(session.palanquees).forEach(palanqueeId => {
+                        const palanquee = session.palanquees[palanqueeId];
+                        if (palanquee.plongeurs) {
+                            Object.keys(palanquee.plongeurs).forEach(plongeurId => {
+                                const plongeur = palanquee.plongeurs[plongeurId];
+                                tableData.push([
+                                    session.meta.date,
+                                    session.meta.lieu || '',
+                                    session.meta.type || '',
+                                    palanquee.numero || '',
+                                    plongeur.nom,
+                                    plongeur.role || '',
+                                    plongeur.profondeurRealisee || '',
+                                    plongeur.tempsRealise || ''
+                                ]);
+                            });
+                        }
+                    });
+                }
+            });
+            
+            doc.autoTable({
+                head: [['Date', 'Lieu', 'Type', 'Palanquée', 'Plongeur', 'Rôle', 'Prof.(m)', 'Temps(min)']],
+                body: tableData,
+                startY: 35,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [52, 152, 219] }
+            });
+            
+            doc.save('jsa-palanquees.pdf');
+        }
+
+        // Vue calendrier
+        function switchView(view) {
+            currentView = view;
+            
+            document.getElementById('listView').classList.remove('active');
+            document.getElementById('calendarView').classList.remove('active');
+            document.getElementById('listViewBtn').classList.remove('active');
+            document.getElementById('calendarViewBtn').classList.remove('active');
+            
+            if (view === 'list') {
+                document.getElementById('listView').classList.add('active');
+                document.getElementById('listViewBtn').classList.add('active');
+            } else {
+                document.getElementById('calendarView').classList.add('active');
+                document.getElementById('calendarViewBtn').classList.add('active');
+                renderCalendar();
+            }
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('calendarTitle').textContent = 
+                currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = firstDay.getDay() || 7;
+            
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            const dayHeaders = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            for (let i = 1; i < startDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day other-month';
+                grid.appendChild(emptyDay);
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                
+                const currentDayDate = new Date(year, month, day);
+                currentDayDate.setHours(0, 0, 0, 0);
+                
+                if (currentDayDate.getTime() === today.getTime()) {
+                    dayDiv.classList.add('today');
+                }
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = day;
+                dayDiv.appendChild(dayNumber);
+                
+                const dateStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+                const daySessions = filteredSessions.filter(s => s.meta.date === dateStr);
+                
+                daySessions.forEach(session => {
+                    const sessionDiv = document.createElement('div');
+                    sessionDiv.className = 'calendar-session';
+                    sessionDiv.textContent = `${session.meta.lieu || 'Session'} - ${session.meta.type || ''}`;
+                    sessionDiv.onclick = () => filterByDate(dateStr);
+                    dayDiv.appendChild(sessionDiv);
+                });
+                
+                grid.appendChild(dayDiv);
+            }
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function currentMonth() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function filterByDate(dateStr) {
+            filteredSessions = allSessions.filter(s => s.meta.date === dateStr);
+            switchView('list');
+        }
+
+        function clearFilter() {
+            document.getElementById('searchInput').value = '';
+            showAll();
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        // Exposer les fonctions globalement pour les onclick HTML
+        window.refreshData = refreshData;
+        window.showQRCode = showQRCode;
+        window.closeQRModal = closeQRModal;
+        window.exportPDF = exportPDF;
+        window.searchPalanquees = searchPalanquees;
+        window.filterToday = filterToday;
+        window.filterWeek = filterWeek;
+        window.filterMonth = filterMonth;
+        window.showAll = showAll;
+        window.switchView = switchView;
+        window.previousMonth = previousMonth;
+        window.nextMonth = nextMonth;
+        window.currentMonth = currentMonth;
+        window.filterByDate = filterByDate;
+        window.clearFilter = clearFilter;
+    </script>
 </body>
 </html>
