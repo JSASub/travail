@@ -673,10 +673,24 @@
     <!-- Vue Calendrier -->
     <div class="calendar-view" id="calendar-view">
       <div class="calendar-header">
-        <div class="calendar-nav">
-          <button class="calendar-btn" onclick="previousMonth()">◀</button>
-          <button class="calendar-btn" onclick="currentMonth()">Aujourd'hui</button>
-          <button class="calendar-btn" onclick="nextMonth()">▶</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <label style="font-weight: bold; color: #333;">Période :</label>
+          <input type="date" id="calendar-date-start" style="
+            padding: 8px;
+            border: 2px solid #6f42c1;
+            border-radius: 5px;
+            font-size: 0.9em;
+          " onchange="updateCalendarPeriod()">
+          <span style="color: #666;">au</span>
+          <input type="date" id="calendar-date-end" style="
+            padding: 8px;
+            border: 2px solid #6f42c1;
+            border-radius: 5px;
+            font-size: 0.9em;
+          " onchange="updateCalendarPeriod()">
+          <button class="calendar-btn" onclick="setCalendarToday()">Aujourd'hui</button>
+          <button class="calendar-btn" onclick="setCalendarWeek()">Cette semaine</button>
+          <button class="calendar-btn" onclick="setCalendarMonth()">Ce mois</button>
         </div>
         <div class="calendar-month" id="calendar-month"></div>
       </div>
@@ -1021,25 +1035,155 @@
       if (view === 'calendar') {
         document.getElementById('palanquees-container').style.display = 'none';
         document.getElementById('calendar-view').style.display = 'block';
-        updateCalendar();
+        
+        // Initialiser les dates si vide
+        const startInput = document.getElementById('calendar-date-start');
+        const endInput = document.getElementById('calendar-date-end');
+        
+        if (!startInput.value || !endInput.value) {
+          setCalendarMonth();
+        } else {
+          updateCalendar();
+        }
       } else {
         document.getElementById('palanquees-container').style.display = 'grid';
         document.getElementById('calendar-view').style.display = 'none';
       }
     }
     
+    function setCalendarToday() {
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0];
+      document.getElementById('calendar-date-start').value = dateStr;
+      document.getElementById('calendar-date-end').value = dateStr;
+      updateCalendarPeriod();
+    }
+    
+    function setCalendarWeek() {
+      const today = new Date();
+      const startOfWeek = new Date(today);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+      document.getElementById('calendar-date-start').value = startOfWeek.toISOString().split('T')[0];
+      document.getElementById('calendar-date-end').value = endOfWeek.toISOString().split('T')[0];
+      updateCalendarPeriod();
+    }
+    
+    function setCalendarMonth() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      document.getElementById('calendar-date-start').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('calendar-date-end').value = lastDay.toISOString().split('T')[0];
+      updateCalendarPeriod();
+    }
+    
+    function updateCalendarPeriod() {
+      const startStr = document.getElementById('calendar-date-start').value;
+      const endStr = document.getElementById('calendar-date-end').value;
+      
+      if (!startStr || !endStr) return;
+      
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
+      
+      if (startDate > endDate) {
+        alert('La date de début doit être antérieure à la date de fin');
+        return;
+      }
+      
+      updateCalendar();
+    }
+    
     function updateCalendar() {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
+      const startStr = document.getElementById('calendar-date-start').value;
+      const endStr = document.getElementById('calendar-date-end').value;
       
-      const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                         'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-      document.getElementById('calendar-month').textContent = `${monthNames[month]} ${year}`;
+      if (!startStr || !endStr) return;
       
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-      const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
       
+      // Afficher la période sélectionnée
+      document.getElementById('calendar-month').textContent = 
+        `Du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
+      
+      // Calculer le nombre de jours
+      const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Adapter l'affichage selon la durée
+      if (daysDiff <= 7) {
+        renderWeekView(startDate, endDate);
+      } else if (daysDiff <= 31) {
+        renderMonthView(startDate, endDate);
+      } else {
+        renderLongPeriodView(startDate, endDate);
+      }
+    }
+    
+    function renderWeekView(startDate, endDate) {
+      let calendarHTML = '';
+      
+      const dayHeaders = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      
+      // Déterminer le premier jour (lundi) de la semaine
+      const firstDay = new Date(startDate);
+      const day = firstDay.getDay();
+      const diff = firstDay.getDate() - day + (day === 0 ? -6 : 1);
+      firstDay.setDate(diff);
+      
+      dayHeaders.forEach(day => {
+        calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+      });
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Afficher 7 jours
+      for (let i = 0; i < 7; i++) {
+        const currentDay = new Date(firstDay);
+        currentDay.setDate(firstDay.getDate() + i);
+        currentDay.setHours(0, 0, 0, 0);
+        
+        const inRange = currentDay >= startDate && currentDay <= endDate;
+        
+        const dateStr = `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`;
+        const sessionsForDay = (filteredSessions.length ? filteredSessions : allSessions)
+          .filter(s => s.date === dateStr);
+        
+        let dayClass = 'calendar-day';
+        if (!inRange) dayClass += ' other-month';
+        if (sessionsForDay.length > 0) dayClass += ' has-sessions';
+        if (currentDay.getTime() === today.getTime()) dayClass += ' selected';
+        
+        calendarHTML += `
+          <div class="${dayClass}" onclick="filterByDate('${dateStr}')" style="min-height: 150px;">
+            <div class="calendar-day-number">${currentDay.getDate()}</div>
+            ${sessionsForDay.length > 0 && inRange ? `
+              <div class="calendar-day-sessions">
+                ${sessionsForDay.map(s => `
+                  <div style="background: #6f42c1; color: white; padding: 5px; margin: 3px 0; border-radius: 4px; font-size: 0.85em;">
+                    ${s.lieu} - ${s.typeSession}<br>
+                    <small>${s.palanquees.length} pal.</small>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = calendarHTML;
+      document.getElementById('calendar-grid').style.gridTemplateColumns = 'repeat(7, 1fr)';
+    }
+    
+    function renderMonthView(startDate, endDate) {
       let calendarHTML = '';
       
       const dayHeaders = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -1047,32 +1191,36 @@
         calendarHTML += `<div class="calendar-day-header">${day}</div>`;
       });
       
-      for (let i = 0; i < adjustedFirstDay; i++) {
-        calendarHTML += '<div class="calendar-day" style="background: #f8f9fa;"></div>';
-      }
+      // Trouver le premier lundi avant ou égal à startDate
+      const firstDay = new Date(startDate);
+      const day = firstDay.getDay();
+      const diff = firstDay.getDate() - day + (day === 0 ? -6 : 1);
+      firstDay.setDate(diff);
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      for (let date = 1; date <= lastDate; date++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+      let currentDay = new Date(firstDay);
+      let iterations = 0;
+      
+      // Afficher jusqu'à la fin de la période (max 6 semaines)
+      while (currentDay <= endDate && iterations < 42) {
+        currentDay.setHours(0, 0, 0, 0);
+        const inRange = currentDay >= startDate && currentDay <= endDate;
+        
+        const dateStr = `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`;
         const sessionsForDay = (filteredSessions.length ? filteredSessions : allSessions)
           .filter(s => s.date === dateStr);
         
         let dayClass = 'calendar-day';
+        if (!inRange) dayClass += ' other-month';
         if (sessionsForDay.length > 0) dayClass += ' has-sessions';
-        
-        const currentDayDate = new Date(year, month, date);
-        currentDayDate.setHours(0, 0, 0, 0);
-        
-        if (currentDayDate.getTime() === today.getTime()) {
-          dayClass += ' selected';
-        }
+        if (currentDay.getTime() === today.getTime()) dayClass += ' selected';
         
         calendarHTML += `
           <div class="${dayClass}" onclick="filterByDate('${dateStr}')">
-            <div class="calendar-day-number">${date}</div>
-            ${sessionsForDay.length > 0 ? `
+            <div class="calendar-day-number">${currentDay.getDate()}</div>
+            ${sessionsForDay.length > 0 && inRange ? `
               <div class="calendar-day-sessions">
                 ${sessionsForDay.map(s => `
                   <span class="calendar-session-badge" title="${s.lieu} - ${s.dp}">
@@ -1083,24 +1231,119 @@
             ` : ''}
           </div>
         `;
+        
+        currentDay.setDate(currentDay.getDate() + 1);
+        iterations++;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = calendarHTML;
+      document.getElementById('calendar-grid').style.gridTemplateColumns = 'repeat(7, 1fr)';
+    }
+    
+    function renderLongPeriodView(startDate, endDate) {
+      let calendarHTML = '';
+      
+      // Vue par mois
+      let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      
+      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+                         'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+      
+      let monthCount = 0;
+      while (currentMonth <= endMonth && monthCount < 12) {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        
+        // Compter les sessions du mois dans la période
+        const sessionsInMonth = (filteredSessions.length ? filteredSessions : allSessions)
+          .filter(s => {
+            const sDate = new Date(s.date);
+            return sDate >= startDate && sDate <= endDate &&
+                   sDate.getFullYear() === year && sDate.getMonth() === month;
+          });
+        
+        calendarHTML += `
+          <div style="
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid ${sessionsInMonth.length > 0 ? '#6f42c1' : '#e0e0e0'};
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 120px;
+          " 
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+            <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #333;">
+              ${monthNames[month]} ${year}
+            </div>
+            ${sessionsInMonth.length > 0 ? `
+              <div style="text-align: center; margin-top: 20px;">
+                <div style="font-size: 2em; color: #6f42c1; font-weight: bold;">
+                  ${sessionsInMonth.length}
+                </div>
+                <div style="font-size: 0.9em; color: #666;">
+                  session${sessionsInMonth.length > 1 ? 's' : ''}
+                </div>
+                <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                  ${sessionsInMonth.reduce((sum, s) => sum + s.palanquees.length, 0)} palanquée${sessionsInMonth.reduce((sum, s) => sum + s.palanquees.length, 0) > 1 ? 's' : ''}
+                </div>
+              </div>
+            ` : `
+              <div style="text-align: center; margin-top: 20px; color: #999; font-size: 0.9em;">
+                Aucune session
+              </div>
+            `}
+          </div>
+        `;
+        
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+        monthCount++;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = calendarHTML;
+      document.getElementById('calendar-grid').style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+    }style.boxShadow='none';"
+          onclick="goToMonth(${month})">
+            <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 10px; color: #333;">
+              ${monthNames[month]}
+            </div>
+            ${sessionsInMonth.length > 0 ? `
+              <div style="text-align: center; margin-top: 20px;">
+                <div style="font-size: 2em; color: #6f42c1; font-weight: bold;">
+                  ${sessionsInMonth.length}
+                </div>
+                <div style="font-size: 0.9em; color: #666;">
+                  session${sessionsInMonth.length > 1 ? 's' : ''}
+                </div>
+                <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                  ${sessionsInMonth.reduce((sum, s) => sum + s.palanquees.length, 0)} palanquée${sessionsInMonth.reduce((sum, s) => sum + s.palanquees.length, 0) > 1 ? 's' : ''}
+                </div>
+              </div>
+            ` : `
+              <div style="text-align: center; margin-top: 20px; color: #999; font-size: 0.9em;">
+                Aucune session
+              </div>
+            `}
+          </div>
+        `;
       }
       
       document.getElementById('calendar-grid').innerHTML = calendarHTML;
     }
     
+    
     function previousMonth() {
-      currentDate.setMonth(currentDate.getMonth() - 1);
-      updateCalendar();
+      // Fonction non utilisée avec le nouveau système de dates
     }
     
     function nextMonth() {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      updateCalendar();
+      // Fonction non utilisée avec le nouveau système de dates
     }
     
     function currentMonth() {
-      currentDate = new Date();
-      updateCalendar();
+      // Fonction non utilisée avec le nouveau système de dates
     }
     
     function filterByDate(dateStr) {
