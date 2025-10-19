@@ -664,7 +664,8 @@
       
       <div class="search-box">
         <input type="text" id="search-name" placeholder="Votre nom..." />
-        <input type="date" id="search-date" />
+        <input type="date" id="search-date" placeholder="Date début" />
+        <input type="date" id="search-date-end" placeholder="Date fin" />
         <select id="search-lieu">
           <option value="">Tous les lieux</option>
         </select>
@@ -703,12 +704,6 @@
           <button class="calendar-btn" onclick="nextMonth()">▶</button>
         </div>
         <div class="calendar-month" id="calendar-month"></div>
-        <div class="calendar-date-filter">
-          <label>Du :</label>
-          <input type="date" id="calendar-start-date" onchange="updateCalendar()" />
-          <label style="margin-left: 10px;">au :</label>
-          <input type="date" id="calendar-end-date" onchange="updateCalendar()" />
-        </div>
       </div>
       <div class="calendar-grid" id="calendar-grid"></div>
     </div>
@@ -1070,9 +1065,9 @@
       const lastDate = new Date(year, month + 1, 0).getDate();
       const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
       
-      // Récupérer les dates de début et fin si définies
-      const startDateInput = document.getElementById('calendar-start-date').value;
-      const endDateInput = document.getElementById('calendar-end-date').value;
+      // Récupérer les dates de début et fin depuis les champs de recherche
+      const startDateInput = document.getElementById('search-date').value;
+      const endDateInput = document.getElementById('search-date-end').value;
       
       let startDate = null;
       let endDate = null;
@@ -1163,6 +1158,7 @@
     
     function filterByDate(dateStr) {
       document.getElementById('search-date').value = dateStr;
+      document.getElementById('search-date-end').value = dateStr;
       searchPalanquees();
       switchView('list');
     }
@@ -1275,12 +1271,25 @@
     // Rechercher les palanquées
     function searchPalanquees() {
       const name = document.getElementById('search-name').value.toLowerCase();
-      const date = document.getElementById('search-date').value;
+      const dateStart = document.getElementById('search-date').value;
+      const dateEnd = document.getElementById('search-date-end').value;
       const lieu = document.getElementById('search-lieu').value;
       
       filteredSessions = allSessions.filter(session => {
         if (lieu && session.lieu !== lieu) return false;
-        if (date && session.date !== date) return false;
+        
+        // Filtrer par intervalle de dates
+        if (dateStart || dateEnd) {
+          const sessionDate = new Date(session.date);
+          if (dateStart) {
+            const startDate = new Date(dateStart);
+            if (sessionDate < startDate) return false;
+          }
+          if (dateEnd) {
+            const endDate = new Date(dateEnd);
+            if (sessionDate > endDate) return false;
+          }
+        }
         
         if (name) {
           const hasName = session.palanquees.some(palanquee =>
@@ -1364,6 +1373,7 @@
       chip.classList.add('active');
       document.getElementById('search-name').value = '';
       document.getElementById('search-date').value = '';
+      document.getElementById('search-date-end').value = '';
       document.getElementById('search-lieu').value = '';
       filteredSessions = [];
       displaySessions(allSessions);
@@ -1501,6 +1511,7 @@
       
       document.getElementById('search-name').value = '';
       document.getElementById('search-date').value = '';
+      document.getElementById('search-date-end').value = '';
       document.getElementById('search-lieu').value = '';
       showAll(document.querySelector('.chip.active'));
     }
