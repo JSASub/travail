@@ -89,6 +89,12 @@
         </div>
       </div>
       <div class="filter-row">
+        <div class="filter-group">
+          <label for="filtre-plongeur">🔍 Nom du plongeur</label>
+          <input type="text" id="filtre-plongeur" placeholder="Rechercher un plongeur...">
+        </div>
+      </div>
+      <div class="filter-row">
         <button class="btn btn-primary" onclick="chargerBilan()">Générer le bilan</button>
         <button class="btn btn-secondary" onclick="reinitialiserFiltres()">Réinitialiser</button>
       </div>
@@ -207,6 +213,7 @@
       const dateFin = document.getElementById('date-fin').value;
       const filtreDP = document.getElementById('filtre-dp').value;
       const filtreLieu = document.getElementById('filtre-lieu').value;
+      const filtrePlongeur = (document.getElementById('filtre-plongeur').value || '').toLowerCase().trim();
       if (!dateDebut || !dateFin) { afficherErreur('Veuillez sélectionner les dates'); return; }
       if (new Date(dateDebut) > new Date(dateFin)) { afficherErreur('Date de début invalide'); return; }
       afficherLoading(true);
@@ -226,6 +233,12 @@
             if (!palanquee || !palanquee.plongeurs) return;
             
             const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+            
+            // Filtre plongeur
+            if (filtrePlongeur) {
+              const trouve = plongeursTries.some(p => (p.nom || '').toLowerCase().includes(filtrePlongeur));
+              if (!trouve) return;
+            }
             
             bilanData.push({
               date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
@@ -635,6 +648,7 @@
       document.getElementById('date-fin').valueAsDate = aujourdhui;
       document.getElementById('filtre-dp').value = '';
       document.getElementById('filtre-lieu').value = '';
+      document.getElementById('filtre-plongeur').value = '';
       document.getElementById('results').style.display = 'none';
       document.getElementById('no-data').style.display = 'none';
     }
