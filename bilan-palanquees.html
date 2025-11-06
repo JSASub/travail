@@ -332,6 +332,8 @@
             </table>
           </div>
         `;
+        const ancienNiveaux = document.querySelector('#stats-container + div');
+        if (ancienNiveaux) ancienNiveaux.remove();
         statsContainer.insertAdjacentHTML('afterend', niveauxHTML);
       }
     }
