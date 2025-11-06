@@ -58,15 +58,162 @@
     
     /* Styles pour l'impression */
     @media print {
-      body { background: white; padding: 10px; }
-      .back-link, .filters, .export-buttons { display: none !important; }
-      .container { box-shadow: none; padding: 0; }
-      .header { border-bottom: 2px solid #000; }
-      table { page-break-inside: auto; font-size: 10px; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-      thead { display: table-header-group; }
-      .stat-card { border: 1px solid #000; }
-      #niveaux-container { page-break-before: avoid; }
+      @page {
+        size: A4;
+        margin: 15mm 10mm;
+      }
+      
+      body { 
+        background: white; 
+        padding: 0;
+        font-size: 9pt;
+      }
+      
+      .back-link, .filters, .export-buttons, #loading, #no-data, #error { 
+        display: none !important; 
+      }
+      
+      .container { 
+        box-shadow: none; 
+        padding: 0;
+        max-width: 100%;
+        margin: 0;
+      }
+      
+      .header { 
+        border-bottom: 2px solid #003366;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+      }
+      
+      .logo { 
+        height: 40px; 
+      }
+      
+      h1 { 
+        font-size: 18pt; 
+      }
+      
+      .header p {
+        font-size: 10pt;
+      }
+      
+      /* Statistiques sur une ligne compacte */
+      .stats { 
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+      
+      .stat-card { 
+        border: 1.5px solid #007bff;
+        padding: 8px;
+        background: #f0f8ff !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      .stat-value { 
+        font-size: 16pt;
+        color: #003366 !important;
+      }
+      
+      .stat-label { 
+        font-size: 8pt;
+      }
+      
+      /* Tableau répartition par niveau */
+      #niveaux-container { 
+        page-break-inside: avoid;
+        margin-bottom: 12px;
+      }
+      
+      #niveaux-container h3 {
+        font-size: 12pt;
+        margin-bottom: 8px;
+      }
+      
+      #niveaux-container table {
+        font-size: 8pt;
+      }
+      
+      #niveaux-container th {
+        background: #003366 !important;
+        color: white !important;
+        padding: 6px 4px !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      #niveaux-container td {
+        padding: 4px !important;
+      }
+      
+      .niveau-badge {
+        font-size: 8pt;
+        padding: 2px 6px;
+        background: #28a745 !important;
+        color: white !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Tableau principal des plongées */
+      .table-container {
+        margin-top: 0;
+      }
+      
+      table { 
+        page-break-inside: auto;
+        font-size: 7pt;
+        width: 100%;
+      }
+      
+      thead { 
+        display: table-header-group;
+      }
+      
+      th { 
+        background: #003366 !important;
+        color: white !important;
+        padding: 6px 3px !important;
+        font-size: 7pt;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      td { 
+        padding: 4px 3px !important;
+        font-size: 7pt;
+        border-bottom: 0.5px solid #ddd;
+      }
+      
+      tr { 
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      tr:nth-child(even) { 
+        background: #fafafa !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Lignes de séparation et totaux */
+      tr[style*="background: #FF6B00"],
+      tr[style*="background: #d4edda"],
+      tr[style*="background: #e8f4f8"] {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Éviter les coupures dans les totaux */
+      tbody tr[style*="font-weight: bold"] {
+        page-break-before: avoid;
+        page-break-after: avoid;
+      }
     }
   </style>
 </head>
