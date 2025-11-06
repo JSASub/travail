@@ -55,7 +55,6 @@
     .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-blue); text-decoration: none; font-weight: bold; }
     .back-link:hover { text-decoration: underline; }
-    /* Style pour le filtre plongeur avec effet highlight */
     .filter-group.plongeur-filter { border-left: 3px solid var(--success-green); padding-left: 10px; }
   </style>
 </head>
@@ -158,9 +157,9 @@
       });
     }
     
-    // Fonction pour normaliser le texte (enlever accents et mettre en minuscules)
     function normaliserTexte(texte) {
-      return texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (!texte) return '';
+      return texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
     
     try {
@@ -212,7 +211,8 @@
         const dateFin = document.getElementById('date-fin').value;
         const filtreDP = document.getElementById('filtre-dp').value;
         const filtreLieu = document.getElementById('filtre-lieu').value;
-        const filtrePlongeur = normaliserTexte(document.getElementById('filtre-plongeur').value.trim());
+        const filtrePlongeurBrut = document.getElementById('filtre-plongeur').value;
+        const filtrePlongeur = normaliserTexte(filtrePlongeurBrut);
 
         if (!dateDebut || !dateFin) {
           afficherErreur('Veuillez sélectionner une période.');
@@ -242,20 +242,16 @@
               if (!palanquee.plongeurs) return;
 
               const plongeursArray = Object.values(palanquee.plongeurs);
-              
-              // Si un filtre plongeur est actif, vérifier que la palanquée contient ce plongeur
               let plongeursTries = trierPlongeursParNiveau(plongeursArray);
               
+              // Si un filtre plongeur est actif
               if (filtrePlongeur) {
-                const plongeursTrouvés = plongeursTries.filter(p => 
-                  normaliserTexte(p.nom).includes(filtrePlongeur)
-                );
+                const palanqueeContientPlongeur = plongeursTries.some(p => {
+                  const nomNormalise = normaliserTexte(p.nom);
+                  return nomNormalise.includes(filtrePlongeur);
+                });
                 
-                // Si aucun plongeur ne correspond, ne pas inclure cette palanquée
-                if (plongeursTrouvés.length === 0) return;
-                
-                // Si un filtre est actif, afficher uniquement les plongeurs correspondants
-                plongeursTries = plongeursTrouvés;
+                if (!palanqueeContientPlongeur) return;
               }
 
               totalPalanquees++;
@@ -488,11 +484,9 @@
   </WorksheetOptions>
   <Table>`;
       
-      // Titre
       html += '<Row ss:Height="30"><Cell ss:MergeAcross="13" ss:StyleID="titre"><Data ss:Type="String">Bilan Global des Palanquées - JSAS</Data></Cell></Row>';
       html += '<Row ss:Height="10"></Row>';
       
-      // En-têtes
       html += '<Row>';
       ['Date', 'DP', 'Lieu', 'Session', 'Palanquée', 'Plongeur', 'Prérogatives', 'Niveau', 'Horaire', 'Prof. Prévue [m]', 'Durée Prévue [min]', 'Prof. Réalisée [m]', 'Durée Réalisée [min]', 'Paliers'].forEach(entete => {
         html += `<Cell ss:StyleID="entete"><Data ss:Type="String">${entete}</Data></Cell>`;
