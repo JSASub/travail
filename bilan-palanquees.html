@@ -107,6 +107,7 @@
 
     <div id="results" style="display: none;">
       <div class="stats" id="stats-container"></div>
+      <div id="niveaux-container"></div>
       <div class="export-buttons">
         <button class="btn btn-success" onclick="exporterCSV()">📊 Exporter CSV</button>
         <button class="btn btn-success" onclick="exporterExcel()">📗 Exporter Excel</button>
@@ -332,9 +333,8 @@
             </table>
           </div>
         `;
-        const ancienNiveaux = document.querySelector('#stats-container + div');
-        if (ancienNiveaux) ancienNiveaux.remove();
-        statsContainer.insertAdjacentHTML('afterend', niveauxHTML);
+        const niveauxContainer = document.getElementById('niveaux-container');
+        niveauxContainer.innerHTML = niveauxHTML;
       }
     }
 
