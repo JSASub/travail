@@ -55,6 +55,19 @@
     .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-blue); text-decoration: none; font-weight: bold; }
     .back-link:hover { text-decoration: underline; }
+    
+    /* Styles pour l'impression */
+    @media print {
+      body { background: white; padding: 10px; }
+      .back-link, .filters, .export-buttons { display: none !important; }
+      .container { box-shadow: none; padding: 0; }
+      .header { border-bottom: 2px solid #000; }
+      table { page-break-inside: auto; font-size: 10px; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      thead { display: table-header-group; }
+      .stat-card { border: 1px solid #000; }
+      #niveaux-container { page-break-before: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -111,6 +124,8 @@
       <div class="export-buttons">
         <button class="btn btn-success" onclick="exporterCSV()">📊 Exporter CSV</button>
         <button class="btn btn-success" onclick="exporterExcel()">📗 Exporter Excel</button>
+        <button class="btn btn-primary" onclick="imprimer()">🖨️ Imprimer</button>
+        <button class="btn btn-primary" onclick="exporterPDF()">📄 Exporter PDF</button>
       </div>
       <div class="table-container">
         <table>
@@ -630,6 +645,35 @@
       URL.revokeObjectURL(url);
     }
 
+    function imprimer() {
+      window.print();
+    }
+
+    function exporterPDF() {
+      // Utilise la fonction d'impression du navigateur en mode PDF
+      const titre = document.title;
+      document.title = "Bilan_Palanquees_" + new Date().toISOString().split("T")[0];
+      
+      // Cache les boutons temporairement
+      const boutons = document.querySelector(".export-buttons");
+      const filtres = document.querySelector(".filters");
+      const lien = document.querySelector(".back-link");
+      
+      if (boutons) boutons.style.display = "none";
+      if (filtres) filtres.style.display = "none";
+      if (lien) lien.style.display = "none";
+      
+      // Lance l'impression (l'utilisateur peut choisir "Enregistrer en PDF")
+      window.print();
+      
+      // Restaure après un court délai
+      setTimeout(() => {
+        if (boutons) boutons.style.display = "flex";
+        if (filtres) filtres.style.display = "block";
+        if (lien) lien.style.display = "inline-block";
+        document.title = titre;
+      }, 500);
+    }
     function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
     function afficherAucuneDonnee() {
       document.getElementById('results').style.display = 'none';
