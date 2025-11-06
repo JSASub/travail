@@ -55,7 +55,6 @@
     .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-blue); text-decoration: none; font-weight: bold; }
     .back-link:hover { text-decoration: underline; }
-    .filter-group.plongeur-filter { border-left: 3px solid var(--success-green); padding-left: 10px; }
   </style>
 </head>
 <body>
@@ -87,12 +86,6 @@
         <div class="filter-group">
           <label for="filtre-lieu">Lieu</label>
           <select id="filtre-lieu"><option value="">Tous les lieux</option></select>
-        </div>
-      </div>
-      <div class="filter-row">
-        <div class="filter-group plongeur-filter">
-          <label for="filtre-plongeur">🔍 Nom du plongeur</label>
-          <input type="text" id="filtre-plongeur" placeholder="Rechercher un plongeur...">
         </div>
       </div>
       <div class="filter-row">
@@ -157,272 +150,317 @@
       });
     }
     
-    function normaliserTexte(texte) {
-      if (!texte) return '';
-      return texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-    }
-    
     try {
       app = firebase.initializeApp(firebaseConfig);
       db = firebase.database();
+      console.log('✅ Firebase initialisé');
     } catch (error) {
-      console.error('Erreur Firebase:', error);
+      console.error('❌ Erreur init Firebase:', error);
     }
 
     async function chargerFiltres() {
-      const snapshot = await db.ref('sessions').once('value');
-      const sessions = snapshot.val();
-      if (!sessions) return;
-
-      const dps = new Set();
-      const lieux = new Set();
-
-      Object.values(sessions).forEach(session => {
-        if (session.directeurPlongee) dps.add(session.directeurPlongee);
-        if (session.lieu) lieux.add(session.lieu);
-      });
-
-      const dpSelect = document.getElementById('filtre-dp');
-      const lieuSelect = document.getElementById('filtre-lieu');
-
-      [...dps].sort().forEach(dp => {
-        const option = document.createElement('option');
-        option.value = dp;
-        option.textContent = dp;
-        dpSelect.appendChild(option);
-      });
-
-      [...lieux].sort().forEach(lieu => {
-        const option = document.createElement('option');
-        option.value = lieu;
-        option.textContent = lieu;
-        lieuSelect.appendChild(option);
-      });
+      if (!db) return;
+      try {
+        // Charger les DP depuis dp_database
+        const dpSnapshot = await db.ref('dp_database').once('value');
+        const dpSelect = document.getElementById('filtre-dp');
+        
+        if (dpSnapshot.exists()) {
+          const dpsData = dpSnapshot.val();
+          const dpsArray = Object.values(dpsData).map(dp => dp.nom).sort();
+          console.log('DPs trouvés dans dp_database:', dpsArray.length, dpsArray);
+          
+          dpsArray.forEach(dp => {
+            const option = document.createElement('option');
+            option.value = dp;
+            option.textContent = dp;
+            dpSelect.appendChild(option);
+          });
+        }
+        
+        // Charger les lieux depuis les sessions
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) return;
+        const sessions = snapshot.val();
+        const lieux = new Set();
+        Object.values(sessions).forEach(session => {
+          if (session.meta && session.meta.lieu) {
+            lieux.add(session.meta.lieu.trim());
+          }
+        });
+        
+        console.log('Lieux trouvés:', Array.from(lieux).length);
+        const lieuSelect = document.getElementById('filtre-lieu');
+        Array.from(lieux).sort().forEach(lieu => {
+          const option = document.createElement('option');
+          option.value = lieu;
+          option.textContent = lieu;
+          lieuSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erreur filtres:', error);
+      }
     }
 
     async function chargerBilan() {
-      cacherErreur();
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      if (!dateDebut || !dateFin) { afficherErreur('Veuillez sélectionner les dates'); return; }
+      if (new Date(dateDebut) > new Date(dateFin)) { afficherErreur('Date de début invalide'); return; }
       afficherLoading(true);
-      document.getElementById('results').style.display = 'none';
-      document.getElementById('no-data').style.display = 'none';
-
+      cacherErreur();
       try {
-        const dateDebut = document.getElementById('date-debut').value;
-        const dateFin = document.getElementById('date-fin').value;
-        const filtreDP = document.getElementById('filtre-dp').value;
-        const filtreLieu = document.getElementById('filtre-lieu').value;
-        const filtrePlongeurBrut = document.getElementById('filtre-plongeur').value;
-        const filtrePlongeur = normaliserTexte(filtrePlongeurBrut);
-
-        if (!dateDebut || !dateFin) {
-          afficherErreur('Veuillez sélectionner une période.');
-          return;
-        }
-
         const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) { afficherAucuneDonnee(); return; }
         const sessions = snapshot.val();
-
-        if (!sessions) {
-          afficherAucuneDonnee();
-          return;
-        }
-
         bilanData = [];
-        let totalPlongeurs = 0;
-        let totalPalanquees = 0;
-        const plongeursUniques = new Set();
-
-        Object.entries(sessions).forEach(([sessionId, session]) => {
-          if (!session.date || session.date < dateDebut || session.date > dateFin) return;
-          if (filtreDP && session.directeurPlongee !== filtreDP) return;
-          if (filtreLieu && session.lieu !== filtreLieu) return;
-
-          if (session.palanquees) {
-            Object.entries(session.palanquees).forEach(([palanqueeId, palanquee]) => {
-              if (!palanquee.plongeurs) return;
-
-              const plongeursArray = Object.values(palanquee.plongeurs);
-              let plongeursTries = trierPlongeursParNiveau(plongeursArray);
-              
-              // Si un filtre plongeur est actif
-              if (filtrePlongeur) {
-                const palanqueeContientPlongeur = plongeursTries.some(p => {
-                  const nomNormalise = normaliserTexte(p.nom);
-                  return nomNormalise.includes(filtrePlongeur);
-                });
-                
-                if (!palanqueeContientPlongeur) return;
-              }
-
-              totalPalanquees++;
-              totalPlongeurs += plongeursTries.length;
-              plongeursTries.forEach(p => plongeursUniques.add(p.nom));
-
-              bilanData.push({
-                date: session.date,
-                dp: session.directeurPlongee || '',
-                lieu: session.lieu || '',
-                typeSession: session.typeSession || '',
-                numeroPalanquee: palanquee.numeroPalanquee || '',
-                horaire: palanquee.horaire || '',
-                profPrevue: palanquee.profondeurPrevue || '',
-                dureePrevue: palanquee.dureePrevue || '',
-                profRealisee: palanquee.profondeurRealisee || '',
-                dureeRealisee: palanquee.dureeRealisee || '',
-                paliers: palanquee.paliers || 'Non',
-                plongeurs: plongeursTries
-              });
+        Object.entries(sessions).forEach(([key, session]) => {
+          if (!session.meta || !session.palanquees) return;
+          const sessionDate = session.meta.date;
+          if (sessionDate < dateDebut || sessionDate > dateFin) return;
+          if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
+          if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
+          session.palanquees.forEach((palanquee, idx) => {
+            if (!palanquee || !palanquee.plongeurs) return;
+            
+            const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+            
+            bilanData.push({
+              date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
+              typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
+              horaire: palanquee.parametres?.horaire || '', plongeurs: plongeursTries,
+              profPrevue: palanquee.parametres?.profondeurPrevue || '',
+              dureePrevue: palanquee.parametres?.dureePrevue || '',
+              profRealisee: palanquee.parametres?.profondeurRealisee || '',
+              dureeRealisee: palanquee.parametres?.dureeRealisee || '',
+              paliers: palanquee.parametres?.paliers || ''
             });
-          }
+          });
         });
-
-        if (bilanData.length === 0) {
-          afficherAucuneDonnee();
-          return;
-        }
-
+        if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
+        
+        const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
         bilanData.sort((a, b) => {
           if (a.date !== b.date) return a.date.localeCompare(b.date);
-          if (a.dp !== b.dp) return a.dp.localeCompare(b.dp);
-          if (a.typeSession !== b.typeSession) return a.typeSession.localeCompare(b.typeSession);
-          return (a.numeroPalanquee || 0) - (b.numeroPalanquee || 0);
+          if (a.lieu !== b.lieu) return a.lieu.localeCompare(b.lieu, 'fr', { sensitivity: 'base' });
+          const indexA = ordreSession.indexOf(a.typeSession);
+          const indexB = ordreSession.indexOf(b.typeSession);
+          const posA = indexA === -1 ? 999 : indexA;
+          const posB = indexB === -1 ? 999 : indexB;
+          if (posA !== posB) return posA - posB;
+          return a.numeroPalanquee - b.numeroPalanquee;
         });
-
-        afficherStats(totalPlongeurs, totalPalanquees, plongeursUniques.size);
+        
+        afficherStatistiques();
         afficherTableau();
         document.getElementById('results').style.display = 'block';
+        document.getElementById('no-data').style.display = 'none';
       } catch (error) {
-        afficherErreur('Erreur lors du chargement: ' + error.message);
+        afficherErreur('Erreur: ' + error.message);
       } finally {
         afficherLoading(false);
       }
     }
 
-    function afficherStats(totalPlongeurs, totalPalanquees, plongeursUniques) {
+    function afficherStatistiques() {
       const statsContainer = document.getElementById('stats-container');
+      const totalPalanquees = bilanData.length;
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      const niveaux = {};
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
       statsContainer.innerHTML = `
-        <div class="stat-card">
-          <div class="stat-value">${totalPalanquees}</div>
-          <div class="stat-label">Palanquées</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${totalPlongeurs}</div>
-          <div class="stat-label">Total Plongées</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${plongeursUniques}</div>
-          <div class="stat-label">Plongeurs Uniques</div>
-        </div>
+        <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongées totales</div></div>
+        <div class="stat-card"><div class="stat-value">${(totalPlongeurs / totalPalanquees).toFixed(1)}</div><div class="stat-label">Plongeurs/Palanquée</div></div>
       `;
+      
+      if (niveauxTries.length > 0) {
+        const niveauxHTML = `
+          <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid var(--primary-blue);">
+            <h3 style="color: var(--dark-blue); margin-bottom: 15px;">📊 Répartition par niveau</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--dark-blue); color: white;">
+                  <th style="padding: 10px; text-align: left;">Niveau</th>
+                  <th style="padding: 10px; text-align: right;">Nombre de plongées</th>
+                  <th style="padding: 10px; text-align: right;">Pourcentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${niveauxTries.map(([niveau, count]) => `
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;"><span class="niveau-badge">${niveau}</span></td>
+                    <td style="padding: 8px; text-align: right; font-weight: bold;">${count}</td>
+                    <td style="padding: 8px; text-align: right;">${((count / totalPlongeurs) * 100).toFixed(1)}%</td>
+                  </tr>
+                `).join('')}
+                <tr style="background: #e3f2fd; font-weight: bold;">
+                  <td style="padding: 10px;">TOTAL</td>
+                  <td style="padding: 10px; text-align: right;">${totalPlongeurs}</td>
+                  <td style="padding: 10px; text-align: right;">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+        statsContainer.insertAdjacentHTML('afterend', niveauxHTML);
+      }
     }
 
     function afficherTableau() {
       const tbody = document.getElementById('bilan-tbody');
       tbody.innerHTML = '';
-
+      
       let sessionPrecedente = null;
-
-      bilanData.forEach(row => {
+      
+      bilanData.forEach((row, index) => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
-
+        
         if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-
-          const separateur = document.createElement('tr');
-          separateur.style.background = '#FF6B00';
-          separateur.style.height = '8px';
-          separateur.innerHTML = '<td colspan="14"></td>';
-          tbody.appendChild(separateur);
-
-          const totalSession = document.createElement('tr');
-          totalSession.style.background = '#d4edda';
-          totalSession.style.fontWeight = 'bold';
-          totalSession.innerHTML = `
-            <td colspan="2">TOTAL SESSION:</td>
-            <td colspan="12">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+          
+          const trTotalSession = document.createElement('tr');
+          trTotalSession.style.background = '#d4edda';
+          trTotalSession.style.fontWeight = 'bold';
+          trTotalSession.innerHTML = `
+            <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+            <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
           `;
-          tbody.appendChild(totalSession);
-
-          const espaceur = document.createElement('tr');
-          espaceur.style.height = '10px';
-          espaceur.innerHTML = '<td colspan="14"></td>';
-          tbody.appendChild(espaceur);
+          tbody.appendChild(trTotalSession);
+          
+          const separateur = document.createElement('tr');
+          separateur.innerHTML = `<td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
+          tbody.appendChild(separateur);
         }
-
-        row.plongeurs.forEach((plongeur, idx) => {
+        
+        row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
+          
+          if (sessionPrecedente !== sessionActuelle && plongeurIdx === 0) {
+            tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
+            tr.style.fontWeight = 'bold';
+          }
+          
           tr.innerHTML = `
-            ${idx === 0 ? `<td>${row.date}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.dp}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.lieu}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.typeSession}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.numeroPalanquee}</td>` : '<td></td>'}
+            <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+            <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+            <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+            <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
             <td>${plongeur.nom}</td>
             <td>${plongeur.pre || ''}</td>
             <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-            ${idx === 0 ? `<td>${row.horaire}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.profPrevue}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.dureePrevue}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.profRealisee}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.dureeRealisee}</td>` : '<td></td>'}
-            ${idx === 0 ? `<td>${row.paliers}</td>` : '<td></td>'}
+            <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+            <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+            <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+            <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+            <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
           `;
           tbody.appendChild(tr);
         });
-
-        const totalPalanquee = document.createElement('tr');
-        totalPalanquee.style.background = '#e8f4f8';
-        totalPalanquee.style.fontWeight = 'bold';
-        totalPalanquee.innerHTML = `
-          <td colspan="2">Total palanquée:</td>
-          <td colspan="12">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+        
+        const trTotal = document.createElement('tr');
+        trTotal.style.background = '#e8f4f8';
+        trTotal.style.fontWeight = 'bold';
+        trTotal.style.fontSize = '12px';
+        trTotal.innerHTML = `
+          <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+          <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
         `;
-        tbody.appendChild(totalPalanquee);
-
+        tbody.appendChild(trTotal);
+        
         sessionPrecedente = sessionActuelle;
       });
-
+      
       if (bilanData.length > 0) {
         const dernierIndex = bilanData.length - 1;
         const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
         const plongeursDansSession = bilanData.filter(r => 
           `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-
-        const separateur = document.createElement('tr');
-        separateur.style.background = '#FF6B00';
-        separateur.style.height = '8px';
-        separateur.innerHTML = '<td colspan="14"></td>';
-        tbody.appendChild(separateur);
-
-        const totalSession = document.createElement('tr');
-        totalSession.style.background = '#d4edda';
-        totalSession.style.fontWeight = 'bold';
-        totalSession.innerHTML = `
-          <td colspan="2">TOTAL SESSION:</td>
-          <td colspan="12">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
+        
+        const trTotalSession = document.createElement('tr');
+        trTotalSession.style.background = '#d4edda';
+        trTotalSession.style.fontWeight = 'bold';
+        trTotalSession.innerHTML = `
+          <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+          <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
         `;
-        tbody.appendChild(totalSession);
+        tbody.appendChild(trTotalSession);
       }
     }
 
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
+      let sessionPrecedente = null;
       
       bilanData.forEach(row => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        
+        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
+          csv += ';;;;;;;;;;;;;;\n';
+        }
+        
         row.plongeurs.forEach((plongeur, idx) => {
-          csv += idx === 0 
-            ? `${row.date};${row.dp};${row.lieu};${row.typeSession};${row.numeroPalanquee};`
-            : ';;;;;';
-          csv += `${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};`;
-          csv += idx === 0 
-            ? `${row.horaire};${row.profPrevue};${row.dureePrevue};${row.profRealisee};${row.dureeRealisee};${row.paliers}\n`
-            : ';;;;;\n';
+          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
+        });
+        
+        csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;;;\n`;
+        
+        sessionPrecedente = sessionActuelle;
+      });
+      
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
+      }
+      
+      csv += '\n\nSTATISTIQUES PAR NIVEAU\n';
+      csv += 'Niveau;Nombre de plongées;Pourcentage\n';
+      const niveaux = {};
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
         });
       });
-
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      niveauxTries.forEach(([niveau, count]) => {
+        csv += `${niveau};${count};${((count / totalPlongeurs) * 100).toFixed(1)}%\n`;
+      });
+      csv += `TOTAL;${totalPlongeurs};100%\n`;
+      
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -434,15 +472,33 @@
     }
 
     function exporterExcel() {
-      let html = `<?xml version="1.0" encoding="UTF-8"?>
+      let html = `<?xml version="1.0"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:x="urn:schemas-microsoft-com:office:excel">
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>JSAS</Author>
+  <Created>${new Date().toISOString()}</Created>
+ </DocumentProperties>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>12000</WindowHeight>
+  <WindowWidth>18000</WindowWidth>
+ </ExcelWorkbook>
  <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
   <Style ss:ID="titre">
-   <Font ss:Bold="1" ss:Size="14" ss:Color="#003366"/>
+   <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
+   <Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF"/>
    <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
+   </Borders>
   </Style>
   <Style ss:ID="entete">
    <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
@@ -484,9 +540,11 @@
   </WorksheetOptions>
   <Table>`;
       
+      // Titre
       html += '<Row ss:Height="30"><Cell ss:MergeAcross="13" ss:StyleID="titre"><Data ss:Type="String">Bilan Global des Palanquées - JSAS</Data></Cell></Row>';
       html += '<Row ss:Height="10"></Row>';
       
+      // En-têtes
       html += '<Row>';
       ['Date', 'DP', 'Lieu', 'Session', 'Palanquée', 'Plongeur', 'Prérogatives', 'Niveau', 'Horaire', 'Prof. Prévue [m]', 'Durée Prévue [min]', 'Prof. Réalisée [m]', 'Durée Réalisée [min]', 'Paliers'].forEach(entete => {
         html += `<Cell ss:StyleID="entete"><Data ss:Type="String">${entete}</Data></Cell>`;
@@ -577,7 +635,6 @@
       document.getElementById('date-fin').valueAsDate = aujourdhui;
       document.getElementById('filtre-dp').value = '';
       document.getElementById('filtre-lieu').value = '';
-      document.getElementById('filtre-plongeur').value = '';
       document.getElementById('results').style.display = 'none';
       document.getElementById('no-data').style.display = 'none';
     }
