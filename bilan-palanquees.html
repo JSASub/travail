@@ -116,6 +116,15 @@
         margin: 3px 0 0 0;
       }
       
+      #header-plongeur {
+        display: block !important;
+        font-size: 16pt;
+        font-weight: bold;
+        color: #007bff !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
       /* Statistiques */
       .stats { 
         display: grid;
@@ -372,9 +381,14 @@
 
     <div class="header">
       <img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
-      <div>
+      <div style="flex: 1;">
         <h1>Bilan Global des Palanquées</h1>
         <p style="color: #666; margin-top: 5px;">Analyse consolidée des sessions de plongée</p>
+      </div>
+      <div id="header-plongeur" style="display: none; text-align: right; padding-right: 10px;">
+        <div style="font-size: 20px; font-weight: bold; color: var(--primary-blue);">
+          🔍 <span id="header-plongeur-nom"></span>
+        </div>
       </div>
     </div>
 
@@ -382,11 +396,11 @@
       <div class="filter-row">
         <div class="filter-group">
           <label for="date-debut">Date de début</label>
-          <input type="date" id="date-debut">
+          <input type="date" id="date-debut" placeholder="jj/mm/aaaa">
         </div>
         <div class="filter-group">
           <label for="date-fin">Date de fin</label>
-          <input type="date" id="date-fin">
+          <input type="date" id="date-fin" placeholder="jj/mm/aaaa">
         </div>
         <div class="filter-group">
           <label for="filtre-dp">Directeur de Plongée</label>
@@ -526,8 +540,24 @@
       const filtreDP = document.getElementById('filtre-dp').value;
       const filtreLieu = document.getElementById('filtre-lieu').value;
       const filtrePlongeur = (document.getElementById('filtre-plongeur').value || '').toLowerCase().trim();
-      if (!dateDebut || !dateFin) { afficherErreur('Veuillez sélectionner les dates'); return; }
-      if (new Date(dateDebut) > new Date(dateFin)) { afficherErreur('Date de début invalide'); return; }
+      
+      // Afficher le nom du plongeur dans le header si le filtre est actif
+      const headerPlongeur = document.getElementById('header-plongeur');
+      const headerPlongeurNom = document.getElementById('header-plongeur-nom');
+      if (filtrePlongeur) {
+        headerPlongeurNom.textContent = document.getElementById('filtre-plongeur').value;
+        headerPlongeur.style.display = 'block';
+      } else {
+        headerPlongeur.style.display = 'none';
+      }
+      
+      // Si les dates ne sont pas renseignées, chercher sur toute la base
+      const filtrerParDates = dateDebut && dateFin;
+      if (filtrerParDates && new Date(dateDebut) > new Date(dateFin)) { 
+        afficherErreur('Date de début invalide'); 
+        return; 
+      }
+      
       afficherLoading(true);
       cacherErreur();
       try {
@@ -538,7 +568,7 @@
         Object.entries(sessions).forEach(([key, session]) => {
           if (!session.meta || !session.palanquees) return;
           const sessionDate = session.meta.date;
-          if (sessionDate < dateDebut || sessionDate > dateFin) return;
+          if (filtrerParDates && (sessionDate < dateDebut || sessionDate > dateFin)) return;
           if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
           if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
           session.palanquees.forEach((palanquee, idx) => {
@@ -617,7 +647,11 @@
       
       // Construire le récapitulatif des critères
       let criteres = [];
-      criteres.push(`📅 Période : ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      if (dateDebut && dateFin) {
+        criteres.push(`📅 Période : ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      } else {
+        criteres.push(`📅 Période : Toutes les sessions`);
+      }
       if (filtreDP) criteres.push(`👤 DP : ${filtreDP}`);
       if (filtreLieu) criteres.push(`📍 Lieu : ${filtreLieu}`);
       if (filtrePlongeur && filtrePlongeur.trim()) criteres.push(`🔍 Plongeur : ${filtrePlongeur}`);
@@ -1019,11 +1053,7 @@
     document.addEventListener('DOMContentLoaded', async function() {
       try {
         if (!db) { afficherErreur('Firebase non disponible'); return; }
-        const aujourdhui = new Date();
-        const ilYaUnMois = new Date();
-        ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
-        document.getElementById('date-fin').valueAsDate = aujourdhui;
-        document.getElementById('date-debut').valueAsDate = ilYaUnMois;
+        // Ne pas définir de dates par défaut pour permettre une recherche sur toute la base
         await chargerFiltres();
       } catch (error) {
         afficherErreur('Erreur: ' + error.message);
