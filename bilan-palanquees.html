@@ -743,7 +743,11 @@
       bilanData.forEach((row, index) => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
         
-        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
+        // Détecter un changement de session
+        const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
+        
+        if (changementSession) {
+          // Calculer le total de plongeurs pour la session précédente
           const plongeursDansSession = bilanData.filter(r => 
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
@@ -757,6 +761,7 @@
           `;
           tbody.appendChild(trTotalSession);
           
+          // Ajouter le séparateur orange
           const separateur = document.createElement('tr');
           separateur.innerHTML = `<td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
           tbody.appendChild(separateur);
@@ -765,7 +770,8 @@
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
           
-          if (sessionPrecedente !== sessionActuelle && plongeurIdx === 0) {
+          // Marquer visuellement le début d'une nouvelle session
+          if (changementSession && plongeurIdx === 0) {
             tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
             tr.style.fontWeight = 'bold';
           }
