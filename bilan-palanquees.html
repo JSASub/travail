@@ -161,6 +161,31 @@
       
       #niveaux-container > div {
         background: #f8f9fa !important;
+      
+      /* Critères de recherche */
+      .stats > div[style*="background: #fff3cd"] {
+        background: #fff3cd !important;
+        border: 1.5px solid #ffc107;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+        grid-column: 1 / -1;
+        page-break-inside: avoid;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      .stats > div[style*="background: #fff3cd"] h3 {
+        color: #856404 !important;
+        font-size: 11pt;
+        margin: 0 0 6px 0;
+      }
+      
+      .stats > div[style*="background: #fff3cd"] div {
+        color: #856404 !important;
+        font-size: 9pt;
+        line-height: 1.5;
+      }
         border: 1.5px solid #007bff;
         border-radius: 6px;
         padding: 10px;
@@ -553,7 +578,7 @@
           return a.numeroPalanquee - b.numeroPalanquee;
         });
         
-        afficherStatistiques();
+        afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, document.getElementById('filtre-plongeur').value);
         afficherTableau();
         document.getElementById('results').style.display = 'block';
         document.getElementById('no-data').style.display = 'none';
@@ -564,7 +589,7 @@
       }
     }
 
-    function afficherStatistiques() {
+    function afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, filtrePlongeur) {
       const statsContainer = document.getElementById('stats-container');
       const totalPalanquees = bilanData.length;
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
@@ -583,7 +608,29 @@
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
       
-      statsContainer.innerHTML = `
+      
+      // Formater les dates pour l'affichage
+      const formatDate = (dateStr) => {
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      };
+      
+      // Construire le récapitulatif des critères
+      let criteres = [];
+      criteres.push(`📅 Période : ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      if (filtreDP) criteres.push(`👤 DP : ${filtreDP}`);
+      if (filtreLieu) criteres.push(`📍 Lieu : ${filtreLieu}`);
+      if (filtrePlongeur && filtrePlongeur.trim()) criteres.push(`🔍 Plongeur : ${filtrePlongeur}`);
+      
+      const criteresHTML = `
+        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+          <h3 style="color: #856404; margin: 0 0 8px 0; font-size: 14px;">🎯 Critères de recherche</h3>
+          <div style="color: #856404; font-size: 13px; line-height: 1.6;">
+            ${criteres.join(' • ')}
+          </div>
+        </div>
+      `;
+      statsContainer.innerHTML = criteresHTML + `
         <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
         <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
         <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongées totales</div></div>
