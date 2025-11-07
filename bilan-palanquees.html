@@ -342,16 +342,24 @@
       }
       
       /* TOTAL SESSION : rester avec sa session */
-		tbody tr.session-end {
-		page-break-before: avoid !important;
-		page-break-after: avoid !important;
-	  }
+tbody tr.session-end {
+  page-break-before: avoid !important;
+  page-break-after: avoid !important;
+}
 
-	  /* ✅ SOLUTION: Forcer la coupure APRÈS le séparateur orange */
-		tbody tr.session-separator {
-		page-break-after: always !important;
-		break-after: page !important;
-	  }
+/* Séparateur orange : encourager (mais ne pas forcer) la coupure après */
+tbody tr.session-separator {
+  page-break-after: auto !important;
+  break-after: auto !important;
+  /* Ajouter une marge pour encourager le saut de page si proche de la fin */
+  margin-bottom: 50pt !important;
+}
+
+/* Empêcher qu'une nouvelle session commence en bas de page */
+tbody tr.session-separator + tr {
+  orphans: 10 !important;
+  widows: 10 !important;
+}
       
       tbody tr:hover { 
         background: inherit;
