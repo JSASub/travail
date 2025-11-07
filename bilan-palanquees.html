@@ -770,6 +770,7 @@
       tbody.innerHTML = '';
       
       let sessionPrecedente = null;
+      let compteurLignesGlobal = 0; // Pour l'alternance des couleurs
       
       bilanData.forEach((row, index) => {
         const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
@@ -783,7 +784,7 @@
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
           
-          // ✅ NOUVEAU: Créer un tbody pour le TOTAL SESSION
+          // Créer un tbody pour le TOTAL SESSION
           const tbodyTotalSession = document.createElement('tbody');
           tbodyTotalSession.classList.add('session-end');
           const trTotalSession = document.createElement('tr');
@@ -795,8 +796,9 @@
           `;
           tbodyTotalSession.appendChild(trTotalSession);
           tbody.appendChild(tbodyTotalSession);
+          compteurLignesGlobal++; // Compter cette ligne
           
-          // ✅ NOUVEAU: Créer un tbody pour le séparateur orange
+          // Créer un tbody pour le séparateur orange
           const tbodySeparateur = document.createElement('tbody');
           tbodySeparateur.classList.add('session-separator');
           const separateur = document.createElement('tr');
@@ -805,16 +807,22 @@
           separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
           tbodySeparateur.appendChild(separateur);
           tbody.appendChild(tbodySeparateur);
+          compteurLignesGlobal++; // Compter cette ligne
         }
         
-        // ✅ NOUVEAU: Créer un tbody pour chaque palanquée
+        // Créer un tbody pour chaque palanquée
         const tbodyPalanquee = document.createElement('tbody');
         tbodyPalanquee.classList.add('palanquee-group');
         
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
           
-          // Marquer visuellement le début d'une nouvelle session
+          // Appliquer la couleur d'alternance
+          if (compteurLignesGlobal % 2 === 1) {
+            tr.style.background = '#fafafa';
+          }
+          
+          // Marquer visuellement le début d'une nouvelle session (prioritaire)
           if (changementSession && plongeurIdx === 0) {
             tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
             tr.style.fontWeight = 'bold';
@@ -837,11 +845,19 @@
             <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
           `;
           tbodyPalanquee.appendChild(tr);
+          compteurLignesGlobal++; // Compter chaque ligne de plongeur
         });
         
         // Ajouter le total de palanquée dans le même tbody
         const trTotal = document.createElement('tr');
-        trTotal.style.background = '#e8f4f8';
+        
+        // Appliquer la couleur d'alternance
+        if (compteurLignesGlobal % 2 === 1) {
+          trTotal.style.background = '#e8f4f8'; // Bleu clair sur fond gris
+        } else {
+          trTotal.style.background = '#e8f4f8'; // Bleu clair sur fond blanc
+        }
+        
         trTotal.style.fontWeight = 'bold';
         trTotal.style.fontSize = '12px';
         trTotal.innerHTML = `
@@ -849,8 +865,9 @@
           <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
         `;
         tbodyPalanquee.appendChild(trTotal);
+        compteurLignesGlobal++; // Compter la ligne de total
         
-        // ✅ NOUVEAU: Ajouter le tbody de la palanquée au tableau
+        // Ajouter le tbody de la palanquée au tableau
         tbody.appendChild(tbodyPalanquee);
         
         sessionPrecedente = sessionActuelle;
@@ -863,7 +880,7 @@
           `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
         
-        // ✅ NOUVEAU: Créer un tbody pour le TOTAL SESSION final
+        // Créer un tbody pour le TOTAL SESSION final
         const tbodyTotalSessionFinal = document.createElement('tbody');
         tbodyTotalSessionFinal.classList.add('session-end');
         const trTotalSessionFinal = document.createElement('tr');
