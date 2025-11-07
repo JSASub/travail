@@ -328,25 +328,28 @@
         page-break-after: auto;
       }
       
-      /* Empêcher la coupure des palanquées */
+      /* Grouper les palanquées et éviter leur coupure */
       tbody tr.palanquee-group {
         page-break-inside: avoid;
-      }
-      
-      /* La première ligne d'une palanquée peut commencer une nouvelle page si nécessaire */
-      tbody tr.palanquee-group:first-of-type {
-        page-break-before: auto;
-      }
-      
-      /* Empêcher la coupure juste après la première ligne d'une palanquée */
-      tbody tr.palanquee-group:not(:last-child) {
         page-break-after: avoid;
       }
       
-      /* Le total de palanquée (dernière ligne du groupe) ne doit pas être orphelin */
+      /* Le total de palanquée reste avec sa palanquée */
       tbody tr.palanquee-group[style*="background: #e8f4f8"],
       tbody tr.palanquee-group[style*="background: rgb(232, 244, 248)"] {
         page-break-before: avoid;
+        page-break-after: avoid;
+      }
+      
+      /* TOTAL SESSION : autoriser la coupure APRÈS cette ligne */
+      tbody tr.session-end {
+        page-break-before: avoid;
+        page-break-after: auto;
+      }
+      
+      /* Séparateur orange : peut être en début de nouvelle page */
+      tbody tr.session-separator {
+        page-break-before: auto;
         page-break-after: auto;
       }
       
@@ -778,6 +781,7 @@
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
           
           const trTotalSession = document.createElement('tr');
+          trTotalSession.classList.add('session-end');
           trTotalSession.style.background = '#d4edda';
           trTotalSession.style.fontWeight = 'bold';
           trTotalSession.innerHTML = `
@@ -788,6 +792,7 @@
           
           // Ajouter le séparateur orange
           const separateur = document.createElement('tr');
+          separateur.classList.add('session-separator');
           separateur.style.background = '#FF6B00';
           separateur.style.height = '10px';
           separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
@@ -847,6 +852,7 @@
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
         
         const trTotalSession = document.createElement('tr');
+        trTotalSession.classList.add('session-end');
         trTotalSession.style.background = '#d4edda';
         trTotalSession.style.fontWeight = 'bold';
         trTotalSession.innerHTML = `
