@@ -119,7 +119,7 @@
       /* Statistiques */
       .stats { 
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
         margin-bottom: 12px;
         page-break-inside: avoid;
@@ -633,8 +633,7 @@
       statsContainer.innerHTML = criteresHTML + `
         <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
         <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
-        <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongées totales</div></div>
-        <div class="stat-card"><div class="stat-value">${(totalPlongeurs / totalPalanquees).toFixed(1)}</div><div class="stat-label">Plongeurs/Palanquée</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongeurs au total</div></div>
       `;
       
       if (niveauxTries.length > 0) {
