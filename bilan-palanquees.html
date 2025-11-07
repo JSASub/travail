@@ -341,17 +341,17 @@
         page-break-after: avoid;
       }
       
-      /* TOTAL SESSION : autoriser la coupure APRÈS cette ligne */
-      tbody tr.session-end {
-        page-break-before: avoid;
-        page-break-after: auto;
-      }
-      
-      /* Séparateur orange : peut être en début de nouvelle page */
-      tbody tr.session-separator {
-        page-break-before: auto;
-        page-break-after: auto;
-      }
+      /* TOTAL SESSION : rester avec sa session */
+		tbody tr.session-end {
+		page-break-before: avoid !important;
+		page-break-after: avoid !important;
+	  }
+
+	  /* ✅ SOLUTION: Forcer la coupure APRÈS le séparateur orange */
+		tbody tr.session-separator {
+		page-break-after: always !important;
+		break-after: page !important;
+	  }
       
       tbody tr:hover { 
         background: inherit;
