@@ -323,34 +323,33 @@
         line-height: 1.3;
       }
       
-      tbody tr { 
-        page-break-inside: avoid;
-        page-break-after: auto;
+      /* ✅ SOLUTION TBODY : Empêcher les coupures DANS les tbody (palanquées) */
+      tbody.palanquee-group {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       
-      /* Grouper les palanquées et éviter leur coupure */
-      tbody tr.palanquee-group {
-        page-break-inside: avoid;
-        page-break-after: avoid;
+      /* Garder le TOTAL SESSION avec sa session */
+      tbody.session-end {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        /* Autoriser les coupures APRÈS */
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       
-      /* Le total de palanquée reste avec sa palanquée */
-      tbody tr.palanquee-group[style*="background: #e8f4f8"],
-      tbody tr.palanquee-group[style*="background: rgb(232, 244, 248)"] {
-        page-break-before: avoid;
-        page-break-after: avoid;
+      /* Séparateur flexible */
+      tbody.session-separator {
+        page-break-before: auto !important;
+        break-before: auto !important;
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       
-      /* TOTAL SESSION : autoriser la coupure APRÈS cette ligne */
-      tbody tr.session-end {
-        page-break-before: avoid;
-        page-break-after: auto;
-      }
-      
-      /* Séparateur orange : peut être en début de nouvelle page */
-      tbody tr.session-separator {
-        page-break-before: auto;
-        page-break-after: auto;
+      /* Éviter les coupures dans les lignes individuelles */
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       
       tbody tr:hover { 
@@ -370,8 +369,6 @@
         height: 6px !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-before: avoid;
-        page-break-after: avoid;
       }
       
       tbody tr[style*="background: #FF6B00"] td,
@@ -388,8 +385,6 @@
         font-weight: bold;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-before: avoid;
-        page-break-after: avoid;
       }
       
       /* Totaux de palanquée (bleu clair) */
@@ -399,7 +394,6 @@
         font-weight: bold;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-after: avoid;
       }
       
       /* Lignes vides (espaceurs) */
@@ -780,29 +774,36 @@
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
           
+          // ✅ NOUVEAU: Créer un tbody pour le TOTAL SESSION
+          const tbodyTotalSession = document.createElement('tbody');
+          tbodyTotalSession.classList.add('session-end');
           const trTotalSession = document.createElement('tr');
-          trTotalSession.classList.add('session-end');
           trTotalSession.style.background = '#d4edda';
           trTotalSession.style.fontWeight = 'bold';
           trTotalSession.innerHTML = `
             <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
             <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
           `;
-          tbody.appendChild(trTotalSession);
+          tbodyTotalSession.appendChild(trTotalSession);
+          tbody.appendChild(tbodyTotalSession);
           
-          // Ajouter le séparateur orange
+          // ✅ NOUVEAU: Créer un tbody pour le séparateur orange
+          const tbodySeparateur = document.createElement('tbody');
+          tbodySeparateur.classList.add('session-separator');
           const separateur = document.createElement('tr');
-          separateur.classList.add('session-separator');
           separateur.style.background = '#FF6B00';
           separateur.style.height = '10px';
           separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-          tbody.appendChild(separateur);
+          tbodySeparateur.appendChild(separateur);
+          tbody.appendChild(tbodySeparateur);
         }
+        
+        // ✅ NOUVEAU: Créer un tbody pour chaque palanquée
+        const tbodyPalanquee = document.createElement('tbody');
+        tbodyPalanquee.classList.add('palanquee-group');
         
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
-          tr.classList.add('palanquee-group');
-          tr.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
           
           // Marquer visuellement le début d'une nouvelle session
           if (changementSession && plongeurIdx === 0) {
@@ -826,12 +827,11 @@
             <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
             <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
           `;
-          tbody.appendChild(tr);
+          tbodyPalanquee.appendChild(tr);
         });
         
+        // Ajouter le total de palanquée dans le même tbody
         const trTotal = document.createElement('tr');
-        trTotal.classList.add('palanquee-group');
-        trTotal.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
         trTotal.style.background = '#e8f4f8';
         trTotal.style.fontWeight = 'bold';
         trTotal.style.fontSize = '12px';
@@ -839,7 +839,10 @@
           <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
           <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
         `;
-        tbody.appendChild(trTotal);
+        tbodyPalanquee.appendChild(trTotal);
+        
+        // ✅ NOUVEAU: Ajouter le tbody de la palanquée au tableau
+        tbody.appendChild(tbodyPalanquee);
         
         sessionPrecedente = sessionActuelle;
       });
@@ -851,15 +854,18 @@
           `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
         ).reduce((sum, r) => sum + r.plongeurs.length, 0);
         
-        const trTotalSession = document.createElement('tr');
-        trTotalSession.classList.add('session-end');
-        trTotalSession.style.background = '#d4edda';
-        trTotalSession.style.fontWeight = 'bold';
-        trTotalSession.innerHTML = `
+        // ✅ NOUVEAU: Créer un tbody pour le TOTAL SESSION final
+        const tbodyTotalSessionFinal = document.createElement('tbody');
+        tbodyTotalSessionFinal.classList.add('session-end');
+        const trTotalSessionFinal = document.createElement('tr');
+        trTotalSessionFinal.style.background = '#d4edda';
+        trTotalSessionFinal.style.fontWeight = 'bold';
+        trTotalSessionFinal.innerHTML = `
           <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
           <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
         `;
-        tbody.appendChild(trTotalSession);
+        tbodyTotalSessionFinal.appendChild(trTotalSessionFinal);
+        tbody.appendChild(tbodyTotalSessionFinal);
       }
     }
 
