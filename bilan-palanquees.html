@@ -328,6 +328,28 @@
         page-break-after: auto;
       }
       
+      /* Empêcher la coupure des palanquées */
+      tbody tr.palanquee-group {
+        page-break-inside: avoid;
+      }
+      
+      /* La première ligne d'une palanquée peut commencer une nouvelle page si nécessaire */
+      tbody tr.palanquee-group:first-of-type {
+        page-break-before: auto;
+      }
+      
+      /* Empêcher la coupure juste après la première ligne d'une palanquée */
+      tbody tr.palanquee-group:not(:last-child) {
+        page-break-after: avoid;
+      }
+      
+      /* Le total de palanquée (dernière ligne du groupe) ne doit pas être orphelin */
+      tbody tr.palanquee-group[style*="background: #e8f4f8"],
+      tbody tr.palanquee-group[style*="background: rgb(232, 244, 248)"] {
+        page-break-before: avoid;
+        page-break-after: auto;
+      }
+      
       tbody tr:hover { 
         background: inherit;
       }
@@ -774,6 +796,8 @@
         
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
+          tr.classList.add('palanquee-group');
+          tr.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
           
           // Marquer visuellement le début d'une nouvelle session
           if (changementSession && plongeurIdx === 0) {
@@ -801,6 +825,8 @@
         });
         
         const trTotal = document.createElement('tr');
+        trTotal.classList.add('palanquee-group');
+        trTotal.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
         trTotal.style.background = '#e8f4f8';
         trTotal.style.fontWeight = 'bold';
         trTotal.style.fontSize = '12px';
