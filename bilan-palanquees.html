@@ -345,12 +345,15 @@
         height: 6px !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
+        page-break-before: avoid;
+        page-break-after: avoid;
       }
       
       tbody tr[style*="background: #FF6B00"] td,
       tbody tr[style*="background: rgb(255, 107, 0)"] td {
         padding: 0 !important;
         border: none;
+        background: transparent !important;
       }
       
       /* Totaux de session (vert clair) */
@@ -763,7 +766,9 @@
           
           // Ajouter le séparateur orange
           const separateur = document.createElement('tr');
-          separateur.innerHTML = `<td colspan="14" style="background: #FF6B00; height: 10px; padding: 0; border: none;"></td>`;
+          separateur.style.background = '#FF6B00';
+          separateur.style.height = '10px';
+          separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
           tbody.appendChild(separateur);
         }
         
