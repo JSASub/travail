@@ -46,8 +46,17 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
-    tr:hover { background: #f8f9fa; }
-    tr:nth-child(even) { background: #fafafa; }
+    
+    /* Gestion de l'alternance des couleurs avec plusieurs tbody */
+    tbody tr { background: white; }
+    tbody tr:hover { background: #f8f9fa; }
+    
+    /* Les lignes avec styles inline gardent leur style */
+    tbody tr[style*="background"] { }
+    
+    /* Alternance pour les lignes sans style inline dans chaque tbody */
+    tbody.palanquee-group tr:not([style*="background"]):nth-child(even) { background: #fafafa; }
+    
     .niveau-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: var(--success-green); }
     .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
     .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
