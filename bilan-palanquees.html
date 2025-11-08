@@ -1300,33 +1300,6 @@
       }
       doc.save(`${filename}_${dateStr}.pdf`);
     }
-          },
-          willDrawCell: function(data) {
-            // Alterner les couleurs des lignes normales
-            if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-              data.cell.styles.fillColor = [249, 249, 249];
-            }
-          }
-        });
-        
-        yPosition = doc.lastAutoTable.finalY + 3;
-        
-        // Séparateur orange entre sessions (sauf dernière)
-        if (sessionIndex < sessionKeys.length - 1) {
-          if (yPosition + 5 > pageHeight - margin) {
-            doc.addPage();
-            yPosition = addHeader(false);
-          }
-          doc.setFillColor(255, 107, 0);
-          doc.rect(margin, yPosition, pageWidth - 2 * margin, 3, 'F');
-          yPosition += 5;
-        }
-      });
-      
-      // Sauvegarder le PDF
-      const dateStr = new Date().toISOString().split('T')[0];
-      doc.save(`Bilan_Palanquees_${dateStr}.pdf`);
-    }
     function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
     function afficherAucuneDonnee() {
       document.getElementById('results').style.display = 'none';
