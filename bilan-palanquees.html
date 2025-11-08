@@ -325,29 +325,33 @@
         line-height: 1.3;
       }
       
-      /* ✅ SOLUTION : Forcer les sauts de page entre sessions */
-      tbody.session-group {
-        page-break-before: always !important;
-        break-before: always !important;
-      }
-      
-      /* La première session ne doit pas commencer sur une nouvelle page */
-      tbody.session-group:first-of-type {
-        page-break-before: auto !important;
-        break-before: auto !important;
-      }
-      
       /* Éviter les coupures dans les lignes individuelles */
       tr {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
       
-      /* Empêcher les totaux et séparateurs d'être orphelins */
-      tr.session-end,
+      /* Garder ensemble : total palanquée + TOTAL SESSION */
+      tr.total-palanquee {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      
+      tr.session-end {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      
+      /* FORCER la coupure APRÈS le séparateur orange */
       tr.session-separator {
         page-break-before: avoid !important;
         break-before: avoid !important;
+        page-break-after: always !important;
+        break-after: always !important;
       }
       
       tbody tr:hover { 
