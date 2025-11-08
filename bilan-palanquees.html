@@ -326,28 +326,17 @@
       }
       
       /* Chaque tbody = une session complète qui reste ensemble */
+      tbody.session-group {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+      
       /* Éviter les coupures dans les lignes individuelles */
       tr {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-      }
-      
-      /* NE PAS couper juste avant le TOTAL SESSION */
-      tr.session-end {
-        page-break-before: avoid !important;
-        break-before: avoid !important;
-      }
-      
-      /* NE PAS couper entre TOTAL SESSION et la barre orange */
-      tr.session-separator {
-        page-break-before: avoid !important;
-        break-before: avoid !important;
-      }
-      
-      /* NE PAS couper juste avant un total de palanquée */
-      tr.total-palanquee {
-        page-break-before: avoid !important;
-        break-before: avoid !important;
       }
       
       tbody tr:hover { 
