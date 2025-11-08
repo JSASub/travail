@@ -1062,7 +1062,7 @@
       
       // Fonction pour ajouter un header sur chaque page
       function addHeader(isFirstPage) {
-        doc.setFillColor(74, 144, 226); // Bleu doux
+        doc.setFillColor(0, 123, 255);
         doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
@@ -1131,7 +1131,7 @@
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
       
-      doc.setDrawColor(74, 144, 226); // Bleu doux
+      doc.setDrawColor(0, 123, 255);
       doc.setLineWidth(1);
       const statWidth = (pageWidth - 2 * margin - 6) / 3;
       
@@ -1148,7 +1148,7 @@
         // Chiffre en très gros et noir
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(74, 85, 104); // Gris-bleu doux
+        doc.setTextColor(0, 51, 102);
         doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
         
         // Label en dessous, bien lisible
@@ -1258,7 +1258,7 @@
           lineWidth: 0.1
         },
         headStyles: {
-          fillColor: [74, 85, 104], // Gris-bleu doux
+          fillColor: [0, 51, 102],
           textColor: 255,
           fontStyle: 'bold',
           halign: 'center'
