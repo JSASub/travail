@@ -325,29 +325,24 @@
         line-height: 1.3;
       }
       
-      /* ✅ SOLUTION : Forcer les sauts de page entre sessions */
-      tbody.session-group {
-        page-break-before: always !important;
-        break-before: always !important;
-      }
-      
-      /* La première session ne doit pas commencer sur une nouvelle page */
-      tbody.session-group:first-of-type {
-        page-break-before: auto !important;
-        break-before: auto !important;
-      }
-      
       /* Éviter les coupures dans les lignes individuelles */
       tr {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
       
-      /* Empêcher les totaux et séparateurs d'être orphelins */
+      /* Garder ensemble : total palanquée + TOTAL SESSION + séparateur orange */
+      tr.total-palanquee,
       tr.session-end,
       tr.session-separator {
         page-break-before: avoid !important;
         break-before: avoid !important;
+      }
+      
+      /* Permettre la coupure APRÈS le séparateur orange (mais ne pas forcer) */
+      tr.session-separator {
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       
       tbody tr:hover { 
@@ -1062,7 +1057,7 @@
       
       // Fonction pour ajouter un header sur chaque page
       function addHeader(isFirstPage) {
-        doc.setFillColor(0, 123, 255);
+        doc.setFillColor(74, 144, 226); // Bleu doux
         doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
@@ -1131,7 +1126,7 @@
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
       
-      doc.setDrawColor(0, 123, 255);
+      doc.setDrawColor(74, 144, 226); // Bleu doux
       doc.setLineWidth(1);
       const statWidth = (pageWidth - 2 * margin - 6) / 3;
       
@@ -1148,7 +1143,7 @@
         // Chiffre en très gros et noir
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 51, 102);
+        doc.setTextColor(74, 85, 104); // Gris-bleu doux
         doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
         
         // Label en dessous, bien lisible
@@ -1258,7 +1253,7 @@
           lineWidth: 0.1
         },
         headStyles: {
-          fillColor: [0, 51, 102],
+          fillColor: [74, 85, 104], // Gris-bleu doux
           textColor: 255,
           fontStyle: 'bold',
           halign: 'center'
