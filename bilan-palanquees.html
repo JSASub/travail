@@ -1040,7 +1040,7 @@
       // Configuration
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 8;
+      const margin = 6; // Réduit de 8 à 6mm pour gagner de l'espace
       let yPosition = margin;
       
       // Récupérer le nom complet du plongeur si filtré
@@ -1121,14 +1121,13 @@
       doc.text(criteres.join(' | '), margin + 3, yPosition + 11);
       yPosition += 17;
       
-      // Statistiques
+      // Statistiques - FOND BLANC pour lisibilité
       const totalPalanquees = bilanData.length;
       const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
       const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
       
-      doc.setFillColor(227, 242, 253);
       doc.setDrawColor(0, 123, 255);
-      doc.setLineWidth(0.5);
+      doc.setLineWidth(1);
       const statWidth = (pageWidth - 2 * margin - 6) / 3;
       
       [
@@ -1137,18 +1136,24 @@
         { label: 'Plongeurs', value: totalPlongeurs }
       ].forEach((stat, index) => {
         const x = margin + index * (statWidth + 3);
-        doc.roundedRect(x, yPosition, statWidth, 14, 1, 1, 'FD');
-        doc.setFontSize(16);
+        // Fond blanc avec bordure bleue épaisse
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(x, yPosition, statWidth, 16, 1, 1, 'FD');
+        
+        // Chiffre en très gros et noir
+        doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 51, 102);
-        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 7, { align: 'center' });
-        doc.setFontSize(8);
+        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
+        
+        // Label en dessous, bien lisible
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 51, 102);
-        doc.text(stat.label, x + statWidth / 2, yPosition + 11, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        doc.text(stat.label, x + statWidth / 2, yPosition + 13, { align: 'center' });
       });
       
-      yPosition += 17;
+      yPosition += 19;
       doc.setTextColor(0, 0, 0);
       
       // Préparer les données du tableau - structure simple comme à l'écran
@@ -1171,9 +1176,9 @@
             { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
           ]);
           
-          // Séparateur orange
+          // Séparateur orange avec saut de page forcé APRÈS
           tableData.push([
-            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 3, cellPadding: 0 } }
+            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 3, cellPadding: 0, pageBreak: 'after' } }
           ]);
         }
         
@@ -1255,11 +1260,11 @@
         },
         columnStyles: {
           0: { cellWidth: 18 },   // Date
-          1: { cellWidth: 23 },   // DP
-          2: { cellWidth: 30 },   // Lieu (AGRANDI)
+          1: { cellWidth: 26 },   // DP (AGRANDI)
+          2: { cellWidth: 32 },   // Lieu (AGRANDI)
           3: { cellWidth: 16 },   // Session
           4: { cellWidth: 12 },   // Palanquée
-          5: { cellWidth: 48 },   // Plongeur
+          5: { cellWidth: 52 },   // Plongeur (AGRANDI)
           6: { cellWidth: 20 },   // Prérogatives
           7: { cellWidth: 14 },   // Niveau
           8: { cellWidth: 14 },   // Horaire
