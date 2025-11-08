@@ -8,6 +8,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
   <style>
     :root {
@@ -46,8 +48,8 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
-    tr:hover { background: #f8f9fa; }
-    tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: #f8f9fa; }
+    tbody tr:nth-child(even) { background: #fafafa; }
     .niveau-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: var(--success-green); }
     .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
     .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
@@ -170,6 +172,13 @@
       
       #niveaux-container > div {
         background: #f8f9fa !important;
+        border: 1.5px solid #007bff;
+        border-radius: 6px;
+        padding: 10px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        overflow: hidden;
+      }
       
       /* Critères de recherche - sur une colonne à gauche */
       .stats > div[style*="background: #fff3cd"] {
@@ -214,13 +223,6 @@
       .stats .stat-card:nth-child(4) {
         grid-column: 4 / 5;
         grid-row: 1;
-      }
-        border: 1.5px solid #007bff;
-        border-radius: 6px;
-        padding: 10px;
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-        overflow: hidden;
       }
       
       #niveaux-container h3 {
@@ -323,110 +325,68 @@
         line-height: 1.3;
       }
       
-      tbody tr { 
-        page-break-inside: avoid;
-        page-break-after: auto;
+      /* ✅ SOLUTION : Forcer les sauts de page entre sessions */
+      tbody.session-group {
+        page-break-before: always !important;
+        break-before: always !important;
       }
       
-      /* Grouper les palanquées et éviter leur coupure */
-      tbody tr.palanquee-group {
-        page-break-inside: avoid;
-        page-break-after: avoid;
+      /* La première session ne doit pas commencer sur une nouvelle page */
+      tbody.session-group:first-of-type {
+        page-break-before: auto !important;
+        break-before: auto !important;
       }
       
-      /* Le total de palanquée reste avec sa palanquée */
-      tbody tr.palanquee-group[style*="background: #e8f4f8"],
-      tbody tr.palanquee-group[style*="background: rgb(232, 244, 248)"] {
-        page-break-before: avoid;
-        page-break-after: avoid;
+      /* Éviter les coupures dans les lignes individuelles */
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       
-      /* TOTAL SESSION : rester avec sa session */
-      tbody tr.session-end {
+      /* Empêcher les totaux et séparateurs d'être orphelins */
+      tr.session-end,
+      tr.session-separator {
         page-break-before: avoid !important;
-        page-break-after: avoid !important;
-      }
-
-      /* Séparateur orange : encourager (mais ne pas forcer) la coupure après */
-      tbody tr.session-separator {
-        page-break-after: auto !important;
-        break-after: auto !important;
-      /* Ajouter une marge pour encourager le saut de page si proche de la fin */
-        margin-bottom: 50pt !important;
-      }
-
-      /* Empêcher qu'une nouvelle session commence en bas de page */
-      tbody tr.session-separator + tr {
-        orphans: 10 !important;
-        widows: 10 !important;
+        break-before: avoid !important;
       }
       
       tbody tr:hover { 
         background: inherit;
       }
       
-      tbody tr:nth-child(even):not([style]) { 
-        background: #fafafa !important;
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-      }
-      
       /* Lignes de séparation orange */
-      tbody tr[style*="background: #FF6B00"],
-      tbody tr[style*="background: rgb(255, 107, 0)"] {
+      tbody tr.session-separator {
         background: #FF6B00 !important;
         height: 6px !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-before: avoid;
-        page-break-after: avoid;
       }
       
-      tbody tr[style*="background: #FF6B00"] td,
-      tbody tr[style*="background: rgb(255, 107, 0)"] td {
+      tbody tr.session-separator td {
         padding: 0 !important;
         border: none;
         background: transparent !important;
       }
       
       /* Totaux de session (vert clair) */
-      tbody tr[style*="background: #d4edda"],
-      tbody tr[style*="background: rgb(212, 237, 218)"] {
+      tbody tr.session-end {
         background: #d4edda !important;
         font-weight: bold;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-before: avoid;
-        page-break-after: avoid;
       }
       
       /* Totaux de palanquée (bleu clair) */
-      tbody tr[style*="background: #e8f4f8"],
-      tbody tr[style*="background: rgb(232, 244, 248)"] {
+      tbody tr.total-palanquee {
         background: #e8f4f8 !important;
         font-weight: bold;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        page-break-after: avoid;
-      }
-      
-      /* Lignes vides (espaceurs) */
-      tbody tr[style*="height: 10px"] {
-        height: 8px !important;
-      }
-      
-      tbody tr[style*="height: 10px"] td {
-        padding: 0 !important;
-        border: none;
       }
       
       /* Éviter orphelins/veuves */
       h1, h2, h3 {
         page-break-after: avoid;
-      }
-      
-      tbody tr[style*="font-weight: bold"] {
-        page-break-inside: avoid;
       }
     }
   </style>
@@ -807,16 +767,11 @@
           tbody.appendChild(separateur);
         }
         
+        sessionPrecedente = sessionActuelle;
+        
         row.plongeurs.forEach((plongeur, plongeurIdx) => {
           const tr = document.createElement('tr');
-          tr.classList.add('palanquee-group');
-          tr.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
-          
-          // Marquer visuellement le début d'une nouvelle session
-          if (changementSession && plongeurIdx === 0) {
-            tr.style.background = 'linear-gradient(to right, #e3f2fd, #ffffff)';
-            tr.style.fontWeight = 'bold';
-          }
+          tr.classList.add('palanquee-row');
           
           tr.innerHTML = `
             <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
@@ -838,8 +793,7 @@
         });
         
         const trTotal = document.createElement('tr');
-        trTotal.classList.add('palanquee-group');
-        trTotal.setAttribute('data-palanquee-id', `${row.date}_${row.numeroPalanquee}`);
+        trTotal.className = 'total-palanquee';
         trTotal.style.background = '#e8f4f8';
         trTotal.style.fontWeight = 'bold';
         trTotal.style.fontSize = '12px';
@@ -848,8 +802,6 @@
           <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
         `;
         tbody.appendChild(trTotal);
-        
-        sessionPrecedente = sessionActuelle;
       });
       
       if (bilanData.length > 0) {
@@ -1082,29 +1034,298 @@
     }
 
     function exporterPDF() {
-      // Utilise la fonction d'impression du navigateur en mode PDF
-      const titre = document.title;
-      document.title = "Bilan_Palanquees_" + new Date().toISOString().split("T")[0];
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4'); // Format paysage pour plus d'espace
       
-      // Cache les boutons temporairement
-      const boutons = document.querySelector(".export-buttons");
-      const filtres = document.querySelector(".filters");
-      const lien = document.querySelector(".back-link");
+      // Configuration
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 8;
+      let yPosition = margin;
       
-      if (boutons) boutons.style.display = "none";
-      if (filtres) filtres.style.display = "none";
-      if (lien) lien.style.display = "none";
+      // Récupérer le nom complet du plongeur si filtré
+      const filtrePlongeur = document.getElementById('filtre-plongeur').value;
+      let nomCompletPlongeur = '';
+      if (filtrePlongeur && filtrePlongeur.trim()) {
+        const nomsPlongeurs = new Set();
+        bilanData.forEach(row => {
+          row.plongeurs.forEach(p => {
+            if ((p.nom || '').toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+              nomsPlongeurs.add(p.nom);
+            }
+          });
+        });
+        if (nomsPlongeurs.size > 0) {
+          nomCompletPlongeur = Array.from(nomsPlongeurs).sort().join(', ');
+        }
+      }
       
-      // Lance l'impression (l'utilisateur peut choisir "Enregistrer en PDF")
-      window.print();
+      // Fonction pour ajouter un header sur chaque page
+      function addHeader(isFirstPage) {
+        doc.setFillColor(0, 123, 255);
+        doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bilan Global des Palanquées - JSAS', pageWidth / 2, 12, { align: 'center' });
+        
+        // Afficher le nom complet du plongeur si filtre actif
+        if (nomCompletPlongeur) {
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`🔍 ${nomCompletPlongeur}`, pageWidth / 2, 21, { align: 'center' });
+          doc.setTextColor(0, 0, 0);
+          return 32;
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        return 26;
+      }
       
-      // Restaure après un court délai
-      setTimeout(() => {
-        if (boutons) boutons.style.display = "flex";
-        if (filtres) filtres.style.display = "block";
-        if (lien) lien.style.display = "inline-block";
-        document.title = titre;
-      }, 500);
+      yPosition = addHeader(true);
+      
+      // Afficher les critères de recherche
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      };
+      
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(255, 193, 7);
+      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 12, 2, 2, 'FD');
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(133, 100, 4);
+      doc.text('Critères de recherche:', margin + 3, yPosition + 5);
+      
+      doc.setFont('helvetica', 'normal');
+      let criteres = [];
+      if (dateDebut && dateFin) {
+        criteres.push(`Période: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      } else {
+        criteres.push(`Période: Toutes les sessions`);
+      }
+      if (filtreDP) criteres.push(`DP: ${filtreDP}`);
+      if (filtreLieu) criteres.push(`Lieu: ${filtreLieu}`);
+      if (nomCompletPlongeur) criteres.push(`Plongeur: ${nomCompletPlongeur}`);
+      
+      doc.text(criteres.join(' • '), margin + 3, yPosition + 9);
+      yPosition += 15;
+      
+      // Statistiques
+      const totalPalanquees = bilanData.length;
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      doc.setFillColor(227, 242, 253);
+      doc.setDrawColor(0, 123, 255);
+      const statWidth = (pageWidth - 2 * margin - 6) / 3;
+      
+      [
+        { label: 'Sessions', value: totalSessions },
+        { label: 'Palanquées', value: totalPalanquees },
+        { label: 'Plongeurs', value: totalPlongeurs }
+      ].forEach((stat, index) => {
+        const x = margin + index * (statWidth + 3);
+        doc.roundedRect(x, yPosition, statWidth, 12, 1, 1, 'FD');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 51, 102);
+        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 6, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(102, 102, 102);
+        doc.text(stat.label, x + statWidth / 2, yPosition + 10, { align: 'center' });
+      });
+      
+      yPosition += 15;
+      doc.setTextColor(0, 0, 0);
+      
+      // Préparer les données du tableau - structure simple comme à l'écran
+      const tableData = [];
+      let sessionPrecedente = null;
+      
+      bilanData.forEach((row, index) => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
+        
+        if (changementSession) {
+          // Calculer le total de la session précédente
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          
+          // TOTAL SESSION
+          tableData.push([
+            { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
+            { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
+          ]);
+          
+          // Séparateur orange
+          tableData.push([
+            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 3, cellPadding: 0 } }
+          ]);
+        }
+        
+        sessionPrecedente = sessionActuelle;
+        
+        // Lignes de plongeurs
+        row.plongeurs.forEach((plongeur, plongeurIdx) => {
+          tableData.push([
+            plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : '',
+            plongeurIdx === 0 ? row.dp : '',
+            plongeurIdx === 0 ? row.lieu : '',
+            plongeurIdx === 0 ? row.typeSession : '',
+            plongeurIdx === 0 ? row.numeroPalanquee : '',
+            plongeur.nom,
+            plongeur.pre || '',
+            plongeur.niveau,
+            plongeurIdx === 0 ? row.horaire : '',
+            plongeurIdx === 0 ? row.profPrevue : '',
+            plongeurIdx === 0 ? row.dureePrevue : '',
+            plongeurIdx === 0 ? row.profRealisee : '',
+            plongeurIdx === 0 ? row.dureeRealisee : '',
+            plongeurIdx === 0 ? row.paliers : ''
+          ]);
+        });
+        
+        // Total palanquée
+        tableData.push([
+          { content: 'Total palanquée:', colSpan: 2, styles: { halign: 'right', fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } },
+          { content: `${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } }
+        ]);
+      });
+      
+      // Dernier TOTAL SESSION
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        
+        tableData.push([
+          { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
+          { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
+        ]);
+      }
+      
+      // Générer le tableau complet
+      doc.autoTable({
+        startY: yPosition,
+        head: [[
+          { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [0, 51, 102],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 18 },   // Date
+          1: { cellWidth: 25 },   // DP
+          2: { cellWidth: 25 },   // Lieu
+          3: { cellWidth: 18 },   // Session
+          4: { cellWidth: 12 },   // Palanquée
+          5: { cellWidth: 50 },   // Plongeur (PLUS LARGE)
+          6: { cellWidth: 20 },   // Prérogatives
+          7: { cellWidth: 15 },   // Niveau
+          8: { cellWidth: 15 },   // Horaire
+          9: { cellWidth: 15 },   // Prof Prévue
+          10: { cellWidth: 15 },  // Durée Prévue
+          11: { cellWidth: 15 },  // Prof Réalisée
+          12: { cellWidth: 15 },  // Durée Réalisée
+          13: { cellWidth: 15 }   // Paliers
+        },
+        margin: { left: margin, right: margin },
+        didDrawPage: function(data) {
+          // Ajouter header sur chaque page
+          if (data.pageNumber > 1) {
+            addHeader(false);
+          }
+          // Ajouter numéro de page
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 5,
+            { align: 'center' }
+          );
+        },
+        willDrawCell: function(data) {
+          // Alterner les couleurs des lignes normales (pas les totaux)
+          if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+            data.cell.styles.fillColor = [249, 249, 249];
+          }
+        }
+      });
+      
+      // Sauvegarder le PDF
+      const dateStr = new Date().toISOString().split('T')[0];
+      let filename = 'Bilan_Palanquees';
+      if (nomCompletPlongeur) {
+        // Nettoyer le nom pour le nom de fichier
+        const nomFichier = nomCompletPlongeur.replace(/[^a-zA-Z0-9]/g, '_');
+        filename = `Bilan_${nomFichier}`;
+      }
+      doc.save(`${filename}_${dateStr}.pdf`);
+    }
+          },
+          willDrawCell: function(data) {
+            // Alterner les couleurs des lignes normales
+            if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+              data.cell.styles.fillColor = [249, 249, 249];
+            }
+          }
+        });
+        
+        yPosition = doc.lastAutoTable.finalY + 3;
+        
+        // Séparateur orange entre sessions (sauf dernière)
+        if (sessionIndex < sessionKeys.length - 1) {
+          if (yPosition + 5 > pageHeight - margin) {
+            doc.addPage();
+            yPosition = addHeader(false);
+          }
+          doc.setFillColor(255, 107, 0);
+          doc.rect(margin, yPosition, pageWidth - 2 * margin, 3, 'F');
+          yPosition += 5;
+        }
+      });
+      
+      // Sauvegarder le PDF
+      const dateStr = new Date().toISOString().split('T')[0];
+      doc.save(`Bilan_Palanquees_${dateStr}.pdf`);
     }
     function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
     function afficherAucuneDonnee() {
