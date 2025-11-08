@@ -325,24 +325,29 @@
         line-height: 1.3;
       }
       
+      /* Chaque tbody = une session complète qui reste ensemble */
       /* Éviter les coupures dans les lignes individuelles */
       tr {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
       
-      /* Garder ensemble : total palanquée + TOTAL SESSION + séparateur orange */
-      tr.total-palanquee,
-      tr.session-end,
+      /* NE PAS couper juste avant le TOTAL SESSION */
+      tr.session-end {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+      }
+      
+      /* NE PAS couper entre TOTAL SESSION et la barre orange */
       tr.session-separator {
         page-break-before: avoid !important;
         break-before: avoid !important;
       }
       
-      /* Permettre la coupure APRÈS le séparateur orange (mais ne pas forcer) */
-      tr.session-separator {
-        page-break-after: auto !important;
-        break-after: auto !important;
+      /* NE PAS couper juste avant un total de palanquée */
+      tr.total-palanquee {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
       }
       
       tbody tr:hover { 
@@ -726,97 +731,88 @@
     }
 
     function afficherTableau() {
-      const tbody = document.getElementById('bilan-tbody');
-      tbody.innerHTML = '';
-      
-      let sessionPrecedente = null;
-      
-      bilanData.forEach((row, index) => {
-        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+  const tbody = document.getElementById('bilan-tbody');
+  tbody.innerHTML = '';
+  
+  // Regrouper les données par session
+  const sessions = {};
+  bilanData.forEach((row) => {
+    const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
+    if (!sessions[sessionKey]) {
+      sessions[sessionKey] = [];
+    }
+    sessions[sessionKey].push(row);
+  });
+  
+  // Créer un tbody séparé pour chaque session
+  Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
+    const sessionTbody = document.createElement('tbody');
+    sessionTbody.classList.add('session-group');
+    
+    // Ajouter toutes les lignes de cette session
+    sessionRows.forEach((row) => {
+      row.plongeurs.forEach((plongeur, plongeurIdx) => {
+        const tr = document.createElement('tr');
+        tr.classList.add('palanquee-row');
         
-        // Détecter un changement de session
-        const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
-        
-        if (changementSession) {
-          // Calculer le total de plongeurs pour la session précédente
-          const plongeursDansSession = bilanData.filter(r => 
-            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
-          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-          
-          const trTotalSession = document.createElement('tr');
-          trTotalSession.classList.add('session-end');
-          trTotalSession.style.background = '#d4edda';
-          trTotalSession.style.fontWeight = 'bold';
-          trTotalSession.innerHTML = `
-            <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-            <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
-          `;
-          tbody.appendChild(trTotalSession);
-          
-          // Ajouter le séparateur orange
-          const separateur = document.createElement('tr');
-          separateur.classList.add('session-separator');
-          separateur.style.background = '#FF6B00';
-          separateur.style.height = '10px';
-          separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-          tbody.appendChild(separateur);
-        }
-        
-        sessionPrecedente = sessionActuelle;
-        
-        row.plongeurs.forEach((plongeur, plongeurIdx) => {
-          const tr = document.createElement('tr');
-          tr.classList.add('palanquee-row');
-          
-          tr.innerHTML = `
-            <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-            <td>${plongeurIdx === 0 ? row.dp : ''}</td>
-            <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
-            <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
-            <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-            <td>${plongeur.nom}</td>
-            <td>${plongeur.pre || ''}</td>
-            <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-            <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
-            <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-            <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-            <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-            <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-            <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-        
-        const trTotal = document.createElement('tr');
-        trTotal.className = 'total-palanquee';
-        trTotal.style.background = '#e8f4f8';
-        trTotal.style.fontWeight = 'bold';
-        trTotal.style.fontSize = '12px';
-        trTotal.innerHTML = `
-          <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-          <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+        tr.innerHTML = `
+          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+          <td>${plongeur.nom}</td>
+          <td>${plongeur.pre || ''}</td>
+          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
         `;
-        tbody.appendChild(trTotal);
+        sessionTbody.appendChild(tr);
       });
       
-      if (bilanData.length > 0) {
-        const dernierIndex = bilanData.length - 1;
-        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
-        const plongeursDansSession = bilanData.filter(r => 
-          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
-        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-        
-        const trTotalSession = document.createElement('tr');
-        trTotalSession.classList.add('session-end');
-        trTotalSession.style.background = '#d4edda';
-        trTotalSession.style.fontWeight = 'bold';
-        trTotalSession.innerHTML = `
-          <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-          <td colspan="12" style="padding: 10px;">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</td>
-        `;
-        tbody.appendChild(trTotalSession);
-      }
+      // Total palanquée
+      const trTotal = document.createElement('tr');
+      trTotal.className = 'total-palanquee';
+      trTotal.style.background = '#e8f4f8';
+      trTotal.style.fontWeight = 'bold';
+      trTotal.style.fontSize = '12px';
+      trTotal.innerHTML = `
+        <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+        <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+      `;
+      sessionTbody.appendChild(trTotal);
+    });
+    
+    // TOTAL SESSION à la fin du tbody
+    const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
+    const trTotalSession = document.createElement('tr');
+    trTotalSession.classList.add('session-end');
+    trTotalSession.style.background = '#d4edda';
+    trTotalSession.style.fontWeight = 'bold';
+    trTotalSession.innerHTML = `
+      <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+      <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
+    `;
+    sessionTbody.appendChild(trTotalSession);
+    
+    // Séparateur orange (sauf pour la dernière session)
+    if (sessionIndex < Object.keys(sessions).length - 1) {
+      const separateur = document.createElement('tr');
+      separateur.classList.add('session-separator');
+      separateur.style.background = '#FF6B00';
+      separateur.style.height = '10px';
+      separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+      sessionTbody.appendChild(separateur);
     }
+    
+    // Ajouter le tbody complet au tableau
+    tbody.appendChild(sessionTbody);
+  });
+}
 
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
