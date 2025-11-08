@@ -1128,26 +1128,27 @@
       
       doc.setFillColor(227, 242, 253);
       doc.setDrawColor(0, 123, 255);
+      doc.setLineWidth(0.5);
       const statWidth = (pageWidth - 2 * margin - 6) / 3;
       
       [
         { label: 'Sessions', value: totalSessions },
-        { label: 'Palanquées', value: totalPalanquees },
+        { label: 'Palanquees', value: totalPalanquees },
         { label: 'Plongeurs', value: totalPlongeurs }
       ].forEach((stat, index) => {
         const x = margin + index * (statWidth + 3);
-        doc.roundedRect(x, yPosition, statWidth, 12, 1, 1, 'FD');
-        doc.setFontSize(14);
+        doc.roundedRect(x, yPosition, statWidth, 14, 1, 1, 'FD');
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 51, 102);
-        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 6, { align: 'center' });
-        doc.setFontSize(7);
+        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 7, { align: 'center' });
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(102, 102, 102);
-        doc.text(stat.label, x + statWidth / 2, yPosition + 10, { align: 'center' });
+        doc.setTextColor(0, 51, 102);
+        doc.text(stat.label, x + statWidth / 2, yPosition + 11, { align: 'center' });
       });
       
-      yPosition += 15;
+      yPosition += 17;
       doc.setTextColor(0, 0, 0);
       
       // Préparer les données du tableau - structure simple comme à l'écran
@@ -1254,21 +1255,22 @@
         },
         columnStyles: {
           0: { cellWidth: 18 },   // Date
-          1: { cellWidth: 25 },   // DP
-          2: { cellWidth: 25 },   // Lieu
-          3: { cellWidth: 18 },   // Session
+          1: { cellWidth: 23 },   // DP
+          2: { cellWidth: 30 },   // Lieu (AGRANDI)
+          3: { cellWidth: 16 },   // Session
           4: { cellWidth: 12 },   // Palanquée
-          5: { cellWidth: 50 },   // Plongeur (PLUS LARGE)
+          5: { cellWidth: 48 },   // Plongeur
           6: { cellWidth: 20 },   // Prérogatives
-          7: { cellWidth: 15 },   // Niveau
-          8: { cellWidth: 15 },   // Horaire
-          9: { cellWidth: 15 },   // Prof Prévue
-          10: { cellWidth: 15 },  // Durée Prévue
-          11: { cellWidth: 15 },  // Prof Réalisée
-          12: { cellWidth: 15 },  // Durée Réalisée
-          13: { cellWidth: 20 }   // Paliers (AGRANDI)
+          7: { cellWidth: 14 },   // Niveau
+          8: { cellWidth: 14 },   // Horaire
+          9: { cellWidth: 14 },   // Prof Prévue
+          10: { cellWidth: 14 },  // Durée Prévue
+          11: { cellWidth: 14 },  // Prof Réalisée
+          12: { cellWidth: 14 },  // Durée Réalisée
+          13: { cellWidth: 20 }   // Paliers
         },
         margin: { left: margin, right: margin },
+        rowPageBreak: 'avoid', // Éviter de couper les lignes
         didDrawPage: function(data) {
           // Ajouter header sur chaque page
           if (data.pageNumber > 1) {
