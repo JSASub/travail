@@ -1073,7 +1073,7 @@
         if (nomCompletPlongeur) {
           doc.setFontSize(13);
           doc.setFont('helvetica', 'bold');
-          doc.text(`🔍 ${nomCompletPlongeur}`, pageWidth / 2, 21, { align: 'center' });
+          doc.text(nomCompletPlongeur, pageWidth / 2, 21, { align: 'center' });
           doc.setTextColor(0, 0, 0);
           return 32;
         }
@@ -1098,26 +1098,28 @@
       
       doc.setFillColor(255, 243, 205);
       doc.setDrawColor(255, 193, 7);
-      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 12, 2, 2, 'FD');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 14, 2, 2, 'FD');
       
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(133, 100, 4);
-      doc.text('Critères de recherche:', margin + 3, yPosition + 5);
+      doc.text('Criteres de recherche:', margin + 3, yPosition + 6);
       
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       let criteres = [];
       if (dateDebut && dateFin) {
-        criteres.push(`Période: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+        criteres.push(`Periode: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
       } else {
-        criteres.push(`Période: Toutes les sessions`);
+        criteres.push('Periode: Toutes les sessions');
       }
       if (filtreDP) criteres.push(`DP: ${filtreDP}`);
       if (filtreLieu) criteres.push(`Lieu: ${filtreLieu}`);
       if (nomCompletPlongeur) criteres.push(`Plongeur: ${nomCompletPlongeur}`);
       
-      doc.text(criteres.join(' • '), margin + 3, yPosition + 9);
-      yPosition += 15;
+      doc.text(criteres.join(' | '), margin + 3, yPosition + 11);
+      yPosition += 17;
       
       // Statistiques
       const totalPalanquees = bilanData.length;
@@ -1264,7 +1266,7 @@
           10: { cellWidth: 15 },  // Durée Prévue
           11: { cellWidth: 15 },  // Prof Réalisée
           12: { cellWidth: 15 },  // Durée Réalisée
-          13: { cellWidth: 15 }   // Paliers
+          13: { cellWidth: 20 }   // Paliers (AGRANDI)
         },
         margin: { left: margin, right: margin },
         didDrawPage: function(data) {
