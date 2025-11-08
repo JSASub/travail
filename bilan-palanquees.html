@@ -311,19 +311,19 @@
       th { 
         background: #4a5568 !important;
         color: white !important;
-        padding: 7px 4px !important;
-        font-size: 8pt;
+        padding: 6px 3px !important;
+        font-size: 7.5pt;
         text-align: left;
         font-weight: bold;
         border: none;
         vertical-align: middle;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        line-height: 1.2;
+        line-height: 1.1;
       }
       
       td { 
-        padding: 5px 4px !important;
+        padding: 4px 3px !important;
         font-size: 8pt;
         border-bottom: 0.5px solid #ddd;
         border-left: none;
@@ -463,7 +463,7 @@
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue [m]</th><th>Durée Prévue [min]</th><th>Prof. Réalisée [m]</th><th>Durée Réalisée [min]</th><th>Paliers</th>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Pal.</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prév. (m)</th><th>Durée Prév. (min)</th><th>Prof. Réal. (m)</th><th>Durée Réal. (min)</th><th>Paliers</th>
             </tr>
           </thead>
           <tbody id="bilan-tbody"></tbody>
@@ -1060,7 +1060,7 @@
       
       // Fonction pour ajouter un header sur chaque page
       function addHeader(isFirstPage) {
-        doc.setFillColor(0, 123, 255);
+        doc.setFillColor(74, 144, 226); // Bleu doux au lieu de 0, 123, 255
         doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
@@ -1146,7 +1146,7 @@
         // Chiffre en très gros et noir
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 51, 102);
+        doc.setTextColor(44, 62, 80); // Gris ardoise doux
         doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
         
         // Label en dessous, bien lisible
@@ -1256,7 +1256,7 @@
           lineWidth: 0.1
         },
         headStyles: {
-          fillColor: [0, 51, 102],
+          fillColor: [74, 85, 104], // Gris-bleu doux au lieu de [0, 51, 102]
           textColor: 255,
           fontStyle: 'bold',
           halign: 'center'
