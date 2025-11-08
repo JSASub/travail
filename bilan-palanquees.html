@@ -45,33 +45,30 @@
     .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .table-container { overflow-x: auto; margin-top: 20px; }
-	.table-container { overflow-x: auto; margin-top: 20px; width: 100%; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-	.table-container table { 
-		table-layout: fixed; 
-		width: 100% !important;
-		min-width: 100%;
-	}
-    th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+    th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; overflow: hidden; text-overflow: ellipsis; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; overflow: hidden; text-overflow: ellipsis; }
     
-    /* Largeurs de colonnes fixes - 14 COLONNES - TOTAL = 100% */
-/* Largeurs de colonnes fixes - 14 COLONNES - UNIQUEMENT tableau principal */
-.table-container table th:nth-child(1), .table-container table td:nth-child(1) { width: 7%; }
-.table-container table th:nth-child(2), .table-container table td:nth-child(2) { width: 8%; }
-.table-container table th:nth-child(3), .table-container table td:nth-child(3) { width: 10%; }
-.table-container table th:nth-child(4), .table-container table td:nth-child(4) { width: 6%; }
-.table-container table th:nth-child(5), .table-container table td:nth-child(5) { width: 5%; }
-.table-container table th:nth-child(6), .table-container table td:nth-child(6) { width: 12%; }
-.table-container table th:nth-child(7), .table-container table td:nth-child(7) { width: 8%; }
-.table-container table th:nth-child(8), .table-container table td:nth-child(8) { width: 5%; }
-.table-container table th:nth-child(9), .table-container table td:nth-child(9) { width: 6%; }
-.table-container table th:nth-child(10), .table-container table td:nth-child(10) { width: 7%; }
-.table-container table th:nth-child(11), .table-container table td:nth-child(11) { width: 6%; }
-.table-container table th:nth-child(12), .table-container table td:nth-child(12) { width: 7%; }
-.table-container table th:nth-child(13), .table-container table td:nth-child(13) { width: 6%; }
-.table-container table th:nth-child(14), .table-container table td:nth-child(14) { width: 7%; }
-/* TOTAL = 7+8+10+6+5+12+8+5+6+7+6+7+6+7 = 100% ✓ */
+    /* Largeurs de colonnes fixes en PIXELS - UNIQUEMENT tableau principal */
+    .table-container table { 
+        table-layout: fixed; 
+        width: 100%;
+    }
+    
+    .table-container table th:nth-child(1), .table-container table td:nth-child(1) { width: 80px; }   /* Date */
+    .table-container table th:nth-child(2), .table-container table td:nth-child(2) { width: 90px; }   /* DP */
+    .table-container table th:nth-child(3), .table-container table td:nth-child(3) { width: 110px; }  /* Lieu */
+    .table-container table th:nth-child(4), .table-container table td:nth-child(4) { width: 70px; }   /* Session */
+    .table-container table th:nth-child(5), .table-container table td:nth-child(5) { width: 60px; }   /* Palanquée */
+    .table-container table th:nth-child(6), .table-container table td:nth-child(6) { width: 130px; }  /* Plongeur */
+    .table-container table th:nth-child(7), .table-container table td:nth-child(7) { width: 90px; }   /* Prérogatives */
+    .table-container table th:nth-child(8), .table-container table td:nth-child(8) { width: 60px; }   /* Niveau */
+    .table-container table th:nth-child(9), .table-container table td:nth-child(9) { width: 70px; }   /* Horaire */
+    .table-container table th:nth-child(10), .table-container table td:nth-child(10) { width: 80px; } /* Prof. Prévue */
+    .table-container table th:nth-child(11), .table-container table td:nth-child(11) { width: 70px; } /* Durée Prévue */
+    .table-container table th:nth-child(12), .table-container table td:nth-child(12) { width: 80px; } /* Prof. Réalisée */
+    .table-container table th:nth-child(13), .table-container table td:nth-child(13) { width: 70px; } /* Durée Réalisée */
+    .table-container table th:nth-child(14), .table-container table td:nth-child(14) { width: 70px; } /* Paliers */
     
     tbody tr:hover { background: #f8f9fa; }
     tbody tr:nth-child(even) { background: #fafafa; }
