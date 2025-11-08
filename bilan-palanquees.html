@@ -1071,9 +1071,14 @@
         
         // Afficher le nom complet du plongeur si filtre actif
         if (nomCompletPlongeur) {
+          // Encadré jaune pour le nom du plongeur
+          doc.setFillColor(255, 215, 0); // Jaune/doré
+          doc.roundedRect(pageWidth / 2 - 60, 16, 120, 9, 2, 2, 'F');
+          
           doc.setFontSize(13);
           doc.setFont('helvetica', 'bold');
-          doc.text(nomCompletPlongeur, pageWidth / 2, 21, { align: 'center' });
+          doc.setTextColor(0, 0, 0); // Noir pour contraster avec le jaune
+          doc.text(nomCompletPlongeur, pageWidth / 2, 22, { align: 'center' });
           doc.setTextColor(0, 0, 0);
           return 32;
         }
@@ -1170,15 +1175,15 @@
             `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
           ).reduce((sum, r) => sum + r.plongeurs.length, 0);
           
-          // TOTAL SESSION
+          // TOTAL SESSION avec marqueur pour éviter coupure avant
           tableData.push([
-            { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
-            { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
+            { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } },
+            { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } }
           ]);
           
-          // Séparateur orange avec saut de page forcé APRÈS
+          // Séparateur orange - c'est ICI qu'on peut couper (nouvelle session suivra)
           tableData.push([
-            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 3, cellPadding: 0, pageBreak: 'after' } }
+            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
           ]);
         }
         
@@ -1295,6 +1300,22 @@
           // Alterner les couleurs des lignes normales (pas les totaux)
           if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
             data.cell.styles.fillColor = [249, 249, 249];
+          }
+          
+          // Empêcher les coupures AVANT "TOTAL SESSION"
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              // Forcer à garder cette ligne avec les 3 lignes précédentes minimum
+              data.row.minCellHeight = 8;
+            }
+          }
+        },
+        didParseCell: function(data) {
+          // Marquer les TOTAL SESSION pour éviter les coupures avant
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              data.row.pageBreak = 'avoid';
+            }
           }
         }
       });
