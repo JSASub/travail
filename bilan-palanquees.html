@@ -47,6 +47,14 @@
     .table-container { overflow-x: visible; margin-top: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
 	table col { min-width: 0; }
+	table tbody { 
+    width: 100%; 
+    display: table-row-group; 
+}
+
+table tbody tr {
+    width: 100%;
+}
     th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; overflow: hidden; text-overflow: ellipsis; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; overflow: hidden; text-overflow: ellipsis; }
     
