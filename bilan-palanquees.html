@@ -1042,7 +1042,7 @@ function afficherTableau() {
 
     function exporterPDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('l', 'mm', 'a4');
+      const doc = new jsPDF('p', 'mm', 'a4');  // 'p' = portrait au lieu de 'l' = landscape
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1253,21 +1253,21 @@ function afficherTableau() {
     halign: 'center'
   },
   columnStyles: {
-    0: { cellWidth: 18 },
-    1: { cellWidth: 26 },
-    2: { cellWidth: 32 },
-    3: { cellWidth: 16 },
-    4: { cellWidth: 12 },
-    5: { cellWidth: 52 },
-    6: { cellWidth: 20 },
-    7: { cellWidth: 14 },
-    8: { cellWidth: 14 },
-    9: { cellWidth: 14 },
-    10: { cellWidth: 14 },
-    11: { cellWidth: 14 },
-    12: { cellWidth: 14 },
-    13: { cellWidth: 20 }
-  },
+  0: { cellWidth: 15 },   // Date
+  1: { cellWidth: 22 },   // DP
+  2: { cellWidth: 25 },   // Lieu
+  3: { cellWidth: 14 },   // Session
+  4: { cellWidth: 10 },   // Palanquée
+  5: { cellWidth: 45 },   // Plongeur
+  6: { cellWidth: 18 },   // Prérogatives
+  7: { cellWidth: 12 },   // Niveau
+  8: { cellWidth: 12 },   // Horaire
+  9: { cellWidth: 11 },   // Prof. Prévue
+  10: { cellWidth: 11 },  // Durée Prévue
+  11: { cellWidth: 11 },  // Prof. Réalisée
+  12: { cellWidth: 11 },  // Durée Réalisée
+  13: { cellWidth: 12 }   // Paliers
+},
   margin: { left: margin, right: margin, top: 34 },  // Marge fixe pour toutes les pages
   showHead: 'everyPage',  // IMPORTANT : forcer la répétition des headers
   rowPageBreak: 'avoid',
