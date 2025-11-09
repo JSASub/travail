@@ -354,6 +354,13 @@
     h1, h2, h3 {
       page-break-after: avoid;
     }
+	
+	/* Forcer une coupure après les séparateurs marqués .page-break */
+	tr.session-separator.page-break {
+		page-break-after: always !important;
+		break-after: page !important;
+	}
+
   }
 </style>
 
@@ -977,6 +984,26 @@
     function imprimer() {
       window.print();
     }
+
+function preparerImpression() {
+  // Supprime d'éventuels anciens marqueurs
+  document.querySelectorAll('.page-break').forEach(el => el.classList.remove('page-break'));
+
+  // Récupère toutes les lignes séparatrices
+  const separators = document.querySelectorAll('tr.session-separator');
+  
+  // Ajoute une coupure après chaque 4ᵉ palanquée
+  separators.forEach((sep, index) => {
+    if ((index + 1) % 4 === 0) {
+      sep.classList.add('page-break');
+    }
+  });
+}
+
+// Appel automatique juste avant impression
+window.addEventListener('beforeprint', preparerImpression);
+
+
 
     function exporterPDF() {
       const { jsPDF } = window.jspdf;
