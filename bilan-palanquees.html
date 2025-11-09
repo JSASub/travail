@@ -325,27 +325,27 @@
         line-height: 1.3;
       }
       
-	  /* Éviter les coupures dans les lignes individuelles */
-	  tr {
-		page-break-inside: avoid !important;
-		break-inside: avoid !important;
-	  }
-
-	  /* Éviter les orphelins : garder au moins 3 lignes ensemble */
-	  tr.total-palanquee,
-	  tr.session-end,
-	  tr.session-separator {
-		page-break-before: avoid !important;
-		break-before: avoid !important;
-		page-break-after: avoid !important;
-		break-after: avoid !important;
-	  }
-
-	  /* SAUF : permettre coupure après le séparateur orange */
-	  tr.session-separator {
-		page-break-after: auto !important;
-		break-after: auto !important;
-	  }
+      /* Éviter les coupures dans les lignes individuelles */
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      /* Éviter les orphelins : garder au moins 3 lignes ensemble */
+      tr.total-palanquee,
+      tr.session-end,
+      tr.session-separator {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      
+      /* SAUF : permettre coupure après le séparateur orange */
+      tr.session-separator {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
       
       tbody tr:hover { 
         background: inherit;
@@ -718,87 +718,88 @@
     }
 
     function afficherTableau() {
-  const tbody = document.getElementById('bilan-tbody');
-  tbody.innerHTML = '';
-  
-  // Regrouper les données par session
-  const sessions = {};
-  bilanData.forEach((row) => {
-    const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
-    if (!sessions[sessionKey]) {
-      sessions[sessionKey] = [];
-    }
-    sessions[sessionKey].push(row);
-  });
-  
-  // Créer toutes les lignes dans UN SEUL tbody
-  Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
-    
-    // Ajouter toutes les lignes de cette session
-    sessionRows.forEach((row) => {
-      row.plongeurs.forEach((plongeur, plongeurIdx) => {
-        const tr = document.createElement('tr');
-        tr.classList.add('palanquee-row');
-        // Marquer la première ligne de la première palanquée de chaque session
-        if (plongeurIdx === 0 && sessionRows.indexOf(row) === 0) {
-          tr.classList.add('first-of-session');
+      const tbody = document.getElementById('bilan-tbody');
+      tbody.innerHTML = '';
+      
+      // Regrouper les données par session
+      const sessions = {};
+      bilanData.forEach((row) => {
+        const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
+        if (!sessions[sessionKey]) {
+          sessions[sessionKey] = [];
         }
-        
-        tr.innerHTML = `
-          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
-          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
-          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
-          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-          <td>${plongeur.nom}</td>
-          <td>${plongeur.pre || ''}</td>
-          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
-        `;
-        tbody.appendChild(tr);
+        sessions[sessionKey].push(row);
       });
       
-      // Total palanquée
-      const trTotal = document.createElement('tr');
-      trTotal.className = 'total-palanquee';
-      trTotal.style.background = '#e8f4f8';
-      trTotal.style.fontWeight = 'bold';
-      trTotal.style.fontSize = '12px';
-      trTotal.innerHTML = `
-        <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-        <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
-      `;
-      tbody.appendChild(trTotal);
-    });
-    
-    // TOTAL SESSION à la fin
-    const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
-    const trTotalSession = document.createElement('tr');
-    trTotalSession.classList.add('session-end');
-    trTotalSession.style.background = '#d4edda';
-    trTotalSession.style.fontWeight = 'bold';
-    trTotalSession.innerHTML = `
-      <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-      <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
-    `;
-    tbody.appendChild(trTotalSession);
-    
-    // Séparateur orange (sauf pour la dernière session)
-    if (sessionIndex < Object.keys(sessions).length - 1) {
-      const separateur = document.createElement('tr');
-      separateur.classList.add('session-separator');
-      separateur.style.background = '#FF6B00';
-      separateur.style.height = '10px';
-      separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-      tbody.appendChild(separateur);
+      // Créer toutes les lignes dans UN SEUL tbody
+      Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
+        
+        // Ajouter toutes les lignes de cette session
+        sessionRows.forEach((row) => {
+          row.plongeurs.forEach((plongeur, plongeurIdx) => {
+            const tr = document.createElement('tr');
+            tr.classList.add('palanquee-row');
+            // Marquer la première ligne de la première palanquée de chaque session
+            if (plongeurIdx === 0 && sessionRows.indexOf(row) === 0) {
+              tr.classList.add('first-of-session');
+            }
+            
+            tr.innerHTML = `
+              <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+              <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+              <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+              <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+              <td>${plongeur.nom}</td>
+              <td>${plongeur.pre || ''}</td>
+              <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+              <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          
+          // Total palanquée
+          const trTotal = document.createElement('tr');
+          trTotal.className = 'total-palanquee';
+          trTotal.style.background = '#e8f4f8';
+          trTotal.style.fontWeight = 'bold';
+          trTotal.style.fontSize = '12px';
+          trTotal.innerHTML = `
+            <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+            <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+          `;
+          tbody.appendChild(trTotal);
+        });
+        
+        // TOTAL SESSION à la fin
+        const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
+        const trTotalSession = document.createElement('tr');
+        trTotalSession.classList.add('session-end');
+        trTotalSession.style.background = '#d4edda';
+        trTotalSession.style.fontWeight = 'bold';
+        trTotalSession.innerHTML = `
+          <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+          <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
+        `;
+        tbody.appendChild(trTotalSession);
+        
+        // Séparateur orange (sauf pour la dernière session)
+        if (sessionIndex < Object.keys(sessions).length - 1) {
+          const separateur = document.createElement('tr');
+          separateur.classList.add('session-separator');
+          separateur.style.background = '#FF6B00';
+          separateur.style.height = '10px';
+          separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+          tbody.appendChild(separateur);
+        }
+      });
     }
-  });
-}
+
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
       let sessionPrecedente = null;
@@ -1235,25 +1236,27 @@
           12: { cellWidth: 14 },
           13: { cellWidth: 20 }
         },
-        margin: { left: margin, right: margin },
+        margin: { left: margin, right: margin, top: margin },
         rowPageBreak: 'avoid',
         didDrawPage: function(data) {
-			// Ajouter header sur chaque page
-			if (data.pageNumber > 1) {
-				const newYPosition = addHeader(false);
-				// CRITIQUE : repositionner le curseur APRÈS le header
-				data.cursor = { y: newYPosition };
-			}
-			// Ajouter numéro de page
-			doc.setFontSize(8);
-			doc.setTextColor(128, 128, 128);
-			doc.text(
-				`Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
-				pageWidth / 2,
-				pageHeight - 5,
-				{ align: 'center' }
-			);
-		},
+          // Dessiner le header personnalisé sur chaque page
+          const headerHeight = addHeader(data.pageNumber === 1);
+          
+          // Sur les pages 2+, ajuster la position de départ du tableau
+          if (data.pageNumber > 1) {
+            data.settings.margin.top = headerHeight + 2;
+          }
+          
+          // Ajouter numéro de page
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 5,
+            { align: 'center' }
+          );
+        },
         willDrawCell: function(data) {
           if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
             data.cell.styles.fillColor = [249, 249, 249];
