@@ -1189,93 +1189,89 @@
       }
       
       doc.autoTable({
-        startY: yPosition,
-        head: [[
-          { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
-          { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
-          { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
-          { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
-          { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
-          { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
-        ]],
-        body: tableData,
-        theme: 'grid',
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-          lineColor: [200, 200, 200],
-          lineWidth: 0.1
-        },
-        headStyles: {
-          fillColor: [74, 85, 104],
-          textColor: 255,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        columnStyles: {
-          0: { cellWidth: 18 },
-          1: { cellWidth: 26 },
-          2: { cellWidth: 32 },
-          3: { cellWidth: 16 },
-          4: { cellWidth: 12 },
-          5: { cellWidth: 52 },
-          6: { cellWidth: 20 },
-          7: { cellWidth: 14 },
-          8: { cellWidth: 14 },
-          9: { cellWidth: 14 },
-          10: { cellWidth: 14 },
-          11: { cellWidth: 14 },
-          12: { cellWidth: 14 },
-          13: { cellWidth: 20 }
-        },
-        margin: { left: margin, right: margin, top: margin },
-        rowPageBreak: 'avoid',
-        didDrawPage: function(data) {
-          // Dessiner le header personnalisé sur chaque page
-          const headerHeight = addHeader(data.pageNumber === 1);
-          
-          // Sur les pages 2+, ajuster la position de départ du tableau
-          if (data.pageNumber > 1) {
-            data.settings.margin.top = headerHeight + 2;
-          }
-          
-          // Ajouter numéro de page
-          doc.setFontSize(8);
-          doc.setTextColor(128, 128, 128);
-          doc.text(
-            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
-            pageWidth / 2,
-            pageHeight - 5,
-            { align: 'center' }
-          );
-        },
-        willDrawCell: function(data) {
-          if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-            data.cell.styles.fillColor = [249, 249, 249];
-          }
-          
-          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-            if (data.cell.raw.content === 'TOTAL SESSION:') {
-              data.row.minCellHeight = 8;
-            }
-          }
-        },
-        didParseCell: function(data) {
-          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-            if (data.cell.raw.content === 'TOTAL SESSION:') {
-              data.row.pageBreak = 'avoid';
-            }
-          }
-        }
-      });
+  startY: yPosition,
+  head: [[
+    { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
+    { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
+    { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
+    { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
+    { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
+    { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
+  ]],
+  body: tableData,
+  theme: 'grid',
+  styles: {
+    fontSize: 8,
+    cellPadding: 2,
+    lineColor: [200, 200, 200],
+    lineWidth: 0.1
+  },
+  headStyles: {
+    fillColor: [74, 85, 104],
+    textColor: 255,
+    fontStyle: 'bold',
+    halign: 'center'
+  },
+  columnStyles: {
+    0: { cellWidth: 18 },
+    1: { cellWidth: 26 },
+    2: { cellWidth: 32 },
+    3: { cellWidth: 16 },
+    4: { cellWidth: 12 },
+    5: { cellWidth: 52 },
+    6: { cellWidth: 20 },
+    7: { cellWidth: 14 },
+    8: { cellWidth: 14 },
+    9: { cellWidth: 14 },
+    10: { cellWidth: 14 },
+    11: { cellWidth: 14 },
+    12: { cellWidth: 14 },
+    13: { cellWidth: 20 }
+  },
+  margin: { left: margin, right: margin, top: 34 },  // Marge fixe pour toutes les pages
+  showHead: 'everyPage',  // IMPORTANT : forcer la répétition des headers
+  rowPageBreak: 'avoid',
+  didDrawPage: function(data) {
+    // Dessiner le header personnalisé sur chaque page
+    addHeader(data.pageNumber === 1);
+    
+    // Ajouter numéro de page
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+      pageWidth / 2,
+      pageHeight - 5,
+      { align: 'center' }
+    );
+  },
+  willDrawCell: function(data) {
+    if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+      data.cell.styles.fillColor = [249, 249, 249];
+    }
+    
+    if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+      if (data.cell.raw.content === 'TOTAL SESSION:') {
+        data.row.minCellHeight = 8;
+      }
+    }
+  },
+  didParseCell: function(data) {
+    if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+      if (data.cell.raw.content === 'TOTAL SESSION:') {
+        data.row.pageBreak = 'avoid';
+      }
+    }
+  }
+});
       
       const dateStr = new Date().toISOString().split('T')[0];
       let filename = 'Bilan_Palanquees';
