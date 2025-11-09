@@ -345,7 +345,11 @@
 		break-before: auto !important;
 	  }
       
-
+      /* Permettre la coupure APRÈS le séparateur orange */
+      tr.session-separator {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
       
       tbody tr:hover { 
         background: inherit;
