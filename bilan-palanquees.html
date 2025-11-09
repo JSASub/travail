@@ -270,17 +270,11 @@
         border-bottom: none;
       }
       
-	  /* Empêcher la coupure entre les stats et le tableau */
-	  #niveaux-container {
-		page-break-after: avoid !important;
-		break-after: avoid !important;
-	  }
-
-	  /* Forcer le tableau principal à commencer sur une nouvelle page */
-	  .table-container {
-		page-break-before: always !important;
-		break-before: always !important;
-	  }
+      /* Forcer le tableau principal à commencer sur une nouvelle page */
+      .table-container {
+        page-break-before: always !important;
+        break-before: always !important;
+      }
 
       .niveau-badge {
         display: inline-block;
@@ -342,12 +336,12 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-	  
-	  /* Garder chaque palanquée ensemble */
-	  tbody.palanquee-group {
-		page-break-inside: avoid !important;
-		break-inside: avoid !important;
-	  }
+      
+      /* Garder chaque palanquée ensemble */
+      tbody.palanquee-group {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
       
       /* Éviter les orphelins : garder au moins 3 lignes ensemble */
       tr.total-palanquee,
@@ -735,102 +729,104 @@
       }
     }
 
-function afficherTableau() {
-  const tableBody = document.getElementById('bilan-tbody');
-  const table = tableBody.parentElement; // Récupérer le <table>
-  
-  // Vider complètement le tableau (sauf le thead)
-  while (table.querySelectorAll('tbody').length > 0) {
-    table.querySelectorAll('tbody').forEach(tb => tb.remove());
-  }
-  
-  // Regrouper les données par session
-  const sessions = {};
-  bilanData.forEach((row) => {
-    const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
-    if (!sessions[sessionKey]) {
-      sessions[sessionKey] = [];
-    }
-    sessions[sessionKey].push(row);
-  });
-  
-  // Créer un tbody séparé pour CHAQUE palanquée
-  Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
-    
-    // Pour chaque palanquée de cette session
-    sessionRows.forEach((row) => {
-      // Créer un nouveau tbody pour cette palanquée
-      const palanqueeTbody = document.createElement('tbody');
-      palanqueeTbody.classList.add('palanquee-group');
+    function afficherTableau() {
+      const tableBody = document.getElementById('bilan-tbody');
+      const table = tableBody.parentElement;
       
-      // Ajouter les lignes des plongeurs
-      row.plongeurs.forEach((plongeur, plongeurIdx) => {
-        const tr = document.createElement('tr');
-        tr.classList.add('palanquee-row');
-        
-        tr.innerHTML = `
-          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
-          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
-          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
-          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-          <td>${plongeur.nom}</td>
-          <td>${plongeur.pre || ''}</td>
-          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
-        `;
-        palanqueeTbody.appendChild(tr);
+      while (table.querySelectorAll('tbody').length > 0) {
+        table.querySelectorAll('tbody').forEach(tb => tb.remove());
+      }
+      
+      const sessions = {};
+      bilanData.forEach((row) => {
+        const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
+        if (!sessions[sessionKey]) {
+          sessions[sessionKey] = [];
+        }
+        sessions[sessionKey].push(row);
       });
       
-      // Ajouter le total de la palanquée dans le même tbody
-      const trTotal = document.createElement('tr');
-      trTotal.className = 'total-palanquee';
-      trTotal.style.background = '#e8f4f8';
-      trTotal.style.fontWeight = 'bold';
-      trTotal.style.fontSize = '12px';
-      trTotal.innerHTML = `
-        <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-        <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
-      `;
-      palanqueeTbody.appendChild(trTotal);
+      Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
+        sessionRows.forEach((row) => {
+          const palanqueeTbody = document.createElement('tbody');
+          palanqueeTbody.classList.add('palanquee-group');
+          
+          row.plongeurs.forEach((plongeur, plongeurIdx) => {
+            const tr = document.createElement('tr');
+            tr.classList.add('palanquee-row');
+            
+            tr.innerHTML = `
+              <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+              <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+              <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+              <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+              <td>${plongeur.nom}</td>
+              <td>${plongeur.pre || ''}</td>
+              <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+              <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+            `;
+            palanqueeTbody.appendChild(tr);
+          });
+          
+          const trTotal = document.createElement('tr');
+          trTotal.className = 'total-palanquee';
+          trTotal.style.background = '#e8f4f8';
+          trTotal.style.fontWeight = 'bold';
+          trTotal.style.fontSize = '12px';
+          trTotal.innerHTML = `
+            <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+            <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+          `;
+          palanqueeTbody.appendChild(trTotal);
+          
+          table.appendChild(palanqueeTbody);
+        });
+        
+        const sessionEndTbody = document.createElement('tbody');
+        sessionEndTbody.classList.add('session-summary');
+        
+        const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
+        const trTotalSession = document.createElement('tr');
+        trTotalSession.classList.add('session-end');
+        trTotalSession.style.background = '#d4edda';
+        trTotalSession.style.fontWeight = 'bold';
+        trTotalSession.innerHTML = `
+          <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+          <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
+        `;
+        sessionEndTbody.appendChild(trTotalSession);
+        
+        if (sessionIndex < Object.keys(sessions).length - 1) {
+          const separateur = document.createElement('tr');
+          separateur.classList.add('session-separator');
+          separateur.style.background = '#FF6B00';
+          separateur.style.height = '10px';
+          separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+          sessionEndTbody.appendChild(separateur);
+        }
+        
+        table.appendChild(sessionEndTbody);
+      });
       
-      // Ajouter ce tbody au tableau
-      table.appendChild(palanqueeTbody);
-    });
-    
-    // Après toutes les palanquées d'une session : créer un tbody pour TOTAL SESSION + séparateur
-    const sessionEndTbody = document.createElement('tbody');
-    sessionEndTbody.classList.add('session-summary');
-    
-    const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
-    const trTotalSession = document.createElement('tr');
-    trTotalSession.classList.add('session-end');
-    trTotalSession.style.background = '#d4edda';
-    trTotalSession.style.fontWeight = 'bold';
-    trTotalSession.innerHTML = `
-      <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-      <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
-    `;
-    sessionEndTbody.appendChild(trTotalSession);
-    
-    // Séparateur orange (sauf pour la dernière session)
-    if (sessionIndex < Object.keys(sessions).length - 1) {
-      const separateur = document.createElement('tr');
-      separateur.classList.add('session-separator');
-      separateur.style.background = '#FF6B00';
-      separateur.style.height = '10px';
-      separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-      sessionEndTbody.appendChild(separateur);
+      // Séparateur orange final APRÈS toutes les sessions
+      const finalSeparatorTbody = document.createElement('tbody');
+      finalSeparatorTbody.classList.add('final-separator');
+      
+      const separateurFinal = document.createElement('tr');
+      separateurFinal.classList.add('session-separator');
+      separateurFinal.style.background = '#FF6B00';
+      separateurFinal.style.height = '10px';
+      separateurFinal.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+      finalSeparatorTbody.appendChild(separateurFinal);
+      
+      table.appendChild(finalSeparatorTbody);
     }
-    
-    table.appendChild(sessionEndTbody);
-  });
-}
 
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
@@ -1021,6 +1017,7 @@ function afficherTableau() {
         
         html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalSession"><Data ss:Type="String">TOTAL SESSION:</Data></Cell>';
         html += `<Cell ss:MergeAcross="11" ss:StyleID="totalSession"><Data ss:Type="String">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</Data></Cell></Row>`;
+        html += '<Row ss:Height="10"><Cell ss:MergeAcross="13" ss:StyleID="separateur"></Cell></Row>';
       }
       
       html += '</Table>';
@@ -1042,7 +1039,7 @@ function afficherTableau() {
 
     function exporterPDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');  // 'p' = portrait au lieu de 'l' = landscape
+      const doc = new jsPDF('p', 'mm', 'a4');
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1218,92 +1215,95 @@ function afficherTableau() {
           { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
           { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
         ]);
+        
+        // Séparateur orange final
+        tableData.push([
+          { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
+        ]);
       }
       
       doc.autoTable({
-  startY: yPosition,
-  head: [[
-    { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
-    { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
-    { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
-    { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
-    { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
-    { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
-  ]],
-  body: tableData,
-  theme: 'grid',
-  styles: {
-    fontSize: 8,
-    cellPadding: 2,
-    lineColor: [200, 200, 200],
-    lineWidth: 0.1
-  },
-  headStyles: {
-    fillColor: [74, 85, 104],
-    textColor: 255,
-    fontStyle: 'bold',
-    halign: 'center'
-  },
-  columnStyles: {
-  0: { cellWidth: 15 },   // Date
-  1: { cellWidth: 22 },   // DP
-  2: { cellWidth: 25 },   // Lieu
-  3: { cellWidth: 14 },   // Session
-  4: { cellWidth: 10 },   // Palanquée
-  5: { cellWidth: 45 },   // Plongeur
-  6: { cellWidth: 18 },   // Prérogatives
-  7: { cellWidth: 12 },   // Niveau
-  8: { cellWidth: 12 },   // Horaire
-  9: { cellWidth: 11 },   // Prof. Prévue
-  10: { cellWidth: 11 },  // Durée Prévue
-  11: { cellWidth: 11 },  // Prof. Réalisée
-  12: { cellWidth: 11 },  // Durée Réalisée
-  13: { cellWidth: 12 }   // Paliers
-},
-  margin: { left: margin, right: margin, top: 34 },  // Marge fixe pour toutes les pages
-  showHead: 'everyPage',  // IMPORTANT : forcer la répétition des headers
-  rowPageBreak: 'avoid',
-  didDrawPage: function(data) {
-    // Dessiner le header personnalisé sur chaque page
-    addHeader(data.pageNumber === 1);
-    
-    // Ajouter numéro de page
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
-      pageWidth / 2,
-      pageHeight - 5,
-      { align: 'center' }
-    );
-  },
-  willDrawCell: function(data) {
-    if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-      data.cell.styles.fillColor = [249, 249, 249];
-    }
-    
-    if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-      if (data.cell.raw.content === 'TOTAL SESSION:') {
-        data.row.minCellHeight = 8;
-      }
-    }
-  },
-  didParseCell: function(data) {
-    if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-      if (data.cell.raw.content === 'TOTAL SESSION:') {
-        data.row.pageBreak = 'avoid';
-      }
-    }
-  }
-});
+        startY: yPosition,
+        head: [[
+          { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [74, 85, 104],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 15 },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 14 },
+          4: { cellWidth: 10 },
+          5: { cellWidth: 45 },
+          6: { cellWidth: 18 },
+          7: { cellWidth: 12 },
+          8: { cellWidth: 12 },
+          9: { cellWidth: 11 },
+          10: { cellWidth: 11 },
+          11: { cellWidth: 11 },
+          12: { cellWidth: 11 },
+          13: { cellWidth: 12 }
+        },
+        margin: { left: margin, right: margin, top: 34 },
+        showHead: 'everyPage',
+        rowPageBreak: 'avoid',
+        didDrawPage: function(data) {
+          addHeader(data.pageNumber === 1);
+          
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 5,
+            { align: 'center' }
+          );
+        },
+        willDrawCell: function(data) {
+          if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+            data.cell.styles.fillColor = [249, 249, 249];
+          }
+          
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              data.row.minCellHeight = 8;
+            }
+          }
+        },
+        didParseCell: function(data) {
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              data.row.pageBreak = 'avoid';
+            }
+          }
+        }
+      });
       
       const dateStr = new Date().toISOString().split('T')[0];
       let filename = 'Bilan_Palanquees';
