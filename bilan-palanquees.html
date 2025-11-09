@@ -325,48 +325,27 @@
         line-height: 1.3;
       }
       
-/* Éviter les coupures dans les lignes individuelles */
-tr {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
-}
+	  /* Éviter les coupures dans les lignes individuelles */
+	  tr {
+		page-break-inside: avoid !important;
+		break-inside: avoid !important;
+	  }
 
-/* NE PAS couper juste avant un total de palanquée (le garder avec sa dernière ligne) */
-tr.total-palanquee {
-  page-break-before: avoid !important;
-  break-before: avoid !important;
-}
+	  /* Éviter les orphelins : garder au moins 3 lignes ensemble */
+	  tr.total-palanquee,
+	  tr.session-end,
+	  tr.session-separator {
+		page-break-before: avoid !important;
+		break-before: avoid !important;
+		page-break-after: avoid !important;
+		break-after: avoid !important;
+	  }
 
-/* Permettre la coupure APRÈS le total palanquée (fin logique d'une unité) */
-tr.total-palanquee {
-  page-break-after: auto !important;
-  break-after: auto !important;
-}
-
-/* Garder ensemble : TOTAL SESSION + séparateur orange */
-tr.session-end {
-  page-break-before: avoid !important;
-  break-before: avoid !important;
-  page-break-after: avoid !important;
-  break-after: avoid !important;
-}
-
-tr.session-separator {
-  page-break-before: avoid !important;
-  break-before: avoid !important;
-}
-
-/* Permettre la coupure APRÈS le séparateur orange (début nouvelle session) */
-tr.session-separator {
-  page-break-after: auto !important;
-  break-after: auto !important;
-}
-
-/* Permettre la coupure AVANT la première ligne d'une nouvelle session */
-tr.first-of-session {
-  page-break-before: auto !important;
-  break-before: auto !important;
-}
+	  /* SAUF : permettre coupure après le séparateur orange */
+	  tr.session-separator {
+		page-break-after: auto !important;
+		break-after: auto !important;
+	  }
       
       tbody tr:hover { 
         background: inherit;
@@ -1259,18 +1238,22 @@ tr.first-of-session {
         margin: { left: margin, right: margin },
         rowPageBreak: 'avoid',
         didDrawPage: function(data) {
-          if (data.pageNumber > 1) {
-            addHeader(false);
-          }
-          doc.setFontSize(8);
-          doc.setTextColor(128, 128, 128);
-          doc.text(
-            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
-            pageWidth / 2,
-            pageHeight - 5,
-            { align: 'center' }
-          );
-        },
+			// Ajouter header sur chaque page
+			if (data.pageNumber > 1) {
+				const newYPosition = addHeader(false);
+				// CRITIQUE : repositionner le curseur APRÈS le header
+				data.cursor = { y: newYPosition };
+			}
+			// Ajouter numéro de page
+			doc.setFontSize(8);
+			doc.setTextColor(128, 128, 128);
+			doc.text(
+				`Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+				pageWidth / 2,
+				pageHeight - 5,
+				{ align: 'center' }
+			);
+		},
         willDrawCell: function(data) {
           if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
             data.cell.styles.fillColor = [249, 249, 249];
