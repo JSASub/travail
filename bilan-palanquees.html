@@ -270,6 +270,18 @@
         border-bottom: none;
       }
       
+	  /* Empêcher la coupure entre les stats et le tableau */
+	  #niveaux-container {
+		page-break-after: avoid !important;
+		break-after: avoid !important;
+	  }
+
+	  /* Garder le début du tableau avec les stats */
+	  .table-container {
+		page-break-before: avoid !important;
+		break-before: avoid !important;
+	  }
+
       .niveau-badge {
         display: inline-block;
         padding: 2px 7px;
