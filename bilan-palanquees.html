@@ -338,6 +338,12 @@
         page-break-before: avoid !important;
         break-before: avoid !important;
       }
+	  
+	  /* Permettre la coupure de page AVANT la première ligne d'une nouvelle session */
+	  tr.first-of-session {
+		page-break-before: auto !important;
+		break-before: auto !important;
+	  }
       
       /* Permettre la coupure APRÈS le séparateur orange */
       tr.session-separator {
@@ -729,16 +735,18 @@
     sessions[sessionKey].push(row);
   });
   
-  // Créer un tbody séparé pour chaque session
+  // Créer toutes les lignes dans UN SEUL tbody
   Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
-    const sessionTbody = document.createElement('tbody');
-    sessionTbody.classList.add('session-group');
     
     // Ajouter toutes les lignes de cette session
     sessionRows.forEach((row) => {
       row.plongeurs.forEach((plongeur, plongeurIdx) => {
         const tr = document.createElement('tr');
         tr.classList.add('palanquee-row');
+        // Marquer la première ligne de la première palanquée de chaque session
+        if (plongeurIdx === 0 && sessionRows.indexOf(row) === 0) {
+          tr.classList.add('first-of-session');
+        }
         
         tr.innerHTML = `
           <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
@@ -756,7 +764,7 @@
           <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
           <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
         `;
-        sessionTbody.appendChild(tr);
+        tbody.appendChild(tr);
       });
       
       // Total palanquée
@@ -769,10 +777,10 @@
         <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
         <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
       `;
-      sessionTbody.appendChild(trTotal);
+      tbody.appendChild(trTotal);
     });
     
-    // TOTAL SESSION à la fin du tbody
+    // TOTAL SESSION à la fin
     const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
     const trTotalSession = document.createElement('tr');
     trTotalSession.classList.add('session-end');
@@ -782,7 +790,7 @@
       <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
       <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
     `;
-    sessionTbody.appendChild(trTotalSession);
+    tbody.appendChild(trTotalSession);
     
     // Séparateur orange (sauf pour la dernière session)
     if (sessionIndex < Object.keys(sessions).length - 1) {
@@ -791,14 +799,10 @@
       separateur.style.background = '#FF6B00';
       separateur.style.height = '10px';
       separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-      sessionTbody.appendChild(separateur);
+      tbody.appendChild(separateur);
     }
-    
-    // Ajouter le tbody complet au tableau
-    tbody.appendChild(sessionTbody);
   });
 }
-
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
       let sessionPrecedente = null;
