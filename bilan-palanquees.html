@@ -44,8 +44,7 @@
     .loading { text-align: center; padding: 40px; color: #666; }
     .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .table-container { overflow-x: visible; margin-top: 20px; }
-	table { width: 100% !important; border-collapse: collapse; font-size: 13px; table-layout: fixed !important; }
+	table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
     th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; overflow: hidden; text-overflow: ellipsis; }
     td { padding: 10px 8px; border-bottom: 1px solid #ddd; overflow: hidden; text-overflow: ellipsis; }
     
@@ -755,7 +754,7 @@
       }
     }
 
-    function afficherTableau() {
+function afficherTableau() {
   const tbody = document.getElementById('bilan-tbody');
   tbody.innerHTML = '';
   
@@ -781,21 +780,21 @@
         tr.classList.add('palanquee-row');
         
         tr.innerHTML = `
-  <td style="width: 7%;">${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-  <td style="width: 8%;">${plongeurIdx === 0 ? row.dp : ''}</td>
-  <td style="width: 9%;">${plongeurIdx === 0 ? row.lieu : ''}</td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.typeSession : ''}</td>
-  <td style="width: 6%;">${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-  <td style="width: 11%;">${plongeur.nom}</td>
-  <td style="width: 8%;">${plongeur.pre || ''}</td>
-  <td style="width: 6%;"><span class="niveau-badge">${plongeur.niveau}</span></td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.horaire : ''}</td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-  <td style="width: 6%;">${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-  <td style="width: 7%;">${plongeurIdx === 0 ? row.paliers : ''}</td>
-`;
+          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+          <td>${plongeur.nom}</td>
+          <td>${plongeur.pre || ''}</td>
+          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+        `;
         sessionTbody.appendChild(tr);
       });
       
@@ -817,7 +816,7 @@
     const trTotalSession = document.createElement('tr');
     trTotalSession.classList.add('session-end');
     trTotalSession.style.background = '#d4edda';
-    trTotalSession.style.fontWeight = 'bold';
+    trTotalSession.style.fontWeight = bold';
     trTotalSession.innerHTML = `
       <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
       <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
@@ -838,68 +837,6 @@
     tbody.appendChild(sessionTbody);
   });
 }
-
-    function exporterCSV() {
-      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
-      let sessionPrecedente = null;
-      
-      bilanData.forEach(row => {
-        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
-        
-        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
-          const plongeursDansSession = bilanData.filter(r => 
-            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
-          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-          csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
-          csv += ';;;;;;;;;;;;;;\n';
-        }
-        
-        row.plongeurs.forEach((plongeur, idx) => {
-          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
-        });
-        
-        csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;;;\n`;
-        
-        sessionPrecedente = sessionActuelle;
-      });
-      
-      if (bilanData.length > 0) {
-        const dernierIndex = bilanData.length - 1;
-        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
-        const plongeursDansSession = bilanData.filter(r => 
-          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
-        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-        csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
-      }
-      
-      csv += '\n\nSTATISTIQUES PAR NIVEAU\n';
-      csv += 'Niveau;Nombre de plongées;Pourcentage\n';
-      const niveaux = {};
-      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
-      bilanData.forEach(p => {
-        p.plongeurs.forEach(plongeur => {
-          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
-        });
-      });
-      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
-        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
-        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
-        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-      });
-      niveauxTries.forEach(([niveau, count]) => {
-        csv += `${niveau};${count};${((count / totalPlongeurs) * 100).toFixed(1)}%\n`;
-      });
-      csv += `TOTAL;${totalPlongeurs};100%\n`;
-      
-      const BOM = '\uFEFF';
-      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'bilan-palanquees.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
 
     function exporterExcel() {
       let html = `<?xml version="1.0"?>
