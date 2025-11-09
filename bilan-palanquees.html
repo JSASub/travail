@@ -326,29 +326,41 @@
       }
       
       /* Éviter les coupures dans les lignes individuelles */
-      tr {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      
-	 /* Garder ensemble : total palanquée + TOTAL SESSION (mais PAS le séparateur) */
-	 tr.total-palanquee,
-	 tr.session-end {
+	  tr {
+		page-break-inside: avoid !important;
+		break-inside: avoid !important;
+	  }
+
+	  /* Garder ensemble : total palanquée + TOTAL SESSION (ne pas couper avant) */
+	  tr.total-palanquee,
+      tr.session-end {
 		page-break-before: avoid !important;
 		break-before: avoid !important;
-	 }
+	  }
 
-	 /* Permettre la coupure de page AVANT la première ligne d'une nouvelle session */
-	 tr.first-of-session {
-		page-break-before: auto !important;
-		break-before: auto !important;
-	 }
+	  /* COLLER le TOTAL SESSION au séparateur (ne pas couper après) */
+	  tr.session-end {
+		page-break-after: avoid !important;
+		break-after: avoid !important;
+	  }
 
-	 /* Permettre la coupure APRÈS le séparateur orange */
-	 tr.session-separator {
+	  /* COLLER le séparateur au TOTAL SESSION (ne pas couper avant) */
+	  tr.session-separator {
+		page-break-before: avoid !important;
+		break-before: avoid !important;
+	  }
+
+	  /* Permettre la coupure APRÈS le séparateur orange */
+	  tr.session-separator {
 		page-break-after: auto !important;
 		break-after: auto !important;
-	 }
+	  }
+
+	  /* Permettre la coupure AVANT la première ligne d'une nouvelle session */
+	  tr.first-of-session {
+		page-break-before: auto !important;
+		break-before: auto !important;
+	  }
       
       tbody tr:hover { 
         background: inherit;
