@@ -1039,7 +1039,7 @@
 
     function exporterPDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
+      const doc = new jsPDF('l', 'mm', 'a4');
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1255,21 +1255,21 @@
           halign: 'center'
         },
         columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: 22 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 14 },
-          4: { cellWidth: 10 },
-          5: { cellWidth: 45 },
-          6: { cellWidth: 18 },
-          7: { cellWidth: 12 },
-          8: { cellWidth: 12 },
-          9: { cellWidth: 11 },
-          10: { cellWidth: 11 },
-          11: { cellWidth: 11 },
-          12: { cellWidth: 11 },
-          13: { cellWidth: 12 }
-        },
+			0: { cellWidth: 18 },   // Date
+			1: { cellWidth: 26 },   // DP
+			2: { cellWidth: 32 },   // Lieu
+			3: { cellWidth: 16 },   // Session
+			4: { cellWidth: 12 },   // Palanquée
+			5: { cellWidth: 52 },   // Plongeur
+			6: { cellWidth: 20 },   // Prérogatives
+			7: { cellWidth: 14 },   // Niveau
+			8: { cellWidth: 14 },   // Horaire
+			9: { cellWidth: 14 },   // Prof. Prévue
+			10: { cellWidth: 14 },  // Durée Prévue
+			11: { cellWidth: 14 },  // Prof. Réalisée
+			12: { cellWidth: 14 },  // Durée Réalisée
+			13: { cellWidth: 20 }   // Paliers
+		},
         margin: { left: margin, right: margin, top: 34 },
         showHead: 'everyPage',
         rowPageBreak: 'avoid',
