@@ -331,25 +331,24 @@
         break-inside: avoid !important;
       }
       
-      /* Garder ensemble : total palanquée + TOTAL SESSION + séparateur orange */
-      tr.total-palanquee,
-      tr.session-end,
-      tr.session-separator {
-        page-break-before: avoid !important;
-        break-before: avoid !important;
-      }
-	  
-	  /* Permettre la coupure de page AVANT la première ligne d'une nouvelle session */
-	  tr.first-of-session {
+	 /* Garder ensemble : total palanquée + TOTAL SESSION (mais PAS le séparateur) */
+	 tr.total-palanquee,
+	 tr.session-end {
+		page-break-before: avoid !important;
+		break-before: avoid !important;
+	 }
+
+	 /* Permettre la coupure de page AVANT la première ligne d'une nouvelle session */
+	 tr.first-of-session {
 		page-break-before: auto !important;
 		break-before: auto !important;
-	  }
-      
-      /* Permettre la coupure APRÈS le séparateur orange */
-      tr.session-separator {
-        page-break-after: auto !important;
-        break-after: auto !important;
-      }
+	 }
+
+	 /* Permettre la coupure APRÈS le séparateur orange */
+	 tr.session-separator {
+		page-break-after: auto !important;
+		break-after: auto !important;
+	 }
       
       tbody tr:hover { 
         background: inherit;
