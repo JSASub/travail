@@ -388,26 +388,35 @@
 	  
 	  
 	  
-	  /* Empêche les coupures au milieu d'une session : couper uniquement après les séparateurs orange */
-tbody {
-  display: block;
-}
+/* Bloque toute coupure à l'intérieur des sessions */
+  tbody, tr, td {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 
-tbody tr.session-separator {
-  display: table-row;
-  page-break-after: always !important; /* permet la coupure juste après le séparateur */
-}
+  /* Autorise les coupures uniquement après les séparateurs orange */
+  tr.session-separator {
+    display: table-row;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: always !important; /* 🔸 autorise une coupure juste après */
+    break-after: page !important;        /* 🔸 compatibilité avec Chrome/Firefox */
+    background: #FF6B00 !important;
+    height: 8px !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 
-tbody tr:not(.session-separator) {
-  page-break-inside: avoid !important; /* garde chaque palanquée entière */
-  break-inside: avoid !important;
-}
+  tr.session-separator td {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
 
-/* Option : s'assurer que le bloc avant un séparateur reste groupé */
-tbody {
-  widows: 2;
-  orphans: 2;
-}
+  /* Empêche toute autre coupure automatique */
+  table {
+    page-break-inside: avoid !important;
+  }
 
 
     }
