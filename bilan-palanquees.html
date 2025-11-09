@@ -385,6 +385,31 @@
       h1, h2, h3 {
         page-break-after: avoid;
       }
+	  
+	  
+	  
+	  /* Empêche les coupures au milieu d'une session : couper uniquement après les séparateurs orange */
+tbody {
+  display: block;
+}
+
+tbody tr.session-separator {
+  display: table-row;
+  page-break-after: always !important; /* permet la coupure juste après le séparateur */
+}
+
+tbody tr:not(.session-separator) {
+  page-break-inside: avoid !important; /* garde chaque palanquée entière */
+  break-inside: avoid !important;
+}
+
+/* Option : s'assurer que le bloc avant un séparateur reste groupé */
+tbody {
+  widows: 2;
+  orphans: 2;
+}
+
+
     }
   </style>
 </head>
