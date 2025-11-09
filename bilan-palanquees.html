@@ -781,21 +781,21 @@
         tr.classList.add('palanquee-row');
         
         tr.innerHTML = `
-          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
-          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
-          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
-          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-          <td>${plongeur.nom}</td>
-          <td>${plongeur.pre || ''}</td>
-          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
-        `;
+  <td style="width: 7%;">${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+  <td style="width: 8%;">${plongeurIdx === 0 ? row.dp : ''}</td>
+  <td style="width: 9%;">${plongeurIdx === 0 ? row.lieu : ''}</td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.typeSession : ''}</td>
+  <td style="width: 6%;">${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+  <td style="width: 11%;">${plongeur.nom}</td>
+  <td style="width: 8%;">${plongeur.pre || ''}</td>
+  <td style="width: 6%;"><span class="niveau-badge">${plongeur.niveau}</span></td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.horaire : ''}</td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+  <td style="width: 6%;">${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+  <td style="width: 7%;">${plongeurIdx === 0 ? row.paliers : ''}</td>
+`;
         sessionTbody.appendChild(tr);
       });
       
