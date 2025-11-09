@@ -325,42 +325,48 @@
         line-height: 1.3;
       }
       
-      /* Éviter les coupures dans les lignes individuelles */
-	  tr {
-		page-break-inside: avoid !important;
-		break-inside: avoid !important;
-	  }
+/* Éviter les coupures dans les lignes individuelles */
+tr {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
 
-	  /* Garder ensemble : total palanquée + TOTAL SESSION (ne pas couper avant) */
-	  tr.total-palanquee,
-      tr.session-end {
-		page-break-before: avoid !important;
-		break-before: avoid !important;
-	  }
+/* NE PAS couper juste avant un total de palanquée (le garder avec sa dernière ligne) */
+tr.total-palanquee {
+  page-break-before: avoid !important;
+  break-before: avoid !important;
+}
 
-	  /* COLLER le TOTAL SESSION au séparateur (ne pas couper après) */
-	  tr.session-end {
-		page-break-after: avoid !important;
-		break-after: avoid !important;
-	  }
+/* Permettre la coupure APRÈS le total palanquée (fin logique d'une unité) */
+tr.total-palanquee {
+  page-break-after: auto !important;
+  break-after: auto !important;
+}
 
-	  /* COLLER le séparateur au TOTAL SESSION (ne pas couper avant) */
-	  tr.session-separator {
-		page-break-before: avoid !important;
-		break-before: avoid !important;
-	  }
+/* Garder ensemble : TOTAL SESSION + séparateur orange */
+tr.session-end {
+  page-break-before: avoid !important;
+  break-before: avoid !important;
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
 
-	  /* Permettre la coupure APRÈS le séparateur orange */
-	  tr.session-separator {
-		page-break-after: auto !important;
-		break-after: auto !important;
-	  }
+tr.session-separator {
+  page-break-before: avoid !important;
+  break-before: avoid !important;
+}
 
-	  /* Permettre la coupure AVANT la première ligne d'une nouvelle session */
-	  tr.first-of-session {
-		page-break-before: auto !important;
-		break-before: auto !important;
-	  }
+/* Permettre la coupure APRÈS le séparateur orange (début nouvelle session) */
+tr.session-separator {
+  page-break-after: auto !important;
+  break-after: auto !important;
+}
+
+/* Permettre la coupure AVANT la première ligne d'une nouvelle session */
+tr.first-of-session {
+  page-break-before: auto !important;
+  break-before: auto !important;
+}
       
       tbody tr:hover { 
         background: inherit;
