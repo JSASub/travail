@@ -1378,34 +1378,51 @@ function afficherTableau() {
           );
         },
 willDrawCell: function(data) {
-  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
-    let cellText = '';
+  // Surligner le plongeur recherché
+  if (data.section === 'body' && data.column.index === 5) {
+    const recherche = filtrePlongeur ? filtrePlongeur.toLowerCase().trim() : '';
     
-    if (Array.isArray(data.cell.text)) {
-      cellText = data.cell.text[0] || '';
-    } else {
-      cellText = data.cell.text || '';
-    }
-    
-    console.log('Test PDF:', cellText, 'vs', filtrePlongeur); // ✅ DEBUG
-    
-    if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
-      data.cell.styles.fillColor = [255, 255, 0];
-      data.cell.styles.fontStyle = 'bold';
-      console.log('✅ Surligné:', cellText); // ✅ DEBUG
+    if (recherche) {
+      let cellText = '';
+      if (Array.isArray(data.cell.text)) {
+        cellText = (data.cell.text[0] || '').toString();
+      } else if (data.cell.text) {
+        cellText = data.cell.text.toString();
+      }
+      
+      const match = cellText.toLowerCase().includes(recherche);
+      const hasRaw = !!data.cell.raw;
+      const isObject = typeof data.cell.raw === 'object';
+      
+      console.log('🔍 PDF:', {
+        cellText: cellText,
+        match: match,
+        hasRaw: hasRaw,
+        rawType: typeof data.cell.raw,
+        rawValue: data.cell.raw
+      });
+      
+      // ✅ CHANGEMENT: vérifier si raw est un objet avec content (ligne TOTAL)
+      const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
+      
+      if (cellText && !isTotalRow && match) {
+        data.cell.styles.fillColor = [255, 255, 0];
+        data.cell.styles.fontStyle = 'bold';
+        console.log('✅ SURLIGNÉ:', cellText);
+      }
     }
   }
-          
-          if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-            data.cell.styles.fillColor = [249, 249, 249];
-          }
-          
-          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-            if (data.cell.raw.content === 'TOTAL SESSION:') {
-              data.row.minCellHeight = 8;
-            }
-          }
-        },
+  
+  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+    data.cell.styles.fillColor = [249, 249, 249];
+  }
+  
+  if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+    if (data.cell.raw.content === 'TOTAL SESSION:') {
+      data.row.minCellHeight = 8;
+    }
+  }
+},
         didParseCell: function(data) {
           if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
             if (data.cell.raw.content === 'TOTAL SESSION:') {
