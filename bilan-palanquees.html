@@ -1377,21 +1377,24 @@ function afficherTableau() {
             { align: 'center' }
           );
         },
-        willDrawCell: function(data) {
-          if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
-            let cellText = '';
-            
-            if (Array.isArray(data.cell.text)) {
-              cellText = data.cell.text[0] || '';
-            } else {
-              cellText = data.cell.text || '';
-            }
-            
-            if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
-              data.cell.styles.fillColor = [255, 255, 0];
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
+willDrawCell: function(data) {
+  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+    let cellText = '';
+    
+    if (Array.isArray(data.cell.text)) {
+      cellText = data.cell.text[0] || '';
+    } else {
+      cellText = data.cell.text || '';
+    }
+    
+    console.log('Test PDF:', cellText, 'vs', filtrePlongeur); // ✅ DEBUG
+    
+    if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+      data.cell.styles.fillColor = [255, 255, 0];
+      data.cell.styles.fontStyle = 'bold';
+      console.log('✅ Surligné:', cellText); // ✅ DEBUG
+    }
+  }
           
           if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
             data.cell.styles.fillColor = [249, 249, 249];
