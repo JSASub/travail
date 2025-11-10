@@ -1378,7 +1378,12 @@ function afficherTableau() {
           );
         },
 willDrawCell: function(data) {
-  // Surligner le plongeur recherché
+  // ✅ D'ABORD les lignes alternées grises
+  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+    data.cell.styles.fillColor = [249, 249, 249];
+  }
+  
+  // ✅ ENSUITE le surlignage jaune (qui va écraser le gris si nécessaire)
   if (data.section === 'body' && data.column.index === 5) {
     const recherche = filtrePlongeur ? filtrePlongeur.toLowerCase().trim() : '';
     
@@ -1391,32 +1396,16 @@ willDrawCell: function(data) {
       }
       
       const match = cellText.toLowerCase().includes(recherche);
-      const hasRaw = !!data.cell.raw;
-      const isObject = typeof data.cell.raw === 'object';
-      
-      console.log('🔍 PDF:', {
-        cellText: cellText,
-        match: match,
-        hasRaw: hasRaw,
-        rawType: typeof data.cell.raw,
-        rawValue: data.cell.raw
-      });
-      
-      // ✅ CHANGEMENT: vérifier si raw est un objet avec content (ligne TOTAL)
       const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
       
       if (cellText && !isTotalRow && match) {
-        data.cell.styles.fillColor = [255, 255, 0];
+        data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
         data.cell.styles.fontStyle = 'bold';
-        console.log('✅ SURLIGNÉ:', cellText);
       }
     }
   }
   
-  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-    data.cell.styles.fillColor = [249, 249, 249];
-  }
-  
+  // ✅ Hauteur des totaux
   if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
     if (data.cell.raw.content === 'TOTAL SESSION:') {
       data.row.minCellHeight = 8;
