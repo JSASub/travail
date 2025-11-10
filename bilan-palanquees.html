@@ -572,98 +572,98 @@
     }
 
     async function chargerBilan() {
-  const dateDebut = document.getElementById('date-debut').value;
-  const dateFin = document.getElementById('date-fin').value;
-  const filtreDP = document.getElementById('filtre-dp').value;
-  const filtreLieu = document.getElementById('filtre-lieu').value;
-  const filtrePlongeur = (document.getElementById('filtre-plongeur').value || '').toLowerCase().trim();
-  
-  const filtrerParDates = dateDebut && dateFin;
-  if (filtrerParDates && new Date(dateDebut) > new Date(dateFin)) { 
-    afficherErreur('Date de début invalide'); 
-    return; 
-  }
-  
-  afficherLoading(true);
-  cacherErreur();
-  
-  const nomsPlongeursMatches = new Set();
-  
-  try {
-    const snapshot = await db.ref('sessions').once('value');
-    if (!snapshot.exists()) { afficherAucuneDonnee(); return; }
-    const sessions = snapshot.val();
-    bilanData = [];
-    Object.entries(sessions).forEach(([key, session]) => {
-      if (!session.meta || !session.palanquees) return;
-      const sessionDate = session.meta.date;
-      if (filtrerParDates && (sessionDate < dateDebut || sessionDate > dateFin)) return;
-      if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
-      if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
-      session.palanquees.forEach((palanquee, idx) => {
-        if (!palanquee || !palanquee.plongeurs) return;
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      const filtrePlongeur = (document.getElementById('filtre-plongeur').value || '').toLowerCase().trim();
+      
+      const filtrerParDates = dateDebut && dateFin;
+      if (filtrerParDates && new Date(dateDebut) > new Date(dateFin)) { 
+        afficherErreur('Date de début invalide'); 
+        return; 
+      }
+      
+      afficherLoading(true);
+      cacherErreur();
+      
+      const nomsPlongeursMatches = new Set();
+      
+      try {
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) { afficherAucuneDonnee(); return; }
+        const sessions = snapshot.val();
+        bilanData = [];
+        Object.entries(sessions).forEach(([key, session]) => {
+          if (!session.meta || !session.palanquees) return;
+          const sessionDate = session.meta.date;
+          if (filtrerParDates && (sessionDate < dateDebut || sessionDate > dateFin)) return;
+          if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
+          if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
+          session.palanquees.forEach((palanquee, idx) => {
+            if (!palanquee || !palanquee.plongeurs) return;
+            
+            const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+            
+            let plongeursAafficher = plongeursTries;
+            
+            if (filtrePlongeur) {
+              const plongeursCorrespondants = plongeursTries.filter(p => 
+                (p.nom || '').toLowerCase().includes(filtrePlongeur)
+              );
+              if (plongeursCorrespondants.length === 0) return;
+              
+              plongeursCorrespondants.forEach(p => nomsPlongeursMatches.add(p.nom));
+              plongeursAafficher = plongeursCorrespondants;
+            }
+            
+            bilanData.push({
+              date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
+              typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
+              horaire: palanquee.parametres?.horaire || '', 
+              plongeurs: plongeursAafficher,
+              profPrevue: palanquee.parametres?.profondeurPrevue || '',
+              dureePrevue: palanquee.parametres?.dureePrevue || '',
+              profRealisee: palanquee.parametres?.profondeurRealisee || '',
+              dureeRealisee: palanquee.parametres?.dureeRealisee || '',
+              paliers: palanquee.parametres?.paliers || ''
+            });
+          });
+        });
+        if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
         
-        const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+        const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
+        bilanData.sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          if (a.lieu !== b.lieu) return a.lieu.localeCompare(b.lieu, 'fr', { sensitivity: 'base' });
+          const indexA = ordreSession.indexOf(a.typeSession);
+          const indexB = ordreSession.indexOf(b.typeSession);
+          const posA = indexA === -1 ? 999 : indexA;
+          const posB = indexB === -1 ? 999 : indexB;
+          if (posA !== posB) return posA - posB;
+          return a.numeroPalanquee - b.numeroPalanquee;
+        });
         
-        let plongeursAafficher = plongeursTries;  // Par défaut, tous les plongeurs
-        
-        if (filtrePlongeur) {
-          const plongeursCorrespondants = plongeursTries.filter(p => 
-            (p.nom || '').toLowerCase().includes(filtrePlongeur)
-          );
-          if (plongeursCorrespondants.length === 0) return;  // Palanquée n'a aucun plongeur correspondant
-          
-          plongeursCorrespondants.forEach(p => nomsPlongeursMatches.add(p.nom));
-          plongeursAafficher = plongeursCorrespondants;  // N'afficher que les plongeurs correspondants
+        const headerPlongeur = document.getElementById('header-plongeur');
+        const headerPlongeurNom = document.getElementById('header-plongeur-nom');
+        if (filtrePlongeur && nomsPlongeursMatches.size > 0) {
+          const nomsArray = Array.from(nomsPlongeursMatches).sort();
+          headerPlongeurNom.textContent = nomsArray.join(', ');
+          headerPlongeur.style.display = 'block';
+        } else {
+          headerPlongeur.style.display = 'none';
         }
         
-        bilanData.push({
-          date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
-          typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
-          horaire: palanquee.parametres?.horaire || '', 
-          plongeurs: plongeursAafficher,  // ✅ Utiliser la liste filtrée
-          profPrevue: palanquee.parametres?.profondeurPrevue || '',
-          dureePrevue: palanquee.parametres?.dureePrevue || '',
-          profRealisee: palanquee.parametres?.profondeurRealisee || '',
-          dureeRealisee: palanquee.parametres?.dureeRealisee || '',
-          paliers: palanquee.parametres?.paliers || ''
-        });
-      });
-    });
-    if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
-    
-    const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
-    bilanData.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      if (a.lieu !== b.lieu) return a.lieu.localeCompare(b.lieu, 'fr', { sensitivity: 'base' });
-      const indexA = ordreSession.indexOf(a.typeSession);
-      const indexB = ordreSession.indexOf(b.typeSession);
-      const posA = indexA === -1 ? 999 : indexA;
-      const posB = indexB === -1 ? 999 : indexB;
-      if (posA !== posB) return posA - posB;
-      return a.numeroPalanquee - b.numeroPalanquee;
-    });
-    
-    const headerPlongeur = document.getElementById('header-plongeur');
-    const headerPlongeurNom = document.getElementById('header-plongeur-nom');
-    if (filtrePlongeur && nomsPlongeursMatches.size > 0) {
-      const nomsArray = Array.from(nomsPlongeursMatches).sort();
-      headerPlongeurNom.textContent = nomsArray.join(', ');
-      headerPlongeur.style.display = 'block';
-    } else {
-      headerPlongeur.style.display = 'none';
+        afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, document.getElementById('filtre-plongeur').value);
+        afficherTableau();
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('no-data').style.display = 'none';
+      } catch (error) {
+        afficherErreur('Erreur: ' + error.message);
+      } finally {
+        afficherLoading(false);
+      }
     }
-    
-    afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, document.getElementById('filtre-plongeur').value);
-    afficherTableau();
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('no-data').style.display = 'none';
-  } catch (error) {
-    afficherErreur('Erreur: ' + error.message);
-  } finally {
-    afficherLoading(false);
-  }
-}
 
     function afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, filtrePlongeur) {
       const statsContainer = document.getElementById('stats-container');
@@ -747,108 +747,109 @@
       }
     }
 
-function afficherTableau() {
-  const tableBody = document.getElementById('bilan-tbody');
-  const table = tableBody.parentElement;
-  
-  while (table.querySelectorAll('tbody').length > 0) {
-    table.querySelectorAll('tbody').forEach(tb => tb.remove());
-  }
-  
-  const sessions = {};
-  bilanData.forEach((row) => {
-    const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
-    if (!sessions[sessionKey]) {
-      sessions[sessionKey] = [];
-    }
-    sessions[sessionKey].push(row);
-  });
-  
-  const filtrePlongeurActif = document.getElementById('filtre-plongeur').value.toLowerCase().trim();
-  
-  Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
-    sessionRows.forEach((row) => {
-      const palanqueeTbody = document.createElement('tbody');
-      palanqueeTbody.classList.add('palanquee-group');
+    function afficherTableau() {
+      const tableBody = document.getElementById('bilan-tbody');
+      const table = tableBody.parentElement;
       
-      row.plongeurs.forEach((plongeur, plongeurIdx) => {
-        const tr = document.createElement('tr');
-        tr.classList.add('palanquee-row');
-        
-        const nomPlongeur = plongeur.nom || '';
-        const shouldHighlight = filtrePlongeurActif && nomPlongeur.toLowerCase().includes(filtrePlongeurActif);
-        
-        tr.innerHTML = `
-          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
-          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
-          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
-          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-          <td class="${shouldHighlight ? 'highlight-plongeur' : ''}">${nomPlongeur}</td>
-          <td>${plongeur.pre || ''}</td>
-          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
-          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
-          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
-          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
-        `;
-        palanqueeTbody.appendChild(tr);
+      while (table.querySelectorAll('tbody').length > 0) {
+        table.querySelectorAll('tbody').forEach(tb => tb.remove());
+      }
+      
+      const sessions = {};
+      bilanData.forEach((row) => {
+        const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
+        if (!sessions[sessionKey]) {
+          sessions[sessionKey] = [];
+        }
+        sessions[sessionKey].push(row);
       });
       
-      const trTotal = document.createElement('tr');
-      trTotal.className = 'total-palanquee';
-      trTotal.style.background = '#e8f4f8';
-      trTotal.style.fontWeight = 'bold';
-      trTotal.style.fontSize = '12px';
-      trTotal.innerHTML = `
-        <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
-        <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
-      `;
-      palanqueeTbody.appendChild(trTotal);
+      const filtrePlongeurActif = document.getElementById('filtre-plongeur').value.toLowerCase().trim();
       
-      table.appendChild(palanqueeTbody);
-    });
-    
-    const sessionEndTbody = document.createElement('tbody');
-    sessionEndTbody.classList.add('session-summary');
-    
-    const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
-    const trTotalSession = document.createElement('tr');
-    trTotalSession.classList.add('session-end');
-    trTotalSession.style.background = '#d4edda';
-    trTotalSession.style.fontWeight = 'bold';
-    trTotalSession.innerHTML = `
-      <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
-      <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
-    `;
-    sessionEndTbody.appendChild(trTotalSession);
-    
-    if (sessionIndex < Object.keys(sessions).length - 1) {
-      const separateur = document.createElement('tr');
-      separateur.classList.add('session-separator');
-      separateur.style.background = '#FF6B00';
-      separateur.style.height = '10px';
-      separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-      sessionEndTbody.appendChild(separateur);
+      Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
+        sessionRows.forEach((row) => {
+          const palanqueeTbody = document.createElement('tbody');
+          palanqueeTbody.classList.add('palanquee-group');
+          
+          row.plongeurs.forEach((plongeur, plongeurIdx) => {
+            const tr = document.createElement('tr');
+            tr.classList.add('palanquee-row');
+            
+            const nomPlongeur = plongeur.nom || '';
+            const shouldHighlight = filtrePlongeurActif && nomPlongeur.toLowerCase().includes(filtrePlongeurActif);
+            
+            tr.innerHTML = `
+              <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+              <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+              <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+              <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+              <td class="${shouldHighlight ? 'highlight-plongeur' : ''}">${nomPlongeur}</td>
+              <td>${plongeur.pre || ''}</td>
+              <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+              <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+              <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+              <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+            `;
+            palanqueeTbody.appendChild(tr);
+          });
+          
+          const trTotal = document.createElement('tr');
+          trTotal.className = 'total-palanquee';
+          trTotal.style.background = '#e8f4f8';
+          trTotal.style.fontWeight = 'bold';
+          trTotal.style.fontSize = '12px';
+          trTotal.innerHTML = `
+            <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+            <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+          `;
+          palanqueeTbody.appendChild(trTotal);
+          
+          table.appendChild(palanqueeTbody);
+        });
+        
+        const sessionEndTbody = document.createElement('tbody');
+        sessionEndTbody.classList.add('session-summary');
+        
+        const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
+        const trTotalSession = document.createElement('tr');
+        trTotalSession.classList.add('session-end');
+        trTotalSession.style.background = '#d4edda';
+        trTotalSession.style.fontWeight = 'bold';
+        trTotalSession.innerHTML = `
+          <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+          <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
+        `;
+        sessionEndTbody.appendChild(trTotalSession);
+        
+        if (sessionIndex < Object.keys(sessions).length - 1) {
+          const separateur = document.createElement('tr');
+          separateur.classList.add('session-separator');
+          separateur.style.background = '#FF6B00';
+          separateur.style.height = '10px';
+          separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+          sessionEndTbody.appendChild(separateur);
+        }
+        
+        table.appendChild(sessionEndTbody);
+      });
+      
+      const finalSeparatorTbody = document.createElement('tbody');
+      finalSeparatorTbody.classList.add('final-separator');
+      
+      const separateurFinal = document.createElement('tr');
+      separateurFinal.classList.add('session-separator');
+      separateurFinal.style.background = '#FF6B00';
+      separateurFinal.style.height = '10px';
+      separateurFinal.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+      finalSeparatorTbody.appendChild(separateurFinal);
+      
+      table.appendChild(finalSeparatorTbody);
     }
-    
-    table.appendChild(sessionEndTbody);
-  });
-  
-  const finalSeparatorTbody = document.createElement('tbody');
-  finalSeparatorTbody.classList.add('final-separator');
-  
-  const separateurFinal = document.createElement('tr');
-  separateurFinal.classList.add('session-separator');
-  separateurFinal.style.background = '#FF6B00';
-  separateurFinal.style.height = '10px';
-  separateurFinal.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
-  finalSeparatorTbody.appendChild(separateurFinal);
-  
-  table.appendChild(finalSeparatorTbody);
-}
+
     function exporterCSV() {
       let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
       let sessionPrecedente = null;
@@ -1059,368 +1060,358 @@ function afficherTableau() {
     }
 
     function exporterPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('l', 'mm', 'a4');  // 'l' = landscape (paysage)
-  
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 6;
-  let yPosition = margin;
-  
-  const filtrePlongeur = document.getElementById('filtre-plongeur').value;
-  let nomCompletPlongeur = '';
-  if (filtrePlongeur && filtrePlongeur.trim()) {
-    const nomsPlongeurs = new Set();
-    bilanData.forEach(row => {
-      row.plongeurs.forEach(p => {
-        if ((p.nom || '').toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
-          nomsPlongeurs.add(p.nom);
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4');
+      
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 6;
+      let yPosition = margin;
+      
+      const filtrePlongeur = document.getElementById('filtre-plongeur').value;
+      let nomCompletPlongeur = '';
+      if (filtrePlongeur && filtrePlongeur.trim()) {
+        const nomsPlongeurs = new Set();
+        bilanData.forEach(row => {
+          row.plongeurs.forEach(p => {
+            if ((p.nom || '').toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+              nomsPlongeurs.add(p.nom);
+            }
+          });
+        });
+        if (nomsPlongeurs.size > 0) {
+          nomCompletPlongeur = Array.from(nomsPlongeurs).sort().join(', ');
+        }
+      }
+      
+      function addHeader(isFirstPage) {
+        doc.setFillColor(74, 144, 226);
+        doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bilan Global des Palanquées - JSAS', pageWidth / 2, 12, { align: 'center' });
+        
+        if (nomCompletPlongeur) {
+          doc.setFillColor(255, 215, 0);
+          doc.roundedRect(pageWidth / 2 - 60, 16, 120, 9, 2, 2, 'F');
+          
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(nomCompletPlongeur, pageWidth / 2, 22, { align: 'center' });
+          doc.setTextColor(0, 0, 0);
+          return 32;
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        return 26;
+      }
+      
+      yPosition = addHeader(true);
+      
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      };
+      
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 14, 2, 2, 'FD');
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(133, 100, 4);
+      doc.text('Criteres de recherche:', margin + 3, yPosition + 6);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      let criteres = [];
+      if (dateDebut && dateFin) {
+        criteres.push(`Periode: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      } else {
+        criteres.push('Periode: Toutes les sessions');
+      }
+      if (filtreDP) criteres.push(`DP: ${filtreDP}`);
+      if (filtreLieu) criteres.push(`Lieu: ${filtreLieu}`);
+      if (nomCompletPlongeur) criteres.push(`Plongeur: ${nomCompletPlongeur}`);
+      
+      doc.text(criteres.join(' | '), margin + 3, yPosition + 11);
+      yPosition += 17;
+      
+      const totalPalanquees = bilanData.length;
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      doc.setDrawColor(74, 144, 226);
+      doc.setLineWidth(1);
+      const statWidth = (pageWidth - 2 * margin - 6) / 3;
+      
+      [
+        { label: 'Sessions', value: totalSessions },
+        { label: 'Palanquees', value: totalPalanquees },
+        { label: 'Plongeurs', value: totalPlongeurs }
+      ].forEach((stat, index) => {
+        const x = margin + index * (statWidth + 3);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(x, yPosition, statWidth, 16, 1, 1, 'FD');
+        
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(74, 85, 104);
+        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(stat.label, x + statWidth / 2, yPosition + 13, { align: 'center' });
+      });
+      
+      yPosition += 19;
+      doc.setTextColor(0, 0, 0);
+      
+      const niveaux = {};
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
+      if (niveauxTries.length > 0) {
+        yPosition += 15;
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 51, 102);
+        doc.text('Répartition par niveau', margin, yPosition);
+        yPosition += 7;
+        
+        const niveauxData = niveauxTries.map(([niveau, count]) => [
+          niveau,
+          count.toString(),
+          `${((count / totalPlongeurs) * 100).toFixed(1)}%`
+        ]);
+        
+        niveauxData.push(['TOTAL', totalPlongeurs.toString(), '100%']);
+        
+        doc.autoTable({
+          startY: yPosition,
+          head: [['Niveau', 'Nombre de plongées', 'Pourcentage']],
+          body: niveauxData,
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3
+          },
+          headStyles: {
+            fillColor: [0, 51, 102],
+            textColor: 255,
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 50, halign: 'right' },
+            2: { cellWidth: 50, halign: 'right' }
+          },
+          margin: { left: margin, right: margin },
+          didParseCell: function(data) {
+            if (data.section === 'body' && data.row.index === niveauxData.length - 1) {
+              data.cell.styles.fillColor = [227, 242, 253];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+      }
+      
+      doc.addPage();
+      yPosition = 34;
+      
+      const tableData = [];
+      let sessionPrecedente = null;
+      
+      bilanData.forEach((row, index) => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
+        
+        if (changementSession) {
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          
+          tableData.push([
+            { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } },
+            { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } }
+          ]);
+          
+          tableData.push([
+            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
+          ]);
+        }
+        
+        sessionPrecedente = sessionActuelle;
+        
+        row.plongeurs.forEach((plongeur, plongeurIdx) => {
+          tableData.push([
+            plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : '',
+            plongeurIdx === 0 ? row.dp : '',
+            plongeurIdx === 0 ? row.lieu : '',
+            plongeurIdx === 0 ? row.typeSession : '',
+            plongeurIdx === 0 ? row.numeroPalanquee : '',
+            plongeur.nom,
+            plongeur.pre || '',
+            plongeur.niveau,
+            plongeurIdx === 0 ? row.horaire : '',
+            plongeurIdx === 0 ? row.profPrevue : '',
+            plongeurIdx === 0 ? row.dureePrevue : '',
+            plongeurIdx === 0 ? row.profRealisee : '',
+            plongeurIdx === 0 ? row.dureeRealisee : '',
+            plongeurIdx === 0 ? row.paliers : ''
+          ]);
+        });
+        
+        tableData.push([
+          { content: 'Total palanquée:', colSpan: 2, styles: { halign: 'right', fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } },
+          { content: `${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } }
+        ]);
+      });
+      
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        
+        tableData.push([
+          { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
+          { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
+        ]);
+        
+        tableData.push([
+          { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
+        ]);
+      }
+      
+      doc.autoTable({
+        startY: yPosition,
+        head: [[
+          { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [74, 85, 104],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 18 },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 37 },
+          3: { cellWidth: 16 },
+          4: { cellWidth: 12 },
+          5: { cellWidth: 42 },
+          6: { cellWidth: 17 },
+          7: { cellWidth: 12 },
+          8: { cellWidth: 14 },
+          9: { cellWidth: 14 },
+          10: { cellWidth: 14 },
+          11: { cellWidth: 14 },
+          12: { cellWidth: 14 },
+          13: { cellWidth: 30 }
+        },
+        margin: { left: margin, right: margin, top: 34 },
+        showHead: 'everyPage',
+        rowPageBreak: 'avoid',
+        didDrawPage: function(data) {
+          addHeader(data.pageNumber === 1);
+          
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 5,
+            { align: 'center' }
+          );
+        },
+        willDrawCell: function(data) {
+          if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+            let cellText = '';
+            
+            if (Array.isArray(data.cell.text)) {
+              cellText = data.cell.text[0] || '';
+            } else {
+              cellText = data.cell.text || '';
+            }
+            
+            if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+              data.cell.styles.fillColor = [255, 255, 0];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+          
+          if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+            data.cell.styles.fillColor = [249, 249, 249];
+          }
+          
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              data.row.minCellHeight = 8;
+            }
+          }
+        },
+        didParseCell: function(data) {
+          if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+            if (data.cell.raw.content === 'TOTAL SESSION:') {
+              data.row.pageBreak = 'avoid';
+            }
+          }
         }
       });
-    });
-    if (nomsPlongeurs.size > 0) {
-      nomCompletPlongeur = Array.from(nomsPlongeurs).sort().join(', ');
-    }
-  }
-  
-  function addHeader(isFirstPage) {
-    doc.setFillColor(74, 144, 226);
-    doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bilan Global des Palanquées - JSAS', pageWidth / 2, 12, { align: 'center' });
-    
-    if (nomCompletPlongeur) {
-      doc.setFillColor(255, 215, 0);
-      doc.roundedRect(pageWidth / 2 - 60, 16, 120, 9, 2, 2, 'F');
       
-      doc.setFontSize(13);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text(nomCompletPlongeur, pageWidth / 2, 22, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
-      return 32;
-    }
-    
-    doc.setTextColor(0, 0, 0);
-    return 26;
-  }
-  
-  yPosition = addHeader(true);
-  
-  const dateDebut = document.getElementById('date-debut').value;
-  const dateFin = document.getElementById('date-fin').value;
-  const filtreDP = document.getElementById('filtre-dp').value;
-  const filtreLieu = document.getElementById('filtre-lieu').value;
-  
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}/${y}`;
-  };
-  
-  // Critères de recherche
-  doc.setFillColor(255, 243, 205);
-  doc.setDrawColor(255, 193, 7);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 14, 2, 2, 'FD');
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(133, 100, 4);
-  doc.text('Criteres de recherche:', margin + 3, yPosition + 6);
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  let criteres = [];
-  if (dateDebut && dateFin) {
-    criteres.push(`Periode: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
-  } else {
-    criteres.push('Periode: Toutes les sessions');
-  }
-  if (filtreDP) criteres.push(`DP: ${filtreDP}`);
-  if (filtreLieu) criteres.push(`Lieu: ${filtreLieu}`);
-  if (nomCompletPlongeur) criteres.push(`Plongeur: ${nomCompletPlongeur}`);
-  
-  doc.text(criteres.join(' | '), margin + 3, yPosition + 11);
-  yPosition += 17;
-  
-  // Statistiques globales
-  const totalPalanquees = bilanData.length;
-  const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
-  const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
-  
-  doc.setDrawColor(74, 144, 226);
-  doc.setLineWidth(1);
-  const statWidth = (pageWidth - 2 * margin - 6) / 3;
-  
-  [
-    { label: 'Sessions', value: totalSessions },
-    { label: 'Palanquees', value: totalPalanquees },
-    { label: 'Plongeurs', value: totalPlongeurs }
-  ].forEach((stat, index) => {
-    const x = margin + index * (statWidth + 3);
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(x, yPosition, statWidth, 16, 1, 1, 'FD');
-    
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(74, 85, 104);
-    doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(stat.label, x + statWidth / 2, yPosition + 13, { align: 'center' });
-  });
-  
-  yPosition += 19;
-  doc.setTextColor(0, 0, 0);
-  
-  // Statistiques par niveau
-  const niveaux = {};
-  bilanData.forEach(p => {
-    p.plongeurs.forEach(plongeur => {
-      niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
-    });
-  });
-  
-  const niveauxTries = Object.entries(niveaux).sort((a, b) => {
-    const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
-    const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
-    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-  });
-  
-  if (niveauxTries.length > 0) {
-	yPosition += 15;  // Ajouter 15mm d'espace avant le titre
-  
-	doc.setFontSize(12);
-	doc.setFont('helvetica', 'bold');
-	doc.setTextColor(0, 51, 102);
-	doc.text('Répartition par niveau', margin, yPosition);
-	yPosition += 7;
-    
-    const niveauxData = niveauxTries.map(([niveau, count]) => [
-      niveau,
-      count.toString(),
-      `${((count / totalPlongeurs) * 100).toFixed(1)}%`
-    ]);
-    
-    niveauxData.push(['TOTAL', totalPlongeurs.toString(), '100%']);
-    
-    doc.autoTable({
-      startY: yPosition,
-      head: [['Niveau', 'Nombre de plongées', 'Pourcentage']],
-      body: niveauxData,
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 3
-      },
-      headStyles: {
-        fillColor: [0, 51, 102],
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center'
-      },
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 50, halign: 'right' },
-        2: { cellWidth: 50, halign: 'right' }
-      },
-      margin: { left: margin, right: margin },
-      didParseCell: function(data) {
-        if (data.section === 'body' && data.row.index === niveauxData.length - 1) {
-          data.cell.styles.fillColor = [227, 242, 253];
-          data.cell.styles.fontStyle = 'bold';
-        }
+      const dateStr = new Date().toISOString().split('T')[0];
+      let filename = 'Bilan_Palanquees';
+      if (nomCompletPlongeur) {
+        const nomFichier = nomCompletPlongeur.replace(/[^a-zA-Z0-9]/g, '_');
+        filename = `Bilan_${nomFichier}`;
       }
-    });
-  }
-  
-  // Forcer une nouvelle page pour le tableau (comme pour l'impression)
-  doc.addPage();
-  yPosition = 34;  // Position après le header sur la nouvelle page
-  
-  // Tableau principal des palanquées
-  const tableData = [];
-  let sessionPrecedente = null;
-  
-  bilanData.forEach((row, index) => {
-    const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
-    const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
-    
-    if (changementSession) {
-      const plongeursDansSession = bilanData.filter(r => 
-        `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
-      ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-      
-      tableData.push([
-        { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } },
-        { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } }
-      ]);
-      
-      tableData.push([
-        { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
-      ]);
+      doc.save(`${filename}_${dateStr}.pdf`);
     }
-    
-    sessionPrecedente = sessionActuelle;
-    
-    row.plongeurs.forEach((plongeur, plongeurIdx) => {
-      tableData.push([
-        plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : '',
-        plongeurIdx === 0 ? row.dp : '',
-        plongeurIdx === 0 ? row.lieu : '',
-        plongeurIdx === 0 ? row.typeSession : '',
-        plongeurIdx === 0 ? row.numeroPalanquee : '',
-        plongeur.nom,
-        plongeur.pre || '',
-        plongeur.niveau,
-        plongeurIdx === 0 ? row.horaire : '',
-        plongeurIdx === 0 ? row.profPrevue : '',
-        plongeurIdx === 0 ? row.dureePrevue : '',
-        plongeurIdx === 0 ? row.profRealisee : '',
-        plongeurIdx === 0 ? row.dureeRealisee : '',
-        plongeurIdx === 0 ? row.paliers : ''
-      ]);
-    });
-    
-    tableData.push([
-      { content: 'Total palanquée:', colSpan: 2, styles: { halign: 'right', fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } },
-      { content: `${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } }
-    ]);
-  });
-  
-  if (bilanData.length > 0) {
-    const dernierIndex = bilanData.length - 1;
-    const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
-    const plongeursDansSession = bilanData.filter(r => 
-      `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
-    ).reduce((sum, r) => sum + r.plongeurs.length, 0);
-    
-    tableData.push([
-      { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
-      { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
-    ]);
-    
-    // Séparateur orange final
-    tableData.push([
-      { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
-    ]);
-  }
-  
-  doc.autoTable({
-    startY: yPosition,
-    head: [[
-      { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
-      { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
-      { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
-      { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
-      { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
-      { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
-    ]],
-    body: tableData,
-    theme: 'grid',
-    styles: {
-      fontSize: 8,
-      cellPadding: 2,
-      lineColor: [200, 200, 200],
-      lineWidth: 0.1
-    },
-    headStyles: {
-      fillColor: [74, 85, 104],
-      textColor: 255,
-      fontStyle: 'bold',
-      halign: 'center'
-    },
-    columnStyles: {
-      0: { cellWidth: 18 },   // Date
-      1: { cellWidth: 26 },   // DP
-      2: { cellWidth: 37 },   // Lieu
-      3: { cellWidth: 16 },   // Session
-      4: { cellWidth: 12 },   // Palanquée
-      5: { cellWidth: 42 },   // Plongeur (-10)
-      6: { cellWidth: 17 },   // Prérogatives
-      7: { cellWidth: 12 },   // Niveau
-      8: { cellWidth: 14 },   // Horaire
-      9: { cellWidth: 14 },   // Prof. Prévue
-      10: { cellWidth: 14 },  // Durée Prévue
-      11: { cellWidth: 14 },  // Prof. Réalisée
-      12: { cellWidth: 14 },  // Durée Réalisée
-      13: { cellWidth: 30 }   // Paliers (+10)
-    },
-    margin: { left: margin, right: margin, top: 34 },
-    showHead: 'everyPage',
-    rowPageBreak: 'avoid',
-    didDrawPage: function(data) {
-      addHeader(data.pageNumber === 1);
-      
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
-        pageWidth / 2,
-        pageHeight - 5,
-        { align: 'center' }
-      );
-    },
-willDrawCell: function(data) {
-  // Surligner UNIQUEMENT le nom du plongeur recherché
-  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
-    // Colonne 5 = Plongeur
-    let cellText = '';
-    
-    // Récupérer le texte selon le format
-    if (Array.isArray(data.cell.text)) {
-      cellText = data.cell.text[0] || '';
-    } else {
-      cellText = data.cell.text || '';
-    }
-    
-    // Vérifier si c'est le plongeur recherché (et pas une ligne TOTAL)
-    if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
-      data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
-      data.cell.styles.fontStyle = 'bold';
-    }
-  }
-  
-  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-    data.cell.styles.fillColor = [249, 249, 249];
-  }
-  
-  if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-    if (data.cell.raw.content === 'TOTAL SESSION:') {
-      data.row.minCellHeight = 8;
-    }
-  }
-},
-    didParseCell: function(data) {
-      if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-        if (data.cell.raw.content === 'TOTAL SESSION:') {
-          data.row.pageBreak = 'avoid';
-        }
-      }
-    }
-  });
-  
-  const dateStr = new Date().toISOString().split('T')[0];
-  let filename = 'Bilan_Palanquees';
-  if (nomCompletPlongeur) {
-    const nomFichier = nomCompletPlongeur.replace(/[^a-zA-Z0-9]/g, '_');
-    filename = `Bilan_${nomFichier}`;
-  }
-  doc.save(`${filename}_${dateStr}.pdf`);
-}
     
     function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
     function afficherAucuneDonnee() {
@@ -1455,6 +1446,7 @@ willDrawCell: function(data) {
         afficherErreur('Erreur: ' + error.message);
       }
     });
-  </script>
+</script>
+  
 </body>
 </html>
