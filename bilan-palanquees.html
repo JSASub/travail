@@ -572,6 +572,9 @@
     }
 
     async function chargerBilan() {
+	  // ✅ VIDER les anciennes données
+	  bilanData = [];
+	  document.getElementById('results').style.display = 'none';
       const dateDebut = document.getElementById('date-debut').value;
       const dateFin = document.getElementById('date-fin').value;
       const filtreDP = document.getElementById('filtre-dp').value;
