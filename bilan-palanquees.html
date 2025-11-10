@@ -1378,34 +1378,38 @@ function afficherTableau() {
           );
         },
 willDrawCell: function(data) {
-  // ✅ D'ABORD les lignes alternées grises
-  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-    data.cell.styles.fillColor = [249, 249, 249];
-  }
+  // ✅ Variable pour savoir si on doit surligner
+  let shouldHighlight = false;
   
-  // ✅ ENSUITE le surlignage jaune (qui va écraser le gris si nécessaire)
-  if (data.section === 'body' && data.column.index === 5) {
-    const recherche = filtrePlongeur ? filtrePlongeur.toLowerCase().trim() : '';
+  // Vérifier si c'est une cellule de plongeur à surligner
+  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+    let cellText = '';
+    if (Array.isArray(data.cell.text)) {
+      cellText = (data.cell.text[0] || '').toString();
+    } else if (data.cell.text) {
+      cellText = data.cell.text.toString();
+    }
     
-    if (recherche) {
-      let cellText = '';
-      if (Array.isArray(data.cell.text)) {
-        cellText = (data.cell.text[0] || '').toString();
-      } else if (data.cell.text) {
-        cellText = data.cell.text.toString();
-      }
-      
-      const match = cellText.toLowerCase().includes(recherche);
-      const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
-      
-      if (cellText && !isTotalRow && match) {
-        data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
-        data.cell.styles.fontStyle = 'bold';
-      }
+    const recherche = filtrePlongeur.toLowerCase().trim();
+    const match = cellText.toLowerCase().includes(recherche);
+    const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
+    
+    if (cellText && !isTotalRow && match) {
+      shouldHighlight = true;
     }
   }
   
-  // ✅ Hauteur des totaux
+  // ✅ Appliquer le surlignage jaune SI nécessaire
+  if (shouldHighlight) {
+    data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
+    data.cell.styles.fontStyle = 'bold';
+  }
+  // ✅ SINON appliquer les lignes alternées grises
+  else if (data.section === 'body' && data.row.index % 2 === 0) {
+    data.cell.styles.fillColor = [249, 249, 249];
+  }
+  
+  // Hauteur des totaux
   if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
     if (data.cell.raw.content === 'TOTAL SESSION:') {
       data.row.minCellHeight = 8;
