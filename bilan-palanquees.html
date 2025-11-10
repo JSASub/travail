@@ -604,24 +604,21 @@
             if (!palanquee || !palanquee.plongeurs) return;
             
             const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
-            
-            let plongeursAafficher = plongeursTries;
-            
-            if (filtrePlongeur) {
-              const plongeursCorrespondants = plongeursTries.filter(p => 
-                (p.nom || '').toLowerCase().includes(filtrePlongeur)
-              );
-              if (plongeursCorrespondants.length === 0) return;
-              
-              plongeursCorrespondants.forEach(p => nomsPlongeursMatches.add(p.nom));
-              plongeursAafficher = plongeursCorrespondants;
-            }
+
+if (filtrePlongeur) {
+  const plongeursCorrespondants = plongeursTries.filter(p => 
+    (p.nom || '').toLowerCase().includes(filtrePlongeur)
+  );
+  if (plongeursCorrespondants.length === 0) return;  // Skip cette palanquée si aucun plongeur correspondant
+  
+  plongeursCorrespondants.forEach(p => nomsPlongeursMatches.add(p.nom));
+}
             
             bilanData.push({
-              date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
-              typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
-              horaire: palanquee.parametres?.horaire || '', 
-              plongeurs: plongeursAafficher,
+			  date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
+			  typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
+			  horaire: palanquee.parametres?.horaire || '', 
+			  plongeurs: plongeursTries,  // ✅ TOUS les plongeurs de la palanquée
               profPrevue: palanquee.parametres?.profondeurPrevue || '',
               dureePrevue: palanquee.parametres?.dureePrevue || '',
               profRealisee: palanquee.parametres?.profondeurRealisee || '',
