@@ -1362,16 +1362,26 @@
       );
     },
     willDrawCell: function(data) {
-      if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-        data.cell.styles.fillColor = [249, 249, 249];
-      }
-      
-      if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-        if (data.cell.raw.content === 'TOTAL SESSION:') {
-          data.row.minCellHeight = 8;
-        }
-      }
-    },
+  // Surligner UNIQUEMENT le nom du plongeur recherché
+  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+    // Colonne 5 = Plongeur
+    const cellText = data.cell.text[0] || '';  // Récupérer le texte de la cellule
+    if (cellText && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+      data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
+      data.cell.styles.fontStyle = 'bold';
+    }
+  }
+  
+  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+    data.cell.styles.fillColor = [249, 249, 249];
+  }
+  
+  if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+    if (data.cell.raw.content === 'TOTAL SESSION:') {
+      data.row.minCellHeight = 8;
+    }
+  }
+},
     didParseCell: function(data) {
       if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
         if (data.cell.raw.content === 'TOTAL SESSION:') {
