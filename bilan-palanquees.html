@@ -1155,6 +1155,65 @@
       yPosition += 19;
       doc.setTextColor(0, 0, 0);
       
+// Tableau répartition par niveau
+const niveaux = {};
+bilanData.forEach(p => {
+  p.plongeurs.forEach(plongeur => {
+    niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+  });
+});
+
+const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+  const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+  const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+  return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+});
+
+doc.setFontSize(12);
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(0, 51, 102);
+doc.text('Repartition par niveau', margin, yPosition + 5);
+
+const niveauxData = niveauxTries.map(([niveau, count]) => [
+  niveau,
+  count.toString(),
+  `${((count / totalPlongeurs) * 100).toFixed(1)}%`
+]);
+
+niveauxData.push(['TOTAL', totalPlongeurs.toString(), '100%']);
+
+doc.autoTable({
+  startY: yPosition + 8,
+  head: [['Niveau', 'Nombre de plongees', 'Pourcentage']],
+  body: niveauxData,
+  theme: 'grid',
+  styles: {
+    fontSize: 9,
+    cellPadding: 3
+  },
+  headStyles: {
+    fillColor: [0, 51, 102],
+    textColor: 255,
+    fontStyle: 'bold'
+  },
+  columnStyles: {
+    0: { cellWidth: 40 },
+    1: { cellWidth: 50, halign: 'right' },
+    2: { cellWidth: 40, halign: 'right' }
+  },
+  margin: { left: margin, right: margin },
+  didParseCell: function(data) {
+    if (data.section === 'body' && data.row.index === niveauxData.length - 1) {
+      data.cell.styles.fillColor = [227, 242, 253];
+      data.cell.styles.fontStyle = 'bold';
+    }
+  }
+});
+
+yPosition = doc.lastAutoTable.finalY + 10;
+doc.setTextColor(0, 0, 0);	  
+	  
       const tableData = [];
       let sessionPrecedente = null;
       
