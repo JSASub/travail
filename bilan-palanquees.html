@@ -303,6 +303,14 @@
         margin: 0;
       }
       
+	  /* Surligner le nom du plongeur recherché */
+	  td.highlight-plongeur {
+		background: #ffff00 !important;  /* Jaune fluo */
+		font-weight: bold !important;
+		print-color-adjust: exact;
+		-webkit-print-color-adjust: exact;
+	  }
+	  
       thead { 
         display: table-header-group;
       }
@@ -761,7 +769,7 @@
               <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
               <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
               <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-              <td>${plongeur.nom}</td>
+              <td class="${document.getElementById('filtre-plongeur').value.trim() ? 'highlight-plongeur' : ''}">${plongeur.nom}</td>
               <td>${plongeur.pre || ''}</td>
               <td><span class="niveau-badge">${plongeur.niveau}</span></td>
               <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
