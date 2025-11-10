@@ -303,6 +303,12 @@
         margin: 0;
       }
       
+	  /* Surligner le nom du plongeur recherché - ÉCRAN */
+	  td.highlight-plongeur {
+		background: #ffff00 !important;  /* Jaune fluo */
+		font-weight: bold !important;
+	  }
+
 	  /* Surligner le nom du plongeur recherché */
 	  td.highlight-plongeur {
 		background: #ffff00 !important;  /* Jaune fluo */
@@ -1364,12 +1370,21 @@ function afficherTableau() {
         { align: 'center' }
       );
     },
-    willDrawCell: function(data) {
+willDrawCell: function(data) {
   // Surligner UNIQUEMENT le nom du plongeur recherché
   if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
     // Colonne 5 = Plongeur
-    const cellText = data.cell.text[0] || '';  // Récupérer le texte de la cellule
-    if (cellText && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+    let cellText = '';
+    
+    // Récupérer le texte selon le format
+    if (Array.isArray(data.cell.text)) {
+      cellText = data.cell.text[0] || '';
+    } else {
+      cellText = data.cell.text || '';
+    }
+    
+    // Vérifier si c'est le plongeur recherché (et pas une ligne TOTAL)
+    if (cellText && !data.cell.raw && cellText.toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
       data.cell.styles.fillColor = [255, 255, 0];  // Jaune fluo
       data.cell.styles.fontStyle = 'bold';
     }
