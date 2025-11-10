@@ -1222,8 +1222,12 @@
         ]);
       }
       
-      doc.autoTable({
-        startY: yPosition,
+      // Forcer une nouvelle page pour le tableau (comme pour l'impression)
+	  doc.addPage();
+	  yPosition = 34;  // Position après le header sur la nouvelle page
+
+	  doc.autoTable({
+	    startY: yPosition,
         head: [[
           { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
           { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
