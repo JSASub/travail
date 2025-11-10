@@ -769,7 +769,7 @@
               <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
               <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
               <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
-              <td class="${document.getElementById('filtre-plongeur').value.trim() ? 'highlight-plongeur' : ''}">${plongeur.nom}</td>
+              <td class="${document.getElementById('filtre-plongeur').value.trim() && (plongeur.nom || '').toLowerCase().includes(document.getElementById('filtre-plongeur').value.toLowerCase().trim()) ? 'highlight-plongeur' : ''}">${plongeur.nom}</td>
               <td>${plongeur.pre || ''}</td>
               <td><span class="niveau-badge">${plongeur.niveau}</span></td>
               <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
