@@ -1172,11 +1172,13 @@
   });
   
   if (niveauxTries.length > 0) {
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 51, 102);
-    doc.text('Répartition par niveau', margin, yPosition);
-    yPosition += 7;
+	yPosition += 15;  // Ajouter 15mm d'espace avant le titre
+  
+	doc.setFontSize(12);
+	doc.setFont('helvetica', 'bold');
+	doc.setTextColor(0, 51, 102);
+	doc.text('Répartition par niveau', margin, yPosition);
+	yPosition += 7;
     
     const niveauxData = niveauxTries.map(([niveau, count]) => [
       niveau,
