@@ -1377,48 +1377,48 @@ function afficherTableau() {
             { align: 'center' }
           );
         },
-willDrawCell: function(data) {
-  // Lignes alternées grises SEULEMENT si pas déjà coloré
-  if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
-    data.cell.styles.fillColor = [249, 249, 249];
-  }
+		willDrawCell: function(data) {
+			// Lignes alternées grises SEULEMENT si pas déjà coloré
+			if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+				data.cell.styles.fillColor = [249, 249, 249];
+			}
   
-  // Hauteur des totaux
-  if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-    if (data.cell.raw.content === 'TOTAL SESSION:') {
-      data.row.minCellHeight = 8;
-    }
-  }
-},
-        didParseCell: function(data) {
-  // Surligner le plongeur recherché
-  if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
-    let cellText = '';
-    if (Array.isArray(data.cell.text)) {
-      cellText = (data.cell.text[0] || '').toString();
-    } else if (data.cell.text) {
-      cellText = data.cell.text.toString();
-    }
+			// Hauteur des totaux
+			if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+				if (data.cell.raw.content === 'TOTAL SESSION:') {
+					data.row.minCellHeight = 8;
+				}
+			}
+		},
+			didParseCell: function(data) {
+				// Surligner le plongeur recherché
+				if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+					let cellText = '';
+					if (Array.isArray(data.cell.text)) {
+						cellText = (data.cell.text[0] || '').toString();
+				} else if (data.cell.text) {
+					cellText = data.cell.text.toString();
+				}
     
-    const recherche = filtrePlongeur.toLowerCase().trim();
-    const match = cellText.toLowerCase().includes(recherche);
-    const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
+				const recherche = filtrePlongeur.toLowerCase().trim();
+				const match = cellText.toLowerCase().includes(recherche);
+				const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
     
-    if (cellText && !isTotalRow && match) {
-      data.cell.styles.fillColor = [255, 255, 0];
-      data.cell.styles.fontStyle = 'bold';
-    }
-  }
+				if (cellText && !isTotalRow && match) {
+					data.cell.styles.fillColor = [255, 255, 0];
+					data.cell.styles.fontStyle = 'bold';
+				}
+			}
   
-  // Ligne TOTAL SESSION
-  if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
-    if (data.cell.raw.content === 'TOTAL SESSION:') {
-      data.cell.styles.fillColor = [212, 237, 218];
-      data.cell.styles.fontStyle = 'bold';
-      data.row.pageBreak = 'avoid';
-    }
-  }
-}
+			// Ligne TOTAL SESSION
+			if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+				if (data.cell.raw.content === 'TOTAL SESSION:') {
+					data.cell.styles.fillColor = [212, 237, 218];
+					data.cell.styles.fontStyle = 'bold';
+					data.row.pageBreak = 'avoid';
+				}
+			}
+		}
       });
       
       const dateStr = new Date().toISOString().split('T')[0];
