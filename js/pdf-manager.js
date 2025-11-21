@@ -137,7 +137,7 @@ function exportToPDF() {
     addText('DP: ' + dpNom.substring(0, 30), margin, 48, 10, 'bold', 'white');
     addText('Date: ' + formatDateFrench(dpDate), margin, 55, 10, 'bold', 'white');
     // addText('Lieu: ' + dpLieu.substring(0, 20) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 100, 55, 10, 'bold', 'white');
-    addText('Lieu: ' + dpLieu.substring(0, 30) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 90, 55, 10, 'bold', 'white');
+    addText('Lieu: ' + dpLieu.substring(0, 40) + ' | Session: ' + dpPlongee.toUpperCase(), margin + 80, 55, 10, 'bold', 'white');
 	
     yPosition = spacing.headerHeight + spacing.sectionGap;
     
