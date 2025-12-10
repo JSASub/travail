@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilan Global Palanquées - JSAS</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <style>
+    :root {
+      --primary-blue: #007bff;
+      --success-green: #28a745;
+      --danger-red: #dc3545;
+      --dark-blue: #003366;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f7fcff; color: #333; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid var(--primary-blue); }
+    .logo { height: 60px; width: auto; }
+    h1 { color: var(--dark-blue); font-size: 28px; }
+    .filters { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .filter-row { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--dark-blue); }
+    .filter-group input, .filter-group select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; }
+    .filter-group input:focus, .filter-group select:focus { outline: none; border-color: var(--primary-blue); }
+    .btn { padding: 12px 24px; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+    .btn-primary { background: var(--primary-blue); color: white; }
+    .btn-primary:hover { background: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,123,255,0.3); }
+    .btn-success { background: var(--success-green); color: white; }
+    .btn-success:hover { background: #1e7e34; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #545b62; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat-card { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid var(--primary-blue); border-radius: 8px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 32px; font-weight: bold; color: var(--dark-blue); }
+    .stat-label { font-size: 14px; color: #666; margin-top: 5px; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--dark-blue); color: white; padding: 12px 8px; text-align: left; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+    td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
+    tbody tr:hover { background: #f8f9fa; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    .niveau-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; background: var(--success-green); }
+    .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-blue); text-decoration: none; font-weight: bold; }
+    .back-link:hover { text-decoration: underline; }
+    
+	/* ✅ Surlignage à l'écran */
+	td.highlight-plongeur {
+		background: #ffff00 !important;  /* Jaune fluo */
+		font-weight: bold !important;
+	}
+	
+    /* Styles pour l'impression */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 8mm;
+      }
+      
+      * {
+        box-sizing: border-box;
+      }
+      
+      body { 
+        background: white; 
+        padding: 0;
+        margin: 0;
+        font-size: 10pt;
+        line-height: 1.3;
+      }
+      
+      .back-link, .filters, .export-buttons, #loading, #no-data, #error { 
+        display: none !important; 
+      }
+      
+      .container { 
+        box-shadow: none; 
+        padding: 0;
+        max-width: 100%;
+        margin: 0;
+        background: white;
+      }
+      
+      /* En-tête */
+      .header { 
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 2px solid #007bff;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        page-break-after: avoid;
+      }
+      
+      .logo { 
+        height: 45px;
+        width: auto;
+      }
+      
+      h1 { 
+        font-size: 20pt;
+        color: #003366;
+        margin: 0;
+        line-height: 1.2;
+      }
+      
+      .header p {
+        font-size: 10pt;
+        color: #666;
+        margin: 3px 0 0 0;
+      }
+      
+      #header-plongeur {
+        display: block !important;
+        font-size: 16pt;
+        font-weight: bold;
+        color: #007bff !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Statistiques */
+      .stats { 
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+        page-break-after: avoid;
+      }
+      
+      .stat-card { 
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+        border: 1.5px solid #007bff;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        overflow: hidden;
+      }
+      
+      .stat-value { 
+        font-size: 22pt;
+        font-weight: bold;
+        color: #003366 !important;
+        line-height: 1;
+        margin: 0;
+      }
+      
+      .stat-label { 
+        font-size: 9pt;
+        color: #666 !important;
+        margin-top: 3px;
+        line-height: 1.2;
+      }
+      
+      /* Tableau répartition par niveau */
+      #niveaux-container { 
+        page-break-inside: avoid;
+        page-break-after: avoid;
+        margin-bottom: 12px;
+      }
+      
+      #niveaux-container > div {
+        background: #f8f9fa !important;
+        border: 1.5px solid #007bff;
+        border-radius: 6px;
+        padding: 10px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        overflow: hidden;
+      }
+      
+      /* Critères de recherche - sur une colonne à gauche */
+      .stats > div[style*="background: #fff3cd"] {
+        background: #fff3cd !important;
+        border: 1.5px solid #ffc107;
+        border-radius: 6px;
+        padding: 8px;
+        margin-bottom: 0;
+        grid-column: 1 / 2;
+        grid-row: 1;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      
+      .stats > div[style*="background: #fff3cd"] h3 {
+        color: #856404 !important;
+        font-size: 9pt;
+        margin: 0 0 4px 0;
+        line-height: 1.1;
+      }
+      
+      .stats > div[style*="background: #fff3cd"] div {
+        color: #856404 !important;
+        font-size: 7pt;
+        line-height: 1.3;
+      }
+      
+      /* Les 3 stats occupent les colonnes 2, 3 et 4 */
+      .stats .stat-card:nth-child(2) {
+        grid-column: 2 / 3;
+        grid-row: 1;
+      }
+      
+      .stats .stat-card:nth-child(3) {
+        grid-column: 3 / 4;
+        grid-row: 1;
+      }
+      
+      .stats .stat-card:nth-child(4) {
+        grid-column: 4 / 5;
+        grid-row: 1;
+      }
+      
+      #niveaux-container h3 {
+        font-size: 13pt;
+        color: #003366;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+      }
+      
+      #niveaux-container table {
+        font-size: 9pt;
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+      }
+      
+      #niveaux-container th {
+        background: #003366 !important;
+        color: white !important;
+        padding: 6px 8px !important;
+        text-align: left;
+        font-weight: bold;
+        border: none;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      #niveaux-container td {
+        padding: 5px 8px !important;
+        border-bottom: 1px solid #ddd;
+        border-left: none;
+        border-right: none;
+        vertical-align: middle;
+      }
+      
+      #niveaux-container tbody tr:last-child {
+        background: #e3f2fd !important;
+        font-weight: bold;
+        border-top: 2px solid #007bff;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      #niveaux-container tbody tr:last-child td {
+        border-bottom: none;
+      }
+      
+      /* Forcer le tableau principal à commencer sur une nouvelle page */
+      .table-container {
+        page-break-before: always !important;
+        break-before: always !important;
+      }
+
+      .niveau-badge {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 8pt;
+        font-weight: bold;
+        color: white !important;
+        background: #28a745 !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        line-height: 1.4;
+      }
+      
+      /* Tableau principal des plongées */
+      .table-container {
+        margin-top: 0;
+        overflow: visible;
+      }
+      
+      table { 
+        page-break-inside: auto;
+        font-size: 8pt;
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+      }
+      
+	  /* Surligner le nom du plongeur recherché - ÉCRAN */
+	  td.highlight-plongeur {
+		background: #ffff00 !important;  /* Jaune fluo */
+		font-weight: bold !important;
+	  }
+
+	  /* Surligner le nom du plongeur recherché */
+	  td.highlight-plongeur {
+		background: #ffff00 !important;  /* Jaune fluo */
+		font-weight: bold !important;
+		print-color-adjust: exact;
+		-webkit-print-color-adjust: exact;
+	  }
+	  
+      thead { 
+        display: table-header-group;
+      }
+      
+      th { 
+        background: #003366 !important;
+        color: white !important;
+        padding: 7px 4px !important;
+        font-size: 8pt;
+        text-align: left;
+        font-weight: bold;
+        border: none;
+        vertical-align: middle;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        line-height: 1.2;
+      }
+      
+      td { 
+        padding: 5px 4px !important;
+        font-size: 8pt;
+        border-bottom: 0.5px solid #ddd;
+        border-left: none;
+        border-right: none;
+        vertical-align: middle;
+        line-height: 1.3;
+      }
+      
+      /* Éviter les coupures dans les lignes individuelles */
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      /* Garder chaque palanquée ensemble */
+      tbody.palanquee-group {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      /* Éviter les orphelins : garder au moins 3 lignes ensemble */
+      tr.total-palanquee,
+      tr.session-end,
+      tr.session-separator {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      
+      /* SAUF : permettre coupure après le séparateur orange */
+      tr.session-separator {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+      
+      tbody tr:hover { 
+        background: inherit;
+      }
+      
+      /* Lignes de séparation orange */
+      tbody tr.session-separator {
+        background: #FF6B00 !important;
+        height: 6px !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      tbody tr.session-separator td {
+        padding: 0 !important;
+        border: none;
+        background: transparent !important;
+      }
+      
+      /* Totaux de session (vert clair) */
+      tbody tr.session-end {
+        background: #d4edda !important;
+        font-weight: bold;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Totaux de palanquée (bleu clair) */
+      tbody tr.total-palanquee {
+        background: #e8f4f8 !important;
+        font-weight: bold;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      /* Éviter orphelins/veuves */
+      h1, h2, h3 {
+        page-break-after: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← Retour à l'application</a>
+
+    <div class="header">
+      <img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
+      <div style="flex: 1;">
+        <h1>Bilan Global des Palanquées</h1>
+        <p style="color: #666; margin-top: 5px;">Analyse consolidée des sessions de plongée</p>
+      </div>
+      <div id="header-plongeur" style="display: none; text-align: right; padding-right: 10px;">
+        <div style="font-size: 20px; font-weight: bold; color: var(--primary-blue);">
+          🔍 <span id="header-plongeur-nom"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="date-debut">Date de début</label>
+          <input type="date" id="date-debut" placeholder="jj/mm/aaaa">
+        </div>
+        <div class="filter-group">
+          <label for="date-fin">Date de fin</label>
+          <input type="date" id="date-fin" placeholder="jj/mm/aaaa">
+        </div>
+        <div class="filter-group">
+          <label for="filtre-dp">Directeur de Plongée</label>
+          <select id="filtre-dp"><option value="">Tous les DP</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="filtre-lieu">Lieu</label>
+          <select id="filtre-lieu"><option value="">Tous les lieux</option></select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="filtre-plongeur">🔍 Nom du plongeur</label>
+          <input type="text" id="filtre-plongeur" placeholder="Rechercher un plongeur...">
+        </div>
+      </div>
+      <div class="filter-row">
+        <button class="btn btn-primary" onclick="chargerBilan()">Générer le bilan</button>
+        <button class="btn btn-secondary" onclick="reinitialiserFiltres()">Réinitialiser</button>
+      </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
+    <div id="results" style="display: none;">
+      <div class="stats" id="stats-container"></div>
+      <div id="niveaux-container"></div>
+      <div class="export-buttons">
+        <button class="btn btn-success" onclick="exporterCSV()">📊 Exporter CSV</button>
+        <button class="btn btn-success" onclick="exporterExcel()">📗 Exporter Excel</button>
+        <button class="btn btn-primary" onclick="imprimer()">🖨️ Imprimer</button>
+        <button class="btn btn-primary" onclick="exporterPDF()">📄 Exporter PDF</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>DP</th><th>Lieu</th><th>Session</th><th>Palanquée</th><th>Plongeur</th><th>Prérogatives</th><th>Niveau</th><th>Horaire</th><th>Prof. Prévue [m]</th><th>Durée Prévue [min]</th><th>Prof. Réalisée [m]</th><th>Durée Réalisée [min]</th><th>Paliers</th>
+            </tr>
+          </thead>
+          <tbody id="bilan-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="no-data" class="alert alert-info" style="display: none;">Aucune donnée disponible pour la période sélectionnée.</div>
+    <div id="error" class="alert alert-danger" style="display: none;"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9FO6BiHkm7dOQ3Z4-wpPQRgnsGKg3pmM",
+      authDomain: "palanquees-jsas.firebaseapp.com",
+      databaseURL: "https://palanquees-jsas-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "palanquees-jsas",
+      storageBucket: "palanquees-jsas.firebasestorage.app",
+      messagingSenderId: "284449736616",
+      appId: "1:284449736616:web:a0949a9b669def06323f9d"
+    };
+
+    let app, db;
+    let bilanData = [];
+    
+    const ORDRE_NIVEAUX = ['E4', 'E3', 'E2', 'N4/GP', 'GP', 'N4', 'N3', 'N2', 'N1', 'Plg.Or', 'Plg.Ar', 'Plg.Br', 'Déb.', 'débutant', 'Déb'];
+    
+    function trierPlongeursParNiveau(plongeurs) {
+      return [...plongeurs].sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a.niveau);
+        const indexB = ORDRE_NIVEAUX.indexOf(b.niveau);
+        const posA = indexA === -1 ? 999 : indexA;
+        const posB = indexB === -1 ? 999 : indexB;
+        if (posA === posB) {
+          return a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
+        }
+        return posA - posB;
+      });
+    }
+    
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      console.log('✅ Firebase initialisé');
+    } catch (error) {
+      console.error('❌ Erreur init Firebase:', error);
+    }
+
+    async function chargerFiltres() {
+      if (!db) return;
+      try {
+        const dpSnapshot = await db.ref('dp_database').once('value');
+        const dpSelect = document.getElementById('filtre-dp');
+        
+        if (dpSnapshot.exists()) {
+          const dpsData = dpSnapshot.val();
+          const dpsArray = Object.values(dpsData).map(dp => dp.nom).sort();
+          console.log('DPs trouvés dans dp_database:', dpsArray.length, dpsArray);
+          
+          dpsArray.forEach(dp => {
+            const option = document.createElement('option');
+            option.value = dp;
+            option.textContent = dp;
+            dpSelect.appendChild(option);
+          });
+        }
+        
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) return;
+        const sessions = snapshot.val();
+        const lieux = new Set();
+        Object.values(sessions).forEach(session => {
+          if (session.meta && session.meta.lieu) {
+            lieux.add(session.meta.lieu.trim());
+          }
+        });
+        
+        console.log('Lieux trouvés:', Array.from(lieux).length);
+        const lieuSelect = document.getElementById('filtre-lieu');
+        Array.from(lieux).sort().forEach(lieu => {
+          const option = document.createElement('option');
+          option.value = lieu;
+          option.textContent = lieu;
+          lieuSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erreur filtres:', error);
+      }
+    }
+
+    async function chargerBilan() {
+	  // ✅ VIDER les anciennes données
+	  bilanData = [];
+	  document.getElementById('results').style.display = 'none';
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      const filtrePlongeur = (document.getElementById('filtre-plongeur').value || '').toLowerCase().trim();
+      
+      const filtrerParDates = dateDebut && dateFin;
+      if (filtrerParDates && new Date(dateDebut) > new Date(dateFin)) { 
+        afficherErreur('Date de début invalide'); 
+        return; 
+      }
+      
+      afficherLoading(true);
+      cacherErreur();
+      
+      const nomsPlongeursMatches = new Set();
+      
+      try {
+        const snapshot = await db.ref('sessions').once('value');
+        if (!snapshot.exists()) { afficherAucuneDonnee(); return; }
+        const sessions = snapshot.val();
+        bilanData = [];
+        Object.entries(sessions).forEach(([key, session]) => {
+          if (!session.meta || !session.palanquees) return;
+          const sessionDate = session.meta.date;
+          if (filtrerParDates && (sessionDate < dateDebut || sessionDate > dateFin)) return;
+          if (filtreDP && filtreDP !== '' && session.meta.dp !== filtreDP) return;
+          if (filtreLieu && filtreLieu !== '' && session.meta.lieu !== filtreLieu) return;
+          session.palanquees.forEach((palanquee, idx) => {
+            if (!palanquee || !palanquee.plongeurs) return;
+            
+            const plongeursTries = trierPlongeursParNiveau(palanquee.plongeurs);
+
+if (filtrePlongeur) {
+  const plongeursCorrespondants = plongeursTries.filter(p => 
+    (p.nom || '').toLowerCase().includes(filtrePlongeur)
+  );
+  if (plongeursCorrespondants.length === 0) return;  // Skip cette palanquée si aucun plongeur correspondant
+  
+  plongeursCorrespondants.forEach(p => nomsPlongeursMatches.add(p.nom));
+}
+            
+            bilanData.push({
+			  date: session.meta.date, dp: session.meta.dp, lieu: session.meta.lieu,
+			  typeSession: session.meta.plongee || 'matin', numeroPalanquee: idx + 1,
+			  horaire: palanquee.parametres?.horaire || '', 
+			  plongeurs: plongeursTries,  // ✅ TOUS les plongeurs de la palanquée
+              profPrevue: palanquee.parametres?.profondeurPrevue || '',
+              dureePrevue: palanquee.parametres?.dureePrevue || '',
+              profRealisee: palanquee.parametres?.profondeurRealisee || '',
+              dureeRealisee: palanquee.parametres?.dureeRealisee || '',
+              paliers: palanquee.parametres?.paliers || ''
+            });
+          });
+        });
+        if (bilanData.length === 0) { afficherAucuneDonnee(); return; }
+        
+        const ordreSession = ['matin', 'après-midi', 'soir', 'nuit', 'plg1', 'plg2', 'plg3', 'plg4', 'Formation', 'autre'];
+        bilanData.sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          if (a.lieu !== b.lieu) return a.lieu.localeCompare(b.lieu, 'fr', { sensitivity: 'base' });
+          const indexA = ordreSession.indexOf(a.typeSession);
+          const indexB = ordreSession.indexOf(b.typeSession);
+          const posA = indexA === -1 ? 999 : indexA;
+          const posB = indexB === -1 ? 999 : indexB;
+          if (posA !== posB) return posA - posB;
+          return a.numeroPalanquee - b.numeroPalanquee;
+        });
+        
+        const headerPlongeur = document.getElementById('header-plongeur');
+        const headerPlongeurNom = document.getElementById('header-plongeur-nom');
+        if (filtrePlongeur && nomsPlongeursMatches.size > 0) {
+          const nomsArray = Array.from(nomsPlongeursMatches).sort();
+          headerPlongeurNom.textContent = nomsArray.join(', ');
+          headerPlongeur.style.display = 'block';
+        } else {
+          headerPlongeur.style.display = 'none';
+        }
+        
+        afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, document.getElementById('filtre-plongeur').value);
+        afficherTableau();
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('no-data').style.display = 'none';
+      } catch (error) {
+        afficherErreur('Erreur: ' + error.message);
+      } finally {
+        afficherLoading(false);
+      }
+    }
+
+    function afficherStatistiques(dateDebut, dateFin, filtreDP, filtreLieu, filtrePlongeur) {
+      const statsContainer = document.getElementById('stats-container');
+      const totalPalanquees = bilanData.length;
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      const niveaux = {};
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
+      const formatDate = (dateStr) => {
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      };
+      
+      let criteres = [];
+      if (dateDebut && dateFin) {
+        criteres.push(`📅 Période : ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      } else {
+        criteres.push(`📅 Période : Toutes les sessions`);
+      }
+      if (filtreDP) criteres.push(`👤 DP : ${filtreDP}`);
+      if (filtreLieu) criteres.push(`📍 Lieu : ${filtreLieu}`);
+      if (filtrePlongeur && filtrePlongeur.trim()) criteres.push(`🔍 Plongeur : ${filtrePlongeur}`);
+      
+      const criteresHTML = `
+        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+          <h3 style="color: #856404; margin: 0 0 8px 0; font-size: 14px;">🎯 Critères de recherche</h3>
+          <div style="color: #856404; font-size: 13px; line-height: 1.6;">
+            ${criteres.join(' • ')}
+          </div>
+        </div>
+      `;
+      statsContainer.innerHTML = criteresHTML + `
+        <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPalanquees}</div><div class="stat-label">Palanquées</div></div>
+        <div class="stat-card"><div class="stat-value">${totalPlongeurs}</div><div class="stat-label">Plongeurs au total</div></div>
+      `;
+      
+      if (niveauxTries.length > 0) {
+        const niveauxHTML = `
+          <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid var(--primary-blue);">
+            <h3 style="color: var(--dark-blue); margin-bottom: 15px;">📊 Répartition par niveau</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--dark-blue); color: white;">
+                  <th style="padding: 10px; text-align: left;">Niveau</th>
+                  <th style="padding: 10px; text-align: right;">Nombre de plongées</th>
+                  <th style="padding: 10px; text-align: right;">Pourcentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${niveauxTries.map(([niveau, count]) => `
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;"><span class="niveau-badge">${niveau}</span></td>
+                    <td style="padding: 8px; text-align: right; font-weight: bold;">${count}</td>
+                    <td style="padding: 8px; text-align: right;">${((count / totalPlongeurs) * 100).toFixed(1)}%</td>
+                  </tr>
+                `).join('')}
+                <tr style="background: #e3f2fd; font-weight: bold;">
+                  <td style="padding: 10px;">TOTAL</td>
+                  <td style="padding: 10px; text-align: right;">${totalPlongeurs}</td>
+                  <td style="padding: 10px; text-align: right;">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+        const niveauxContainer = document.getElementById('niveaux-container');
+        niveauxContainer.innerHTML = niveauxHTML;
+      }
+    }
+
+function afficherTableau() {
+  const tableBody = document.getElementById('bilan-tbody');
+  const table = tableBody.parentElement;
+  
+  // ✅ NE PAS supprimer le tbody d'origine, juste le vider
+  tableBody.innerHTML = '';
+  
+  // ✅ Supprimer uniquement les tbody dynamiques créés précédemment
+  table.querySelectorAll('tbody.palanquee-group, tbody.session-summary, tbody.final-separator').forEach(tb => tb.remove());
+  
+  const sessions = {};
+  bilanData.forEach((row) => {
+    const sessionKey = `${row.date}_${row.dp}_${row.typeSession}`;
+    if (!sessions[sessionKey]) {
+      sessions[sessionKey] = [];
+    }
+    sessions[sessionKey].push(row);
+  });
+  
+  const filtrePlongeurActif = document.getElementById('filtre-plongeur').value.toLowerCase().trim();
+  
+  Object.entries(sessions).forEach(([sessionKey, sessionRows], sessionIndex) => {
+    sessionRows.forEach((row) => {
+      const palanqueeTbody = document.createElement('tbody');
+      palanqueeTbody.classList.add('palanquee-group');
+      
+      row.plongeurs.forEach((plongeur, plongeurIdx) => {
+        const tr = document.createElement('tr');
+        tr.classList.add('palanquee-row');
+        
+        const nomPlongeur = plongeur.nom || '';
+        const shouldHighlight = filtrePlongeurActif && nomPlongeur.toLowerCase().includes(filtrePlongeurActif);
+        
+        tr.innerHTML = `
+          <td>${plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dp : ''}</td>
+          <td>${plongeurIdx === 0 ? row.lieu : ''}</td>
+          <td>${plongeurIdx === 0 ? row.typeSession : ''}</td>
+          <td>${plongeurIdx === 0 ? row.numeroPalanquee : ''}</td>
+          <td class="${shouldHighlight ? 'highlight-plongeur' : ''}">${nomPlongeur}</td>
+          <td>${plongeur.pre || ''}</td>
+          <td><span class="niveau-badge">${plongeur.niveau}</span></td>
+          <td>${plongeurIdx === 0 ? row.horaire : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profPrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureePrevue : ''}</td>
+          <td>${plongeurIdx === 0 ? row.profRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.dureeRealisee : ''}</td>
+          <td>${plongeurIdx === 0 ? row.paliers : ''}</td>
+        `;
+        palanqueeTbody.appendChild(tr);
+      });
+      
+      const trTotal = document.createElement('tr');
+      trTotal.className = 'total-palanquee';
+      trTotal.style.background = '#e8f4f8';
+      trTotal.style.fontWeight = 'bold';
+      trTotal.style.fontSize = '12px';
+      trTotal.innerHTML = `
+        <td colspan="2" style="text-align: right; padding: 8px;">Total palanquée:</td>
+        <td colspan="12" style="padding: 8px;">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</td>
+      `;
+      palanqueeTbody.appendChild(trTotal);
+      
+      table.appendChild(palanqueeTbody);
+    });
+    
+    const sessionEndTbody = document.createElement('tbody');
+    sessionEndTbody.classList.add('session-summary');
+    
+    const totalPlongeursSession = sessionRows.reduce((sum, r) => sum + r.plongeurs.length, 0);
+    const trTotalSession = document.createElement('tr');
+    trTotalSession.classList.add('session-end');
+    trTotalSession.style.background = '#d4edda';
+    trTotalSession.style.fontWeight = 'bold';
+    trTotalSession.innerHTML = `
+      <td colspan="2" style="text-align: right; padding: 10px;">TOTAL SESSION:</td>
+      <td colspan="12" style="padding: 10px;">${totalPlongeursSession} plongeur${totalPlongeursSession > 1 ? 's' : ''}</td>
+    `;
+    sessionEndTbody.appendChild(trTotalSession);
+    
+    if (sessionIndex < Object.keys(sessions).length - 1) {
+      const separateur = document.createElement('tr');
+      separateur.classList.add('session-separator');
+      separateur.style.background = '#FF6B00';
+      separateur.style.height = '10px';
+      separateur.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+      sessionEndTbody.appendChild(separateur);
+    }
+    
+    table.appendChild(sessionEndTbody);
+  });
+  
+  const finalSeparatorTbody = document.createElement('tbody');
+  finalSeparatorTbody.classList.add('final-separator');
+  
+  const separateurFinal = document.createElement('tr');
+  separateurFinal.classList.add('session-separator');
+  separateurFinal.style.background = '#FF6B00';
+  separateurFinal.style.height = '10px';
+  separateurFinal.innerHTML = `<td colspan="14" style="padding: 0; border: none;"></td>`;
+  finalSeparatorTbody.appendChild(separateurFinal);
+  
+  table.appendChild(finalSeparatorTbody);
+}
+
+    function exporterCSV() {
+      let csv = 'Date;DP;Lieu;Session;Palanquée;Plongeur;Prérogatives;Niveau;Horaire;Prof. Prévue [m];Durée Prévue [min];Prof. Réalisée [m];Durée Réalisée [min];Paliers\n';
+      let sessionPrecedente = null;
+      
+      bilanData.forEach(row => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        
+        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
+          csv += ';;;;;;;;;;;;;;\n';
+        }
+        
+        row.plongeurs.forEach((plongeur, idx) => {
+          csv += `${idx === 0 ? row.date : ''};${idx === 0 ? row.dp : ''};${idx === 0 ? row.lieu : ''};${idx === 0 ? row.typeSession : ''};${idx === 0 ? row.numeroPalanquee : ''};${plongeur.nom};${plongeur.pre || ''};${plongeur.niveau};${idx === 0 ? row.horaire : ''};${idx === 0 ? row.profPrevue : ''};${idx === 0 ? row.dureePrevue : ''};${idx === 0 ? row.profRealisee : ''};${idx === 0 ? row.dureeRealisee : ''};${idx === 0 ? row.paliers : ''}\n`;
+        });
+        
+        csv += `;;Total palanquée:;${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''};;;;;;;;;;\n`;
+        
+        sessionPrecedente = sessionActuelle;
+      });
+      
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        csv += `;;TOTAL SESSION:;${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''};;;;;;;;;;\n`;
+      }
+      
+      csv += '\n\nSTATISTIQUES PAR NIVEAU\n';
+      csv += 'Niveau;Nombre de plongées;Pourcentage\n';
+      const niveaux = {};
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      niveauxTries.forEach(([niveau, count]) => {
+        csv += `${niveau};${count};${((count / totalPlongeurs) * 100).toFixed(1)}%\n`;
+      });
+      csv += `TOTAL;${totalPlongeurs};100%\n`;
+      
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bilan-palanquees.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exporterExcel() {
+      let html = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>JSAS</Author>
+  <Created>${new Date().toISOString()}</Created>
+ </DocumentProperties>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>12000</WindowHeight>
+  <WindowWidth>18000</WindowWidth>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
+  <Style ss:ID="titre">
+   <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
+   <Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#003366"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="entete">
+   <Interior ss:Color="#007bff" ss:Pattern="Solid"/>
+   <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="totalPalanquee">
+   <Interior ss:Color="#e8f4f8" ss:Pattern="Solid"/>
+   <Font ss:Bold="1" ss:Size="10"/>
+  </Style>
+  <Style ss:ID="totalSession">
+   <Interior ss:Color="#d4edda" ss:Pattern="Solid"/>
+   <Font ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="separateur">
+   <Interior ss:Color="#FF6B00" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="highlightPlongeur">
+   <Interior ss:Color="#FFFF00" ss:Pattern="Solid"/>
+   <Font ss:Bold="1"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Bilan Palanquées">
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Layout x:Orientation="Landscape"/>
+    <Header x:Margin="0"/>
+    <Footer x:Margin="0"/>
+    <PageMargins x:Bottom="0.3" x:Left="0.3" x:Right="0.3" x:Top="0.3"/>
+    <FitToPage/>
+    <Print>
+     <PaperSizeIndex>9</PaperSizeIndex>
+     <ValidPrinterInfo/>
+     <Scale>80</Scale>
+    </Print>
+   </PageSetup>
+  </WorksheetOptions>
+  <Table>`;
+      
+      html += '<Row ss:Height="30"><Cell ss:MergeAcross="13" ss:StyleID="titre"><Data ss:Type="String">Bilan Global des Palanquées - JSAS</Data></Cell></Row>';
+      html += '<Row ss:Height="10"></Row>';
+      
+      html += '<Row>';
+      ['Date', 'DP', 'Lieu', 'Session', 'Palanquée', 'Plongeur', 'Prérogatives', 'Niveau', 'Horaire', 'Prof. Prévue [m]', 'Durée Prévue [min]', 'Prof. Réalisée [m]', 'Durée Réalisée [min]', 'Paliers'].forEach(entete => {
+        html += `<Cell ss:StyleID="entete"><Data ss:Type="String">${entete}</Data></Cell>`;
+      });
+      html += '</Row>';
+      
+      let sessionPrecedente = null;
+      const filtrePlongeur = document.getElementById('filtre-plongeur').value;
+      
+      bilanData.forEach(row => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        
+        if (sessionPrecedente !== null && sessionPrecedente !== sessionActuelle) {
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          
+          html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalSession"><Data ss:Type="String">TOTAL SESSION:</Data></Cell>';
+          html += `<Cell ss:MergeAcross="11" ss:StyleID="totalSession"><Data ss:Type="String">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</Data></Cell></Row>`;
+          html += '<Row ss:Height="10"><Cell ss:MergeAcross="13" ss:StyleID="separateur"></Cell></Row>';
+        }
+        
+        row.plongeurs.forEach((plongeur, idx) => {
+          // Vérifier si ce plongeur correspond au filtre de recherche
+          const recherche = filtrePlongeur ? filtrePlongeur.toLowerCase().trim() : '';
+          const nomPlongeur = plongeur.nom ? plongeur.nom.toLowerCase() : '';
+          const isHighlight = recherche && nomPlongeur.includes(recherche);
+          const styleCell = isHighlight ? ' ss:StyleID="highlightPlongeur"' : '';
+          
+          html += '<Row>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.date}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dp}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.lieu}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.typeSession}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="Number">${row.numeroPalanquee}</Data></Cell>` : '<Cell></Cell>';
+          html += `<Cell${styleCell}><Data ss:Type="String">${plongeur.nom}</Data></Cell>`;
+          html += `<Cell><Data ss:Type="String">${plongeur.pre || ''}</Data></Cell>`;
+          html += `<Cell><Data ss:Type="String">${plongeur.niveau}</Data></Cell>`;
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.horaire}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.profPrevue}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dureePrevue}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.profRealisee}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.dureeRealisee}</Data></Cell>` : '<Cell></Cell>';
+          html += idx === 0 ? `<Cell><Data ss:Type="String">${row.paliers}</Data></Cell>` : '<Cell></Cell>';
+          html += '</Row>';
+        });
+        
+        html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalPalanquee"><Data ss:Type="String">Total palanquée:</Data></Cell>';
+        html += `<Cell ss:MergeAcross="11" ss:StyleID="totalPalanquee"><Data ss:Type="String">${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}</Data></Cell></Row>`;
+        
+        sessionPrecedente = sessionActuelle;
+      });
+      
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        
+        html += '<Row><Cell ss:MergeAcross="1" ss:StyleID="totalSession"><Data ss:Type="String">TOTAL SESSION:</Data></Cell>';
+        html += `<Cell ss:MergeAcross="11" ss:StyleID="totalSession"><Data ss:Type="String">${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}</Data></Cell></Row>`;
+        html += '<Row ss:Height="10"><Cell ss:MergeAcross="13" ss:StyleID="separateur"></Cell></Row>';
+      }
+      
+      html += '</Table>';
+      html += '</Worksheet></Workbook>';
+      
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + html], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bilan-palanquees.xls';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function imprimer() {
+      window.print();
+    }
+
+    function exporterPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4');
+      
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 6;
+      let yPosition = margin;
+      
+      const filtrePlongeur = document.getElementById('filtre-plongeur').value;
+      let nomCompletPlongeur = '';
+      if (filtrePlongeur && filtrePlongeur.trim()) {
+        const nomsPlongeurs = new Set();
+        bilanData.forEach(row => {
+          row.plongeurs.forEach(p => {
+            if ((p.nom || '').toLowerCase().includes(filtrePlongeur.toLowerCase().trim())) {
+              nomsPlongeurs.add(p.nom);
+            }
+          });
+        });
+        if (nomsPlongeurs.size > 0) {
+          nomCompletPlongeur = Array.from(nomsPlongeurs).sort().join(', ');
+        }
+      }
+      
+      function addHeader(isFirstPage) {
+        doc.setFillColor(74, 144, 226);
+        doc.rect(0, 0, pageWidth, nomCompletPlongeur ? 28 : 22, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Bilan Global des Palanquées - JSAS', pageWidth / 2, 12, { align: 'center' });
+        
+        if (nomCompletPlongeur) {
+          doc.setFillColor(255, 215, 0);
+          doc.roundedRect(pageWidth / 2 - 60, 16, 120, 9, 2, 2, 'F');
+          
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(nomCompletPlongeur, pageWidth / 2, 22, { align: 'center' });
+          doc.setTextColor(0, 0, 0);
+          return 32;
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        return 26;
+      }
+      
+      yPosition = addHeader(true);
+      
+      const dateDebut = document.getElementById('date-debut').value;
+      const dateFin = document.getElementById('date-fin').value;
+      const filtreDP = document.getElementById('filtre-dp').value;
+      const filtreLieu = document.getElementById('filtre-lieu').value;
+      
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      };
+      
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(255, 193, 7);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 14, 2, 2, 'FD');
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(133, 100, 4);
+      doc.text('Criteres de recherche:', margin + 3, yPosition + 6);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      let criteres = [];
+      if (dateDebut && dateFin) {
+        criteres.push(`Periode: ${formatDate(dateDebut)} au ${formatDate(dateFin)}`);
+      } else {
+        criteres.push('Periode: Toutes les sessions');
+      }
+      if (filtreDP) criteres.push(`DP: ${filtreDP}`);
+      if (filtreLieu) criteres.push(`Lieu: ${filtreLieu}`);
+      if (nomCompletPlongeur) criteres.push(`Plongeur: ${nomCompletPlongeur}`);
+      
+      doc.text(criteres.join(' | '), margin + 3, yPosition + 11);
+      yPosition += 17;
+      
+      const totalPalanquees = bilanData.length;
+      const totalPlongeurs = bilanData.reduce((sum, p) => sum + p.plongeurs.length, 0);
+      const totalSessions = new Set(bilanData.map(p => `${p.date}_${p.dp}_${p.typeSession}`)).size;
+      
+      doc.setDrawColor(74, 144, 226);
+      doc.setLineWidth(1);
+      const statWidth = (pageWidth - 2 * margin - 6) / 3;
+      
+      [
+        { label: 'Sessions', value: totalSessions },
+        { label: 'Palanquees', value: totalPalanquees },
+        { label: 'Plongeurs', value: totalPlongeurs }
+      ].forEach((stat, index) => {
+        const x = margin + index * (statWidth + 3);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(x, yPosition, statWidth, 16, 1, 1, 'FD');
+        
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(74, 85, 104);
+        doc.text(stat.value.toString(), x + statWidth / 2, yPosition + 8, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(stat.label, x + statWidth / 2, yPosition + 13, { align: 'center' });
+      });
+      
+      yPosition += 19;
+      doc.setTextColor(0, 0, 0);
+      
+      const niveaux = {};
+      bilanData.forEach(p => {
+        p.plongeurs.forEach(plongeur => {
+          niveaux[plongeur.niveau] = (niveaux[plongeur.niveau] || 0) + 1;
+        });
+      });
+      
+      const niveauxTries = Object.entries(niveaux).sort((a, b) => {
+        const indexA = ORDRE_NIVEAUX.indexOf(a[0]);
+        const indexB = ORDRE_NIVEAUX.indexOf(b[0]);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+      });
+      
+      if (niveauxTries.length > 0) {
+        yPosition += 15;
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 51, 102);
+        doc.text('Répartition par niveau', margin, yPosition);
+        yPosition += 7;
+        
+        const niveauxData = niveauxTries.map(([niveau, count]) => [
+          niveau,
+          count.toString(),
+          `${((count / totalPlongeurs) * 100).toFixed(1)}%`
+        ]);
+        
+        niveauxData.push(['TOTAL', totalPlongeurs.toString(), '100%']);
+        
+        doc.autoTable({
+          startY: yPosition,
+          head: [['Niveau', 'Nombre de plongées', 'Pourcentage']],
+          body: niveauxData,
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3
+          },
+          headStyles: {
+            fillColor: [0, 51, 102],
+            textColor: 255,
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 50, halign: 'right' },
+            2: { cellWidth: 50, halign: 'right' }
+          },
+          margin: { left: margin, right: margin },
+          didParseCell: function(data) {
+            if (data.section === 'body' && data.row.index === niveauxData.length - 1) {
+              data.cell.styles.fillColor = [227, 242, 253];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+      }
+      
+      doc.addPage();
+      yPosition = 34;
+      
+      const tableData = [];
+      let sessionPrecedente = null;
+      
+      bilanData.forEach((row, index) => {
+        const sessionActuelle = `${row.date}_${row.dp}_${row.typeSession}`;
+        const changementSession = sessionPrecedente !== null && sessionPrecedente !== sessionActuelle;
+        
+        if (changementSession) {
+          const plongeursDansSession = bilanData.filter(r => 
+            `${r.date}_${r.dp}_${r.typeSession}` === sessionPrecedente
+          ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+          
+          tableData.push([
+            { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } },
+            { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9, minCellHeight: 8 } }
+          ]);
+          
+          tableData.push([
+            { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
+          ]);
+        }
+        
+        sessionPrecedente = sessionActuelle;
+        
+        row.plongeurs.forEach((plongeur, plongeurIdx) => {
+          tableData.push([
+            plongeurIdx === 0 ? new Date(row.date).toLocaleDateString('fr-FR') : '',
+            plongeurIdx === 0 ? row.dp : '',
+            plongeurIdx === 0 ? row.lieu : '',
+            plongeurIdx === 0 ? row.typeSession : '',
+            plongeurIdx === 0 ? row.numeroPalanquee : '',
+            plongeur.nom,
+            plongeur.pre || '',
+            plongeur.niveau,
+            plongeurIdx === 0 ? row.horaire : '',
+            plongeurIdx === 0 ? row.profPrevue : '',
+            plongeurIdx === 0 ? row.dureePrevue : '',
+            plongeurIdx === 0 ? row.profRealisee : '',
+            plongeurIdx === 0 ? row.dureeRealisee : '',
+            plongeurIdx === 0 ? row.paliers : ''
+          ]);
+        });
+        
+        tableData.push([
+          { content: 'Total palanquée:', colSpan: 2, styles: { halign: 'right', fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } },
+          { content: `${row.plongeurs.length} plongeur${row.plongeurs.length > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [232, 244, 248], fontStyle: 'bold', fontSize: 8 } }
+        ]);
+      });
+      
+      if (bilanData.length > 0) {
+        const dernierIndex = bilanData.length - 1;
+        const derniereSession = `${bilanData[dernierIndex].date}_${bilanData[dernierIndex].dp}_${bilanData[dernierIndex].typeSession}`;
+        const plongeursDansSession = bilanData.filter(r => 
+          `${r.date}_${r.dp}_${r.typeSession}` === derniereSession
+        ).reduce((sum, r) => sum + r.plongeurs.length, 0);
+        
+        tableData.push([
+          { content: 'TOTAL SESSION:', colSpan: 2, styles: { halign: 'right', fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } },
+          { content: `${plongeursDansSession} plongeur${plongeursDansSession > 1 ? 's' : ''}`, colSpan: 12, styles: { fillColor: [212, 237, 218], fontStyle: 'bold', fontSize: 9 } }
+        ]);
+        
+        tableData.push([
+          { content: '', colSpan: 14, styles: { fillColor: [255, 107, 0], minCellHeight: 5, cellPadding: 0 } }
+        ]);
+      }
+      
+      doc.autoTable({
+        startY: yPosition,
+        head: [[
+          { content: 'Date', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'DP', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Lieu', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Session', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Palanquée', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Plongeur', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prérogatives', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Niveau', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Horaire', styles: { fontSize: 8, cellPadding: 2 } },
+          { content: 'Prof. Prévue [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Prévue [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Prof. Réalisée [m]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Durée Réalisée [min]', styles: { fontSize: 7, cellPadding: 2 } },
+          { content: 'Paliers', styles: { fontSize: 8, cellPadding: 2 } }
+        ]],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [74, 85, 104],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 18 },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 37 },
+          3: { cellWidth: 16 },
+          4: { cellWidth: 12 },
+          5: { cellWidth: 42 },
+          6: { cellWidth: 17 },
+          7: { cellWidth: 12 },
+          8: { cellWidth: 14 },
+          9: { cellWidth: 14 },
+          10: { cellWidth: 14 },
+          11: { cellWidth: 14 },
+          12: { cellWidth: 14 },
+          13: { cellWidth: 30 }
+        },
+        margin: { left: margin, right: margin, top: 34 },
+        showHead: 'everyPage',
+        rowPageBreak: 'avoid',
+        didDrawPage: function(data) {
+          addHeader(data.pageNumber === 1);
+          
+          doc.setFontSize(8);
+          doc.setTextColor(128, 128, 128);
+          doc.text(
+            `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 5,
+            { align: 'center' }
+          );
+        },
+		willDrawCell: function(data) {
+			// Lignes alternées grises SEULEMENT si pas déjà coloré
+			if (data.section === 'body' && data.row.index % 2 === 0 && !data.cell.styles.fillColor) {
+				data.cell.styles.fillColor = [249, 249, 249];
+			}
+  
+			// Hauteur des totaux
+			if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+				if (data.cell.raw.content === 'TOTAL SESSION:') {
+					data.row.minCellHeight = 8;
+				}
+			}
+		},
+			didParseCell: function(data) {
+				// Surligner le plongeur recherché
+				if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+					let cellText = '';
+					if (Array.isArray(data.cell.text)) {
+						cellText = (data.cell.text[0] || '').toString();
+				} else if (data.cell.text) {
+					cellText = data.cell.text.toString();
+				}
+    
+				const recherche = filtrePlongeur.toLowerCase().trim();
+				const match = cellText.toLowerCase().includes(recherche);
+				const isTotalRow = data.cell.raw && typeof data.cell.raw === 'object' && data.cell.raw.content;
+    
+				if (cellText && !isTotalRow && match) {
+					data.cell.styles.fillColor = [255, 255, 0];
+					data.cell.styles.fontStyle = 'bold';
+				}
+			}
+  
+			// Ligne TOTAL SESSION
+			if (data.section === 'body' && data.cell.raw && typeof data.cell.raw === 'object') {
+				if (data.cell.raw.content === 'TOTAL SESSION:') {
+					data.cell.styles.fillColor = [212, 237, 218];
+					data.cell.styles.fontStyle = 'bold';
+					data.row.pageBreak = 'avoid';
+				}
+			}
+		}
+      });
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      let filename = 'Bilan_Palanquees';
+      if (nomCompletPlongeur) {
+        const nomFichier = nomCompletPlongeur.replace(/[^a-zA-Z0-9]/g, '_');
+        filename = `Bilan_${nomFichier}`;
+      }
+      doc.save(`${filename}_${dateStr}.pdf`);
+    }
+    
+    function afficherLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
+    function afficherAucuneDonnee() {
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('no-data').style.display = 'block';
+      afficherLoading(false);
+    }
+    function afficherErreur(message) {
+      document.getElementById('error').textContent = message;
+      document.getElementById('error').style.display = 'block';
+      afficherLoading(false);
+    }
+    function cacherErreur() { document.getElementById('error').style.display = 'none'; }
+    function reinitialiserFiltres() {
+      const aujourdhui = new Date();
+      const ilYaUnMois = new Date();
+      ilYaUnMois.setMonth(ilYaUnMois.getMonth() - 1);
+      document.getElementById('date-debut').valueAsDate = ilYaUnMois;
+      document.getElementById('date-fin').valueAsDate = aujourdhui;
+      document.getElementById('filtre-dp').value = '';
+      document.getElementById('filtre-lieu').value = '';
+      document.getElementById('filtre-plongeur').value = '';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('no-data').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        if (!db) { afficherErreur('Firebase non disponible'); return; }
+        await chargerFiltres();
+      } catch (error) {
+        afficherErreur('Erreur: ' + error.message);
+      }
+    });
+</script>
+  
+</body>
+</html>
