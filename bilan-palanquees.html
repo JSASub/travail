@@ -125,12 +125,16 @@
       }
       
       #header-plongeur {
-        display: block !important;
         font-size: 16pt;
         font-weight: bold;
         color: #007bff !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
+      }
+      
+      /* Afficher seulement si le style inline n'est pas display:none */
+      #header-plongeur:not([style*="display: none"]) {
+        display: block !important;
       }
       
       /* Statistiques */
@@ -657,6 +661,7 @@ if (filtrePlongeur) {
           headerPlongeurNom.textContent = nomsArray.join(', ');
           headerPlongeur.style.display = 'block';
         } else {
+          headerPlongeurNom.textContent = '';  // Vider le contenu
           headerPlongeur.style.display = 'none';
         }
         
