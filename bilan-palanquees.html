@@ -1087,9 +1087,10 @@ function afficherTableau() {
       const margin = 6;
       let yPosition = margin;
       
-      const filtrePlongeur = document.getElementById('filtre-plongeur').value;
+      const filtreInput = document.getElementById('filtre-plongeur').value;
+      const filtrePlongeur = filtreInput ? filtreInput.trim() : '';
       let nomCompletPlongeur = '';
-      if (filtrePlongeur && filtrePlongeur.trim()) {
+      if (filtrePlongeur) {
         const nomsPlongeurs = new Set();
         bilanData.forEach(row => {
           row.plongeurs.forEach(p => {
@@ -1403,7 +1404,7 @@ function afficherTableau() {
 		},
 			didParseCell: function(data) {
 				// Surligner le plongeur recherché
-				if (data.section === 'body' && data.column.index === 5 && filtrePlongeur && filtrePlongeur.trim()) {
+				if (data.section === 'body' && data.column.index === 5 && filtrePlongeur) {
 					let cellText = '';
 					if (Array.isArray(data.cell.text)) {
 						cellText = (data.cell.text[0] || '').toString();
