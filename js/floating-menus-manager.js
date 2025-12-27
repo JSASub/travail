@@ -287,10 +287,10 @@ function updateFloatingPlongeursList() {
     }
     
     // Mettre à jour l'affichage avec l'ordre correct
-    floatingCount.textContent = `(${plongeursTriés.length})`;
+    floatingCount.textContent = `(${plongeursDisponibles.length})`;
     floatingList.innerHTML = '';
     
-    if (plongeursTriés.length === 0) {
+    if (plongeursDisponibles.length === 0) {
         floatingList.innerHTML = '<div class="floating-plongeurs-empty">Aucun plongeur disponible</div>';
         return;
     }
@@ -347,7 +347,7 @@ function updateFloatingPlongeursList() {
         floatingList.appendChild(floatingItem);
     });
     
-    console.log('Menu synchronisé - Tri:', currentSort, '- Disponibles:', plongeursTriés.length, '/', plongeurs.length);
+    console.log('Menu synchronisé - Tri:', currentSort, '- Disponibles:', plongeursDisponibles.length, '/', plongeurs.length);
 }
     /**
      * Gérer la visibilité du menu des plongeurs
