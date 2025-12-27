@@ -234,8 +234,32 @@ function updateFloatingPlongeursList() {
     
     if (!floatingList || !floatingCount) return;
     
-    // Obtenir les plongeurs depuis la variable globale
-    let plongeurs = window.plongeurs || [];
+    // ✅ CORRECTION MAJEURE : Récupérer TOUS les plongeurs depuis le DOM de la liste principale
+    // au lieu de window.plongeurs qui change selon la plongée sélectionnée
+    let plongeurs = [];
+    const listePlongeursDOM = document.getElementById('listePlongeurs');
+    
+    if (listePlongeursDOM) {
+        Array.from(listePlongeursDOM.children).forEach(li => {
+            const nomSpan = li.querySelector('.plongeur-nom');
+            const niveauSpan = li.querySelector('.plongeur-niveau');
+            const preSpan = li.querySelector('.plongeur-prerogatives');
+            
+            if (nomSpan && niveauSpan) {
+                plongeurs.push({
+                    nom: nomSpan.textContent.trim(),
+                    niveau: niveauSpan.textContent.trim(),
+                    pre: preSpan ? preSpan.textContent.replace(/[\[\]]/g, '').trim() : ''
+                });
+            }
+        });
+    }
+    
+    // Si la liste DOM est vide, fallback sur window.plongeurs
+    if (plongeurs.length === 0) {
+        plongeurs = window.plongeurs || [];
+    }
+
     
     // ✅ CORRECTION 1 : Filtrer AVANT de trier
     const nomsAssignés = new Set();
@@ -297,8 +321,8 @@ function updateFloatingPlongeursList() {
     
     // Créer les éléments dans l'ordre trié
     plongeursTriés.forEach((plongeur, sortedIndex) => {
-        // ✅ CORRECTION 5 : Trouver l'index original dans window.plongeurs (non filtré)
-        const originalIndex = window.plongeurs.findIndex(p => 
+        // ✅ CORRECTION 5 : Trouver l'index original dans la liste locale plongeurs (du DOM)
+        const originalIndex = plongeurs.findIndex(p => 
             p.nom === plongeur.nom && p.niveau === plongeur.niveau && p.pre === plongeur.pre
         );
         
