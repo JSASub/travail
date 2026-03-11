@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>QCM MN90 — DTR Réelle</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f4f8; color: #1a1a1a; font-size: 15px; }
+  .container { max-width: 860px; margin: 0 auto; padding: 20px; }
+  h1 { color: #1F5C8B; font-size: 1.6em; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #555; font-style: italic; margin-bottom: 16px; }
+
+  .methode { background: #D6E4F0; border: 2px solid #1F5C8B; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; }
+  .methode strong { color: #1F5C8B; }
+
+  .question { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 18px; overflow: hidden; }
+  .q-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f7f9fc; border-bottom: 1px solid #e0e8f0; }
+  .q-num { font-weight: bold; font-size: 1em; color: #1F5C8B; }
+  .tag { font-size: 0.75em; font-weight: bold; padding: 2px 8px; border-radius: 10px; }
+  .tag-qcm { background: #1F5C8B; color: #fff; }
+  .tag-calcul { background: #1E7B4B; color: #fff; }
+  .q-meta { font-size: 0.82em; color: #777; margin-left: auto; }
+
+  .q-body { padding: 12px 14px; }
+  .scenario { background: #f2f2f2; border-radius: 4px; padding: 8px 12px; margin-bottom: 10px; font-size: 0.93em; }
+  .enonce { font-weight: bold; margin-bottom: 10px; }
+
+  .opts label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 4px; transition: background 0.15s; }
+  .opts label:hover { background: #f0f4f8; }
+  .opts input[type=radio] { margin-top: 2px; flex-shrink: 0; }
+
+  .calcul-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .calcul-row input { border: 2px solid #ccc; border-radius: 4px; padding: 6px 10px; font-size: 1em; width: 120px; }
+  .calcul-row .unite { color: #555; font-size: 0.9em; }
+
+  .btn-valider { background: #1F5C8B; color: #fff; border: none; border-radius: 4px; padding: 7px 18px; cursor: pointer; font-size: 0.95em; margin-top: 4px; }
+  .btn-valider:hover { background: #174a73; }
+
+  .feedback { margin-top: 10px; padding: 10px 14px; border-radius: 6px; display: none; }
+  .feedback.correct { background: #D5F0E0; border: 1px solid #1E7B4B; color: #145a34; }
+  .feedback.wrong   { background: #FADBD8; border: 1px solid #C0392B; color: #7b241c; }
+
+  .expl { margin-top: 8px; font-size: 0.9em; }
+  .expl p { margin-bottom: 4px; }
+  .expl .highlight { font-weight: bold; color: #1E7B4B; }
+  .expl .warn { color: #C0392B; font-style: italic; }
+
+  .score-bar { position: sticky; top: 0; z-index: 100; background: #1F5C8B; color: #fff; text-align: center; padding: 8px; font-weight: bold; font-size: 1em; }
+
+  hr.sep { border: none; border-top: 1px solid #e0e8f0; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div class="score-bar" id="scorebar">Score : 0 / 15</div>
+<div class="container">
+  <h1>QCM MN90 — DTR Réelle</h1>
+  <p class="subtitle">Profondeur de remontée ≠ Profondeur maximale · 15 questions · Niveau GP / DP</p>
+
+  <div class="methode">
+    <strong>📖 Méthode — DTR réelle (page 8 MN90)</strong><br>
+    Lorsque la profondeur de remontée ≠ profondeur max, la colonne DTR est <strong>inutilisable</strong>.<br>
+    <strong>DTR réelle = remontée fond→1<sup>er</sup> palier (à 15 m/min) + paliers (table) + inter-paliers (0,5 min chacun)</strong><br>
+    <em>Arrondir le total à l'entier supérieur.</em>
+  </div>
+
+<div id="questions"></div>
+</div>
+
+<script>
+const Q = [
+  {num:1,  fmt:'qcm',    pm:25, dur:55, pr:10, pal:[[3,27]], dt:29, gps:'L',
+   sc:"P : 25 m / 55 min. La palanquée entame sa remontée depuis 10 m (réimmersion après incident).",
+   en:"Le DP affirme que la DTR est 29 min. Est-il correct ?",
+   opts:{A:"Oui — la DTR table est toujours valide",
+         B:"Non — la DTR réelle est 28 min car la remontée est plus courte",
+         C:"Non — la DTR réelle est 27 min (palier seul)",
+         D:"Non — la colonne DTR est inutilisable, il faut refaire toute la plongée"}, rep:'B'},
+
+  {num:2,  fmt:'qcm',    pm:30, dur:40, pr:20, pal:[[3,24]], dt:27, gps:'K',
+   sc:"P : 30 m / 40 min. La palanquée commence sa remontée depuis 20 m.",
+   en:"Quelle est la DTR réelle ?",
+   opts:{A:"27 min — DTR table, toujours valide",
+         B:"24 min — palier seul",
+         C:"26 min — DTR réelle calculée depuis 20 m",
+         D:"25 min — DTR table moins la différence de remontée"}, rep:'C'},
+
+  {num:3,  fmt:'calcul', pm:28, dur:45, pr:15, pal:[[3,25]], dt:28, gps:'K',
+   sc:"P : 28 m / 45 min. La palanquée entame sa remontée depuis 15 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'27'},
+
+  {num:4,  fmt:'calcul', pm:30, dur:50, pr:12, pal:[[6,3],[3,36]], dt:42, gps:'M',
+   sc:"P : 30 m / 50 min. La palanquée entame sa remontée depuis 12 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'41'},
+
+  {num:5,  fmt:'qcm',    pm:35, dur:30, pr:18, pal:[[9,1],[3,20]], dt:24, gps:'J',
+   sc:"P : 35 m / 30 min. La palanquée remonte depuis 18 m (panne d'air partielle).",
+   en:"Quelle est la DTR réelle ?",
+   opts:{A:"24 min — DTR table",
+         B:"21 min — somme des paliers",
+         C:"22 min — paliers + inter-paliers seulement",
+         D:"23 min — DTR réelle calculée depuis 18 m"}, rep:'D'},
+
+  {num:6,  fmt:'qcm',    pm:30, dur:45, pr:30, pal:[[6,1],[3,31]], dt:35, gps:'L',
+   sc:"P : 30 m / 45 min. La palanquée remonte directement depuis 30 m (profondeur maximale).",
+   en:"Un stagiaire dit qu'il faut toujours recalculer la DTR réelle. Est-il exact ?",
+   opts:{A:"Oui — la DTR table n'est jamais fiable à 100 %",
+         B:"Non — quand la remontée se fait depuis la profondeur max, DTR réelle = DTR table",
+         C:"Non — la DTR table est toujours utilisable sans calcul",
+         D:"Oui — mais seulement pour les plongées avec 2 paliers ou plus"}, rep:'B'},
+
+  {num:7,  fmt:'calcul', pm:40, dur:35, pr:20, pal:[[6,8],[3,35]], dt:47, gps:'L',
+   sc:"P : 40 m / 35 min. La palanquée entame sa remontée depuis 20 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'45'},
+
+  {num:8,  fmt:'calcul', pm:35, dur:40, pr:20, pal:[[9,5],[3,34]], dt:42, gps:'L',
+   sc:"P : 35 m / 40 min. La palanquée entame sa remontée depuis 20 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'41'},
+
+  {num:9,  fmt:'qcm',    pm:42, dur:30, pr:25, pal:[[6,6],[3,31]], dt:41, gps:'L',
+   sc:"P : 42 m / 30 min. La palanquée remonte depuis 25 m.",
+   en:"Quelle est la DTR réelle ?",
+   opts:{A:"41 min — DTR table",
+         B:"38 min — paliers + inter-paliers",
+         C:"40 min — DTR réelle calculée depuis 25 m",
+         D:"39 min — DTR table moins la remontée économisée"}, rep:'C'},
+
+  {num:10, fmt:'calcul', pm:40, dur:40, pr:22, pal:[[6,13],[3,40]], dt:57, gps:'M',
+   sc:"P : 40 m / 40 min. Départ du fond à 10 h 15, depuis 22 m.",
+   en:"Calculez l'heure d'arrivée en surface (DTR réelle).", rep:'11h11', repAlt:['11 h 11','11:11']},
+
+  {num:11, fmt:'qcm',    pm:38, dur:35, pr:25, pal:[[6,5],[3,33]], dt:42, gps:'L',
+   sc:"P : 38 m / 35 min. La palanquée remonte depuis 25 m.",
+   en:"Un DP affirme : « La DTR réelle est toujours inférieure ou égale à la DTR table. » Est-il exact ?",
+   opts:{A:"Non — elle peut être supérieure si la remontée est plus lente que 15 m/min",
+         B:"Oui — remonter de moins profond raccourcit toujours la remontée",
+         C:"Non — elle est toujours égale car les paliers ne changent pas",
+         D:"Non — elle peut être supérieure si la profondeur de remontée dépasse la prof max"}, rep:'A'},
+
+  {num:12, fmt:'calcul', pm:35, dur:45, pr:15, pal:[[9,9],[3,39]], dt:51, gps:'M',
+   sc:"P : 35 m / 45 min. La palanquée entame sa remontée depuis 15 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'50'},
+
+  {num:13, fmt:'qcm',    pm:40, dur:35, pr:15, pal:[[6,8],[3,35]], dt:47, gps:'L',
+   sc:"P : 40 m / 35 min. La palanquée entame sa remontée depuis 15 m.",
+   en:"Quelle est la DTR réelle ?",
+   opts:{A:"47 min — DTR table",
+         B:"44 min — paliers + inter-paliers seulement",
+         C:"45 min — DTR réelle calculée depuis 15 m",
+         D:"43 min — DTR table moins 4 min de remontée économisée"}, rep:'C'},
+
+  {num:14, fmt:'calcul', pm:42, dur:30, pr:18, pal:[[6,6],[3,31]], dt:41, gps:'L',
+   sc:"P : 42 m / 30 min. Départ du fond à 09 h 30, depuis 18 m.",
+   en:"Calculez l'heure d'arrivée en surface (DTR réelle).", rep:'10h09', repAlt:['10 h 09','10:09']},
+
+  {num:15, fmt:'calcul', pm:35, dur:35, pr:15, pal:[[6,2],[3,27]], dt:32, gps:'K',
+   sc:"P : 35 m / 35 min. La palanquée entame sa remontée depuis 15 m.",
+   en:"Calculez la DTR réelle (arrondi à l'entier supérieur).", rep:'31'},
+];
+
+function dtrCalc(q) {
+  const p0 = q.pal[0][0];
+  const tR = (q.pr - p0) / 15;
+  const tP = q.pal.reduce((s,[,d])=>s+d,0);
+  const tI = q.pal.length * 0.5;
+  const tot = tR + tP + tI;
+  return { tR: Math.round(tR*100)/100, tP, tI, tot: Math.round(tot*100)/100, arr: Math.ceil(tot) };
+}
+
+function explHTML(q) {
+  const {tR,tP,tI,tot,arr} = dtrCalc(q);
+  const pStr = q.pal.map(([p,d])=>`${p} m : ${d} min`).join(' + ');
+  const interStr = q.pal.map(([p],i,a)=> i<a.length-1 ? `${p}→${a[i+1][0]} m` : `${p} m→surface`).join(' + ');
+  return `<div class="expl">
+    <p>Table ${q.pm} m / ${q.dur} min → Paliers : ${pStr} | DTR table : <strong>${q.dt} min</strong> | GPS ${q.gps}</p>
+    <p class="warn">Profondeur de remontée : ${q.pr} m ≠ ${q.pm} m → colonne DTR inutilisable, calcul manuel obligatoire.</p>
+    <p>1. Remontée ${q.pr} m → ${q.pal[0][0]} m à 15 m/min : (${q.pr} − ${q.pal[0][0]}) / 15 = ${tR} min</p>
+    <p>2. Paliers : ${pStr} = ${tP} min</p>
+    <p>3. Inter-paliers (${interStr}) : ${q.pal.length} × 0,5 = ${tI} min</p>
+    <p>4. Total = ${tR} + ${tP} + ${tI} = ${tot} min → arrondi supérieur = <span class="highlight">${arr} min</span></p>
+    <p style="color:#555;font-style:italic">DTR table : ${q.dt} min | DTR réelle : ${arr} min | Gain : ${q.dt-arr} min</p>
+  </div>`;
+}
+
+let score = 0;
+let answered = {};
+
+function updateScore() {
+  document.getElementById('scorebar').textContent = `Score : ${score} / 15`;
+}
+
+function buildQuestions() {
+  const container = document.getElementById('questions');
+  Q.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'question';
+    div.id = `q${q.num}`;
+
+    let inputHTML = '';
+    if (q.fmt === 'qcm') {
+      inputHTML = `<div class="opts">` +
+        Object.entries(q.opts).map(([k,v]) =>
+          `<label><input type="radio" name="q${q.num}" value="${k}"> <span><strong>${k}.</strong> ${v}</span></label>`
+        ).join('') + `</div>`;
+    } else {
+      inputHTML = `<div class="calcul-row">
+        <input type="text" id="inp${q.num}" placeholder="Votre réponse…">
+        <span class="unite">${q.num===10||q.num===14 ? 'hh h mm' : 'min'}</span>
+      </div>`;
+    }
+
+    div.innerHTML = `
+      <div class="q-header">
+        <span class="q-num">Q${q.num} / 15</span>
+        <span class="tag ${q.fmt==='qcm'?'tag-qcm':'tag-calcul'}">${q.fmt.toUpperCase()}</span>
+        <span class="q-meta">${q.pm} m / ${q.dur} min · DTR table : ${q.dt} min</span>
+      </div>
+      <div class="q-body">
+        <div class="scenario">${q.sc}</div>
+        <div class="enonce">${q.en}</div>
+        ${inputHTML}
+        <button class="btn-valider" onclick="valider(${q.num})">Valider</button>
+        <div class="feedback" id="fb${q.num}"></div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase().replace(/\s+/g,'').replace('h','h');
+}
+
+function valider(num) {
+  if (answered[num]) return;
+  const q = Q.find(x=>x.num===num);
+  const fb = document.getElementById(`fb${num}`);
+  let correct = false;
+
+  if (q.fmt === 'qcm') {
+    const sel = document.querySelector(`input[name="q${num}"]:checked`);
+    if (!sel) { fb.style.display='block'; fb.className='feedback wrong'; fb.innerHTML='Sélectionnez une réponse.'; return; }
+    correct = sel.value === q.rep;
+  } else {
+    const val = document.getElementById(`inp${num}`).value;
+    const norm = normalise(val);
+    const reps = [q.rep, ...(q.repAlt||[])].map(normalise);
+    correct = reps.includes(norm);
+  }
+
+  answered[num] = true;
+  if (correct) score++;
+  updateScore();
+
+  fb.style.display = 'block';
+  fb.className = `feedback ${correct?'correct':'wrong'}`;
+  fb.innerHTML = (correct
+    ? `<strong>✔ Correct !</strong>`
+    : `<strong>✗ Incorrect.</strong> Réponse : <strong>${q.rep}</strong>`)
+    + `<hr class="sep">${explHTML(q)}`;
+}
+
+buildQuestions();
+updateScore();
+</script>
+</body>
+</html>
