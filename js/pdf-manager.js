@@ -84,7 +84,9 @@ function exportToPDF() {
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
       try {
-        const date = new Date(dateString);
+        // Forcer l'interprétation en heure locale pour éviter le décalage UTC
+        const [year, month, day] = dateString.split('-');
+        const date = new Date(year, month - 1, day); // mois commence à 0 en JavaScript
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         return date.toLocaleDateString('fr-FR', options).replace(/'/g, "'");
       } catch (error) {
@@ -463,7 +465,8 @@ function copyPalanqueesToClipboard() {
 
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
-      const date = new Date(dateString);
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString('fr-FR');
     }
 
@@ -889,7 +892,8 @@ function generatePDFForWhatsApp() {
 
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
-      const date = new Date(dateString);
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString('fr-FR');
     }
 
@@ -1111,7 +1115,8 @@ function generatePDFPreview() {
     
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
-      const date = new Date(dateString);
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString('fr-FR');
     }
     
@@ -1679,7 +1684,8 @@ function generatePDFFromPreview() {
 
     function formatDateFrench(dateString) {
       if (!dateString) return "Non définie";
-      const date = new Date(dateString);
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(year, month - 1, day);
       return date.toLocaleDateString('fr-FR');
     }
 
