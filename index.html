@@ -234,6 +234,7 @@
 	<div><strong>Création PDF de la Fiche de Sécurité</strong></div>
     <button id="generatePDF" class="btn-secondary">Aperçu des palanquées PDF</button>
     <button id="exportPDF" class="btn-success">Télécharger Fiche de Sécu PDF</button>
+    <button id="exportFicheReglement" class="btn-success" style="background: #6f42c1;">📋 Fiche Sécurité Réglementaire</button>
    </section>
   </main><br><br>
   <div id="previewContainer" style="display:none;">
@@ -669,6 +670,23 @@ Voulez-vous plus d'informations ?`)) {
   
   <!-- PWA INSTALLER - DOIT ÊTRE EN DERNIER -->
   <script src="./pwa-installer.js"></script>
+  
+  <!-- Gestionnaire pour le bouton fiche de sécurité réglementaire -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const btnFicheReglement = document.getElementById('exportFicheReglement');
+      if (btnFicheReglement) {
+        btnFicheReglement.addEventListener('click', function() {
+          if (typeof exportFicheSecurite === 'function') {
+            exportFicheSecurite();
+          } else {
+            console.error('Fonction exportFicheSecurite non disponible');
+            alert('Erreur: la fonction de génération de fiche réglementaire n\'est pas disponible');
+          }
+        });
+      }
+    });
+  </script>
 
 <!-- Modal pour ajouter/modifier un DP -->
 <div id="dp-modal">
