@@ -670,23 +670,6 @@ Voulez-vous plus d'informations ?`)) {
   
   <!-- PWA INSTALLER - DOIT ÊTRE EN DERNIER -->
   <script src="./pwa-installer.js"></script>
-  
-  <!-- Gestionnaire pour le bouton fiche de sécurité réglementaire -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const btnFicheReglement = document.getElementById('exportFicheReglement');
-      if (btnFicheReglement) {
-        btnFicheReglement.addEventListener('click', function() {
-          if (typeof exportFicheSecurite === 'function') {
-            exportFicheSecurite();
-          } else {
-            console.error('Fonction exportFicheSecurite non disponible');
-            alert('Erreur: la fonction de génération de fiche réglementaire n\'est pas disponible');
-          }
-        });
-      }
-    });
-  </script>
 
 <!-- Modal pour ajouter/modifier un DP -->
 <div id="dp-modal">
