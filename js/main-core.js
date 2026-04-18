@@ -1717,6 +1717,23 @@ function setupEventListeners() {
         }
       });
     }
+    
+    const exportFicheReglementBtn = document.getElementById("exportFicheReglement");
+    if (exportFicheReglementBtn) {
+      exportFicheReglementBtn.addEventListener("click", () => {
+        try {
+          if (typeof exportFicheSecurite === 'function') {
+            exportFicheSecurite();
+          } else {
+            console.error("Fonction exportFicheSecurite non disponible");
+            alert("Erreur: Module fiche de sécurité non chargé");
+          }
+        } catch (error) {
+          console.error("Erreur export fiche sécurité:", error);
+          handleError(error, "Export fiche sécurité réglementaire");
+        }
+      });
+    }
 
     console.log("Event listeners configurés avec succès");
     
