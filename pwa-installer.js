@@ -207,8 +207,8 @@ window.addEventListener('offline', () => {
 });
 
 // Animations CSS
-const style = document.createElement('style');
-style.textContent = `
+const styleElement = document.createElement('style');
+styleElement.textContent = `
   @keyframes slideUp {
     from {
       transform: translate(-50%, 100px);
@@ -240,6 +240,6 @@ style.textContent = `
     }
   }
 `;
-document.head.appendChild(style);
+document.head.appendChild(styleElement);
 
 console.log('🤿 PWA Installer amélioré chargé !');
