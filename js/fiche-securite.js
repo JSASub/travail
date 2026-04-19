@@ -187,13 +187,13 @@ function exportFicheSecurite() {
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
           
-          // En-têtes - COLONNE NIV RÉDUITE AU MAX
-          doc.setFontSize(8);  // Agrandi de 7 à 8
+          // En-têtes - NOUVELLES POSITIONS OPTIMISÉES
+          doc.setFontSize(8);
           const colDesignation = xBase + 1;
-          const colNom = xBase + 18;
-          const colPrenom = xBase + 42;
-          const colApt = xBase + 62;
-          const colNiv = xBase + 70;
+          const colNom = xBase + 18;      // NOM
+          const colPrenom = xBase + 46;   // PRÉNOM élargi (+4mm)
+          const colApt = xBase + 74;      // APT élargi (+12mm)
+          const colNiv = xBase + 82;      // Niv réduit (colWidth ~92mm, donc 92-82=10mm pour Niv)
           
           doc.text("Désignation", colDesignation, cellY + 3.5);
           doc.text("NOM", colNom, cellY + 3.5);
@@ -226,24 +226,24 @@ function exportFicheSecurite() {
                 const parts = nomComplet.trim().split(/\s+/);
                 let nom = "", prenom = "";
                 if (parts.length >= 2) {
-                  nom = parts[0].substring(0, 14);
-                  prenom = parts.slice(1).join(" ").substring(0, 12);
+                  nom = parts[0].substring(0, 16);      // NOM élargi (28mm = ~16 car)
+                  prenom = parts.slice(1).join(" ").substring(0, 16);  // PRÉNOM élargi (28mm = ~16 car)
                 } else {
-                  nom = nomComplet.substring(0, 14);
+                  nom = nomComplet.substring(0, 16);
                 }
                 
                 doc.text(nom, colNom + 0.5, cellY + 3);
                 doc.text(prenom, colPrenom + 0.5, cellY + 3);
-                doc.text(aptitude.substring(0, 5), colApt + 0.5, cellY + 3);
-                doc.text(niveau.substring(0, 10), colNiv + 0.5, cellY + 3);
+                doc.text(aptitude.substring(0, 6), colApt + 0.5, cellY + 3);  // APT élargi (8mm = ~6 car)
+                doc.text(niveau.substring(0, 8), colNiv + 0.5, cellY + 3);    // Niv (12mm = ~8 car)
               }
             }
             
             doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
-            doc.line(xBase + 40, cellY, xBase + 40, cellY + lineHeight);
-            doc.line(xBase + 60, cellY, xBase + 60, cellY + lineHeight);
-            doc.line(xBase + 68, cellY, xBase + 68, cellY + lineHeight);
+            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
+            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);  // NOM | PRÉNOM (élargi)
+            doc.line(xBase + 72, cellY, xBase + 72, cellY + lineHeight);  // PRÉNOM | APT (élargi)
+            doc.line(xBase + 80, cellY, xBase + 80, cellY + lineHeight);  // APT | Niv (Niv ~12mm)
             
             cellY += lineHeight;
           }
