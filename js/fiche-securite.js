@@ -128,31 +128,30 @@ function exportFicheSecurite() {
     // === GRILLE DES PALANQUÉES (3 colonnes x 3 rangées = 9 palanquées) ===
     const colWidth = (pageWidth - 2 * margin - 6) / 3;  // -6 pour les espaces entre palanquées
     const rowHeight = 50;  // Augmenté pour avoir plus d'espace pour Réalisés
-    const separator = 2;  // Espace blanc entre les palanquées
+    const separator = 2;  // Espace blanc entre les palanquées (colonnes)
+    const rowSeparator = 3;  // Espace blanc entre les rangées
     
     // Traits très fins
     doc.setLineWidth(0.1);
     doc.setDrawColor(0, 0, 0);
     
     for (let row = 0; row < 3; row++) {
-      const startY = yPos + (row * rowHeight);
+      const startY = yPos + (row * (rowHeight + rowSeparator));  // Ajouter l'espace entre rangées
       
       for (let col = 0; col < 3; col++) {
         const palanqueeIdx = row * 3 + col;
         const xBase = margin + col * (colWidth + separator);  // Ajouter séparateur entre colonnes
         let cellY = startY;
         
-        // Bordure extérieure du bloc palanquée
+        // Bordure extérieure du bloc palanquée (TOUJOURS affichée, même si vide)
         doc.rect(xBase, startY, colWidth, rowHeight);
         
-        // TITRE : Palanquée X (si la palanquée existe)
-        if (palanqueeIdx < palanqueesLocal.length) {
-          doc.setFontSize(7);
-          doc.setFont(undefined, 'bold');
-          doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + 1, cellY + 3);  // Aligné à gauche
-          doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
-          cellY += 3.5;
-        }
+        // TITRE : Palanquée X (TOUJOURS affiché)
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + 1, cellY + 3);  // Aligné à gauche
+        doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
+        cellY += 3.5;
         
         // === EN-TÊTE COLONNES : Désignation | NOM | PRÉNOM | APT | Niv ===
         doc.setFontSize(6);
@@ -282,24 +281,6 @@ function exportFicheSecurite() {
         doc.line(xBase + 48, cellY, xBase + 48, bottomY);  // Trait vertical Prof/H.eau
       }
     }
-    
-    // === BAS DE PAGE - LÉGENDES ===
-    yPos = pageHeight - 20;
-    doc.setFontSize(5);
-    doc.setFont(undefined, 'normal');
-    const legendes = [
-      "1 : Fiche établie à l'issue de chaque activité de plongée et conservée pendant 1 an par le directeur de plongée.",
-      "2 : Nom et niveau de la personne assurant la sécurité de surface.",
-      "3 : Nom du site de plongée.",
-      "4 : Nom, prénom et aptitude de l'encadrant. Un Guide de Palanquée supplémentaire peut compléter l'encadrement.",
-      "5 : Aptitude : PE-60, PE-40, PE-20, PE-12, PA-60, PA-40, PA-20, PA-12 (ou ancien Niveau 1, 2, 3, 4).",
-      "6 : Par exemple : 15 mn - palier 3 mn à 3 m.",
-      "7 : À remplir à l'issue de la plongée."
-    ];
-    
-    legendes.forEach((legende, idx) => {
-      doc.text(legende, margin, yPos + (idx * 2.8));
-    });
     
     // Sauvegarder
     const dateStr = formatDateFrench(dpDate).replace(/\//g, '-');
