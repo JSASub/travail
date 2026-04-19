@@ -187,13 +187,13 @@ function exportFicheSecurite() {
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
           
-          // En-têtes - NOUVELLES POSITIONS OPTIMISÉES
+          // En-têtes - APT 13mm, Niv 12mm
           doc.setFontSize(8);
           const colDesignation = xBase + 1;
-          const colNom = xBase + 18;      // NOM
-          const colPrenom = xBase + 46;   // PRÉNOM élargi (+4mm)
-          const colApt = xBase + 74;      // APT élargi (+12mm)
-          const colNiv = xBase + 82;      // Niv réduit (colWidth ~92mm, donc 92-82=10mm pour Niv)
+          const colNom = xBase + 18;      // NOM (~26mm)
+          const colPrenom = xBase + 46;   // PRÉNOM (~26mm)
+          const colApt = xBase + 72;      // APT (13mm)
+          const colNiv = xBase + 85;      // Niv (12mm jusqu'à la fin)
           
           doc.text("Désignation", colDesignation, cellY + 3.5);
           doc.text("NOM", colNom, cellY + 3.5);
@@ -234,16 +234,16 @@ function exportFicheSecurite() {
                 
                 doc.text(nom, colNom + 0.5, cellY + 3);
                 doc.text(prenom, colPrenom + 0.5, cellY + 3);
-                doc.text(aptitude.substring(0, 6), colApt + 0.5, cellY + 3);  // APT élargi (8mm = ~6 car)
-                doc.text(niveau.substring(0, 8), colNiv + 0.5, cellY + 3);    // Niv (12mm = ~8 car)
+                doc.text(aptitude.substring(0, 8), colApt + 0.5, cellY + 3);  // APT 13mm (~8 car)
+                doc.text(niveau.substring(0, 7), colNiv + 0.5, cellY + 3);    // Niv 12mm (~7 car)
               }
             }
             
             doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
             doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
-            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);  // NOM | PRÉNOM (élargi)
-            doc.line(xBase + 72, cellY, xBase + 72, cellY + lineHeight);  // PRÉNOM | APT (élargi)
-            doc.line(xBase + 80, cellY, xBase + 80, cellY + lineHeight);  // APT | Niv (Niv ~12mm)
+            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);  // NOM | PRÉNOM
+            doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);  // PRÉNOM | APT
+            doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);  // APT (13mm) | Niv (12mm)
             
             cellY += lineHeight;
           }
