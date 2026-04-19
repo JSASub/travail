@@ -144,16 +144,25 @@ function exportFicheSecurite() {
         // Bordure extérieure du bloc palanquée
         doc.rect(xBase, startY, colWidth, rowHeight);
         
+        // TITRE : Palanquée X (si la palanquée existe)
+        if (palanqueeIdx < palanqueesLocal.length) {
+          doc.setFontSize(7);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + colWidth / 2, cellY + 3, { align: 'center' });
+          doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
+          cellY += 3.5;
+        }
+        
         // === EN-TÊTE COLONNES : Désignation | NOM | PRÉNOM | APT | Niv ===
         doc.setFontSize(6);
         doc.setFont(undefined, 'bold');
         
-        // Positions des colonnes (ajustées avec nouvelle colonne Désignation)
+        // Positions des colonnes (Niv réduit à 8mm au lieu de ~14mm)
         const colDesignation = xBase + 1;
         const colNom = xBase + 18;
         const colPrenom = xBase + 36;
         const colApt = xBase + 52;
-        const colNiv = xBase + 60;
+        const colNiv = xBase + 62;  // Déplacé plus à droite pour réduire la colonne
         
         doc.text("Désignation", colDesignation, cellY + 3.5);
         doc.text("NOM", colNom, cellY + 3.5);
@@ -190,16 +199,15 @@ function exportFicheSecurite() {
               const aptitude = plongeur.pre || "";  // pre contient l'aptitude (PE20, PA40...)
               const niveau = plongeur.niveau || "";  // niveau contient E2, N2, N3...
               
-              // Séparer le nom complet en NOM et PRÉNOM
+              // Séparer le nom complet en PRÉNOM et NOM
               const parts = nomComplet.trim().split(/\s+/);
               let nom = "";
               let prenom = "";
               
               if (parts.length >= 2) {
-                // Si format "NOM Prénom" ou "Prénom NOM"
-                // On prend le dernier mot comme nom de famille
-                nom = parts[parts.length - 1].substring(0, 11);
-                prenom = parts.slice(0, -1).join(" ").substring(0, 10);
+                // Format "Prénom NOM" : premier mot = prénom, dernier = nom
+                prenom = parts[0].substring(0, 10);
+                nom = parts.slice(1).join(" ").substring(0, 11);
               } else {
                 // Un seul mot, on le met dans NOM
                 nom = nomComplet.substring(0, 11);
@@ -218,7 +226,7 @@ function exportFicheSecurite() {
           doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
           doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // NOM | PRÉNOM
           doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // PRÉNOM | APT
-          doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);  // APT | Niv
+          doc.line(xBase + 60, cellY, xBase + 60, cellY + lineHeight);  // APT | Niv (réduit)
           
           cellY += lineHeight;
         }
@@ -264,10 +272,11 @@ function exportFicheSecurite() {
           doc.text((params.dureeRealisee || ""), colDuree, cellY + 3);
           doc.text((params.profondeurRealisee || ""), colProf, cellY + 3);
         }
-        // IMPORTANT : Ajouter les traits verticaux pour la ligne Réalisés
-        doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);  // Trait vertical Paramètres/Durée
-        doc.line(xBase + 36, cellY, xBase + 36, cellY + 3.5);  // Trait vertical Durée/Prof
-        doc.line(xBase + 48, cellY, xBase + 48, cellY + 3.5);  // Trait vertical Prof/H.eau
+        // IMPORTANT : Traits verticaux complets pour Réalisés
+        const bottomY = cellY + 3.5;
+        doc.line(xBase + 20, cellY, xBase + 20, bottomY);  // Trait vertical Paramètres/Durée
+        doc.line(xBase + 36, cellY, xBase + 36, bottomY);  // Trait vertical Durée/Prof
+        doc.line(xBase + 48, cellY, xBase + 48, bottomY);  // Trait vertical Prof/H.eau
       }
     }
     
