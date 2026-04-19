@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nettoyage Cache JSAS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status div {
+            margin: 5px 0;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Nettoyage Cache JSAS</h1>
+        <p>Cette page va nettoyer complètement le cache et désinstaller les service workers.</p>
+        
+        <button onclick="cleanEverything()">🗑️ Nettoyer tout</button>
+        <button onclick="goToApp()" class="btn-danger">↩️ Retour à l'app</button>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            statusEl.appendChild(div);
+            statusEl.scrollTop = statusEl.scrollHeight;
+        }
+
+        async function cleanEverything() {
+            log('🚀 Début du nettoyage complet...', 'info');
+            
+            // 1. Désinscrire tous les service workers
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`📋 ${registrations.length} service worker(s) trouvé(s)`, 'info');
+                    
+                    for (let registration of registrations) {
+                        const success = await registration.unregister();
+                        if (success) {
+                            log('✅ Service Worker désinscrit', 'success');
+                        } else {
+                            log('❌ Échec désinscription SW', 'error');
+                        }
+                    }
+                } catch (error) {
+                    log(`❌ Erreur SW: ${error.message}`, 'error');
+                }
+            } else {
+                log('⚠️ Service Workers non supportés', 'info');
+            }
+            
+            // 2. Vider tous les caches
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    log(`📦 ${cacheNames.length} cache(s) trouvé(s)`, 'info');
+                    
+                    for (let name of cacheNames) {
+                        const success = await caches.delete(name);
+                        if (success) {
+                            log(`✅ Cache supprimé: ${name}`, 'success');
+                        } else {
+                            log(`❌ Échec suppression: ${name}`, 'error');
+                        }
+                    }
+                } catch (error) {
+                    log(`❌ Erreur cache: ${error.message}`, 'error');
+                }
+            } else {
+                log('⚠️ Cache API non supportée', 'info');
+            }
+            
+            // 3. Vider localStorage
+            try {
+                localStorage.clear();
+                log('✅ localStorage vidé', 'success');
+            } catch (error) {
+                log(`❌ Erreur localStorage: ${error.message}`, 'error');
+            }
+            
+            // 4. Vider sessionStorage
+            try {
+                sessionStorage.clear();
+                log('✅ sessionStorage vidé', 'success');
+            } catch (error) {
+                log(`❌ Erreur sessionStorage: ${error.message}`, 'error');
+            }
+            
+            log('', 'info');
+            log('🎉 NETTOYAGE TERMINÉ !', 'success');
+            log('⏳ Redirection dans 3 secondes...', 'info');
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
+        }
+        
+        function goToApp() {
+            window.location.href = 'index.html';
+        }
+        
+        // Nettoyage automatique au chargement
+        window.addEventListener('load', () => {
+            log('👋 Page de nettoyage chargée', 'info');
+            log('📌 Cliquez sur "Nettoyer tout" pour commencer', 'info');
+        });
+    </script>
+</body>
+</html>
