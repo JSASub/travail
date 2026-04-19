@@ -50,9 +50,9 @@ function exportFicheSecurite() {
         const aptA = (a.pre || "").toUpperCase();
         const aptB = (b.pre || "").toUpperCase();
         
-        // Encadrants (GP, E1-E4) en premier
-        const isEncadrantA = /^(GP|E[1-4])$/.test(aptA);
-        const isEncadrantB = /^(GP|E[1-4])$/.test(aptB);
+        // Encadrants (GP, E1-E4) en premier - PAS les PA (Plongeur Autonome)
+        const isEncadrantA = /^(GP|E[1-4])$/i.test(aptA);
+        const isEncadrantB = /^(GP|E[1-4])$/i.test(aptB);
         
         if (isEncadrantA && !isEncadrantB) return -1;
         if (!isEncadrantA && isEncadrantB) return 1;
@@ -216,6 +216,25 @@ function exportFicheSecurite() {
               const pal = palanqueesLocal[palanqueeIdx];
               if (pal && pal[i]) {
                 const plongeur = pal[i];
+                
+                // VÉRIFICATION : Si c'est la ligne "Encadrant" (i=0), vérifier que c'est un vrai encadrant
+                if (i === 0) {
+                  const aptitude = (plongeur.pre || "").toUpperCase();
+                  const isVraiEncadrant = /^(GP|E[1-4])$/i.test(aptitude);
+                  
+                  // Si ce n'est pas un vrai encadrant, laisser la ligne vide
+                  if (!isVraiEncadrant) {
+                    // Dessiner les traits mais ne pas afficher de données
+                    doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
+                    doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
+                    doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);
+                    doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);
+                    doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);
+                    cellY += lineHeight;
+                    continue;
+                  }
+                }
+                
                 doc.setFont(undefined, 'normal');
                 doc.setFontSize(7.5);  // Agrandi de 6.5 à 7.5
                 
