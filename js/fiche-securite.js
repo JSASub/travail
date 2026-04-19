@@ -44,8 +44,41 @@ function exportFicheSecurite() {
       return date.toLocaleDateString('fr-FR');
     }
     
-    // Récupérer les palanquées
-    const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
+    // Fonction pour trier les plongeurs : encadrants d'abord, puis par niveau, puis alphabétique
+    function trierPlongeurs(palanquee) {
+      if (!palanquee || palanquee.length === 0) return palanquee;
+      
+      return palanquee.slice().sort((a, b) => {
+        const aptA = (a.pre || "").toUpperCase();
+        const aptB = (b.pre || "").toUpperCase();
+        
+        // Encadrants en premier (GP, E1, E2, E3, E4)
+        const isEncadrantA = /^(GP|E[1-4])$/.test(aptA);
+        const isEncadrantB = /^(GP|E[1-4])$/.test(aptB);
+        
+        if (isEncadrantA && !isEncadrantB) return -1;
+        if (!isEncadrantA && isEncadrantB) return 1;
+        
+        // Si même catégorie (encadrant ou plongeur), trier par niveau puis nom
+        if (isEncadrantA === isEncadrantB) {
+          // Par niveau d'abord
+          const nivA = (a.niveau || "").toUpperCase();
+          const nivB = (b.niveau || "").toUpperCase();
+          if (nivA !== nivB) return nivB.localeCompare(nivA); // Ordre décroissant (E4 > E3 > E2...)
+          
+          // Puis par nom alphabétique
+          const nomA = (a.nom || "").toUpperCase();
+          const nomB = (b.nom || "").toUpperCase();
+          return nomA.localeCompare(nomB);
+        }
+        
+        return 0;
+      });
+    }
+    
+    // Récupérer et trier les palanquées
+    const palanqueesLocal = typeof palanquees !== 'undefined' ? 
+      palanquees.map(pal => trierPlongeurs(pal)) : [];
     const totalPlongeurs = palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
     
     let yPos = 12;
@@ -157,12 +190,12 @@ function exportFicheSecurite() {
         doc.setFontSize(6);
         doc.setFont(undefined, 'bold');
         
-        // Positions des colonnes (Niv réduit au maximum)
+        // Positions des colonnes (Niv VRAIMENT réduit, NOM et PRÉNOM agrandis)
         const colDesignation = xBase + 1;
-        const colNom = xBase + 18;
-        const colPrenom = xBase + 36;
-        const colApt = xBase + 52;
-        const colNiv = xBase + 64;  // Encore plus à droite pour une colonne Niv très étroite
+        const colNom = xBase + 18;      // NOM agrandi
+        const colPrenom = xBase + 40;   // PRÉNOM agrandi (décalé)
+        const colApt = xBase + 60;      // APT décalé
+        const colNiv = xBase + 68;      // Niv RÉDUIT AU MAXIMUM
         
         doc.text("Désignation", colDesignation, cellY + 3.5);
         doc.text("NOM", colNom, cellY + 3.5);
@@ -225,9 +258,9 @@ function exportFicheSecurite() {
           // Lignes horizontales et verticales de séparation
           doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
           doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
-          doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // NOM | PRÉNOM
-          doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // PRÉNOM | APT
-          doc.line(xBase + 62, cellY, xBase + 62, cellY + lineHeight);  // APT | Niv (colonne réduite)
+          doc.line(xBase + 38, cellY, xBase + 38, cellY + lineHeight);  // NOM | PRÉNOM (agrandi)
+          doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);  // PRÉNOM | APT (agrandi)
+          doc.line(xBase + 66, cellY, xBase + 66, cellY + lineHeight);  // APT | Niv (RÉDUIT)
           
           cellY += lineHeight;
         }
@@ -265,20 +298,160 @@ function exportFicheSecurite() {
         cellY += 3.5;
         
         // Réalisés
-        const realiseHeight = 4.5;  // Hauteur augmentée pour la ligne Réalisés
+        const realiseHeight = 5.5;  // Hauteur encore augmentée pour bien voir les traits
         doc.setFont(undefined, 'bold');
-        doc.text("Réalisés", colParam, cellY + 3);
+        doc.text("Réalisés", colParam, cellY + 3.5);
         if (palanqueeIdx < palanqueesLocal.length) {
           const params = palanqueesLocal[palanqueeIdx]?.parametres || {};
           doc.setFont(undefined, 'normal');
-          doc.text((params.dureeRealisee || ""), colDuree, cellY + 3);
-          doc.text((params.profondeurRealisee || ""), colProf, cellY + 3);
+          doc.text((params.dureeRealisee || ""), colDuree, cellY + 3.5);
+          doc.text((params.profondeurRealisee || ""), colProf, cellY + 3.5);
         }
-        // IMPORTANT : Traits verticaux complets pour Réalisés
+        // IMPORTANT : Traits verticaux LONGS pour Réalisés
         const bottomY = cellY + realiseHeight;
         doc.line(xBase + 20, cellY, xBase + 20, bottomY);  // Trait vertical Paramètres/Durée
         doc.line(xBase + 36, cellY, xBase + 36, bottomY);  // Trait vertical Durée/Prof
         doc.line(xBase + 48, cellY, xBase + 48, bottomY);  // Trait vertical Prof/H.eau
+      }
+    }
+    
+    // === PAGE 2 (VERSO) - PALANQUÉES 10 à 18 ===
+    if (palanqueesLocal.length > 9) {
+      doc.addPage();
+      
+      let yPosVerso = 15;
+      
+      // Titre de la page 2
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text("FICHE DE SÉCURITÉ (suite)", pageWidth / 2, yPosVerso, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text(`Date: ${formatDateFrench(dpDate)}`, pageWidth - margin - 30, yPosVerso);
+      
+      yPosVerso += 10;
+      
+      // Grille 3x3 pour palanquées 10-18
+      for (let row = 0; row < 3; row++) {
+        const startY = yPosVerso + (row * (rowHeight + rowSeparator));
+        
+        for (let col = 0; col < 3; col++) {
+          const palanqueeIdx = 9 + row * 3 + col;  // Commence à 9 (palanquée 10)
+          const xBase = margin + col * (colWidth + separator);
+          let cellY = startY;
+          
+          // Bordure et titre
+          doc.rect(xBase, startY, colWidth, rowHeight);
+          doc.setFontSize(7);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + 1, cellY + 3);
+          doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
+          cellY += 3.5;
+          
+          // En-têtes colonnes
+          doc.setFontSize(6);
+          const colDesignation = xBase + 1;
+          const colNom = xBase + 18;
+          const colPrenom = xBase + 40;
+          const colApt = xBase + 60;
+          const colNiv = xBase + 68;
+          
+          doc.text("Désignation", colDesignation, cellY + 3.5);
+          doc.text("NOM", colNom, cellY + 3.5);
+          doc.text("PRÉNOM", colPrenom, cellY + 3.5);
+          doc.text("APT", colApt, cellY + 3.5);
+          doc.text("Niv", colNiv, cellY + 3.5);
+          doc.line(xBase, cellY + 4.5, xBase + colWidth, cellY + 4.5);
+          cellY += 4.5;
+          
+          // Lignes plongeurs
+          const lignes = ["Encadrant", "Plongeur 1", "Plongeur 2", "Plongeur 3", "Plongeur 4", "GP suppl."];
+          const lineHeight = 4.8;
+          
+          for (let i = 0; i < lignes.length; i++) {
+            doc.setFontSize(5);
+            doc.setFont(undefined, 'italic');
+            doc.text(lignes[i], colDesignation + 0.5, cellY + 3);
+            
+            if (palanqueeIdx < palanqueesLocal.length) {
+              const pal = palanqueesLocal[palanqueeIdx];
+              if (pal && pal[i]) {
+                const plongeur = pal[i];
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(5.5);
+                
+                const nomComplet = plongeur.nom || "";
+                const aptitude = plongeur.pre || "";
+                const niveau = plongeur.niveau || "";
+                
+                const parts = nomComplet.trim().split(/\s+/);
+                let nom = "", prenom = "";
+                if (parts.length >= 2) {
+                  nom = parts[0].substring(0, 14);
+                  prenom = parts.slice(1).join(" ").substring(0, 12);
+                } else {
+                  nom = nomComplet.substring(0, 14);
+                }
+                
+                doc.text(nom, colNom + 0.5, cellY + 3);
+                doc.text(prenom, colPrenom + 0.5, cellY + 3);
+                doc.text(aptitude.substring(0, 5), colApt + 0.5, cellY + 3);
+                doc.text(niveau.substring(0, 10), colNiv + 0.5, cellY + 3);
+              }
+            }
+            
+            doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
+            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
+            doc.line(xBase + 38, cellY, xBase + 38, cellY + lineHeight);
+            doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);
+            doc.line(xBase + 66, cellY, xBase + 66, cellY + lineHeight);
+            
+            cellY += lineHeight;
+          }
+          
+          // Paramètres
+          doc.setFontSize(5.5);
+          doc.setFont(undefined, 'bold');
+          const colParam = xBase + 1;
+          const colDuree = xBase + 22;
+          const colProf = xBase + 38;
+          const colHeau = xBase + 50;
+          
+          doc.text("Paramètres", colParam, cellY + 3);
+          doc.text("Durée", colDuree, cellY + 3);
+          doc.text("Prof.", colProf, cellY + 3);
+          doc.text("H. eau", colHeau, cellY + 3);
+          doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
+          cellY += 3.5;
+          
+          doc.setFont(undefined, 'bold');
+          doc.text("Prévus", colParam, cellY + 3);
+          if (palanqueeIdx < palanqueesLocal.length) {
+            const params = palanqueesLocal[palanqueeIdx]?.parametres || {};
+            doc.setFont(undefined, 'normal');
+            doc.text((params.dureePrevue || ""), colDuree, cellY + 3);
+            doc.text((params.profondeurPrevue || ""), colProf, cellY + 3);
+            doc.text((params.horaire || ""), colHeau, cellY + 3);
+          }
+          doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
+          doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
+          doc.line(xBase + 36, cellY, xBase + 36, cellY + 3.5);
+          doc.line(xBase + 48, cellY, xBase + 48, cellY + 3.5);
+          cellY += 3.5;
+          
+          const realiseHeight = 5.5;
+          doc.setFont(undefined, 'bold');
+          doc.text("Réalisés", colParam, cellY + 3.5);
+          if (palanqueeIdx < palanqueesLocal.length) {
+            const params = palanqueesLocal[palanqueeIdx]?.parametres || {};
+            doc.setFont(undefined, 'normal');
+            doc.text((params.dureeRealisee || ""), colDuree, cellY + 3.5);
+            doc.text((params.profondeurRealisee || ""), colProf, cellY + 3.5);
+          }
+          const bottomY = cellY + realiseHeight;
+          doc.line(xBase + 20, cellY, xBase + 20, bottomY);
+          doc.line(xBase + 36, cellY, xBase + 36, bottomY);
+          doc.line(xBase + 48, cellY, xBase + 48, bottomY);
+        }
       }
     }
     
