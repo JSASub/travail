@@ -1,10 +1,10 @@
 // ===== SERVICE WORKER - JSA PALANQUÉES =====
-// Version : 2.2.2
+// Version : 2.5.0
 // Date : 2026-04-18
 // Auteur : RA - JSA Subaquatique
 
 // Configuration de la version et du cache
-const APP_VERSION = '2.2.2';
+const APP_VERSION = '2.5.0';
 const CACHE_VERSION = `jsas-v${APP_VERSION}`;
 const CACHE_NAME = `jsas-palanquees-${CACHE_VERSION}`;
 
