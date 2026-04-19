@@ -1,5 +1,5 @@
 // ===== SERVICE WORKER - JSA PALANQUÉES =====
-// Version : 2.2.4
+// Version : 2.2.3
 // Date : 2026-04-19
 // Auteur : RA - JSA Subaquatique
 
