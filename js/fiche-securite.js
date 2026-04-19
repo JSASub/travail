@@ -208,35 +208,43 @@ function exportFicheSecurite() {
           const lineHeight = 4.8;
           
           for (let i = 0; i < lignes.length; i++) {
-            doc.setFontSize(7);  // Agrandi de 6 à 7
+            doc.setFontSize(7);
             doc.setFont(undefined, 'italic');
             doc.text(lignes[i], colDesignation + 0.5, cellY + 3);
             
             if (palanqueeIdx < palanqueesLocal.length) {
               const pal = palanqueesLocal[palanqueeIdx];
-              if (pal && pal[i]) {
-                const plongeur = pal[i];
+              
+              // Déterminer l'index du plongeur à afficher
+              let plongeurIndex = i;
+              
+              // Si ligne Encadrant (i=0) : vérifier s'il y a un vrai encadrant
+              if (i === 0 && pal && pal[0]) {
+                const premierPlongeur = pal[0];
+                const aptPremier = (premierPlongeur.pre || "").toUpperCase();
+                const isVraiEncadrant = /^(GP|E[1-4])$/i.test(aptPremier);
                 
-                // VÉRIFICATION : Si c'est la ligne "Encadrant" (i=0), vérifier que c'est un vrai encadrant
-                if (i === 0) {
-                  const aptitude = (plongeur.pre || "").toUpperCase();
-                  const isVraiEncadrant = /^(GP|E[1-4])$/i.test(aptitude);
-                  
-                  // Si ce n'est pas un vrai encadrant, laisser la ligne vide
-                  if (!isVraiEncadrant) {
-                    // Dessiner les traits mais ne pas afficher de données
-                    doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-                    doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
-                    doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);
-                    doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);
-                    doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);
-                    cellY += lineHeight;
-                    continue;
-                  }
+                // Si le premier n'est pas encadrant, laisser la ligne vide
+                if (!isVraiEncadrant) {
+                  plongeurIndex = -1; // Ne rien afficher
                 }
+              } else if (i > 0 && pal && pal[0]) {
+                // Pour les lignes Plongeur 1, 2, 3... : vérifier si on doit décaler
+                const premierPlongeur = pal[0];
+                const aptPremier = (premierPlongeur.pre || "").toUpperCase();
+                const isVraiEncadrant = /^(GP|E[1-4])$/i.test(aptPremier);
                 
+                // Si pas d'encadrant, décaler : Plongeur 1 = index[0], Plongeur 2 = index[1], etc.
+                if (!isVraiEncadrant) {
+                  plongeurIndex = i - 1;
+                }
+              }
+              
+              // Afficher le plongeur si l'index est valide
+              if (plongeurIndex >= 0 && pal && pal[plongeurIndex]) {
+                const plongeur = pal[plongeurIndex];
                 doc.setFont(undefined, 'normal');
-                doc.setFontSize(7.5);  // Agrandi de 6.5 à 7.5
+                doc.setFontSize(7.5);
                 
                 const nomComplet = plongeur.nom || "";
                 const aptitude = plongeur.pre || "";
@@ -245,24 +253,24 @@ function exportFicheSecurite() {
                 const parts = nomComplet.trim().split(/\s+/);
                 let nom = "", prenom = "";
                 if (parts.length >= 2) {
-                  nom = parts[0].substring(0, 16);      // NOM élargi (28mm = ~16 car)
-                  prenom = parts.slice(1).join(" ").substring(0, 16);  // PRÉNOM élargi (28mm = ~16 car)
+                  nom = parts[0].substring(0, 16);
+                  prenom = parts.slice(1).join(" ").substring(0, 16);
                 } else {
                   nom = nomComplet.substring(0, 16);
                 }
                 
                 doc.text(nom, colNom + 0.5, cellY + 3);
                 doc.text(prenom, colPrenom + 0.5, cellY + 3);
-                doc.text(aptitude.substring(0, 8), colApt + 0.5, cellY + 3);  // APT 13mm (~8 car)
-                doc.text(niveau.substring(0, 7), colNiv + 0.5, cellY + 3);    // Niv 12mm (~7 car)
+                doc.text(aptitude.substring(0, 8), colApt + 0.5, cellY + 3);
+                doc.text(niveau.substring(0, 7), colNiv + 0.5, cellY + 3);
               }
             }
             
             doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
-            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);  // NOM | PRÉNOM
-            doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);  // PRÉNOM | APT
-            doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);  // APT (13mm) | Niv (12mm)
+            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
+            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);
+            doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);
+            doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);
             
             cellY += lineHeight;
           }
