@@ -169,9 +169,10 @@ function exportFicheSecurite() {
         const lineHeight = 4.8;
         
         for (let i = 0; i < lignes.length; i++) {
-          doc.setFontSize(5.5);
+          doc.setFontSize(5);
           doc.setFont(undefined, 'italic');
-          doc.text(lignes[i], colDesignation, cellY + 3);
+          // Afficher la désignation (Encadrant, Plongeur 1, etc.)
+          doc.text(lignes[i], colDesignation + 0.5, cellY + 3);
           
           // Afficher les données du plongeur si disponible
           if (palanqueeIdx < palanqueesLocal.length) {
@@ -181,16 +182,16 @@ function exportFicheSecurite() {
               doc.setFont(undefined, 'normal');
               doc.setFontSize(5.5);
               
-              // IMPORTANT : Chaque donnée dans SA colonne
+              // IMPORTANT : Chaque donnée dans SA colonne avec position précise
               const nom = (plongeur.nom || "").substring(0, 11);
               const prenom = (plongeur.pre || "").substring(0, 10);
               const apt = (plongeur.aptitude || "").substring(0, 5);
               const niv = (plongeur.niveau || "").substring(0, 10);  // Limité à 10 caractères
               
-              doc.text(nom, colNom, cellY + 3);
-              doc.text(prenom, colPrenom, cellY + 3);
-              doc.text(apt, colApt, cellY + 3);
-              doc.text(niv, colNiv, cellY + 3);
+              doc.text(nom, colNom + 0.5, cellY + 3);
+              doc.text(prenom, colPrenom + 0.5, cellY + 3);
+              doc.text(apt, colApt + 0.5, cellY + 3);
+              doc.text(niv, colNiv + 0.5, cellY + 3);
             }
           }
           
@@ -210,8 +211,8 @@ function exportFicheSecurite() {
         
         const colParam = xBase + 1;
         const colDuree = xBase + 22;
-        const colProf = xBase + 35;
-        const colHeau = xBase + 48;
+        const colProf = xBase + 38;
+        const colHeau = xBase + 50;
         
         doc.text("Paramètres", colParam, cellY + 3);
         doc.text("Durée", colDuree, cellY + 3);
@@ -231,9 +232,9 @@ function exportFicheSecurite() {
           doc.text((params.horaire || ""), colHeau, cellY + 3);
         }
         doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
-        doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);
-        doc.line(xBase + 33, cellY, xBase + 33, cellY + 3.5);
-        doc.line(xBase + 46, cellY, xBase + 46, cellY + 3.5);
+        doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);  // Trait vertical Paramètres/Durée
+        doc.line(xBase + 36, cellY, xBase + 36, cellY + 3.5);  // Trait vertical Durée/Prof
+        doc.line(xBase + 48, cellY, xBase + 48, cellY + 3.5);  // Trait vertical Prof/H.eau
         cellY += 3.5;
         
         // Réalisés
@@ -245,9 +246,10 @@ function exportFicheSecurite() {
           doc.text((params.dureeRealisee || ""), colDuree, cellY + 3);
           doc.text((params.profondeurRealisee || ""), colProf, cellY + 3);
         }
-        doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);
-        doc.line(xBase + 33, cellY, xBase + 33, cellY + 3.5);
-        doc.line(xBase + 46, cellY, xBase + 46, cellY + 3.5);
+        // IMPORTANT : Ajouter les traits verticaux pour la ligne Réalisés
+        doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);  // Trait vertical Paramètres/Durée
+        doc.line(xBase + 36, cellY, xBase + 36, cellY + 3.5);  // Trait vertical Durée/Prof
+        doc.line(xBase + 48, cellY, xBase + 48, cellY + 3.5);  // Trait vertical Prof/H.eau
       }
     }
     
