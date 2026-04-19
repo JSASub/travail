@@ -48,16 +48,22 @@ function exportFicheSecurite() {
     const palanqueesLocal = typeof palanquees !== 'undefined' ? palanquees : [];
     const totalPlongeurs = palanqueesLocal.reduce((total, pal) => total + (pal ? pal.length : 0), 0);
     
-    // Charger le logo
-    const logoImg = document.querySelector('.logo, img[src*="logo"]');
     let yPos = 12;
     
-    // Ajouter le logo si disponible
-    if (logoImg && logoImg.complete) {
+    // LOGO JSAS - Essayer de l'ajouter si disponible
+    const logoImg = document.querySelector('.logo');
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
       try {
-        doc.addImage(logoImg, 'PNG', margin, yPos, 12, 12);
+        // Convertir en base64 pour éviter les problèmes CORS
+        const canvas = document.createElement('canvas');
+        canvas.width = logoImg.naturalWidth;
+        canvas.height = logoImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(logoImg, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
+        doc.addImage(dataUrl, 'PNG', margin, yPos, 12, 12);
       } catch (e) {
-        console.log("Logo non ajouté:", e);
+        console.log("Logo non ajouté (erreur CORS ou format):", e);
       }
     }
     
@@ -65,9 +71,9 @@ function exportFicheSecurite() {
     const xStart = margin + 15;
     doc.setFontSize(7);
     doc.setFont(undefined, 'bold');
-    doc.text("Nom de l'établissement d'APS :", xStart, yPos + 2);
+    doc.text("Nom de l'établissement :", xStart, yPos + 2);
     doc.setFont(undefined, 'normal');
-    doc.text("JSA Subaquatique", xStart + 52, yPos + 2);
+    doc.text("JSA Subaquatique", xStart + 45, yPos + 2);
     
     doc.setFont(undefined, 'bold');
     doc.text("Référence (n° de club, RCS,…) :", xStart, yPos + 7);
@@ -101,7 +107,7 @@ function exportFicheSecurite() {
     doc.setFont(undefined, 'bold');
     doc.text("Lieu de plongée :", 150, yPos);
     doc.setFont(undefined, 'normal');
-    doc.text(dpLieu.substring(0, 50), 180, yPos);
+    doc.text(dpLieu.substring(0, 70), 180, yPos);
     
     yPos += 5;
     doc.setFont(undefined, 'bold');
@@ -123,7 +129,7 @@ function exportFicheSecurite() {
     const colWidth = (pageWidth - 2 * margin) / 3;
     const rowHeight = 48;
     
-    // Traits fins
+    // Traits très fins
     doc.setLineWidth(0.1);
     doc.setDrawColor(0, 0, 0);
     
@@ -138,82 +144,108 @@ function exportFicheSecurite() {
         // Bordure extérieure du bloc palanquée
         doc.rect(xBase, startY, colWidth, rowHeight);
         
-        // En-tête : NOM | PRÉNOM | APT | Niv
+        // === EN-TÊTE COLONNES : Désignation | NOM | PRÉNOM | APT | Niv ===
         doc.setFontSize(6);
         doc.setFont(undefined, 'bold');
-        doc.text("NOM", xBase + 2, cellY + 3.5);
-        doc.text("PRÉNOM", xBase + 22, cellY + 3.5);
-        doc.text("APT", xBase + 42, cellY + 3.5);
-        doc.text("Niv", xBase + 50, cellY + 3.5);
+        
+        // Positions des colonnes (ajustées avec nouvelle colonne Désignation)
+        const colDesignation = xBase + 1;
+        const colNom = xBase + 18;
+        const colPrenom = xBase + 36;
+        const colApt = xBase + 52;
+        const colNiv = xBase + 60;
+        
+        doc.text("Désignation", colDesignation, cellY + 3.5);
+        doc.text("NOM", colNom, cellY + 3.5);
+        doc.text("PRÉNOM", colPrenom, cellY + 3.5);
+        doc.text("APT", colApt, cellY + 3.5);
+        doc.text("Niv", colNiv, cellY + 3.5);
         
         doc.line(xBase, cellY + 4.5, xBase + colWidth, cellY + 4.5);
         cellY += 4.5;
         
-        // Lignes de plongeurs
+        // === LIGNES DE PLONGEURS ===
         const lignes = ["Encadrant", "Plongeur 1", "Plongeur 2", "Plongeur 3", "Plongeur 4", "GP suppl."];
         const lineHeight = 4.8;
         
         for (let i = 0; i < lignes.length; i++) {
           doc.setFontSize(5.5);
-          doc.setFont(undefined, 'bold');
-          doc.text(lignes[i], xBase + 1, cellY + 3);
+          doc.setFont(undefined, 'italic');
+          doc.text(lignes[i], colDesignation, cellY + 3);
           
+          // Afficher les données du plongeur si disponible
           if (palanqueeIdx < palanqueesLocal.length) {
             const pal = palanqueesLocal[palanqueeIdx];
             if (pal && pal[i]) {
               const plongeur = pal[i];
               doc.setFont(undefined, 'normal');
               doc.setFontSize(5.5);
-              doc.text((plongeur.nom || "").substring(0, 12), xBase + 2, cellY + 3);
-              doc.text((plongeur.pre || "").substring(0, 10), xBase + 22, cellY + 3);
-              doc.text((plongeur.niveau || ""), xBase + 50, cellY + 3);
+              
+              // IMPORTANT : Chaque donnée dans SA colonne
+              const nom = (plongeur.nom || "").substring(0, 11);
+              const prenom = (plongeur.pre || "").substring(0, 10);
+              const apt = (plongeur.aptitude || "").substring(0, 5);
+              const niv = (plongeur.niveau || "").substring(0, 10);  // Limité à 10 caractères
+              
+              doc.text(nom, colNom, cellY + 3);
+              doc.text(prenom, colPrenom, cellY + 3);
+              doc.text(apt, colApt, cellY + 3);
+              doc.text(niv, colNiv, cellY + 3);
             }
           }
           
+          // Lignes horizontales et verticales
           doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-          doc.line(xBase + 20, cellY, xBase + 20, cellY + lineHeight);
-          doc.line(xBase + 40, cellY, xBase + 40, cellY + lineHeight);
-          doc.line(xBase + 48, cellY, xBase + 48, cellY + lineHeight);
+          doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Séparation Désignation/NOM
+          doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // Séparation NOM/PRÉNOM
+          doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // Séparation PRÉNOM/APT
+          doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);  // Séparation APT/Niv
           
           cellY += lineHeight;
         }
         
-        // Section Paramètres
+        // === SECTION PARAMÈTRES ===
         doc.setFontSize(5.5);
         doc.setFont(undefined, 'bold');
-        doc.text("Paramètres", xBase + 1, cellY + 3);
-        doc.text("Durée", xBase + 22, cellY + 3);
-        doc.text("Prof.", xBase + 35, cellY + 3);
-        doc.text("H. eau", xBase + 48, cellY + 3);
+        
+        const colParam = xBase + 1;
+        const colDuree = xBase + 22;
+        const colProf = xBase + 35;
+        const colHeau = xBase + 48;
+        
+        doc.text("Paramètres", colParam, cellY + 3);
+        doc.text("Durée", colDuree, cellY + 3);
+        doc.text("Prof.", colProf, cellY + 3);
+        doc.text("H. eau", colHeau, cellY + 3);
         doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
         cellY += 3.5;
         
         // Prévus
         doc.setFont(undefined, 'bold');
-        doc.text("Prévus", xBase + 1, cellY + 3);
+        doc.text("Prévus", colParam, cellY + 3);
         if (palanqueeIdx < palanqueesLocal.length) {
           const params = palanqueesLocal[palanqueeIdx]?.parametres || {};
           doc.setFont(undefined, 'normal');
-          doc.text((params.dureePrevue || ""), xBase + 22, cellY + 3);
-          doc.text((params.profondeurPrevue || ""), xBase + 35, cellY + 3);
-          doc.text((params.horaire || ""), xBase + 48, cellY + 3);
+          doc.text((params.dureePrevue || ""), colDuree, cellY + 3);
+          doc.text((params.profondeurPrevue || ""), colProf, cellY + 3);
+          doc.text((params.horaire || ""), colHeau, cellY + 3);
         }
         doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
-        doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
+        doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);
         doc.line(xBase + 33, cellY, xBase + 33, cellY + 3.5);
         doc.line(xBase + 46, cellY, xBase + 46, cellY + 3.5);
         cellY += 3.5;
         
         // Réalisés
         doc.setFont(undefined, 'bold');
-        doc.text("Réalisés", xBase + 1, cellY + 3);
+        doc.text("Réalisés", colParam, cellY + 3);
         if (palanqueeIdx < palanqueesLocal.length) {
           const params = palanqueesLocal[palanqueeIdx]?.parametres || {};
           doc.setFont(undefined, 'normal');
-          doc.text((params.dureeRealisee || ""), xBase + 22, cellY + 3);
-          doc.text((params.profondeurRealisee || ""), xBase + 35, cellY + 3);
+          doc.text((params.dureeRealisee || ""), colDuree, cellY + 3);
+          doc.text((params.profondeurRealisee || ""), colProf, cellY + 3);
         }
-        doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
+        doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);
         doc.line(xBase + 33, cellY, xBase + 33, cellY + 3.5);
         doc.line(xBase + 46, cellY, xBase + 46, cellY + 3.5);
       }
