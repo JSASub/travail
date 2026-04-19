@@ -33,7 +33,7 @@ function exportFicheSecurite() {
     
     const pageWidth = 297;
     const pageHeight = 210;
-    const margin = 10;
+    const margin = 6;  // Réduit de 10 à 6mm
     
     function formatDateFrench(dateString) {
       if (!dateString) return "";
@@ -97,7 +97,7 @@ function exportFicheSecurite() {
         }
         
         const xStart = margin + 15;
-        doc.setFontSize(7);
+        doc.setFontSize(8);  // Agrandi de 7 à 8
         doc.setFont(undefined, 'bold');
         doc.text("Nom de l'établissement :", xStart, yPos + 2);
         doc.setFont(undefined, 'normal');
@@ -108,13 +108,13 @@ function exportFicheSecurite() {
         doc.setFont(undefined, 'normal');
         doc.text("02240167", xStart + 52, yPos + 7);
         
-        doc.setFontSize(12);
+        doc.setFontSize(14);  // Agrandi de 12 à 14
         doc.setFont(undefined, 'bold');
         doc.text("FICHE DE SÉCURITÉ", pageWidth / 2, yPos + 2, { align: 'center' });
-        doc.setFontSize(7);
+        doc.setFontSize(8);  // Agrandi de 7 à 8
         doc.text("(art. A322-72 du code du sport et R4461-13 du code du travail)", pageWidth / 2, yPos + 8, { align: 'center' });
         
-        doc.setFontSize(7);
+        doc.setFontSize(8);  // Agrandi de 7 à 8
         doc.setFont(undefined, 'bold');
         doc.text("Date:", pageWidth - margin - 32, yPos + 2);
         doc.setFont(undefined, 'normal');
@@ -122,7 +122,7 @@ function exportFicheSecurite() {
         
         yPos += 15;
         
-        doc.setFontSize(7);
+        doc.setFontSize(8);  // Agrandi de 7 à 8
         doc.setFont(undefined, 'bold');
         doc.text("Bateau :", margin, yPos);
         doc.text("Matin/A.Midi/Nuit :", 80, yPos);
@@ -181,14 +181,14 @@ function exportFicheSecurite() {
           doc.rect(xBase, startY, colWidth, rowHeight);
           
           // Titre
-          doc.setFontSize(7);
+          doc.setFontSize(8);  // Agrandi de 7 à 8
           doc.setFont(undefined, 'bold');
           doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + 1, cellY + 3);
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
           
           // En-têtes - COLONNE NIV RÉDUITE AU MAX
-          doc.setFontSize(6);
+          doc.setFontSize(7);  // Agrandi de 6 à 7
           const colDesignation = xBase + 1;
           const colNom = xBase + 18;
           const colPrenom = xBase + 42;
@@ -208,7 +208,7 @@ function exportFicheSecurite() {
           const lineHeight = 4.8;
           
           for (let i = 0; i < lignes.length; i++) {
-            doc.setFontSize(5);
+            doc.setFontSize(6);  // Agrandi de 5 à 6
             doc.setFont(undefined, 'italic');
             doc.text(lignes[i], colDesignation + 0.5, cellY + 3);
             
@@ -217,7 +217,7 @@ function exportFicheSecurite() {
               if (pal && pal[i]) {
                 const plongeur = pal[i];
                 doc.setFont(undefined, 'normal');
-                doc.setFontSize(5.5);
+                doc.setFontSize(6.5);  // Agrandi de 5.5 à 6.5
                 
                 const nomComplet = plongeur.nom || "";
                 const aptitude = plongeur.pre || "";
@@ -249,7 +249,7 @@ function exportFicheSecurite() {
           }
           
           // Paramètres
-          doc.setFontSize(5.5);
+          doc.setFontSize(6.5);  // Agrandi de 5.5 à 6.5
           doc.setFont(undefined, 'bold');
           const colParam = xBase + 1;
           const colDuree = xBase + 22;
