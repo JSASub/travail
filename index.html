@@ -669,8 +669,38 @@ Voulez-vous plus d'informations ?`)) {
   <!-- NOUVEAU MODULE DE GESTION DES MENUS FLOTTANTS -->
   <script src="js/floating-menus-manager.js"></script>
   
-  <!-- PWA INSTALLER - DOIT ÊTRE EN DERNIER -->
-  <script src="./pwa-installer.js"></script>
+  <!-- DÉSACTIVATION TEMPORAIRE DU PWA POUR FORCER LA MISE À JOUR -->
+  <!-- <script src="./pwa-installer.js"></script> -->
+  
+  <!-- SCRIPT DE NETTOYAGE FORCÉ -->
+  <script>
+    // Désinscrire tous les service workers
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister().then(function(success) {
+            console.log('✅ Service Worker désinscrit:', success);
+          });
+        }
+      });
+      
+      // Vider tout le cache
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name).then(function(success) {
+              console.log('✅ Cache supprimé:', name);
+            });
+          }
+        });
+      }
+      
+      console.log('🧹 Nettoyage complet effectué - Rechargez la page dans 3 secondes');
+      setTimeout(function() {
+        window.location.reload(true);
+      }, 3000);
+    }
+  </script>
 
 <!-- Modal pour ajouter/modifier un DP -->
 <div id="dp-modal">
