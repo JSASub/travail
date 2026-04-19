@@ -169,12 +169,12 @@ function exportFicheSecurite() {
         const lineHeight = 4.8;
         
         for (let i = 0; i < lignes.length; i++) {
+          // DÉSIGNATION en italique (colonne de gauche)
           doc.setFontSize(5);
           doc.setFont(undefined, 'italic');
-          // Afficher la désignation (Encadrant, Plongeur 1, etc.)
           doc.text(lignes[i], colDesignation + 0.5, cellY + 3);
           
-          // Afficher les données du plongeur si disponible
+          // DONNÉES DU PLONGEUR (colonnes NOM, PRÉNOM, APT, Niv)
           if (palanqueeIdx < palanqueesLocal.length) {
             const pal = palanqueesLocal[palanqueeIdx];
             if (pal && pal[i]) {
@@ -182,25 +182,43 @@ function exportFicheSecurite() {
               doc.setFont(undefined, 'normal');
               doc.setFontSize(5.5);
               
-              // IMPORTANT : Chaque donnée dans SA colonne avec position précise
-              const nom = (plongeur.nom || "").substring(0, 11);
-              const prenom = (plongeur.pre || "").substring(0, 10);
-              const apt = (plongeur.aptitude || "").substring(0, 5);
-              const niv = (plongeur.niveau || "").substring(0, 10);  // Limité à 10 caractères
+              // Extraire les données selon la VRAIE structure de l'objet plongeur
+              // Structure réelle : { nom: "MARTY Élina", pre: "PE20", niveau: "N2" }
+              // où pre = aptitude (PE20, PA40...) et niveau = niveau (E2, N2, N3...)
               
+              const nomComplet = plongeur.nom || "";
+              const aptitude = plongeur.pre || "";  // pre contient l'aptitude (PE20, PA40...)
+              const niveau = plongeur.niveau || "";  // niveau contient E2, N2, N3...
+              
+              // Séparer le nom complet en NOM et PRÉNOM
+              const parts = nomComplet.trim().split(/\s+/);
+              let nom = "";
+              let prenom = "";
+              
+              if (parts.length >= 2) {
+                // Si format "NOM Prénom" ou "Prénom NOM"
+                // On prend le dernier mot comme nom de famille
+                nom = parts[parts.length - 1].substring(0, 11);
+                prenom = parts.slice(0, -1).join(" ").substring(0, 10);
+              } else {
+                // Un seul mot, on le met dans NOM
+                nom = nomComplet.substring(0, 11);
+              }
+              
+              // Écrire chaque donnée dans SA colonne
               doc.text(nom, colNom + 0.5, cellY + 3);
               doc.text(prenom, colPrenom + 0.5, cellY + 3);
-              doc.text(apt, colApt + 0.5, cellY + 3);
-              doc.text(niv, colNiv + 0.5, cellY + 3);
+              doc.text(aptitude.substring(0, 5), colApt + 0.5, cellY + 3);
+              doc.text(niveau.substring(0, 10), colNiv + 0.5, cellY + 3);
             }
           }
           
-          // Lignes horizontales et verticales
+          // Lignes horizontales et verticales de séparation
           doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-          doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Séparation Désignation/NOM
-          doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // Séparation NOM/PRÉNOM
-          doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // Séparation PRÉNOM/APT
-          doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);  // Séparation APT/Niv
+          doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
+          doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // NOM | PRÉNOM
+          doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // PRÉNOM | APT
+          doc.line(xBase + 58, cellY, xBase + 58, cellY + lineHeight);  // APT | Niv
           
           cellY += lineHeight;
         }
