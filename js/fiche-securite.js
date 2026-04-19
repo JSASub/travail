@@ -126,8 +126,9 @@ function exportFicheSecurite() {
     yPos += 8;
     
     // === GRILLE DES PALANQUÉES (3 colonnes x 3 rangées = 9 palanquées) ===
-    const colWidth = (pageWidth - 2 * margin) / 3;
-    const rowHeight = 48;
+    const colWidth = (pageWidth - 2 * margin - 6) / 3;  // -6 pour les espaces entre palanquées
+    const rowHeight = 50;  // Augmenté pour avoir plus d'espace pour Réalisés
+    const separator = 2;  // Espace blanc entre les palanquées
     
     // Traits très fins
     doc.setLineWidth(0.1);
@@ -138,7 +139,7 @@ function exportFicheSecurite() {
       
       for (let col = 0; col < 3; col++) {
         const palanqueeIdx = row * 3 + col;
-        const xBase = margin + col * colWidth;
+        const xBase = margin + col * (colWidth + separator);  // Ajouter séparateur entre colonnes
         let cellY = startY;
         
         // Bordure extérieure du bloc palanquée
@@ -148,7 +149,7 @@ function exportFicheSecurite() {
         if (palanqueeIdx < palanqueesLocal.length) {
           doc.setFontSize(7);
           doc.setFont(undefined, 'bold');
-          doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + colWidth / 2, cellY + 3, { align: 'center' });
+          doc.text(`Palanquée ${palanqueeIdx + 1}`, xBase + 1, cellY + 3);  // Aligné à gauche
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
         }
@@ -157,12 +158,12 @@ function exportFicheSecurite() {
         doc.setFontSize(6);
         doc.setFont(undefined, 'bold');
         
-        // Positions des colonnes (Niv réduit à 8mm au lieu de ~14mm)
+        // Positions des colonnes (Niv réduit au maximum)
         const colDesignation = xBase + 1;
         const colNom = xBase + 18;
         const colPrenom = xBase + 36;
         const colApt = xBase + 52;
-        const colNiv = xBase + 62;  // Déplacé plus à droite pour réduire la colonne
+        const colNiv = xBase + 64;  // Encore plus à droite pour une colonne Niv très étroite
         
         doc.text("Désignation", colDesignation, cellY + 3.5);
         doc.text("NOM", colNom, cellY + 3.5);
@@ -199,15 +200,16 @@ function exportFicheSecurite() {
               const aptitude = plongeur.pre || "";  // pre contient l'aptitude (PE20, PA40...)
               const niveau = plongeur.niveau || "";  // niveau contient E2, N2, N3...
               
-              // Séparer le nom complet en PRÉNOM et NOM
+              // Séparer le nom complet en NOM et PRÉNOM
+              // Format attendu : "Prénom NOM" → on inverse pour mettre NOM en premier
               const parts = nomComplet.trim().split(/\s+/);
               let nom = "";
               let prenom = "";
               
               if (parts.length >= 2) {
-                // Format "Prénom NOM" : premier mot = prénom, dernier = nom
-                prenom = parts[0].substring(0, 10);
-                nom = parts.slice(1).join(" ").substring(0, 11);
+                // Premier mot = NOM de famille, reste = Prénom
+                nom = parts[0].substring(0, 11);
+                prenom = parts.slice(1).join(" ").substring(0, 10);
               } else {
                 // Un seul mot, on le met dans NOM
                 nom = nomComplet.substring(0, 11);
@@ -226,7 +228,7 @@ function exportFicheSecurite() {
           doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);  // Désignation | NOM
           doc.line(xBase + 34, cellY, xBase + 34, cellY + lineHeight);  // NOM | PRÉNOM
           doc.line(xBase + 50, cellY, xBase + 50, cellY + lineHeight);  // PRÉNOM | APT
-          doc.line(xBase + 60, cellY, xBase + 60, cellY + lineHeight);  // APT | Niv (réduit)
+          doc.line(xBase + 62, cellY, xBase + 62, cellY + lineHeight);  // APT | Niv (colonne réduite)
           
           cellY += lineHeight;
         }
@@ -264,6 +266,7 @@ function exportFicheSecurite() {
         cellY += 3.5;
         
         // Réalisés
+        const realiseHeight = 4.5;  // Hauteur augmentée pour la ligne Réalisés
         doc.setFont(undefined, 'bold');
         doc.text("Réalisés", colParam, cellY + 3);
         if (palanqueeIdx < palanqueesLocal.length) {
@@ -273,7 +276,7 @@ function exportFicheSecurite() {
           doc.text((params.profondeurRealisee || ""), colProf, cellY + 3);
         }
         // IMPORTANT : Traits verticaux complets pour Réalisés
-        const bottomY = cellY + 3.5;
+        const bottomY = cellY + realiseHeight;
         doc.line(xBase + 20, cellY, xBase + 20, bottomY);  // Trait vertical Paramètres/Durée
         doc.line(xBase + 36, cellY, xBase + 36, bottomY);  // Trait vertical Durée/Prof
         doc.line(xBase + 48, cellY, xBase + 48, bottomY);  // Trait vertical Prof/H.eau
