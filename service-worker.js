@@ -1,11 +1,11 @@
 // ===== SERVICE WORKER - JSA PALANQUÉES =====
-// Version : 2.6.1 - MISE À JOUR FORCÉE
+// Version : 2.6.2 - MISE À JOUR FORCÉE
 // Date : 2026-04-20
 // Auteur : RA - JSA Subaquatique
 // IMPORTANT : Cette version force le téléchargement de tous les fichiers JS
 
 // Configuration de la version et du cache
-const APP_VERSION = '2.6.1';
+const APP_VERSION = '2.6.2';
 const CACHE_VERSION = `jsas-v${APP_VERSION}`;
 const CACHE_NAME = `jsas-palanquees-${CACHE_VERSION}`;
 
