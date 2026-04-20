@@ -374,6 +374,29 @@ function exportFicheSecurite() {
     doc.addPage();
     creerPage(2, 9, 18);
     
+    // Ajouter les métadonnées du PDF
+    doc.setProperties({
+      title: 'Fiche de Sécurité JSAS',
+      subject: 'Fiche réglementaire art. A322-72 du code du sport et R4461-13 du code du travail',
+      author: 'JSA Subaquatique',
+      keywords: 'plongée, sécurité, palanquée, JSAS',
+      creator: 'Application JSAS'
+    });
+    
+    // Configurer l'impression recto-verso bord court
+    // Note: Ceci est une suggestion pour l'imprimante, pas toujours pris en compte par tous les lecteurs PDF
+    try {
+      const pdfInternals = doc.internal;
+      if (pdfInternals && pdfInternals.events) {
+        // Ajouter le paramètre Duplex au catalogue du PDF
+        pdfInternals.events.subscribe('putCatalog', function() {
+          pdfInternals.write('/Duplex /DuplexFlipShortEdge');
+        });
+      }
+    } catch (e) {
+      console.warn("Impossible d'ajouter le paramètre Duplex:", e);
+    }
+    
     const dateStr = formatDateFrench(dpDate).replace(/\//g, '-');
     doc.save(`Fiche_Securite_JSAS_${dateStr}.pdf`);
     
