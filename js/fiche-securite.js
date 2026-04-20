@@ -289,8 +289,8 @@ function exportFicheSecurite() {
           const colHeau = xBase + 50;
           
           doc.text("Paramètres", colParam, cellY + 3);
-          doc.text("Durée", colDuree, cellY + 3);
-          doc.text("Prof.", colProf, cellY + 3);
+          doc.text("Durée (min)", colDuree, cellY + 3);
+          doc.text("Prof. (m)", colProf, cellY + 3);
           doc.text("H. eau", colHeau, cellY + 3);
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
