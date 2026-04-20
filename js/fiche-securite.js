@@ -398,7 +398,11 @@ function exportFicheSecurite() {
     }
     
     const dateStr = formatDateFrench(dpDate).replace(/\//g, '-');
-    doc.save(`Fiche_Securite_JSAS_${dateStr}.pdf`);
+    
+    // Formater le type de plongée pour le nom du fichier
+    const typePlongeeFormatted = dpPlongee.charAt(0).toUpperCase() + dpPlongee.slice(1);
+    
+    doc.save(`Fiche_Securite_JSAS_${dateStr}_${typePlongeeFormatted}.pdf`);
     
     console.log("✅ Fiche de sécurité réglementaire générée");
     
