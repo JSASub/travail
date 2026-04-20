@@ -90,7 +90,12 @@ function exportFicheSecurite() {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(logoImg, 0, 0);
             const dataUrl = canvas.toDataURL('image/png');
-            doc.addImage(dataUrl, 'PNG', margin, yPos, 12, 12);
+            
+            // Calculer les dimensions proportionnelles (hauteur fixe 12mm)
+            const logoHeight = 12;
+            const logoWidth = (logoImg.naturalWidth / logoImg.naturalHeight) * logoHeight;
+            
+            doc.addImage(dataUrl, 'PNG', margin, yPos, logoWidth, logoHeight);
           } catch (e) {
             console.log("Logo non ajouté:", e);
           }
