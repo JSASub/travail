@@ -290,21 +290,29 @@ function exportFicheSecurite() {
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
           
-          // Récupérer les paramètres de la palanquée
+          // Récupérer les paramètres de la palanquée depuis le DOM
           let dureePrevue = '';
           let profPrevue = '';
           let horaire = '';
           let dureeRealisee = '';
           let profRealisee = '';
           
-          if (palanqueeIdx < palanqueesLocal.length) {
-            const pal = palanqueesLocal[palanqueeIdx];
-            if (pal && pal.parametres) {
-              dureePrevue = pal.parametres.dureePrevue || '';
-              profPrevue = pal.parametres.profondeurPrevue || '';
-              horaire = pal.parametres.horaire || '';
-              dureeRealisee = pal.parametres.dureeRealisee || '';
-              profRealisee = pal.parametres.profondeurRealisee || '';
+          // Chercher dans le DOM les inputs de paramètres pour cette palanquée
+          const palanqueeDetails = document.querySelectorAll('.palanquee-details');
+          if (palanqueeIdx < palanqueeDetails.length) {
+            const detailDiv = palanqueeDetails[palanqueeIdx];
+            if (detailDiv) {
+              const horaireInput = detailDiv.querySelector('.palanquee-horaire');
+              const profPrevueInput = detailDiv.querySelector('.palanquee-prof-prevue');
+              const dureePrevueInput = detailDiv.querySelector('.palanquee-duree-prevue');
+              const profRealiseeInput = detailDiv.querySelector('.palanquee-prof-realisee');
+              const dureeRealiseeInput = detailDiv.querySelector('.palanquee-duree-realisee');
+              
+              horaire = horaireInput?.value || '';
+              profPrevue = profPrevueInput?.value || '';
+              dureePrevue = dureePrevueInput?.value || '';
+              profRealisee = profRealiseeInput?.value || '';
+              dureeRealisee = dureeRealiseeInput?.value || '';
             }
           }
           
