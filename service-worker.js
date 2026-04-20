@@ -1,10 +1,11 @@
 // ===== SERVICE WORKER - JSA PALANQUÉES =====
-// Version : 2.5.0
-// Date : 2026-04-21
+// Version : 2.6.0 - MISE À JOUR FORCÉE
+// Date : 2026-04-20
 // Auteur : RA - JSA Subaquatique
+// IMPORTANT : Cette version force le téléchargement de tous les fichiers JS
 
 // Configuration de la version et du cache
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.6.0';
 const CACHE_VERSION = `jsas-v${APP_VERSION}`;
 const CACHE_NAME = `jsas-palanquees-${CACHE_VERSION}`;
 
@@ -23,101 +24,132 @@ const urlsToCache = [
   './images/icon-152.png',
   './images/icon-192.png',
   './images/icon-384.png',
-  './images/icon-512.png'
+  './images/icon-512.png',
+  // FORCER LE RECHARGEMENT DES FICHIERS JS
+  './js/fiche-securite.js?v=2.6.0',
+  './js/pdf-manager.js?v=2.6.0',
+  './js/main-core.js?v=2.6.0'
 ];
 
 // Installation du Service Worker
 self.addEventListener('install', event => {
-  console.log(`[SW v${APP_VERSION}] Installation en cours...`);
+  console.log(`[SW v${APP_VERSION}] ⚡ Installation FORCÉE en cours...`);
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log(`[SW v${APP_VERSION}] Mise en cache des ressources`);
+        console.log(`[SW v${APP_VERSION}] 🔄 Mise en cache FORCÉE des ressources`);
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        console.log(`[SW v${APP_VERSION}] Installation terminée avec succès`);
-        // Force l'activation immédiate si une ancienne version existe
+        console.log(`[SW v${APP_VERSION}] ✅ Installation terminée - TOUS LES CACHES VIDÉS`);
+        // Force l'activation immédiate
         return self.skipWaiting();
       })
       .catch(error => {
-        console.error(`[SW v${APP_VERSION}] Erreur lors de l'installation:`, error);
+        console.error(`[SW v${APP_VERSION}] ❌ Erreur lors de l'installation:`, error);
       })
   );
 });
 
 // Activation du Service Worker
 self.addEventListener('activate', event => {
-  console.log(`[SW v${APP_VERSION}] Activation en cours...`);
+  console.log(`[SW v${APP_VERSION}] 🚀 Activation FORCÉE en cours...`);
   
   event.waitUntil(
-    // Nettoyer les anciens caches
+    // Nettoyer TOUS les anciens caches
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames
           .filter(cacheName => {
-            // Supprimer les caches qui commencent par 'jsas-palanquees-' 
-            // mais qui ne correspondent pas à la version actuelle
+            // Supprimer TOUS les caches qui commencent par 'jsas-palanquees-' 
             return cacheName.startsWith('jsas-palanquees-') && 
                    cacheName !== CACHE_NAME;
           })
           .map(cacheName => {
-            console.log(`[SW v${APP_VERSION}] Suppression de l'ancien cache: ${cacheName}`);
+            console.log(`[SW v${APP_VERSION}] 🗑️ SUPPRESSION FORCÉE du cache: ${cacheName}`);
             return caches.delete(cacheName);
           })
       );
     })
     .then(() => {
-      console.log(`[SW v${APP_VERSION}] Activation terminée`);
-      // Prendre le contrôle immédiatement
+      console.log(`[SW v${APP_VERSION}] ✅ Activation terminée - Version ${APP_VERSION} active`);
+      // Prendre le contrôle immédiatement de TOUTES les pages
       return self.clients.claim();
+    })
+    .then(() => {
+      // Notifier tous les clients de recharger
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'NEW_VERSION_ACTIVATED',
+            version: APP_VERSION,
+            message: '🎉 Nouvelle version ${APP_VERSION} installée ! Rechargez la page.'
+          });
+        });
+      });
     })
   );
 });
 
-// Interception des requêtes
+// Interception des requêtes - STRATÉGIE NETWORK FIRST POUR LES JS
 self.addEventListener('fetch', event => {
   // Ignorer les requêtes non-GET
   if (event.request.method !== 'GET') {
     return;
   }
   
-  // Stratégie : Cache First avec fallback réseau
+  const url = new URL(event.request.url);
+  
+  // FORCER LE RECHARGEMENT DES FICHIERS JS (NETWORK FIRST)
+  if (url.pathname.endsWith('.js') || url.pathname.includes('/js/')) {
+    console.log(`[SW v${APP_VERSION}] 🔄 NETWORK FIRST pour JS: ${url.pathname}`);
+    
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Cloner et mettre en cache la nouvelle version
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+              console.log(`[SW v${APP_VERSION}] ✅ JS mis en cache: ${url.pathname}`);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback sur le cache si hors ligne
+          console.log(`[SW v${APP_VERSION}] 📵 Hors ligne - Utilisation du cache pour: ${url.pathname}`);
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+  
+  // STRATÉGIE CACHE FIRST pour les autres ressources
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Si trouvé dans le cache, retourner la réponse
         if (response) {
-          console.log(`[SW v${APP_VERSION}] Ressource depuis le cache: ${event.request.url}`);
           return response;
         }
         
-        // Sinon, faire une requête réseau
-        console.log(`[SW v${APP_VERSION}] Ressource depuis le réseau: ${event.request.url}`);
         return fetch(event.request)
           .then(response => {
-            // Ne pas mettre en cache les réponses non valides
-            if (!response || response.status !== 200 || response.type === 'basic') {
+            if (!response || response.status !== 200) {
               return response;
             }
             
-            // Cloner la réponse car elle ne peut être consommée qu'une fois
             const responseToCache = response.clone();
-            
-            // Mettre la nouvelle ressource en cache pour une utilisation future
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-                console.log(`[SW v${APP_VERSION}] Nouvelle ressource mise en cache: ${event.request.url}`);
-              });
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
             
             return response;
           })
           .catch(error => {
             console.error(`[SW v${APP_VERSION}] Erreur réseau:`, error);
-            
-            // Si hors ligne, essayer de retourner une page de fallback
             if (event.request.destination === 'document') {
               return caches.match('./index.html');
             }
@@ -128,16 +160,14 @@ self.addEventListener('fetch', event => {
 
 // Gestion des messages depuis la page
 self.addEventListener('message', event => {
-  console.log(`[SW v${APP_VERSION}] Message reçu:`, event.data);
+  console.log(`[SW v${APP_VERSION}] 📨 Message reçu:`, event.data);
   
-  // Gérer les différents types de messages
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log(`[SW v${APP_VERSION}] Activation forcée de la nouvelle version`);
+    console.log(`[SW v${APP_VERSION}] ⚡ Activation forcée de la nouvelle version`);
     self.skipWaiting();
   }
   
   if (event.data && event.data.type === 'GET_VERSION') {
-    // Répondre avec la version actuelle
     event.ports[0].postMessage({
       type: 'VERSION',
       version: APP_VERSION,
@@ -146,11 +176,10 @@ self.addEventListener('message', event => {
   }
   
   if (event.data && event.data.type === 'CLEAR_CACHE') {
-    // Vider le cache si demandé
     caches.keys().then(cacheNames => {
       Promise.all(
         cacheNames.map(cacheName => {
-          console.log(`[SW v${APP_VERSION}] Suppression du cache: ${cacheName}`);
+          console.log(`[SW v${APP_VERSION}] 🗑️ Suppression du cache: ${cacheName}`);
           return caches.delete(cacheName);
         })
       ).then(() => {
@@ -163,25 +192,22 @@ self.addEventListener('message', event => {
   }
 });
 
-// Gestion de la synchronisation en arrière-plan (si supportée)
+// Gestion de la synchronisation en arrière-plan
 self.addEventListener('sync', event => {
-  console.log(`[SW v${APP_VERSION}] Événement de synchronisation:`, event.tag);
+  console.log(`[SW v${APP_VERSION}] 🔄 Événement de synchronisation:`, event.tag);
   
   if (event.tag === 'sync-data') {
     event.waitUntil(
-      // Ici vous pouvez ajouter la logique de synchronisation des données
-      // Par exemple, envoyer les données stockées localement vers le serveur
-      Promise.resolve()
-        .then(() => {
-          console.log(`[SW v${APP_VERSION}] Synchronisation des données terminée`);
-        })
+      Promise.resolve().then(() => {
+        console.log(`[SW v${APP_VERSION}] ✅ Synchronisation des données terminée`);
+      })
     );
   }
 });
 
-// Notifications push (si nécessaire)
+// Notifications push
 self.addEventListener('push', event => {
-  console.log(`[SW v${APP_VERSION}] Notification push reçue`);
+  console.log(`[SW v${APP_VERSION}] 📬 Notification push reçue`);
   
   const options = {
     body: event.data ? event.data.text() : 'Nouvelle notification JSA Palanquées',
@@ -201,7 +227,7 @@ self.addEventListener('push', event => {
 
 // Gestion des clics sur les notifications
 self.addEventListener('notificationclick', event => {
-  console.log(`[SW v${APP_VERSION}] Clic sur notification`);
+  console.log(`[SW v${APP_VERSION}] 👆 Clic sur notification`);
   event.notification.close();
   
   event.waitUntil(
@@ -209,4 +235,4 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-console.log(`[SW v${APP_VERSION}] Service Worker chargé et prêt`);
+console.log(`[SW v${APP_VERSION}] 🚀 Service Worker VERSION ${APP_VERSION} chargé et prêt - MISE À JOUR FORCÉE`);
