@@ -352,17 +352,16 @@ function exportFicheSecurite() {
           doc.line(xBase + 48, cellY, xBase + 48, bottomY);
           cellY += realiseHeight;
           
-          // Paliers (si remplis) - CORRECTION POSITIONNEMENT
+          // Paliers (si remplis) - CORRECTION POSITIONNEMENT VERTICAL
           if (paliers && paliers.trim() !== '') {
             doc.line(xBase, cellY, xBase + colWidth, cellY);
-            cellY += 1.5;
             doc.setFontSize(6);
             doc.setFont(undefined, 'bold');
-            doc.text("Paliers:", xBase + 1, cellY + 2);
+            doc.text("Paliers:", xBase + 1, cellY + 2.5);  // Remonté de 2 à 2.5
             doc.setFont(undefined, 'normal');
             // Afficher les paliers sur toute la largeur disponible
             const paliersText = paliers.substring(0, 85);
-            doc.text(paliersText, xBase + 12, cellY + 2);
+            doc.text(paliersText, xBase + 12, cellY + 2.5);  // Remonté de 2 à 2.5
           }
         }
       }
