@@ -296,6 +296,7 @@ function exportFicheSecurite() {
           let horaire = '';
           let dureeRealisee = '';
           let profRealisee = '';
+          let paliers = '';
           
           // Chercher dans le DOM les inputs de paramètres pour cette palanquée
           const palanqueeDetails = document.querySelectorAll('.palanquee-details');
@@ -307,12 +308,14 @@ function exportFicheSecurite() {
               const dureePrevueInput = detailDiv.querySelector('.palanquee-duree-prevue');
               const profRealiseeInput = detailDiv.querySelector('.palanquee-prof-realisee');
               const dureeRealiseeInput = detailDiv.querySelector('.palanquee-duree-realisee');
+              const paliersInput = detailDiv.querySelector('.palanquee-paliers');
               
               horaire = horaireInput?.value || '';
               profPrevue = profPrevueInput?.value || '';
               dureePrevue = dureePrevueInput?.value || '';
               profRealisee = profRealiseeInput?.value || '';
               dureeRealisee = dureeRealiseeInput?.value || '';
+              paliers = paliersInput?.value || '';
             }
           }
           
@@ -322,6 +325,7 @@ function exportFicheSecurite() {
           doc.setFont(undefined, 'normal');
           doc.text(dureePrevue, colDuree + 1, cellY + 3);
           doc.text(profPrevue, colProf + 1, cellY + 3);
+          doc.text(horaire, colHeau + 1, cellY + 3);  // H. eau Prévue = horaire
           
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
@@ -336,12 +340,26 @@ function exportFicheSecurite() {
           doc.setFont(undefined, 'normal');
           doc.text(dureeRealisee, colDuree + 1, cellY + 3.5);
           doc.text(profRealisee, colProf + 1, cellY + 3.5);
-          doc.text(horaire, colHeau + 1, cellY + 3.5);
+          doc.text(horaire, colHeau + 1, cellY + 3.5);  // H. eau Réalisée = horaire
           
           const bottomY = cellY + realiseHeight;
           doc.line(xBase + 20, cellY, xBase + 20, bottomY);
           doc.line(xBase + 36, cellY, xBase + 36, bottomY);
           doc.line(xBase + 48, cellY, xBase + 48, bottomY);
+          cellY += realiseHeight;
+          
+          // Paliers (si remplis)
+          if (paliers && paliers.trim() !== '') {
+            doc.line(xBase, cellY, xBase + colWidth, cellY);  // Ligne de séparation
+            cellY += 2;
+            doc.setFontSize(6.5);
+            doc.setFont(undefined, 'bold');
+            doc.text("Paliers:", xBase + 1, cellY + 2);
+            doc.setFont(undefined, 'normal');
+            // Tronquer les paliers si trop long (max ~70 caractères)
+            const paliersText = paliers.substring(0, 70) + (paliers.length > 70 ? '...' : '');
+            doc.text(paliersText, xBase + 11, cellY + 2);
+          }
         }
       }
     }
