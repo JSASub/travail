@@ -323,9 +323,10 @@ function exportFicheSecurite() {
           doc.setFont(undefined, 'bold');
           doc.text("Prévus", colParam, cellY + 3);
           doc.setFont(undefined, 'normal');
+          doc.setFontSize(7.5);  // Taille normale pour Prévus
           doc.text(dureePrevue, colDuree + 1, cellY + 3);
           doc.text(profPrevue, colProf + 1, cellY + 3);
-          doc.text(horaire, colHeau + 1, cellY + 3);  // H. eau Prévue = horaire
+          doc.text(horaire, colHeau + 1, cellY + 3);
           
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
@@ -333,14 +334,17 @@ function exportFicheSecurite() {
           doc.line(xBase + 48, cellY, xBase + 48, cellY + 3.5);
           cellY += 3.5;
           
-          // Réalisés - TRAITS RALLONGÉS
+          // Réalisés - TRAITS RALLONGÉS + TAILLE AGRANDIE
           const realiseHeight = 5.5;
+          doc.setFontSize(7.5);
           doc.setFont(undefined, 'bold');
           doc.text("Réalisés", colParam, cellY + 3.5);
           doc.setFont(undefined, 'normal');
+          doc.setFontSize(9);  // AGRANDI de 7.5 à 9 pour accentuer la différence
           doc.text(dureeRealisee, colDuree + 1, cellY + 3.5);
           doc.text(profRealisee, colProf + 1, cellY + 3.5);
-          doc.text(horaire, colHeau + 1, cellY + 3.5);  // H. eau Réalisée = horaire
+          doc.setFontSize(7.5);  // Horaire reste normal
+          doc.text(horaire, colHeau + 1, cellY + 3.5);
           
           const bottomY = cellY + realiseHeight;
           doc.line(xBase + 20, cellY, xBase + 20, bottomY);
@@ -348,17 +352,17 @@ function exportFicheSecurite() {
           doc.line(xBase + 48, cellY, xBase + 48, bottomY);
           cellY += realiseHeight;
           
-          // Paliers (si remplis)
+          // Paliers (si remplis) - CORRECTION POSITIONNEMENT
           if (paliers && paliers.trim() !== '') {
-            doc.line(xBase, cellY, xBase + colWidth, cellY);  // Ligne de séparation
-            cellY += 2;
-            doc.setFontSize(6.5);
+            doc.line(xBase, cellY, xBase + colWidth, cellY);
+            cellY += 1.5;
+            doc.setFontSize(6);
             doc.setFont(undefined, 'bold');
             doc.text("Paliers:", xBase + 1, cellY + 2);
             doc.setFont(undefined, 'normal');
-            // Tronquer les paliers si trop long (max ~70 caractères)
-            const paliersText = paliers.substring(0, 70) + (paliers.length > 70 ? '...' : '');
-            doc.text(paliersText, xBase + 11, cellY + 2);
+            // Afficher les paliers sur toute la largeur disponible
+            const paliersText = paliers.substring(0, 85);
+            doc.text(paliersText, xBase + 12, cellY + 2);
           }
         }
       }
