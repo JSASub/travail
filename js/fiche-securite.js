@@ -285,8 +285,8 @@ function exportFicheSecurite() {
           doc.setFont(undefined, 'bold');
           const colParam = xBase + 1;
           const colDuree = xBase + 22;   // Paramètres reste 22mm
-          const colProf = xBase + 44;    // Durée : 41 + 3 = 44mm (Durée = 22mm)
-          const colHeau = xBase + 59;    // Prof. : 56 + 3 = 59mm (Prof. = 15mm), H. eau réduite de 6mm
+          const colProf = xBase + 44;    // Durée reste 22mm
+          const colHeau = xBase + 64;    // Prof. : 59 + 5 = 64mm (Prof. = 20mm), H. eau réduite de 5mm
           
           doc.text("Paramètres", colParam, cellY + 3);
           doc.text("Durée (min)", colDuree, cellY + 3);
@@ -335,8 +335,8 @@ function exportFicheSecurite() {
           
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);   // Paramètres | Durée
-          doc.line(xBase + 42, cellY, xBase + 42, cellY + 3.5);   // Durée | Prof. (44 - 2)
-          doc.line(xBase + 57, cellY, xBase + 57, cellY + 3.5);   // Prof. | H. eau (59 - 2)
+          doc.line(xBase + 42, cellY, xBase + 42, cellY + 3.5);   // Durée | Prof.
+          doc.line(xBase + 62, cellY, xBase + 62, cellY + 3.5);   // Prof. | H. eau (64 - 2)
           cellY += 3.5;
           
           // Réalisés - TRAITS RALLONGÉS + TAILLE AGRANDIE
@@ -354,7 +354,7 @@ function exportFicheSecurite() {
           const bottomY = cellY + realiseHeight;
           doc.line(xBase + 20, cellY, xBase + 20, bottomY);   // Paramètres | Durée
           doc.line(xBase + 42, cellY, xBase + 42, bottomY);   // Durée | Prof.
-          doc.line(xBase + 57, cellY, xBase + 57, bottomY);   // Prof. | H. eau
+          doc.line(xBase + 62, cellY, xBase + 62, bottomY);   // Prof. | H. eau
           cellY += realiseHeight;
           
           // Paliers (si remplis) - CORRECTION POSITIONNEMENT VERTICAL
