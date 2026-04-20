@@ -276,7 +276,7 @@ function exportFicheSecurite() {
           }
           
           // Paramètres
-          doc.setFontSize(7.5);  // Agrandi de 6.5 à 7.5
+          doc.setFontSize(7.5);
           doc.setFont(undefined, 'bold');
           const colParam = xBase + 1;
           const colDuree = xBase + 22;
@@ -290,8 +290,31 @@ function exportFicheSecurite() {
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           cellY += 3.5;
           
+          // Récupérer les paramètres de la palanquée
+          let dureePrevue = '';
+          let profPrevue = '';
+          let horaire = '';
+          let dureeRealisee = '';
+          let profRealisee = '';
+          
+          if (palanqueeIdx < palanqueesLocal.length) {
+            const pal = palanqueesLocal[palanqueeIdx];
+            if (pal && pal.parametres) {
+              dureePrevue = pal.parametres.dureePrevue || '';
+              profPrevue = pal.parametres.profondeurPrevue || '';
+              horaire = pal.parametres.horaire || '';
+              dureeRealisee = pal.parametres.dureeRealisee || '';
+              profRealisee = pal.parametres.profondeurRealisee || '';
+            }
+          }
+          
           // Prévus
+          doc.setFont(undefined, 'bold');
           doc.text("Prévus", colParam, cellY + 3);
+          doc.setFont(undefined, 'normal');
+          doc.text(dureePrevue, colDuree + 1, cellY + 3);
+          doc.text(profPrevue, colProf + 1, cellY + 3);
+          
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
           doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);
           doc.line(xBase + 36, cellY, xBase + 36, cellY + 3.5);
@@ -300,7 +323,13 @@ function exportFicheSecurite() {
           
           // Réalisés - TRAITS RALLONGÉS
           const realiseHeight = 5.5;
+          doc.setFont(undefined, 'bold');
           doc.text("Réalisés", colParam, cellY + 3.5);
+          doc.setFont(undefined, 'normal');
+          doc.text(dureeRealisee, colDuree + 1, cellY + 3.5);
+          doc.text(profRealisee, colProf + 1, cellY + 3.5);
+          doc.text(horaire, colHeau + 1, cellY + 3.5);
+          
           const bottomY = cellY + realiseHeight;
           doc.line(xBase + 20, cellY, xBase + 20, bottomY);
           doc.line(xBase + 36, cellY, xBase + 36, bottomY);
