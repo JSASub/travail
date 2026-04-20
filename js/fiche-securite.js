@@ -357,11 +357,11 @@ function exportFicheSecurite() {
             doc.line(xBase, cellY, xBase + colWidth, cellY);
             doc.setFontSize(6);
             doc.setFont(undefined, 'bold');
-            doc.text("Paliers:", xBase + 1, cellY + 1.8);  // Remonté de 2.5 à 1.8
+            doc.text("Paliers:", xBase + 1, cellY + 2.8);  // Descendu de 1.8 à 2.8 (+1mm)
             doc.setFont(undefined, 'normal');
             // Afficher les paliers sur toute la largeur disponible
             const paliersText = paliers.substring(0, 85);
-            doc.text(paliersText, xBase + 12, cellY + 1.8);  // Remonté de 2.5 à 1.8
+            doc.text(paliersText, xBase + 12, cellY + 2.8);  // Descendu de 1.8 à 2.8 (+1mm)
           }
         }
       }
