@@ -244,7 +244,7 @@ function exportFicheSecurite() {
               if (plongeurIndex >= 0 && pal && pal[plongeurIndex]) {
                 const plongeur = pal[plongeurIndex];
                 doc.setFont(undefined, 'normal');
-                doc.setFontSize(7.5);
+                doc.setFontSize(8.5);  // Agrandi de 7.5 à 8.5
                 
                 const nomComplet = plongeur.nom || "";
                 const aptitude = plongeur.pre || "";
