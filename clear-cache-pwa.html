@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vider Cache PWA - JSAS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .info-box {
+      background: #f0f7ff;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin-bottom: 25px;
+      text-align: left;
+      border-radius: 5px;
+    }
+    
+    .info-box strong {
+      color: #007bff;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .info-box ul {
+      margin-left: 20px;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      margin: 10px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+      display: block;
+    }
+    
+    .cache-list {
+      margin-top: 20px;
+      text-align: left;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 12px;
+      font-family: monospace;
+      display: none;
+    }
+    
+    .cache-list.show {
+      display: block;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Nettoyage Cache PWA</h1>
+    <p class="subtitle">JSA Subaquatique - Gestion Palanquées</p>
+    
+    <div class="info-box">
+      <strong>ℹ️ Quand utiliser ce bouton ?</strong>
+      <ul>
+        <li>Compteurs incorrects (plongeurs, palanquées)</li>
+        <li>Données anciennes affichées</li>
+        <li>Modifications non visibles</li>
+        <li>PWA qui ne se met pas à jour</li>
+      </ul>
+    </div>
+    
+    <button class="btn btn-success" onclick="listCaches()">
+      📋 Voir les caches actuels
+    </button>
+    
+    <button class="btn btn-danger" onclick="clearAllCaches()">
+      🗑️ Vider TOUS les caches
+    </button>
+    
+    <div id="cache-list" class="cache-list"></div>
+    <div id="status" class="status"></div>
+    
+    <a href="index.html" class="back-link">← Retour à l'application</a>
+  </div>
+
+  <script>
+    // Fonction pour lister les caches
+    async function listCaches() {
+      const statusDiv = document.getElementById('status');
+      const cacheListDiv = document.getElementById('cache-list');
+      
+      try {
+        const cacheNames = await caches.keys();
+        
+        if (cacheNames.length === 0) {
+          statusDiv.className = 'status info';
+          statusDiv.textContent = 'ℹ️ Aucun cache trouvé.';
+          cacheListDiv.classList.remove('show');
+          return;
+        }
+        
+        statusDiv.className = 'status info';
+        statusDiv.textContent = `📦 ${cacheNames.length} cache(s) trouvé(s) :`;
+        
+        cacheListDiv.innerHTML = cacheNames.map((name, i) => 
+          `${i + 1}. ${name}`
+        ).join('<br>');
+        cacheListDiv.classList.add('show');
+        
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ Erreur lors de la lecture des caches : ' + error.message;
+      }
+    }
+    
+    // Fonction pour vider tous les caches
+    async function clearAllCaches() {
+      const statusDiv = document.getElementById('status');
+      const cacheListDiv = document.getElementById('cache-list');
+      
+      if (!confirm('⚠️ Êtes-vous sûr de vouloir vider TOUS les caches ?\n\nCela va :\n- Supprimer tous les fichiers en cache\n- Forcer le téléchargement de la dernière version\n- Recharger la page\n\nContinuer ?')) {
+        return;
+      }
+      
+      statusDiv.className = 'status info';
+      statusDiv.textContent = '⏳ Nettoyage en cours...';
+      cacheListDiv.classList.remove('show');
+      
+      try {
+        // 1. Supprimer tous les caches
+        const cacheNames = await caches.keys();
+        const deletePromises = cacheNames.map(name => caches.delete(name));
+        await Promise.all(deletePromises);
+        
+        // 2. Désinstaller le Service Worker
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          const unregisterPromises = registrations.map(reg => reg.unregister());
+          await Promise.all(unregisterPromises);
+        }
+        
+        // 3. Vider localStorage et sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        statusDiv.className = 'status success';
+        statusDiv.textContent = '✅ Tous les caches ont été vidés !\n\n🔄 La page va recharger dans 2 secondes...';
+        
+        // 4. Recharger la page après 2 secondes
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ Erreur lors du nettoyage : ' + error.message;
+      }
+    }
+    
+    // Afficher automatiquement les caches au chargement
+    window.addEventListener('DOMContentLoaded', listCaches);
+  </script>
+</body>
+</html>
