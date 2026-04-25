@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  
+  <!-- PWA Configuration -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#6f42c1">
+  <link rel="apple-touch-icon" href="./images/icon-192.png">
+  <!-- iOS Splash Screens -->
+  <link rel="apple-touch-startup-image" href="./images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px)">
+  <link rel="apple-touch-startup-image" href="./images/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px)">
+  <link rel="apple-touch-startup-image" href="./images/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JSAS Palanquées">
+  <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/images/icon-512x512.png">
+  
+  <title>Gestion de Palanquées JSAS</title>
+  <link rel="stylesheet" href="styles.css?v=103" />
+  
+  <!-- Firebase SDK version 8 (compatible syntaxe classique) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  
+  <!-- jsPDF pour l'export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+  <!-- INDICATEUR DE CHARGEMENT -->
+  <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+    <div style="text-align: center;">
+      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+      <p style="color: #666; font-size: 16px;">Chargement de l'application JSAS...</p>
+    </div>
+  </div>
+  
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- SECTION DE CONNEXION -->
+  <div id="auth-container" style="display: none;">
+		<div style="max-width: 400px; margin: 50px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+		<div class="header-container">
+			<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
+			<h2 style="text-align: center; color: #004080; margin-bottom: 30px;">🤿 Connexion JSAS</h2>
+	    </div>
+     
+      <form id="login-form">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email :</label>
+          <input type="email" id="login-email" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Mot de passe :</label>
+          <input type="password" id="login-password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+		  <a href="reset_password.html" style="font-size:12px; opacity:0.8; text-decoration:underline; padding:4px 2px;">J'ai oublié mon mot de passe</a>
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+          Se connecter
+        </button>
+      </form>
+      
+      <div id="auth-error" style="margin-top: 15px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 5px; display: none;"></div>
+      <div id="auth-loading" style="margin-top: 15px; text-align: center; color: #666; display: none;">Connexion en cours...</div>
+    </div>
+  </div>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="main-app" style="display: none;">
+<header>
+  <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 0;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span id="user-info"></span>
+      <button id="change-password-btn" onclick="showPasswordChangeModal()" style="padding: 5px 10px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;" title="Changer le mot de passe">
+        🔒 MdP
+      </button>
+      <button id="logout-btn" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
+        Déconnexion
+      </button>
+    </div>
+  </div>
+  
+  <div class="header-container">
+  	<img src="images/logo-jsas.png" alt="Logo JSAS" class="logo">
+	<h2 style="margin: 0; color: #004080; font-size: 20px;">🤿 Palanquées JSAS</h2>
+  </div>
+  
+  <hr>
+  
+  <!-- NOUVEAU TITRE AVEC THÈME PLONGÉE -->
+  <div class="title-security-container">
+    <div class="title-security">
+      <span class="icon-left-diving">🤿</span>
+      <div class="frame-security">
+        <span class="diving-icon-wave">🌊</span>
+        <h1 class="title-main-security">
+          CRÉATION DES
+          <span class="highlight-security">FICHES de SÉCURITÉ</span>
+        </h1>
+        <div class="subtitle-security">PLONGÉE SUBAQUATIQUE</div>
+      </div>
+      <span class="icon-right-diving">🤿</span>
+    </div>
+  </div>
+  
+  <hr>
+  
+    <section id="sessions-manager">
+    <label><strong>Gestion des Sessions</strong></label>
+    <div style="margin: 10px 0;">
+      <select id="session-selector" style="margin: 5px 10px;">
+        <option value="">-- Charger une session --</option>
+      </select>
+    </div>
+    <div style="margin: 10px 0; font-size: 0.7em; color: #666;">
+      Les sessions sont automatiquement sauvegardées par date et directeur de plongée.
+    </div>
+  </section>
+  <br>
+  <hr> 
+<div id="meta-info">
+  <label><strong>Directeur de Plongée</strong>
+    <div>
+      <select id="dp-select">
+        <option value="">-- Choisir un DP --</option>
+      </select>
+      <button type="button" id="add-dp-btn" class="dp-btn dp-btn-add" title="Ajouter un DP">
+        ➕ <span>Nouveau</span>
+      </button>
+      <button type="button" id="edit-dp-btn" class="dp-btn dp-btn-edit" title="Modifier le DP" disabled>
+        ✏️ <span>Modifier</span>
+      </button>
+      <button type="button" id="delete-dp-btn" class="dp-btn dp-btn-delete" title="Supprimer le DP" disabled>
+        🗑️ <span>Supprimer</span>
+      </button>
+    </div>
+  </label>
+  <label>Date : <input type="date" id="dp-date" /></label>
+  <label>Lieu : <input type="text" id="dp-lieu" placeholder="Lieu de plongée" /></label>
+  <label>Plongée : 
+    <select id="dp-plongee">
+      <option value="matin">Matin</option>
+      <option value="apres-midi">Après-midi</option>
+      <option value="soir">Soir</option>
+      <option value="nuit">Nuit</option>
+      <option value="plg1">Plg1</option>
+      <option value="plg2">Plg2</option>
+      <option value="plg3">Plg3</option>
+      <option value="plg4">Plg4</option>
+      <option value="formation">Formation</option>
+      <option value="autre">Autre</option>
+    </select>
+  </label>
+  <button type="submit" id="valider-dp">Save Session + DP</button>
+  <div id="dp-message" class="dp-valide"></div>
+</div>
+	
+  </header>
+
+  <!-- SECTION ALERTES -->
+  <div id="alertes-section" class="alert-section alert-hidden">
+    <div class="alert-title">⚠️ Alertes Palanquées</div>
+    <div id="alertes-content"></div>
+  </div>
+
+  <main>
+  <br><br><hr>
+  <div style="margin-bottom: 6px;"><strong>Nombre total de plongeurs : <span id="compteur-total-plongeurs" style="color: #d35400;">0</span></strong></div>
+  <strong>Listes plongeurs non assignés <span id="compteur-plongeurs" style="color: #007bff;">(0)</span></strong>
+    
+    <!-- CONTRÔLES DE TRI -->
+    <div class="sort-controls">
+      <span>Trier par :</span>
+      <button class="sort-btn active" data-sort="none">Ordre d'ajout</button>
+      <button class="sort-btn" data-sort="nom">Nom A-Z</button>
+      <button class="sort-btn" data-sort="niveau">Niveau</button>
+    </div>
+    
+	<form id="addForm">  
+    <input type="text" id="nom" placeholder="NOM & Prénom" required />
+	<select id="niveau" required>
+		<option value="">-- Sélectionner le niveau --</option>
+		<option>Déb.</option>
+		<option>Plg.Br</option>
+		<option>Plg.Ar</option>
+		<option>Plg.Or</option>
+		<option>N1</option>
+		<option>N2</option>
+		<option>N3</option>
+		<option>GP</option>
+		<option>N4/GP</option>
+		<option>E1</option>
+		<option>E2</option>
+		<option>E3</option>
+		<option>E4</option>
+	</select>
+    
+    Prérogatives : 
+	<input type="text" id="pre" placeholder="PE20, PA40 ..." />
+    <br>
+	<button type="submit" id="ajouter-plongeur">Ajouter</button>
+  </form>
+
+  <ul id="listePlongeurs" class="dropzone"></ul>
+  <br><hr>
+  <div><strong>Liste des plongeurs: Enregistrer/Exporter</strong></div>
+  <button id="exportJSON" class="btn-success">Enregistrer la Liste des plongeurs JSON</button>
+  <br>
+  Charger la liste des plongeurs: <input type="file" id="importJSON" accept=".json" />
+
+  <br><br>
+  <hr>
+  <br>
+  <section id="palanquees">
+    <h2><strong>Palanquées <span id="compteur-palanquees" style="color: #28a745;">(0 plongeurs dans 0 palanquées)</span></strong></h2>
+    <button id="addPalanquee">Nouvelle palanquée</button>
+    <br><br>    
+    <div id="palanqueesContainer"></div>
+    
+    <br><br><hr>
+	<div><strong>Création PDF de la Fiche de Sécurité</strong></div>
+    <button id="generatePDF" class="btn-secondary">Aperçu des palanquées PDF</button>
+    <button id="exportPDF" class="btn-success">Télécharger Fiche de Sécu PDF</button>
+    <br><br>
+    <button id="exportFicheReglement" class="btn-success" style="background: #6f42c1; font-weight: bold; padding: 12px 20px; font-size: 14px;">📋 Fiche Sécurité Réglementaire</button>
+   </section>
+  </main><br><br>
+  <div id="previewContainer" style="display:none;">
+    <iframe id="pdfPreview" width="100%" height="500px"></iframe>
+  </div>
+  <br>
+  <hr>
+  <section id="sessions-manager-extended">
+    <strong>Nettoyage des Sessions</strong>
+    <div style="margin: 10px 0;">
+      <label>Sélectionner les sessions à supprimer :</label>
+      <div id="sessions-cleanup-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin: 5px 0; background: #f8f9fa;">
+        <em>Chargement automatique...</em>
+      </div>
+      <button id="select-all-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout sélectionner</button>
+      <button id="select-none-sessions" class="btn-secondary" style="font-size: 0.9em;">Tout désélectionner</button>
+      <button id="delete-selected-sessions" style="background: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer;">🗑️ Supprimer sélectionnées</button>
+      <button id="refresh-sessions-list" class="btn-secondary" style="font-size: 0.9em;">Actualiser liste</button>
+    </div>
+  </section>
+  
+  <hr>
+
+  
+<footer>
+    <a href="bilan-palanquees.html" style="display: inline-block; font-size: 1em; padding: 8px 20px; background: #6f42c1; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+      📊 Bilan Global Palanquées
+    </a>
+    
+    <p style="text-align: center; font-size: 0.8em; padding: 20px;" id="app-version-footer">
+      Version <span id="version-number">Chargement...</span> - 
+      <span id="sw-status" style="color: #999;">⏳ Vérification...</span> - 
+      RA - 2025 - JSA Subaquatique
+    </p>
+    
+    <!-- Bouton d'informations optionnel -->
+    <div style="text-align: center; margin-top: -10px;">
+      <a href="clear-cache-pwa.html" style="color: #999; font-size: 0.7em; text-decoration: none; opacity: 0.6;">🧹 Vider le cache PWA</a>
+      <br>
+      <button onclick="showVersionInfo()" style="
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.8em;
+      ">
+        ℹ️ Infos version
+      </button>
+    </div>
+</footer>
+
+  <!-- Script pour afficher la version depuis le Service Worker -->
+  <script>
+  (function() {
+    // Variable pour stocker la version récupérée
+    let currentVersion = '2.6.6'; // Version par défaut
+    
+    // Fonction pour extraire la version du Service Worker
+    function getServiceWorkerVersion() {
+      if ('serviceWorker' in navigator) {
+        // Vérifier l'état du Service Worker
+        navigator.serviceWorker.getRegistration('./service-worker.js')
+          .then(registration => {
+            if (registration && registration.active) {
+              // Le SW est actif
+              document.getElementById('sw-status').innerHTML = '✅ <span style="color: #28a745;">PWA Active</span>';
+              
+              // Récupérer la version depuis le nom du cache
+              caches.keys().then(cacheNames => {
+                const jsasCache = cacheNames.find(name => name.startsWith('jsas-palanquees-'));
+                if (jsasCache) {
+                  // Extraire la version (ex: "jsas-palanquees-jsas-v1.0.1" -> "1.0.1")
+                  const versionMatch = jsasCache.match(/jsas-v([\d.]+)/);
+                  if (versionMatch) {
+                    currentVersion = versionMatch[1];
+                    document.getElementById('version-number').textContent = currentVersion;
+                  } else {
+                    // Version alternative si le format change
+                    document.getElementById('version-number').textContent = currentVersion;
+                  }
+                } else {
+                  // Pas de cache trouvé
+                  document.getElementById('version-number').textContent = currentVersion;
+                }
+              }).catch(error => {
+                console.error('Erreur lors de la récupération du cache:', error);
+                document.getElementById('version-number').textContent = currentVersion;
+              });
+            } else if (registration && registration.installing) {
+              // Le SW est en cours d'installation
+              document.getElementById('sw-status').innerHTML = '🔄 <span style="color: #17a2b8;">Installation...</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+              
+              // Réessayer après l'installation
+              registration.installing.addEventListener('statechange', function() {
+                if (this.state === 'activated') {
+                  setTimeout(getServiceWorkerVersion, 1000);
+                }
+              });
+            } else if (registration && registration.waiting) {
+              // Une nouvelle version est en attente
+              document.getElementById('sw-status').innerHTML = '🔄 <span style="color: #ffc107;">Mise à jour disponible</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+            } else {
+              // Le SW n'est pas actif
+              document.getElementById('sw-status').innerHTML = '⚠️ <span style="color: #ffc107;">PWA Inactive</span>';
+              document.getElementById('version-number').textContent = currentVersion;
+            }
+          })
+          .catch(error => {
+            console.error('Erreur Service Worker:', error);
+            document.getElementById('sw-status').innerHTML = '❌ <span style="color: #dc3545;">Non installée</span>';
+            document.getElementById('version-number').textContent = currentVersion;
+          });
+      } else {
+        // Service Worker non supporté
+        document.getElementById('sw-status').innerHTML = '❌ <span style="color: #dc3545;">Non supportée</span>';
+        document.getElementById('version-number').textContent = currentVersion;
+      }
+    }
+    
+    // Fonction pour afficher les informations détaillées
+    window.showVersionInfo = function() {
+      const buildDate = new Date().toLocaleDateString('fr-FR');
+      const swActive = navigator.serviceWorker && navigator.serviceWorker.controller;
+      const onlineStatus = navigator.onLine;
+      
+      // Vérifier le support des fonctionnalités PWA
+      const pwaFeatures = {
+        'Service Worker': 'serviceWorker' in navigator,
+        'Cache API': 'caches' in window,
+        'Notifications': 'Notification' in window,
+        'Installation': 'BeforeInstallPromptEvent' in window,
+        'Mode hors ligne': swActive
+      };
+      
+      let featuresText = '';
+      for (let [feature, supported] of Object.entries(pwaFeatures)) {
+        featuresText += `${supported ? '✅' : '❌'} ${feature}\n`;
+      }
+      
+      const info = `📱 JSAS PALANQUÉES PWA
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔢 Version : ${currentVersion}
+📅 Date : ${buildDate}
+🤿 Développé par : RA - JSA Subaquatique
+
+📋 HISTORIQUE DES VERSIONS :
+━━━━━━━━━━━━━━━━━━━━━━━━
+• v1.0.0 - Version PWA optimisée
+• v1.0.1 - Refonte complète architecture
+• v2.0.0 - Ajout système PWA complet
+• v2.0.0 - Version initiale
+• v2.0.1 - Version legacy
+
+🔧 ÉTAT DU SYSTÈME :
+━━━━━━━━━━━━━━━━━━━━━━━━
+${featuresText}
+🌐 Connexion : ${onlineStatus ? '✅ En ligne' : '📵 Hors ligne'}
+💾 Cache actif : ${swActive ? 'Oui' : 'Non'}
+
+💡 ASTUCE :
+Pour forcer la mise à jour, videz le cache
+de votre navigateur (Ctrl+Shift+R)`;
+      
+      alert(info);
+    };
+    
+    // Écouter les mises à jour du Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Nouveau Service Worker actif, rechargement...');
+        setTimeout(getServiceWorkerVersion, 500);
+      });
+      
+      // Vérifier les mises à jour disponibles
+      navigator.serviceWorker.ready.then(registration => {
+        if (registration.waiting) {
+          // Une mise à jour est disponible
+          if (confirm('🔄 Une nouvelle version est disponible !\n\nVoulez-vous l\'installer maintenant ?')) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          }
+        }
+      });
+    }
+    
+    // Exécuter après le chargement complet
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', getServiceWorkerVersion);
+    } else {
+      getServiceWorkerVersion();
+    }
+    
+    // Rafraîchir périodiquement l'état (toutes les 30 secondes)
+    setInterval(getServiceWorkerVersion, 30000);
+  })();
+  
+  (function() {
+  // Détection du navigateur
+  function detectBrowser() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (userAgent.indexOf('firefox') > -1) {
+      return 'firefox';
+    } else if (userAgent.indexOf('chrome') > -1 && userAgent.indexOf('edg') === -1) {
+      return 'chrome';
+    } else if (userAgent.indexOf('edg') > -1) {
+      return 'edge';
+    } else if (userAgent.indexOf('safari') > -1 && userAgent.indexOf('chrome') === -1) {
+      return 'safari';
+    }
+    return 'other';
+  }
+  
+  const browser = detectBrowser();
+  let currentVersion = '2.0.1';
+  
+  function updatePWAStatus() {
+    const statusElement = document.getElementById('sw-status');
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration('./service-worker.js')
+        .then(registration => {
+          if (registration && registration.active) {
+            // Service Worker actif
+            
+            // Messages personnalisés selon le navigateur
+            switch(browser) {
+              case 'firefox':
+                statusElement.innerHTML = `
+                  🦊 <span style="color: #ff9500;">Firefox - Cache actif</span>
+                  <span style="font-size: 0.7em; display: block; margin-top: 2px;">
+                    (Mode hors ligne ✅ | Installation ❌)
+                  </span>
+                `;
+                break;
+                
+              case 'chrome':
+              case 'edge':
+                statusElement.innerHTML = '✅ <span style="color: #28a745;">PWA Active</span>';
+                // Vérifier si l'app est installée
+                if (window.matchMedia('(display-mode: standalone)').matches) {
+                  statusElement.innerHTML += ' 📱';
+                }
+                break;
+                
+              case 'safari':
+                statusElement.innerHTML = `
+                  🍎 <span style="color: #007aff;">Safari - PWA partielle</span>
+                `;
+                break;
+                
+              default:
+                statusElement.innerHTML = '✅ <span style="color: #28a745;">Service Worker actif</span>';
+            }
+            
+            // Récupérer la version depuis le cache
+            caches.keys().then(cacheNames => {
+              const jsasCache = cacheNames.find(name => name.startsWith('jsas-palanquees-'));
+              if (jsasCache) {
+                const versionMatch = jsasCache.match(/jsas-v([\d.]+)/);
+                if (versionMatch) {
+                  currentVersion = versionMatch[1];
+                  document.getElementById('version-number').textContent = currentVersion;
+                }
+              }
+            });
+            
+          } else {
+            // Service Worker non actif
+            statusElement.innerHTML = '⚠️ <span style="color: #ffc107;">Service Worker inactif</span>';
+          }
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+          statusElement.innerHTML = '❌ <span style="color: #dc3545;">Erreur Service Worker</span>';
+        });
+    } else {
+      statusElement.innerHTML = '❌ <span style="color: #dc3545;">Non supporté</span>';
+    }
+  }
+  
+  // Fonction améliorée pour les infos de version
+  window.showVersionInfo = function() {
+    const buildDate = new Date().toLocaleDateString('fr-FR');
+    const swActive = navigator.serviceWorker && navigator.serviceWorker.controller;
+    
+    // Informations spécifiques au navigateur
+    let browserInfo = '';
+    let recommendations = '';
+    
+    switch(browser) {
+      case 'firefox':
+        browserInfo = '🦊 Firefox détecté';
+        recommendations = `
+⚠️ LIMITATIONS FIREFOX :
+• Installation PWA non supportée
+• Utilisez Chrome/Edge pour installer l'app
+• Le mode hors ligne fonctionne parfaitement !`;
+        break;
+        
+      case 'chrome':
+        browserInfo = '🌐 Chrome détecté';
+        recommendations = `
+✅ SUPPORT COMPLET :
+• Cliquez sur ⊕ dans la barre d'adresse
+• Ou utilisez le bouton "Installer" du site`;
+        break;
+        
+      case 'edge':
+        browserInfo = '🔷 Edge détecté';
+        recommendations = `
+✅ SUPPORT COMPLET :
+• Cliquez sur l'icône d'installation
+• Ou menu → Applications → Installer`;
+        break;
+        
+      case 'safari':
+        browserInfo = '🍎 Safari détecté';
+        recommendations = `
+📱 INSTALLATION iOS/Mac :
+• Appuyez sur Partager ↗
+• Puis "Sur l'écran d'accueil"`;
+        break;
+        
+      default:
+        browserInfo = '🌐 Navigateur : ' + navigator.userAgent.substring(0, 30);
+    }
+    
+    const info = `📱 JSAS PALANQUÉES PWA
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔢 Version : ${currentVersion}
+📅 Date : ${buildDate}
+${browserInfo}
+
+📊 ÉTAT DU SYSTÈME :
+━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Service Worker : ${swActive ? 'Actif' : 'Inactif'}
+✅ Cache hors ligne : ${swActive ? 'Disponible' : 'Non disponible'}
+${browser === 'firefox' ? '❌' : '✅'} Installation PWA : ${browser === 'firefox' ? 'Non supportée' : 'Disponible'}
+🌐 Connexion : ${navigator.onLine ? 'En ligne' : 'Hors ligne'}
+
+${recommendations}
+
+📋 HISTORIQUE :
+━━━━━━━━━━━━━━━━━━━━━━━━
+• v2.0.1 - Version PWA optimisée
+• v2.0.0 - Refonte architecture
+• v1.0.1 - Ajout système PWA
+
+💡 ASTUCE :
+Pour le meilleur support PWA,
+utilisez Chrome, Edge ou Brave.`;
+    
+    alert(info);
+  };
+  
+  // Exécuter au chargement
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updatePWAStatus);
+  } else {
+    updatePWAStatus();
+  }
+  
+  // Afficher une notification pour les utilisateurs Firefox
+  if (browser === 'firefox' && !localStorage.getItem('firefox-pwa-notice-shown')) {
+    setTimeout(() => {
+      if (confirm(`🦊 Information Firefox
+
+Le mode hors ligne fonctionne parfaitement sur Firefox !
+
+Cependant, Firefox ne permet pas l'installation comme application.
+
+Pour installer JSA Palanquées comme une app :
+→ Utilisez Chrome, Edge ou Brave
+
+Voulez-vous plus d'informations ?`)) {
+        showVersionInfo();
+      }
+      localStorage.setItem('firefox-pwa-notice-shown', 'true');
+    }, 3000);
+  }
+})();
+  
+  </script>
+
+  </div> <!-- Fin main-app -->
+
+  <!-- BOUTON FLOTTANT DE SAUVEGARDE SESSION -->
+  <button class="floating-save-btn" id="floating-save-btn" style="display: none;">
+    <div class="loading-icon"></div>
+    <span class="btn-text">💾 Save Session + DP</span>
+  </button>
+
+  <!-- MENU FLOTTANT DES PLONGEURS -->
+  <div class="floating-plongeurs-menu" id="floating-plongeurs-menu" style="display: none;">
+    <div class="floating-plongeurs-header" id="floating-plongeurs-header">
+      <span>🤿 Plongeurs <span class="floating-plongeurs-count" id="floating-plongeurs-count">(0)</span></span>
+      <button class="toggle-btn" id="toggle-plongeurs-menu">−</button>
+    </div>
+    <div class="floating-plongeurs-list" id="floating-plongeurs-list">
+      <div class="floating-plongeurs-empty">Aucun plongeur ajouté</div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION DE SAUVEGARDE -->
+  <div class="save-notification" id="save-notification">
+    ✅ Session sauvegardée !
+  </div>
+
+  <!-- Scripts JavaScript modulaires - ORDRE IMPORTANT -->
+  <script src="js/config-firebase.js"></script>
+  <script src="js/ui-interface.js"></script>
+  <script src="js/render-dom.js"></script>
+  <script src="js/pdf-manager.js"></script>
+  <script src="js/fiche-securite.js"></script>
+  <script src="js/plongeurs-manager.js"></script>
+  <script src="js/dp-sessions-manager.js"></script>
+  <!-- SYSTÈME DE SAUVEGARDE -->
+  <script src="js/auto-palanquee-trick.js"></script>
+  <script src="js/improved-auto-save-fixed.js"></script>
+  <script src="js/main-core.js"></script>
+  <script src="js/simple-lock-system.js"></script>
+  <script src="js/password-manager.js"></script>  
+  <script src="js/dp-online-manager.js"></script>
+  <!-- NOUVEAU MODULE DE GESTION DES DP -->
+  <script src="js/dp-management.js"></script>
+  <script src="js/dp-save-improved.js"></script>
+  <!-- NOUVEAU MODULE DE GESTION DES MENUS FLOTTANTS -->
+  <script src="js/floating-menus-manager.js"></script>
+  
+  <!-- PWA INSTALLER - DOIT ÊTRE EN DERNIER -->
+  <script src="./pwa-installer.js"></script>
+
+<!-- Modal pour ajouter/modifier un DP -->
+<div id="dp-modal">
+  <div class="dp-modal-content">
+    <div class="dp-modal-header">
+      <h3 id="modal-title">Ajouter un DP</h3>
+      <button class="dp-close" onclick="hideModal()">&times;</button>
+    </div>
+    <div class="dp-modal-body">
+      <div class="dp-form-group">
+        <label for="dp-nom">Nom complet :</label>
+        <input type="text" id="dp-nom" placeholder="Ex: DUPONT Jean" required>
+      </div>
+      <div class="dp-form-group">
+        <label for="dp-niveau">Niveau :</label>
+        <select id="dp-niveau" required>
+          <option value="E3">E3</option>
+          <option value="E4">E4</option>
+          <option value="P5">P5</option>
+        </select>
+      </div>
+      <div class="dp-form-group">
+        <label for="dp-email">Email :</label>
+        <input type="email" id="dp-email" placeholder="exemple@email.com" required>
+      </div>
+    </div>
+    <div class="dp-modal-footer">
+      <button type="button" id="cancel-dp-btn" class="dp-btn">Annuler</button>
+      <button type="button" id="save-dp-btn" class="dp-btn">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+<!-- ÉLÉMENTS POUR SAUVEGARDE AMÉLIORÉE -->
+<div class="toast-container" id="toast-container"></div>
+<div class="sync-status" id="sync-status" style="display: none;">
+    <span class="sync-text">Synchronisé</span>
+</div>
+</body>
+</html>
