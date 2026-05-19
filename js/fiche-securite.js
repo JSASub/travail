@@ -257,9 +257,38 @@ function exportFicheSecurite() {
                 
                 const parts = nomComplet.trim().split(/\s+/);
                 let nom = "", prenom = "";
+                
                 if (parts.length >= 2) {
-                  nom = parts[0].substring(0, 16);
-                  prenom = parts.slice(1).join(" ").substring(0, 16);
+                  // Liste des particules nobiliaires françaises et étrangères
+                  const particules = ['LE', 'LA', 'LES', 'DE', 'DU', 'DES', 'D\'', 'L\'', 
+                                     'VAN', 'VON', 'VAN DER', 'VON DER', 'DA', 'DI', 'DEL'];
+                  
+                  // Vérifier si le premier mot est une particule
+                  const premierMot = parts[0].toUpperCase().replace(/'/g, '\'');
+                  const deuxiemeMot = parts[1] ? parts[1].toUpperCase().replace(/'/g, '\'') : '';
+                  
+                  let indexPrenom = 1; // Par défaut, prénom commence au 2ème mot
+                  
+                  // Vérifier particule double (VAN DER, VON DER)
+                  if (parts.length >= 3 && particules.includes(premierMot + ' ' + deuxiemeMot)) {
+                    // Particule double : "VAN DER" + nom
+                    nom = parts.slice(0, 3).join(' ').substring(0, 16);
+                    indexPrenom = 3;
+                  }
+                  // Vérifier particule simple
+                  else if (particules.includes(premierMot)) {
+                    // Particule simple : "LE" + nom
+                    nom = parts.slice(0, 2).join(' ').substring(0, 16);
+                    indexPrenom = 2;
+                  }
+                  // Pas de particule
+                  else {
+                    nom = parts[0].substring(0, 16);
+                    indexPrenom = 1;
+                  }
+                  
+                  // Prénom = tout ce qui reste
+                  prenom = parts.slice(indexPrenom).join(' ').substring(0, 16);
                 } else {
                   nom = nomComplet.substring(0, 16);
                 }
