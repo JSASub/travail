@@ -257,9 +257,38 @@ function exportFicheSecurite() {
                 
                 const parts = nomComplet.trim().split(/\s+/);
                 let nom = "", prenom = "";
+                
                 if (parts.length >= 2) {
-                  nom = parts[0].substring(0, 16);
-                  prenom = parts.slice(1).join(" ").substring(0, 16);
+                  // Liste des particules nobiliaires françaises et étrangères
+                  const particules = ['LE', 'LA', 'LES', 'DE', 'DU', 'DES', 'D\'', 'L\'', 
+                                     'VAN', 'VON', 'VAN DER', 'VON DER', 'DA', 'DI', 'DEL'];
+                  
+                  // Vérifier si le premier mot est une particule
+                  const premierMot = parts[0].toUpperCase().replace(/'/g, '\'');
+                  const deuxiemeMot = parts[1] ? parts[1].toUpperCase().replace(/'/g, '\'') : '';
+                  
+                  let indexPrenom = 1; // Par défaut, prénom commence au 2ème mot
+                  
+                  // Vérifier particule double (VAN DER, VON DER)
+                  if (parts.length >= 3 && particules.includes(premierMot + ' ' + deuxiemeMot)) {
+                    // Particule double : "VAN DER" + nom
+                    nom = parts.slice(0, 3).join(' ').substring(0, 16);
+                    indexPrenom = 3;
+                  }
+                  // Vérifier particule simple
+                  else if (particules.includes(premierMot)) {
+                    // Particule simple : "LE" + nom
+                    nom = parts.slice(0, 2).join(' ').substring(0, 16);
+                    indexPrenom = 2;
+                  }
+                  // Pas de particule
+                  else {
+                    nom = parts[0].substring(0, 16);
+                    indexPrenom = 1;
+                  }
+                  
+                  // Prénom = tout ce qui reste
+                  prenom = parts.slice(indexPrenom).join(' ').substring(0, 16);
                 } else {
                   nom = nomComplet.substring(0, 16);
                 }
@@ -272,10 +301,10 @@ function exportFicheSecurite() {
             }
             
             doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
-            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);
-            doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);
-            doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);
+            doc.line(xBase + 17, cellY, xBase + 17, cellY + lineHeight);  // Désignation | NOM (18 - 1)
+            doc.line(xBase + 46, cellY, xBase + 46, cellY + lineHeight);  // NOM | PRÉNOM
+            doc.line(xBase + 72, cellY, xBase + 72, cellY + lineHeight);  // PRÉNOM | APT
+            doc.line(xBase + 85, cellY, xBase + 85, cellY + lineHeight);  // APT | Niv
             
             cellY += lineHeight;
           }
@@ -285,8 +314,8 @@ function exportFicheSecurite() {
           doc.setFont(undefined, 'bold');
           const colParam = xBase + 1;
           const colDuree = xBase + 22;   // Paramètres reste 22mm
-          const colProf = xBase + 41;    // Durée élargie : 38 + 3 = 41mm (Durée = 19mm)
-          const colHeau = xBase + 56;    // Prof. élargie : 50 + 3 + 3 = 56mm (Prof. = 15mm, H.eau réduite)
+          const colProf = xBase + 44;    // Durée reste 22mm
+          const colHeau = xBase + 64;    // Prof. : 59 + 5 = 64mm (Prof. = 20mm), H. eau réduite de 5mm
           
           doc.text("Paramètres", colParam, cellY + 3);
           doc.text("Durée (min)", colDuree, cellY + 3);
@@ -334,9 +363,9 @@ function exportFicheSecurite() {
           doc.text(horaire, colHeau + 1, cellY + 3);
           
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
-          doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);   // Paramètres | Durée
-          doc.line(xBase + 39, cellY, xBase + 39, cellY + 3.5);   // Durée | Prof. (41 - 2)
-          doc.line(xBase + 54, cellY, xBase + 54, cellY + 3.5);   // Prof. | H. eau (56 - 2)
+          doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);   // Paramètres | Durée
+          doc.line(xBase + 44, cellY, xBase + 44, cellY + 3.5);   // Durée | Prof.
+          doc.line(xBase + 64, cellY, xBase + 64, cellY + 3.5);   // Prof. | H. eau
           cellY += 3.5;
           
           // Réalisés - TRAITS RALLONGÉS + TAILLE AGRANDIE
@@ -352,9 +381,9 @@ function exportFicheSecurite() {
           doc.text(horaire, colHeau + 1, cellY + 3.5);
           
           const bottomY = cellY + realiseHeight;
-          doc.line(xBase + 20, cellY, xBase + 20, bottomY);   // Paramètres | Durée
-          doc.line(xBase + 39, cellY, xBase + 39, bottomY);   // Durée | Prof.
-          doc.line(xBase + 54, cellY, xBase + 54, bottomY);   // Prof. | H. eau
+          doc.line(xBase + 22, cellY, xBase + 22, bottomY);   // Paramètres | Durée
+          doc.line(xBase + 44, cellY, xBase + 44, bottomY);   // Durée | Prof.
+          doc.line(xBase + 64, cellY, xBase + 64, bottomY);   // Prof. | H. eau
           cellY += realiseHeight;
           
           // Paliers (si remplis) - CORRECTION POSITIONNEMENT VERTICAL
