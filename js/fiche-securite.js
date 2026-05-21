@@ -301,10 +301,10 @@ function exportFicheSecurite() {
             }
             
             doc.line(xBase, cellY + lineHeight, xBase + colWidth, cellY + lineHeight);
-            doc.line(xBase + 16, cellY, xBase + 16, cellY + lineHeight);
-            doc.line(xBase + 44, cellY, xBase + 44, cellY + lineHeight);
-            doc.line(xBase + 70, cellY, xBase + 70, cellY + lineHeight);
-            doc.line(xBase + 83, cellY, xBase + 83, cellY + lineHeight);
+            doc.line(xBase + 17, cellY, xBase + 17, cellY + lineHeight);  // Désignation | NOM (18 - 1)
+            doc.line(xBase + 46, cellY, xBase + 46, cellY + lineHeight);  // NOM | PRÉNOM
+            doc.line(xBase + 72, cellY, xBase + 72, cellY + lineHeight);  // PRÉNOM | APT
+            doc.line(xBase + 85, cellY, xBase + 85, cellY + lineHeight);  // APT | Niv
             
             cellY += lineHeight;
           }
@@ -363,9 +363,9 @@ function exportFicheSecurite() {
           doc.text(horaire, colHeau + 1, cellY + 3);
           
           doc.line(xBase, cellY + 3.5, xBase + colWidth, cellY + 3.5);
-          doc.line(xBase + 20, cellY, xBase + 20, cellY + 3.5);   // Paramètres | Durée
-          doc.line(xBase + 42, cellY, xBase + 42, cellY + 3.5);   // Durée | Prof.
-          doc.line(xBase + 62, cellY, xBase + 62, cellY + 3.5);   // Prof. | H. eau (64 - 2)
+          doc.line(xBase + 22, cellY, xBase + 22, cellY + 3.5);   // Paramètres | Durée
+          doc.line(xBase + 44, cellY, xBase + 44, cellY + 3.5);   // Durée | Prof.
+          doc.line(xBase + 64, cellY, xBase + 64, cellY + 3.5);   // Prof. | H. eau
           cellY += 3.5;
           
           // Réalisés - TRAITS RALLONGÉS + TAILLE AGRANDIE
@@ -381,9 +381,9 @@ function exportFicheSecurite() {
           doc.text(horaire, colHeau + 1, cellY + 3.5);
           
           const bottomY = cellY + realiseHeight;
-          doc.line(xBase + 20, cellY, xBase + 20, bottomY);   // Paramètres | Durée
-          doc.line(xBase + 42, cellY, xBase + 42, bottomY);   // Durée | Prof.
-          doc.line(xBase + 62, cellY, xBase + 62, bottomY);   // Prof. | H. eau
+          doc.line(xBase + 22, cellY, xBase + 22, bottomY);   // Paramètres | Durée
+          doc.line(xBase + 44, cellY, xBase + 44, bottomY);   // Durée | Prof.
+          doc.line(xBase + 64, cellY, xBase + 64, bottomY);   // Prof. | H. eau
           cellY += realiseHeight;
           
           // Paliers (si remplis) - CORRECTION POSITIONNEMENT VERTICAL
